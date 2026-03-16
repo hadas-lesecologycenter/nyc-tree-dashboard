@@ -1037,11 +1037,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🏙 Top 100 Blocks</h2>
-          <p style="font-size:11px;color:var(--text2);margin-top:4px">Blocks with the most high-priority trees (score 45+). At least 5 trees per block.</p>
+          <div id="counts-explanation" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.7">
+            <strong>Note on tree counts:</strong> Due to dataset limitations, multiple ESCR plantings along a block are sometimes assigned to the same address and appear as a single dot on the map. The number in the list is the correct total count.
+          </div>
           <div id="blocks-summary" style="margin-top:10px;font-size:11px;color:var(--text3);font-family:'Nunito',sans-serif"></div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button onclick="downloadBlocksCSV()" style="padding:6px 14px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">⬇ Download Top 100 Blocks</button>
             <button onclick="document.getElementById('methodology-modal').style.display='flex'" style="padding:6px 14px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">ℹ️ Methodology</button>
+            <button onclick="document.getElementById('counts-explanation').style.display=document.getElementById('counts-explanation').style.display==='none'?'block':'none'" style="padding:6px 14px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">📊 Note on numbers</button>
           </div>
         </div>
         <div id="block-list" style="flex:1;overflow-y:auto"></div>
@@ -1655,123 +1658,125 @@ let selectedBlockId = null;
 
 function computeTopBlocks() {
   const byBlock = {};
-  // Include geocoded new plantings as young trees (they're all post-2019)
-  const plantingTrees = plantingsGeocoded.map(p => ({
-    latitude: String(p.lat),
-    longitude: String(p.lng),
-    address: `${p.num} ${p.street}`,
-    spc_common: p.species || p.code,
-    nta_name: p.nta,
-    health: '', // unknown health — new plantings
-    tree_dbh: '3', // small — all new plantings qualify as young
-    _priority: calcPriority({ health: '', tree_dbh: '3', nta_name: p.nta }),
-    _isNewPlanting: true,
-    planted: p.planted
-  }));
-  // Filter out park/playground trees from both sources
+
+  // isStreetTree: exclude park/median census trees
   const isStreetTree = t => {
-    // Census trees: block_id=0 means park/median, not a street block
     if (t.block_id !== undefined && (t.block_id === 0 || t.block_id === '0' || t.block_id === null)) return false;
-    // Census trees with no address or purely numeric/blank address
     const addr = (t.address || '').trim();
     if (!addr) return false;
     return true;
   };
-  const isStreetPlanting = p => p._isNewPlanting && p.planted !== undefined && p.num !== '0';
 
   const streetTrees = filteredTrees.filter(isStreetTree);
-  const streetPlantings = plantingTrees.filter(isStreetPlanting);
-  const allBlockTrees = [...streetTrees, ...streetPlantings];
 
-  // Build a list of census block centroids for nearest-block matching
-  const censusBlockCentroids = {};
+  // Build flat array of census tree positions for nearest-tree ESCR matching
+  const censusPositions = [];
   streetTrees.forEach(t => {
     const bid = t.block_id;
-    if (!bid || bid === 0 || bid === '0') return;
-    if (!censusBlockCentroids[bid]) censusBlockCentroids[bid] = { lats: [], lngs: [] };
-    censusBlockCentroids[bid].lats.push(parseFloat(t.latitude || 0));
-    censusBlockCentroids[bid].lngs.push(parseFloat(t.longitude || 0));
-  });
-  const blockKeys = Object.keys(censusBlockCentroids);
-  const blockAvgs = {};
-  blockKeys.forEach(bid => {
-    const c = censusBlockCentroids[bid];
-    blockAvgs[bid] = { lat: c.lats.reduce((a,b)=>a+b,0)/c.lats.length, lng: c.lngs.reduce((a,b)=>a+b,0)/c.lngs.length };
+    if (!bid || bid === '0') return;
+    const lat = parseFloat(t.latitude || 0);
+    const lng = parseFloat(t.longitude || 0);
+    if (lat && lng) censusPositions.push({ lat, lng, bid: String(bid) });
   });
 
-  allBlockTrees.forEach(t => {
-    // block_id is the most reliable grouper — it's the NYC block face ID
-    let bid = t.block_id || null;
-    if (!bid && t._isNewPlanting && blockKeys.length > 0) {
-      // Assign ESCR planting to nearest census block within ~150m
-      const pLat = parseFloat(t.latitude || 0);
-      const pLng = parseFloat(t.longitude || 0);
-      let minDist = Infinity, closestBid = null;
-      blockKeys.forEach(k => {
-        const dLat = (pLat - blockAvgs[k].lat) * 111000;
-        const dLng = (pLng - blockAvgs[k].lng) * 85000;
-        const d = Math.sqrt(dLat*dLat + dLng*dLng);
-        if (d < minDist) { minDist = d; closestBid = k; }
-      });
-      if (closestBid && minDist < 150) bid = closestBid;
-    }
-    bid = bid || (() => {
-      // Fallback: street + tighter lat/lng cell (~50m)
-      const street = (t.address || 'unknown').replace(/^\d+\s*/, '').trim().toLowerCase();
-      const latBand = Math.round(parseFloat(t.latitude || 0) / 0.0005);
-      const lngBand = Math.round(parseFloat(t.longitude || 0) / 0.0008);
-      return `${street}_${latBand}_${lngBand}`;
-    })();
-
+  // Group census trees by block_id
+  streetTrees.forEach(t => {
+    const bid = String(t.block_id || '');
+    if (!bid || bid === '0') return;
     if (!byBlock[bid]) {
       const street = (t.address || '').replace(/^\d+\s*/, '').trim();
-      byBlock[bid] = { id: bid, trees: [], street: street || 'Unknown Street', nta: t.nta_name || '' };
+      byBlock[bid] = { id: bid, trees: [], street: street || 'Unknown', nta: t.nta_name || '' };
     }
     byBlock[bid].trees.push(t);
   });
 
+  // Add ESCR plantings: assign each to nearest census TREE within 50m
+  // This is more accurate than centroid matching and avoids cross-street bleed
+  const escrTrees = plantingsGeocoded.filter(p =>
+    p.lat && p.lng && p.planted && String(p.num || '') !== '0'
+  );
+
+  escrTrees.forEach(p => {
+    const plat = parseFloat(p.lat);
+    const plng = parseFloat(p.lng);
+
+    let minDist = Infinity, bestBid = null;
+    for (let i = 0; i < censusPositions.length; i++) {
+      const c = censusPositions[i];
+      const dLat = (plat - c.lat) * 111000;
+      const dLng = (plng - c.lng) * 85000;
+      const d = Math.sqrt(dLat * dLat + dLng * dLng);
+      if (d < minDist) { minDist = d; bestBid = c.bid; }
+    }
+
+    let bid;
+    if (bestBid && minDist < 50) {
+      bid = bestBid;
+    } else {
+      // Fallback: street + grid cell (~50m)
+      const street = (p.street || 'unknown').toLowerCase();
+      const latBand = Math.round(plat / 0.0005);
+      const lngBand = Math.round(plng / 0.0008);
+      bid = `${street}_${latBand}_${lngBand}`;
+      if (!byBlock[bid]) {
+        byBlock[bid] = { id: bid, trees: [], street: p.street || 'Unknown', nta: p.nta || '' };
+      }
+    }
+
+    if (byBlock[bid]) {
+      const tree = {
+        latitude: String(plat), longitude: String(plng),
+        address: `${p.num} ${p.street}`,
+        spc_common: p.species || p.code,
+        nta_name: p.nta, health: '', tree_dbh: '3',
+        _priority: calcPriority({ health: '', tree_dbh: '3', nta_name: p.nta, address: `${p.num} ${p.street}` }),
+        _isNewPlanting: true, planted: p.planted, num: String(p.num)
+      };
+      byBlock[bid].trees.push(tree);
+    }
+  });
+
+  // Filter out parks, require min 5 trees
   const PARK_KEYWORDS = /park|playground|field|garden|square|plaza|green|oval/i;
-  // Split any block with >20 trees into north/south halves by latitude
-  function splitIfLarge(b) {
-    if (b.trees.length <= 20) return [b];
-    const sorted = [...b.trees].sort((a, z) => parseFloat(z.latitude||0) - parseFloat(a.latitude||0));
-    const mid = Math.ceil(sorted.length / 2);
-    const northTrees = sorted.slice(0, mid);
-    const southTrees = sorted.slice(mid);
-    return [
-      { id: b.id + '_N', trees: northTrees, street: b.street, nta: b.nta, address: b.street + ' (N)' },
-      { id: b.id + '_S', trees: southTrees, street: b.street, nta: b.nta, address: b.street + ' (S)' },
-    ];
-  }
-
-  function scoreBlock(b) {
-    b.address = b.address || b.street;
-    const highPriorityTrees = b.trees.filter(t => (t._priority || 0) >= 4);
-    const highPriority = highPriorityTrees.length;
-    const avgHighScore = highPriority > 0
-      ? (highPriorityTrees.reduce((s, t) => s + (t._priority || 0), 0) / highPriority)
-      : 0;
-    const blendedScore = Math.round(highPriority * avgHighScore);
-    const avgLat = b.trees.reduce((s, t) => s + parseFloat(t.latitude || 0), 0) / b.trees.length;
-    const avgLng = b.trees.reduce((s, t) => s + parseFloat(t.longitude || 0), 0) / b.trees.length;
-    const avgPriority = Math.round(b.trees.reduce((s, t) => s + (t._priority || 0), 0) / b.trees.length);
-    const newPlantings = b.trees.filter(t => t._isNewPlanting).length;
-    return { ...b, highPriority, avgHighScore, blendedScore, avgLat, avgLng, avgPriority, treeCount: b.trees.length, newPlantings };
-  }
-
   const rawBlocks = Object.values(byBlock)
     .filter(b => b.trees.length >= 5 && !PARK_KEYWORDS.test(b.street));
 
-  // Split large blocks, then flatten and score
-  const blocks = rawBlocks
-    .flatMap(splitIfLarge)
+  // Split blocks > 20 trees into north/south halves by latitude
+  const splitBlocks = [];
+  rawBlocks.forEach(b => {
+    if (b.trees.length <= 20) {
+      splitBlocks.push({ ...b, address: b.street });
+    } else {
+      const sorted = [...b.trees].sort((a, z) =>
+        parseFloat(z.latitude || 0) - parseFloat(a.latitude || 0)
+      );
+      const mid = Math.ceil(sorted.length / 2);
+      splitBlocks.push({ id: b.id + '_N', trees: sorted.slice(0, mid),  street: b.street, nta: b.nta, address: b.street + ' (N)' });
+      splitBlocks.push({ id: b.id + '_S', trees: sorted.slice(mid),     street: b.street, nta: b.nta, address: b.street + ' (S)' });
+    }
+  });
+
+  // Score and rank
+  const blocks = splitBlocks
     .filter(b => b.trees.length >= 5)
-    .map(scoreBlock)
+    .map(b => {
+      const highPriorityTrees = b.trees.filter(t => (t._priority || 0) >= 4);
+      const highPriority = highPriorityTrees.length;
+      const avgHighScore = highPriority > 0
+        ? highPriorityTrees.reduce((s, t) => s + (t._priority || 0), 0) / highPriority : 0;
+      const blendedScore = Math.round(highPriority * avgHighScore);
+      const avgLat = b.trees.reduce((s, t) => s + parseFloat(t.latitude || 0), 0) / b.trees.length;
+      const avgLng = b.trees.reduce((s, t) => s + parseFloat(t.longitude || 0), 0) / b.trees.length;
+      const avgPriority = Math.round(b.trees.reduce((s, t) => s + (t._priority || 0), 0) / b.trees.length);
+      const newPlantings = b.trees.filter(t => t._isNewPlanting).length;
+      return { ...b, highPriority, avgHighScore, blendedScore, avgLat, avgLng, avgPriority, treeCount: b.trees.length, newPlantings };
+    })
     .sort((a, b) => b.blendedScore - a.blendedScore)
     .slice(0, 100);
 
   return blocks;
 }
+
 
 function downloadBlocksCSV() {
   if (!window._lastBlocks || !window._lastBlocks.length) return;
@@ -1836,6 +1841,9 @@ function renderBlocksMap(blocks) {
       clearHighlight();
       selectedBlockId = null;
       document.querySelectorAll('.block-row').forEach(r => r.classList.remove('selected'));
+    });
+    blocksMap.on('zoomend moveend', () => {
+      if (selectedBlockId) highlightBlock(selectedBlockId);
     });
   }
 
@@ -1957,12 +1965,11 @@ function openTreeDetail(tree, dot) {
   // Priority badge
   document.getElementById('btp-badge').innerHTML = `
     <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">${pm.label}</span>
-    <span style="font-size:13px;font-weight:700;margin-left:8px;color:${pm.color}">${tree._priority}/100</span>
+    <span style="font-size:13px;font-weight:700;margin-left:8px;color:${pm.color}">Tier ${tree._priority} / 6</span>
     ${isEscr ? '<span style="margin-left:8px;background:rgba(74,124,89,0.15);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">🌱 ESCR</span>' : ''}
   `;
 
   // Score breakdown
-  const maxW = bd.w.young + bd.w.traffic;
   const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
   const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
   let breakdownHTML = `
