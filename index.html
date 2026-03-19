@@ -2436,16 +2436,13 @@ function tcShowSyncStatus(msg, isError) {
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
 }
 
-// Send a POST action to the Apps Script web app
+// Send action to Apps Script via GET (avoids CORS preflight issues with Google Workspace)
 async function tcSheetsPost(body) {
   if (!TC_SHEETS_URL) return null;
   try {
-    const res = await fetch(TC_SHEETS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // Apps Script needs text/plain for CORS
-      body: JSON.stringify(body),
-      redirect: 'follow',
-    });
+    // Encode payload as a query parameter — Apps Script doGet receives it via e.parameter.data
+    const url = TC_SHEETS_URL + '?data=' + encodeURIComponent(JSON.stringify(body));
+    const res = await fetch(url, { redirect: 'follow' });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Server error');
     return data;
