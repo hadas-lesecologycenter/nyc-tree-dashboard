@@ -945,6 +945,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button class="nav-btn active" onclick="switchView('map')">🗺 Map</button>
     <button class="nav-btn" onclick="switchView('stats')">📊 Stats</button>
     <button class="nav-btn" onclick="switchView('blocks')">🏙 Top Blocks</button>
+    <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock')">🌿 Tree Care</button>
     <button class="nav-btn" onclick="switchView('about')">ℹ️ About</button>
   </nav>
 
@@ -966,6 +967,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
+    <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
+      <div style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div id="mtp-title" style="font-family:'Lora',serif;font-size:15px;font-weight:700;line-height:1.3;padding-right:8px"></div>
+          <button onclick="closeMapTreeDetail()" style="background:none;border:1px solid var(--border);color:var(--text2);min-width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">✕</button>
+        </div>
+        <div id="mtp-badge" style="margin-bottom:12px"></div>
+        <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
+        <div id="mtp-fields"></div>
+      </div>
+    </div>
     <div class="map-overlay">
       <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">🎨 Species View</button>
       <div class="map-pill" id="map-legend-species" style="display:none"></div>
@@ -986,33 +998,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
         <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">Trees ranked into 6 tiers by two factors: whether they are young or ESCR-planted, and how visible their location is.</p>
 
-        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+        <div id="priority-tier-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+          <!-- populated by updatePriorityTierCounts() -->
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#c0392b;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 6 — Young/ESCR · commercial corridor</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 6 — Young/ESCR · commercial corridor</span>
+            <span id="tier-count-6" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#e67e22;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 5 — Young/ESCR · high-traffic area</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 5 — Young/ESCR · high-traffic area</span>
+            <span id="tier-count-5" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#f1c40f;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 4 — Young/ESCR · residential</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young/ESCR · residential</span>
+            <span id="tier-count-4" style="font-size:10px;font-weight:700;color:#b8940d;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#7fb069;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 3 — Mature · commercial corridor</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 3 — Mature · commercial corridor</span>
+            <span id="tier-count-3" style="font-size:10px;font-weight:700;color:#7fb069;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 2 — Mature · high-traffic area</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 2 — Mature · high-traffic area</span>
+            <span id="tier-count-2" style="font-size:10px;font-weight:700;color:#2e8b57;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#1a5c38;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2)">Tier 1 — Mature · residential</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 1 — Mature · residential</span>
+            <span id="tier-count-1" style="font-size:10px;font-weight:700;color:#1a5c38;min-width:28px;text-align:right"></span>
           </div>
         </div>
-        <p style="font-size:10px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">Trees ranked into 6 tiers by age/ESCR status and street visibility.</p>
+        <p style="font-size:10px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">Trees ranked into 6 tiers by age/ESCR status and street visibility. Counts reflect current map filters.</p>
       </div>
     </div>
   </div>
@@ -1020,15 +1039,26 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- STATS VIEW -->
   <div id="stats-view" class="view">
     <div class="summary-row">
-      <div class="stat-card"><div class="stat-num" id="s-total" style="color:var(--accent)">—</div><div class="stat-lbl">Trees Loaded</div></div>
-      <div class="stat-card"><div class="stat-num" id="s-good" style="color:var(--accent)">—</div><div class="stat-lbl">Good Health</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-total" style="color:var(--accent)">—</div><div class="stat-lbl">Total Trees</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-care-events" style="color:#2e8b57">—</div><div class="stat-lbl">Care Events Logged</div></div>
+
       <div class="stat-card danger"><div class="stat-num" id="s-poor" style="color:var(--danger)">—</div><div class="stat-lbl">Poor Health</div></div>
+      <div class="stat-card warning"><div class="stat-num" id="s-good" style="color:var(--warning)">—</div><div class="stat-lbl">Good Health</div></div>
       <div class="stat-card warning"><div class="stat-num" id="s-avg" style="color:var(--warning)">—</div><div class="stat-lbl">Avg Priority Tier</div></div>
     </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em">🎯 Progress Toward Goal</span>
+        <span id="s-goal-text" style="font-size:13px;font-weight:700;color:var(--text)">0 / 1,000 trees cared for</span>
+      </div>
+      <div style="height:10px;background:var(--bg4);border-radius:6px;overflow:hidden">
+        <div id="s-goal-fill" style="height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width 0.6s ease"></div>
+      </div>
+      <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
+    </div>
     <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Health Distribution</div><div class="chart-wrap" style="height:200px"><canvas id="health-chart"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Top 10 Species</div><div class="chart-wrap" style="height:220px"><canvas id="borough-chart"></canvas></div></div>
-      <div class="chart-card full"><div class="chart-title">Top Species</div><div class="chart-wrap" style="height:200px"><canvas id="species-chart"></canvas></div></div>
+      <div class="chart-card full"><div class="chart-title">Care Activities by Type</div><div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div></div>
+      <div class="chart-card full"><div class="chart-title">Top 10 Species in CB3 Area</div><div class="chart-wrap" style="height:260px"><canvas id="species-chart"></canvas></div></div>
     </div>
   </div>
 
@@ -1059,6 +1089,97 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
+
+  <!-- MY BLOCK VIEW -->
+  <div id="myblock-view" class="view">
+    <div style="display:flex;height:100%;overflow:hidden">
+      <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:4px">🌿 Tree Care</h2>
+          <p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px">Draw an area on the map to claim the trees you steward.</p>
+          <button onclick="openClaimWizard()" style="width:100%;padding:9px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">+ Claim a Block</button>
+        </div>
+        <div style="margin:10px 16px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0">
+          <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">🎯 Goal: 1,000 Trees</div>
+          <div style="height:6px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:4px">
+            <div id="tc-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.5s"></div>
+          </div>
+          <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for</div>
+        </div>
+        <div id="myblock-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--text3)">
+          <div style="font-size:36px;margin-bottom:12px">🌿</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">No blocks claimed yet</div>
+          <div style="font-size:12px;line-height:1.6">Click "Claim a Block" to start tracking stewardship.</div>
+        </div>
+        <div id="claimed-blocks-list" style="flex:1;overflow-y:auto;padding:8px 0;display:none"></div>
+      </div>
+      <div id="myblock-dashboard" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)">
+
+        <!-- LIST / DASHBOARD PANEL -->
+        <div id="tc-list-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+          <div id="myblock-no-selection" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);text-align:center;padding:40px">
+            <div style="font-size:48px;margin-bottom:16px">🏙</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Select a block</div>
+            <div style="font-size:13px;line-height:1.7;max-width:320px">Claim a block to track stewardship and log care events toward the 1,000-tree goal.</div>
+          </div>
+          <div id="myblock-dashboard-content" style="display:none;padding:24px;max-width:760px"></div>
+        </div>
+
+        <!-- DRAW PANEL (replaces popup) -->
+        <div id="tc-draw-panel" style="flex:1;display:none;flex-direction:column;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+            <div style="flex:1">
+              <div style="font-family:'Lora',serif;font-size:15px;font-weight:700">Draw your area</div>
+              <div id="tc-draw-hint" style="font-size:11px;color:var(--text3);margin-top:2px">Hold and drag on the map to draw a boundary.</div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button id="tc-pan-toggle" onclick="tcTogglePanMode()"
+                title="Switch between Pan and Draw mode"
+                style="padding:5px 10px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">
+                🖐 Pan Mode</button>
+              <button onclick="tcHideDrawMode()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
+            </div>
+          </div>
+          <div id="tc-draw-map" style="flex:1;min-height:0"></div>
+          <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+              <input id="tc-draw-name" type="text" placeholder="Area name (e.g. Delancey & Essex)"
+                style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg);color:var(--text);outline:none;font-family:'Nunito',sans-serif">
+              <span id="tc-draw-count" style="font-size:11px;color:var(--accent);font-weight:700;white-space:nowrap;min-width:60px;text-align:right"></span>
+            </div>
+            <button id="tc-save-btn" onclick="tcSaveArea()" disabled
+              style="width:100%;padding:10px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;opacity:0.4">
+              🌿 Claim This Area</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- claim wizard replaced by inline draw panel -->
+
+  <!-- LOG CARE MODAL -->
+  <div id="log-care-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700">Log Care Activity</h2>
+        <button onclick="closeLogCare()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="log-care-body"></div>
+    </div>
+  </div>
+
+  <!-- ADD GOAL MODAL -->
+  <div id="add-goal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700">Add Goal</h2>
+        <button onclick="document.getElementById('add-goal-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="add-goal-body"></div>
+    </div>
+  </div>
 
   <!-- ABOUT VIEW -->
   <div id="about-view" class="view">
@@ -1255,7 +1376,7 @@ let filteredTrees = [];
 let mapInstance = null;
 let markersLayer = null;
 let priorityMode = true;
-let plantingsVisible = false;
+let plantingsVisible = true;
 let plantingsLayer = null;
 let plantingsGeocoded = [];
 let plantingsGeocoding = false;
@@ -1461,9 +1582,31 @@ function updateMap() {
 
       </div>
     `);
+    m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
     m.addTo(markersLayer);
   });
 
+}
+
+function updatePriorityTierCounts() {
+  const trees = (typeof filteredTrees !== 'undefined' ? filteredTrees : (typeof allTrees !== 'undefined' ? allTrees : []));
+  const counts = {1:0,2:0,3:0,4:0,5:0,6:0};
+  trees.forEach(t => {
+    const tier = t._priority || 0;
+    if (tier >= 1 && tier <= 6) counts[tier]++;
+  });
+  // Also count ESCR plantings
+  if (typeof plantingsGeocoded !== 'undefined') {
+    plantingsGeocoded.forEach(p => {
+      const pseudo = { _isNewPlanting: true, health: '', tree_dbh: '3', nta_name: p.nta, address: (p.num||'') + ' ' + (p.street||'') };
+      const tier = (typeof calcPriority === 'function') ? calcPriority(pseudo) : 0;
+      if (tier >= 1 && tier <= 6) counts[tier]++;
+    });
+  }
+  for (let i = 1; i <= 6; i++) {
+    const el = document.getElementById('tier-count-' + i);
+    if (el) el.textContent = counts[i].toLocaleString();
+  }
 }
 
 function togglePrioritySidebar() {
@@ -1478,81 +1621,155 @@ function togglePrioritySidebar() {
 }
 
 // ========== STATS ==========
+// Refresh tier counts whenever map updates
+(function patchUpdateMap() {
+  const orig = window.updateMap;
+  if (orig) {
+    window.updateMap = function() {
+      orig.apply(this, arguments);
+      if (document.getElementById('priority-sidebar') && document.getElementById('priority-sidebar').style.display !== 'none') {
+        updatePriorityTierCounts();
+      }
+    };
+  }
+})();
+
+let activitiesChart = null;
+
 function updateStats() {
   const trees = filteredTrees;
   const total = trees.length;
   const byHealth = { Good: 0, Fair: 0, Poor: 0, Unknown: 0 };
-  const byBorough = {};
   const bySpecies = {};
   let totalPriority = 0;
 
   trees.forEach(t => {
     const h = t.health || 'Unknown';
     byHealth[h] = (byHealth[h]||0) + 1;
-    const b = t.boroname || 'Unknown';
-    byBorough[b] = (byBorough[b]||0) + 1;
     const s = t.spc_common || 'Unknown';
     bySpecies[s] = (bySpecies[s]||0) + 1;
     totalPriority += t._priority || 0;
   });
 
+  const tcAreas = (function() { try { return JSON.parse(localStorage.getItem('tc_areas') || '[]'); } catch(e) { return []; } })();
+  const careEventsTotal = tcAreas.reduce((s, a) => s + (a.careEvents ? a.careEvents.length : 0), 0);
+
   document.getElementById('s-total').textContent = total.toLocaleString();
+  document.getElementById('s-care-events').textContent = careEventsTotal.toLocaleString();
   document.getElementById('s-good').textContent = (byHealth.Good||0).toLocaleString();
   document.getElementById('s-poor').textContent = (byHealth.Poor||0).toLocaleString();
   document.getElementById('s-avg').textContent = total ? Math.round(totalPriority/total) : 0;
 
-  const chartDefaults = { color: '#6b8f72', borderColor: '#1f3324' };
+  // Goal progress (tree count, not activity count)
+  const goalTotal = tcAreas.reduce((s, a) => s + (a.careEvents && a.careEvents.length ? (a.treeCount || 0) : 0), 0);
+  const goalPct = Math.min(100, Math.round((goalTotal / 1000) * 100));
+  const fillEl = document.getElementById('s-goal-fill');
+  const textEl = document.getElementById('s-goal-text');
+  const subEl  = document.getElementById('s-goal-sub');
+  if (fillEl) fillEl.style.width = goalPct + '%';
+  if (textEl) textEl.textContent = goalTotal.toLocaleString() + ' / 1,000 trees cared for (' + goalPct + '%)';
+  if (subEl)  subEl.textContent = goalTotal > 0
+    ? tcAreas.filter(a => a.careEvents && a.careEvents.length).length + ' area' +
+      (tcAreas.filter(a => a.careEvents && a.careEvents.length).length !== 1 ? 's' : '') + ' with care logged'
+    : 'Claim areas and log care events in the Tree Care tab to track progress.';
 
-  // Health pie
-  const hCtx = document.getElementById('health-chart').getContext('2d');
-  if (healthChart) healthChart.destroy();
-  healthChart = new Chart(hCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Good', 'Fair', 'Poor', 'Unknown'],
-      datasets: [{ data: [byHealth.Good, byHealth.Fair, byHealth.Poor, byHealth.Unknown],
-        backgroundColor: ['#3a7d44', '#d68910', '#c0392b', '#c8c2b4'],
-        borderColor: '#0e1611', borderWidth: 2 }]
-    },
-    options: { plugins: { legend: { labels: { color: '#6b8f72', font: { family: 'Nunito', size: 11 } } } }, maintainAspectRatio: false }
+  // ── Care activities by type ──────────────────────────────────
+  // Count trees reached per activity type (area.treeCount per area, once per activity)
+  const actCounts = {};
+  const actLocations = {};   // actId → [{name, trees}, ...]
+  TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; actLocations[a.id] = []; });
+  tcAreas.forEach(area => {
+    const trees = area.treeCount || 0;
+    const seen = new Set();  // count each activity once per area (not per event)
+    (area.careEvents || []).forEach(ev => {
+      (ev.activities || []).forEach(aid => {
+        if (actCounts[aid] !== undefined && !seen.has(aid)) {
+          actCounts[aid] += trees;
+          actLocations[aid].push({ name: area.name, trees });
+          seen.add(aid);
+        }
+      });
+    });
   });
 
-  // Top 10 Species bar (using same colors as map)
-  const bCtx = document.getElementById('borough-chart').getContext('2d');
-  if (boroughChart) boroughChart.destroy();
-  const top10Species = Object.entries(bySpecies).sort((a,b) => b[1]-a[1]).slice(0,10);
-  const top10Colors = top10Species.map(([s]) => getSpeciesColor(s));
-  boroughChart = new Chart(bCtx, {
+  const actCtx = document.getElementById('activities-chart');
+  if (actCtx) {
+    if (activitiesChart) activitiesChart.destroy();
+    const labels = TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label);
+    const data   = TC_ACTIVITIES.map(a => actCounts[a.id]);
+    const hasData = data.some(v => v > 0);
+
+    if (!hasData) {
+      // No data yet — show placeholder message
+      const ctx = actCtx.getContext('2d');
+      ctx.clearRect(0, 0, actCtx.width, actCtx.height);
+      ctx.fillStyle = '#9c9080';
+      ctx.font = '13px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No care activities logged yet — log events in the Tree Care tab.', actCtx.offsetWidth / 2, 60);
+    } else {
+      const palette = ['#e67e22','#2e8b57','#8B4513','#4a7c59','#2980b9','#1a5c38','#c47d1a'];
+      activitiesChart = new Chart(actCtx.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            backgroundColor: palette.map(c => c + 'cc'),
+            borderColor: palette,
+            borderWidth: 2, borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ' ' + ctx.parsed.x.toLocaleString() + ' trees';
+                },
+                afterLabel: function(ctx) {
+                  const aid = TC_ACTIVITIES[ctx.dataIndex].id;
+                  const locs = actLocations[aid];
+                  if (!locs.length) return '';
+                  return locs.map(l => '  ' + l.name + ' (' + l.trees + ' trees)').join('\n');
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' }, beginAtZero: true, precision: 0 },
+            y: { ticks: { color: '#2c2a24', font: { size: 11, family: 'Nunito' } }, grid: { display: false } }
+          },
+          maintainAspectRatio: false
+        }
+      });
+    }
+  }
+
+  // ── Top 10 Species bar ───────────────────────────────────────
+  const sCtx = document.getElementById('species-chart').getContext('2d');
+  if (speciesChart) speciesChart.destroy();
+  const top10 = Object.entries(bySpecies).sort((a,b) => b[1]-a[1]).slice(0,10);
+  const colors = top10.map(([s]) => getSpeciesColor(s));
+  speciesChart = new Chart(sCtx, {
     type: 'bar',
     data: {
-      labels: top10Species.map(([s]) => s),
-      datasets: [{ data: top10Species.map(([,c]) => c),
-        backgroundColor: top10Colors.map(c => c + 'cc'),
-        borderColor: top10Colors,
-        borderWidth: 2, borderRadius: 4 }]
+      labels: top10.map(([s]) => s),
+      datasets: [{ data: top10.map(([,c]) => c),
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors, borderWidth: 2, borderRadius: 4 }]
     },
     options: {
       indexAxis: 'y',
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' } },
-        y: { ticks: { color: '#2c2a24', font: { size: 11 }, font: { family: 'Nunito' } }, grid: { display: false } }
+        y: { ticks: { color: '#2c2a24', font: { size: 11, family: 'Nunito' } }, grid: { display: false } }
       },
       maintainAspectRatio: false
     }
-  });
-
-  // Species bar
-  const sCtx = document.getElementById('species-chart').getContext('2d');
-  if (speciesChart) speciesChart.destroy();
-  const topSpecies = Object.entries(bySpecies).sort((a,b) => b[1]-a[1]).slice(0,12);
-  speciesChart = new Chart(sCtx, {
-    type: 'bar',
-    data: {
-      labels: topSpecies.map(([s]) => s),
-      datasets: [{ data: topSpecies.map(([,c]) => c), backgroundColor: 'rgba(58,125,68,0.15)', borderColor: '#3a7d44', borderWidth: 1, borderRadius: 3 }]
-    },
-    options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' } }, y: { ticks: { color: '#2c2a24', font: { size: 10 } }, grid: { display: false } } }, maintainAspectRatio: false }
   });
 }
 
@@ -1651,6 +1868,14 @@ function switchView(view) {
   if (view === 'stats') updateStats();
   if (view === 'blocks') {
     updateBlocksView();
+  }
+  if (view === 'myblock') {
+    renderClaimedBlocksSidebar();
+    tcUpdateProgress();
+  }
+  if (view === 'blocks') {
+    // also render claimed areas on blocks map
+    setTimeout(tcRenderBlocksMap, 200);
   }
 }
 
@@ -1850,52 +2075,85 @@ function renderBlocksMap(blocks) {
     });
   }
 
-  // Clear old circles
+  // Clear old circles and TC overlays
   blockCircles.forEach(c => c.remove());
   blockCircles = [];
+  if (window._tcBlocksLayer) { window._tcBlocksLayer.remove(); window._tcBlocksLayer = null; }
 
-  blocks.forEach((block, i) => {
-    // Plot individual trees on this block as small dots
-    block.trees.forEach(tree => {
-      const lat = parseFloat(tree.latitude);
-      const lng = parseFloat(tree.longitude);
+  // Build a set of block IDs in the top 100
+  const topBlockIds = new Set(blocks.map(b => b.id));
+
+  // Layer 1: ALL trees as faint background dots
+  const allTreesSource = typeof filteredTrees !== 'undefined' ? filteredTrees : allTrees;
+  allTreesSource.forEach(tree => {
+    const lat = parseFloat(tree.latitude || tree.lat);
+    const lng = parseFloat(tree.longitude || tree.lng);
+    if (!lat || !lng) return;
+    const inTop = topBlockIds.has(tree.block_id);
+    const dot = L.circleMarker([lat, lng], {
+      radius: inTop ? 5 : 3,
+      fillColor: inTop ? getPriorityMeta(tree._priority || 0).color : '#888',
+      color: inTop ? getPriorityMeta(tree._priority || 0).color : '#888',
+      fillOpacity: inTop ? 0.9 : 0.25,
+      weight: 0,
+      interactive: inTop  // only top-block trees get click
+    });
+    if (inTop) {
+      const tip = `${tree.spc_common || 'Unknown'} · ${tree.address || ''} · ${getPriorityMeta(tree._priority || 0).label}`;
+      dot.bindTooltip(tip, { sticky: true });
+      dot.on('click', () => openTreeDetail(tree, dot));
+      dot._blockId = tree.block_id;
+      dot._origColor = getPriorityMeta(tree._priority || 0).color;
+      dot._isEscr = !!tree._isNewPlanting;
+      blockCircles.push(dot);
+    }
+    dot.addTo(blocksMap);
+  });
+
+  // Layer 2: ESCR plantings on top blocks (larger dots)
+  blocks.forEach(block => {
+    block.trees.filter(t => t._isNewPlanting).forEach(tree => {
+      const lat = parseFloat(tree.latitude), lng = parseFloat(tree.longitude);
       if (!lat || !lng) return;
-      if (tree._isNewPlanting) {
-        const pm = getPriorityMeta(tree._priority || 0);
-        const dot = L.circleMarker([lat, lng], {
-          radius: 6, color: '#fff', fillColor: pm.color,
-          fillOpacity: 0.95, weight: 2
-        });
-        const tip = `🌱 ${tree.spc_common} — Planted ${tree.planted} · ${pm.label} (${tree._priority}/100)`;
-        dot.bindTooltip(tip, { sticky: true });
-        dot.on('click', () => openTreeDetail(tree, dot));
-        dot._blockId = block.id;
-        dot._origColor = pm.color;
-        dot._isEscr = true;
-        dot.addTo(blocksMap);
-        blockCircles.push(dot);
-      } else {
-        const pm = getPriorityMeta(tree._priority || 0);
-        const dot = L.circleMarker([lat, lng], {
-          radius: 4, color: pm.color, fillColor: pm.color,
-          fillOpacity: 0.9, weight: 0
-        });
-        const tip = `${tree.spc_common||'Unknown'} · ${tree.address||''} · ${pm.label} (${tree._priority}/100)`;
-        dot.bindTooltip(tip, { sticky: true });
-        dot.on('click', () => openTreeDetail(tree, dot));
-        dot._blockId = block.id;
-        dot._origColor = pm.color;
-        dot._isEscr = false;
-        dot.addTo(blocksMap);
-        blockCircles.push(dot);
-      }
+      const pm = getPriorityMeta(tree._priority || 0);
+      const dot = L.circleMarker([lat, lng], {
+        radius: 7, color: '#fff', fillColor: pm.color, fillOpacity: 0.95, weight: 2
+      });
+      dot.bindTooltip(`🌱 ${tree.spc_common} — Planted ${tree.planted} · ${pm.label}`, { sticky: true });
+      dot.on('click', () => openTreeDetail(tree, dot));
+      dot._blockId = block.id;
+      dot._origColor = pm.color;
+      dot._isEscr = true;
+      dot.addTo(blocksMap);
+      blockCircles.push(dot);
     });
   });
 
-  // Auto-fit map to the extent of the top 100 blocks
+  // Layer 3: Claimed TC areas
+  const tcAreas = (function() { try { return JSON.parse(localStorage.getItem('tc_areas') || '[]'); } catch(e) { return []; } })();
+  if (tcAreas.length) {
+    window._tcBlocksLayer = L.layerGroup();
+    tcAreas.forEach(area => {
+      if (!area.polygon || area.polygon.length < 3) return;
+      const cared = area.careEvents && area.careEvents.length > 0;
+      const color = cared ? '#2e8b57' : '#c47d1a';
+      const poly = L.polygon(area.polygon, {
+        color: color, fillColor: color, fillOpacity: 0.18, weight: 2.5, dashArray: cared ? null : '6 4'
+      });
+      poly.bindTooltip(
+        '<strong>' + area.name + '</strong><br><span style="font-size:10px">' +
+        area.treeCount + ' trees · ' + (cared ? '✅ Care logged' : '⏳ Watching') + '</span>',
+        { sticky: true }
+      );
+      poly.addTo(window._tcBlocksLayer);
+    });
+    window._tcBlocksLayer.addTo(blocksMap);
+  }
+
+  // Auto-fit to CB3 area
   const allLats = [], allLngs = [];
   blocks.forEach(b => b.trees.forEach(t => {
-    const lat = parseFloat(t.latitude); const lng = parseFloat(t.longitude);
+    const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
     if (lat && lng) { allLats.push(lat); allLngs.push(lng); }
   }));
   if (allLats.length) {
@@ -2034,6 +2292,57 @@ function closeTreeDetail() {
   if (blocksMap) setTimeout(() => blocksMap.invalidateSize(), 150);
 }
 
+function openMapTreeDetail(tree) {
+  const panel = document.getElementById('map-tree-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  const pm = getPriorityMeta(tree._priority || 0);
+  const bd = calcPriorityBreakdown(tree);
+  const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+  document.getElementById('mtp-title').textContent = species;
+  document.getElementById('mtp-badge').innerHTML =
+    '<span style="background:' + pm.color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + pm.label + '</span>' +
+    '<span style="font-size:13px;font-weight:700;margin-left:8px;color:' + pm.color + '">Tier ' + tree._priority + ' / 6</span>';
+  const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
+  const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
+  document.getElementById('mtp-breakdown').innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Priority Tier ' + bd.tier + ' / 6</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<span style="font-size:16px">' + (bd.young ? '✅' : '⬜') + '</span>' +
+      '<div><div style="font-size:11px;font-weight:600;color:' + youngColor + '">🌱 Young / ESCR</div>' +
+      '<div style="font-size:10px;color:var(--text3)">' + bd.youngLabel + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="font-size:16px">' + (bd.vis === 'full' ? '✅' : bd.vis === 'partial' ? '🔶' : '⬜') + '</span>' +
+      '<div><div style="font-size:11px;font-weight:600;color:' + visColor + '">👁 Visibility</div>' +
+      '<div style="font-size:10px;color:var(--text3)">' + bd.visReason + '</div></div>' +
+    '</div>';
+  const rows = [
+    ['Type', '📋 2015 Census Tree'],
+    tree.address   ? ['Address',       tree.address]                    : null,
+    tree.health    ? ['Health',         tree.health]                    : null,
+    tree.tree_dbh  ? ['Trunk DBH',      tree.tree_dbh + '"']            : null,
+    tree.status    ? ['Status',         tree.status]                    : null,
+    tree.nta_name  ? ['Neighborhood',   tree.nta_name]                  : null,
+    tree.sidewalk  ? ['Sidewalk',       tree.sidewalk]                  : null,
+    tree.guards    ? ['Guards',         tree.guards]                    : null,
+    tree.tree_id   ? ['Tree ID',        tree.tree_id]                   : null,
+    tree.spc_latin ? ['Scientific name','<em>' + tree.spc_latin + '</em>'] : null,
+  ].filter(Boolean);
+  document.getElementById('mtp-fields').innerHTML = rows.map(function(r) {
+    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
+      '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>';
+  }).join('');
+}
+
+function closeMapTreeDetail() {
+  const panel = document.getElementById('map-tree-panel');
+  if (panel) panel.style.display = 'none';
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+}
+
 // ========== PLANTINGS LAYER ==========
 
 function geocodePlantings() {
@@ -2090,7 +2399,8 @@ async function togglePlantingsLayer() {
     btn.textContent = `🌱 ${plantingsGeocoded.length} Plantings`;
   } else {
     if (plantingsLayer) { plantingsLayer.remove(); plantingsLayer = null; }
-    btn.textContent = '🌱 Show New Plantings';
+    btn.textContent = '🌱 Hide Plantings';
+    setTimeout(() => { if (btn) btn.textContent = '🌱 Show New Plantings'; }, 0);
   }
 }
 
@@ -2099,6 +2409,707 @@ function init() {
   initMap();
   loadTrees();
 }
+
+// ========== TREE CARE ==========
+
+// ── Google Sheets config ──────────────────────────────────────
+// Paste your Apps Script Web App URL here after setup.
+// Leave as '' to use localStorage only (no sharing).
+const TC_SHEETS_URL = '';
+
+// ── Sync helpers ──────────────────────────────────────────────
+function tcShowSyncStatus(msg, isError) {
+  let el = document.getElementById('tc-sync-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tc-sync-status';
+    el.style.cssText = 'position:fixed;bottom:16px;right:16px;padding:8px 14px;border-radius:8px;' +
+      'font-size:12px;font-weight:600;font-family:Nunito,sans-serif;z-index:9999;' +
+      'box-shadow:0 2px 12px rgba(0,0,0,0.18);transition:opacity 0.4s';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = isError ? '#c0392b' : '#2e8b57';
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+}
+
+// Send a POST action to the Apps Script web app
+async function tcSheetsPost(body) {
+  if (!TC_SHEETS_URL) return null;
+  try {
+    const res = await fetch(TC_SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // Apps Script needs text/plain for CORS
+      body: JSON.stringify(body),
+      redirect: 'follow',
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Server error');
+    return data;
+  } catch(e) {
+    console.warn('Sheets sync error:', e.message);
+    return null;
+  }
+}
+
+// Merge server areas into localStorage (server is source of truth)
+function tcMergeServerData(serverAreas) {
+  if (!Array.isArray(serverAreas)) return;
+  localStorage.setItem('tc_areas', JSON.stringify(serverAreas));
+}
+
+// On page load: send any local-only areas to server, pull back full state
+async function tcInitSync() {
+  if (!TC_SHEETS_URL) return;
+  tcShowSyncStatus('⟳ Syncing with Google Sheets…');
+  const local = (function() {
+    try { return JSON.parse(localStorage.getItem('tc_areas') || '[]'); } catch(e) { return []; }
+  })();
+  const result = await tcSheetsPost({ action: 'sync', areas: local });
+  if (result && result.areas) {
+    tcMergeServerData(result.areas);
+    tcShowSyncStatus('✓ Synced with Google Sheets');
+  } else {
+    tcShowSyncStatus('⚠ Could not reach Google Sheets — using local data', true);
+  }
+}
+
+// ── Storage ──────────────────────────────────────────────────
+function tcLoad() {
+  try {
+    const areas = JSON.parse(localStorage.getItem('tc_areas') || '[]');
+    // Auto-fix any area with 0 trees but a valid polygon (stale count from filtered save)
+    let dirty = false;
+    areas.forEach(a => {
+      if (a.treeCount === 0 && a.polygon && a.polygon.length >= 3 && typeof allTrees !== 'undefined' && allTrees.length) {
+        a.treeCount = tcCountTrees(a.polygon);
+        dirty = true;
+      }
+    });
+    if (dirty) tcSave(areas);
+    return areas;
+  } catch(e) { return []; }
+}
+function tcSave(areas) { localStorage.setItem('tc_areas', JSON.stringify(areas)); }
+function tcGet(id) { return tcLoad().find(a => a.id === id) || null; }
+
+async function tcUpsert(area) {
+  // Write to localStorage immediately (optimistic)
+  const all = tcLoad();
+  const idx = all.findIndex(a => a.id === area.id);
+  if (idx >= 0) all[idx] = area; else all.push(area);
+  tcSave(all);
+  // Write to Google Sheet
+  if (TC_SHEETS_URL) {
+    const result = await tcSheetsPost({ action: 'upsertArea', area });
+    if (result && result.area) {
+      tcMergeServerData(tcLoad().map(a => a.id === result.area.id ? result.area : a));
+    }
+  }
+}
+
+async function tcRemove(id) {
+  tcSave(tcLoad().filter(a => a.id !== id));
+  if (TC_SHEETS_URL) {
+    await tcSheetsPost({ action: 'deleteArea', id });
+  }
+}
+
+// ── Geometry ─────────────────────────────────────────────────
+function tcPIP(point, polygon) {
+  const [px, py] = point;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i], [xj, yj] = polygon[j];
+    if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function tcCountTrees(polygon) {
+  if (!polygon || polygon.length < 3) return 0;
+  let n = 0;
+  allTrees.forEach(t => {
+    const lat = parseFloat(t.latitude || t.lat), lng = parseFloat(t.longitude || t.lng);
+    if (lat && lng && tcPIP([lat, lng], polygon)) n++;
+  });
+  // Also count ESCR plantings
+  if (typeof plantingsGeocoded !== 'undefined') {
+    plantingsGeocoded.forEach(p => {
+      if (p.lat && p.lng && tcPIP([p.lat, p.lng], polygon)) n++;
+    });
+  }
+  return n;
+}
+function tcSimplify(pts) {
+  if (pts.length <= 60) return pts;
+  const step = Math.ceil(pts.length / 60);
+  const r = [];
+  for (let i = 0; i < pts.length; i += step) r.push(pts[i]);
+  if (r[r.length - 1] !== pts[pts.length - 1]) r.push(pts[pts.length - 1]);
+  return r;
+}
+
+// ── Map overlays ──────────────────────────────────────────────
+let tcMainLayer = null;
+
+function tcRenderMain() {
+  if (!mapInstance) return;
+  if (tcMainLayer) { tcMainLayer.remove(); tcMainLayer = null; }
+  const areas = tcLoad();
+  if (!areas.length) return;
+  tcMainLayer = L.layerGroup();
+  areas.forEach(area => {
+    if (!area.polygon || area.polygon.length < 3) return;
+    const cared = area.careEvents && area.careEvents.length > 0;
+    const color = cared ? '#2e8b57' : '#4a7c59';
+    const poly = L.polygon(area.polygon, {
+      color: color, fillColor: color, fillOpacity: cared ? 0.25 : 0.12, weight: 2.5
+    });
+    poly.bindTooltip('<strong>' + area.name + '</strong><br><span style="font-size:10px">' +
+      area.treeCount + ' trees · ' + (cared ? '✅ Care logged' : '⏳ Watching') + '</span>', { sticky: true });
+    poly.addTo(tcMainLayer);
+  });
+  tcMainLayer.addTo(mapInstance);
+}
+
+function tcRenderBlocksMap() {
+  if (!blocksMap) return;
+  if (window._tcBlocksLayer) { window._tcBlocksLayer.remove(); window._tcBlocksLayer = null; }
+  const areas = tcLoad();
+  if (!areas.length) return;
+  window._tcBlocksLayer = L.layerGroup();
+  areas.forEach(area => {
+    if (!area.polygon || area.polygon.length < 3) return;
+    const cared = area.careEvents && area.careEvents.length > 0;
+    const color = cared ? '#2e8b57' : '#4a7c59';
+    const poly = L.polygon(area.polygon, { color: color, fillColor: color, fillOpacity: 0.18, weight: 2 });
+    poly.bindTooltip('<strong>' + area.name + '</strong>', { sticky: true });
+    poly.addTo(window._tcBlocksLayer);
+  });
+  window._tcBlocksLayer.addTo(blocksMap);
+}
+
+// ── Progress (only counts areas with care events) ─────────────
+function tcUpdateProgress() {
+  const areas = tcLoad();
+  const total = areas.reduce((s, a) => s + (a.careEvents && a.careEvents.length ? (a.treeCount || 0) : 0), 0);
+  const pct = Math.min(100, Math.round((total / 1000) * 100));
+  const fillEl = document.getElementById('tc-progress-fill');
+  const textEl = document.getElementById('tc-progress-text');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (textEl) textEl.textContent = total + ' / 1,000 trees cared for';
+}
+
+// ── Draw mode on myblock-view right panel ─────────────────────
+let tcDrawMap = null;
+let tcDrawPoints = [];
+let tcDrawActive = false;
+let tcDrawPolyPreview = null;
+let tcDrawPolygon = null;       // finalized polygon
+let tcDrawDotsLayer = null;
+
+let tcDrawAreasLayer = null;
+let tcPanMode = false;
+
+function tcTogglePanMode() {
+  tcPanMode = !tcPanMode;
+  const btn = document.getElementById('tc-pan-toggle');
+  const hint = document.getElementById('tc-draw-hint');
+  if (tcPanMode) {
+    btn.textContent = '✏️ Draw Mode';
+    btn.style.background = 'var(--accent)';
+    btn.style.color = 'white';
+    btn.style.border = '1px solid var(--accent)';
+    if (tcDrawMap) { tcDrawMap.dragging.enable(); tcDrawMap.getContainer().style.cursor = 'grab'; }
+    if (hint) hint.textContent = 'Pan mode — drag to navigate. Click Draw Mode to draw again.';
+  } else {
+    btn.textContent = '🖐 Pan Mode';
+    btn.style.background = 'var(--bg3)';
+    btn.style.color = 'var(--text2)';
+    btn.style.border = '1px solid var(--border)';
+    if (tcDrawMap) { tcDrawMap.dragging.disable(); tcDrawMap.getContainer().style.cursor = 'crosshair'; }
+    if (hint) hint.textContent = 'Hold and drag on the map to draw a boundary.';
+  }
+}
+
+function tcRefreshDrawAreas() {
+  if (!tcDrawMap) return;
+  if (tcDrawAreasLayer) { tcDrawAreasLayer.remove(); tcDrawAreasLayer = null; }
+  const areas = tcLoad();
+  if (!areas.length) return;
+  tcDrawAreasLayer = L.layerGroup();
+  areas.forEach(area => {
+    if (!area.polygon || area.polygon.length < 3) return;
+    const cared = area.careEvents && area.careEvents.length > 0;
+    const color = cared ? '#2e8b57' : '#c47d1a';
+    L.polygon(area.polygon, {
+      color: color, fillColor: color, fillOpacity: 0.18, weight: 2.5,
+      dashArray: cared ? null : '6 4', interactive: false
+    }).addTo(tcDrawAreasLayer);
+  });
+  tcDrawAreasLayer.addTo(tcDrawMap);
+}
+
+function tcShowDrawMode() {
+  document.getElementById('tc-list-panel').style.display = 'none';
+  tcPanMode = true;
+  const panBtn = document.getElementById('tc-pan-toggle');
+  if (panBtn) { panBtn.textContent = '✏️ Draw Mode'; panBtn.style.background = 'var(--accent)'; panBtn.style.color = 'white'; panBtn.style.border = '1px solid var(--accent)'; }
+  document.getElementById('tc-draw-panel').style.display = 'flex';
+  document.getElementById('tc-save-btn').disabled = true;
+  document.getElementById('tc-save-btn').style.opacity = '0.4';
+  document.getElementById('tc-draw-hint').textContent = 'Pan to find your area, then click ✏️ Draw Mode to trace a boundary.';
+  document.getElementById('tc-draw-name').value = '';
+  document.getElementById('tc-draw-count').textContent = '';
+  tcDrawPolygon = null;
+
+  setTimeout(() => {
+    if (!tcDrawMap) {
+      tcDrawMap = L.map('tc-draw-map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© CARTO', maxZoom: 19
+      }).addTo(tcDrawMap);
+      tcDrawDotsLayer = L.layerGroup().addTo(tcDrawMap);
+      tcRefreshDrawDots();
+      tcSetupDrawInteraction();
+    }
+    // Apply current pan/draw state to map
+    if (tcPanMode) {
+      tcDrawMap.dragging.enable();
+      tcDrawMap.getContainer().style.cursor = 'grab';
+    } else {
+      tcDrawMap.dragging.disable();
+      tcDrawMap.getContainer().style.cursor = 'crosshair';
+    }
+    tcRefreshDrawAreas();
+    tcDrawMap.invalidateSize();
+  }, 80);
+}
+
+function tcRefreshDrawDots() {
+  if (!tcDrawDotsLayer) return;
+  tcDrawDotsLayer.clearLayers();
+  const pts = typeof filteredTrees !== 'undefined' ? filteredTrees : allTrees;
+  pts.forEach(t => {
+    const lat = parseFloat(t.latitude || t.lat), lng = parseFloat(t.longitude || t.lng);
+    if (!lat || !lng) return;
+    const pm = getPriorityMeta(t._priority || 0);
+    L.circleMarker([lat, lng], { radius: 4, fillColor: pm.color, color: pm.color,
+      fillOpacity: 0.75, weight: 0, interactive: false }).addTo(tcDrawDotsLayer);
+  });
+  // ESCR plantings with white ring
+  if (typeof plantingsGeocoded !== 'undefined') {
+    plantingsGeocoded.forEach(p => {
+      if (!p.lat || !p.lng) return;
+      const pseudoTree = { _isNewPlanting: true, health: '', tree_dbh: '3', nta_name: p.nta, address: (p.num||'') + ' ' + (p.street||'') };
+      const pm = getPriorityMeta(calcPriority(pseudoTree));
+      L.circleMarker([p.lat, p.lng], { radius: 6, fillColor: pm.color, color: '#fff',
+        fillOpacity: 0.95, weight: 2, interactive: false }).addTo(tcDrawDotsLayer);
+    });
+  }
+}
+
+function tcSetupDrawInteraction() {
+  const container = tcDrawMap.getContainer();
+  container.style.cursor = 'crosshair';
+
+  function getLL(e) {
+    const rect = container.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return tcDrawMap.containerPointToLatLng(L.point(x, y));
+  }
+
+  container.addEventListener('mousedown', function(e) {
+    if (tcPanMode) return;
+    if (e.target.closest && e.target.closest('.leaflet-control')) return;
+    tcDrawActive = true; tcDrawPoints = [];
+    if (tcDrawPolyPreview) { tcDrawPolyPreview.remove(); tcDrawPolyPreview = null; }
+    tcDrawMap.dragging.disable();
+    const ll = getLL(e); tcDrawPoints.push([ll.lat, ll.lng]);
+  });
+  container.addEventListener('mousemove', function(e) {
+    if (tcPanMode || !tcDrawActive) return;
+    const ll = getLL(e); tcDrawPoints.push([ll.lat, ll.lng]);
+    if (tcDrawPolyPreview) tcDrawPolyPreview.remove();
+    if (tcDrawPoints.length > 2)
+      tcDrawPolyPreview = L.polygon(tcDrawPoints, { color:'#4a7c59', fillColor:'#4a7c59', fillOpacity:0.2, weight:2, dashArray:'4 3' }).addTo(tcDrawMap);
+  });
+  container.addEventListener('mouseup', function() {
+    if (!tcDrawActive) return;
+    tcDrawActive = false; tcDrawMap.dragging.enable();
+    tcFinalizeDrawing();
+  });
+  container.addEventListener('touchstart', function(e) { if(tcPanMode) return; e.preventDefault(); tcDrawActive=true; tcDrawPoints=[];
+    if(tcDrawPolyPreview){tcDrawPolyPreview.remove();tcDrawPolyPreview=null;} tcDrawMap.dragging.disable();
+    const ll=getLL(e); tcDrawPoints.push([ll.lat,ll.lng]); },{passive:false});
+  container.addEventListener('touchmove', function(e) { if(tcPanMode||!tcDrawActive) return; e.preventDefault();
+    const ll=getLL(e); tcDrawPoints.push([ll.lat,ll.lng]);
+    if(tcDrawPolyPreview)tcDrawPolyPreview.remove();
+    if(tcDrawPoints.length>2) tcDrawPolyPreview=L.polygon(tcDrawPoints,{color:'#4a7c59',fillColor:'#4a7c59',fillOpacity:0.2,weight:2}).addTo(tcDrawMap);
+  },{passive:false});
+  container.addEventListener('touchend', function() { if(!tcDrawActive)return; tcDrawActive=false; tcDrawMap.dragging.enable(); tcFinalizeDrawing(); });
+}
+
+function tcFinalizeDrawing() {
+  const simplified = tcSimplify(tcDrawPoints);
+  tcDrawPolygon = simplified.length >= 3 ? simplified : null;
+  if (tcDrawPolyPreview) { tcDrawPolyPreview.remove(); tcDrawPolyPreview = null; }
+  if (tcDrawPolygon) {
+    tcDrawPolyPreview = L.polygon(tcDrawPolygon, { color:'#4a7c59', fillColor:'#4a7c59', fillOpacity:0.2, weight:2.5 }).addTo(tcDrawMap);
+    const count = tcCountTrees(tcDrawPolygon);
+    const hint = document.getElementById('tc-draw-hint');
+    const saveBtn = document.getElementById('tc-save-btn');
+    const countEl = document.getElementById('tc-draw-count');
+    if (hint) hint.textContent = '✅ ' + count + ' trees inside. Enter a name and save.';
+    if (countEl) countEl.textContent = count + ' trees';
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+  }
+}
+
+function tcHideDrawMode() {
+  document.getElementById('tc-draw-panel').style.display = 'none';
+  document.getElementById('tc-list-panel').style.display = 'flex';
+}
+
+async function tcSaveArea() {
+  const nameEl = document.getElementById('tc-draw-name');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) { if (nameEl) { nameEl.style.borderColor = 'var(--danger)'; nameEl.focus(); } return; }
+  if (!tcDrawPolygon || tcDrawPolygon.length < 3) { alert('Please draw an area first.'); return; }
+  const area = {
+    id: 'tc_' + Date.now(),
+    name: name,
+    polygon: tcDrawPolygon,
+    treeCount: tcCountTrees(tcDrawPolygon),
+    createdAt: new Date().toISOString(),
+    status: 'watching',
+    careEvents: []
+  };
+  await tcUpsert(area);
+  tcHideDrawMode();
+  renderClaimedBlocksSidebar();
+  tcSelectArea(area.id);
+  tcRenderMain();
+  tcRenderBlocksMap();
+  tcUpdateProgress();
+}
+
+// ── Sidebar ───────────────────────────────────────────────────
+let tcSelectedId = null;
+
+function renderClaimedBlocksSidebar() {
+  const areas = tcLoad();
+  const emptyEl = document.getElementById('myblock-empty');
+  const listEl  = document.getElementById('claimed-blocks-list');
+  if (!listEl) return;
+
+  const navBtn = document.getElementById('myblock-nav-btn');
+  if (navBtn) navBtn.innerHTML = areas.length
+    ? '🌿 Tree Care <span class="badge">' + areas.length + '</span>'
+    : '🌿 Tree Care';
+
+  if (!areas.length) {
+    if (emptyEl) emptyEl.style.display = 'flex';
+    listEl.style.display = 'none';
+    listEl.innerHTML = '';
+    tcShowNoSelection();
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+  listEl.innerHTML = '';
+
+  areas.forEach(area => {
+    const isSelected = area.id === tcSelectedId;
+    const cared = area.careEvents && area.careEvents.length > 0;
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;' +
+      'background:' + (isSelected ? 'var(--bg4)' : 'transparent') + ';' +
+      'border-left:' + (isSelected ? '3px solid var(--accent)' : '3px solid transparent');
+    row.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
+            '<span style="font-size:10px">' + (cared ? '✅' : '⏳') + '</span>' +
+            '<div style="font-size:12px;font-weight:700;color:var(--text);font-family:\'Lora\',serif;' +
+              'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + area.name + '</div>' +
+          '</div>' +
+          '<div style="font-size:10px;color:var(--text3)">' + area.treeCount + ' trees' +
+            (cared ? ' · ' + area.careEvents.length + ' care event' + (area.careEvents.length > 1 ? 's' : '') : ' · watching') +
+          '</div>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();tcConfirmRemove(\'' + area.id + '\')" ' +
+          'style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);padding:1px 3px;flex-shrink:0">✕</button>' +
+      '</div>';
+    row.onclick = () => tcSelectArea(area.id);
+    listEl.appendChild(row);
+  });
+  tcUpdateProgress();
+}
+
+function tcShowNoSelection() {
+  const noSel = document.getElementById('myblock-no-selection');
+  const content = document.getElementById('myblock-dashboard-content');
+  if (noSel) noSel.style.display = 'flex';
+  if (content) content.style.display = 'none';
+}
+
+function tcSelectArea(id) {
+  tcSelectedId = id;
+  renderClaimedBlocksSidebar();
+  tcOpenDashboard(id);
+}
+
+async function tcConfirmRemove(id) {
+  const area = tcGet(id);
+  if (!area) return;
+  await tcRemove(id);
+  if (tcSelectedId === id) { tcSelectedId = null; tcShowNoSelection(); }
+  renderClaimedBlocksSidebar();
+  tcRenderMain();
+  tcRenderBlocksMap();
+  tcUpdateProgress();
+}
+
+// ── Care events ───────────────────────────────────────────────
+const TC_ACTIVITIES = [
+  { id: 'litter',   emoji: '🗑',  label: 'Clearing litter' },
+  { id: 'weeding',  emoji: '🌿',  label: 'Weeding' },
+  { id: 'aeration', emoji: '⛏',  label: 'Soil aeration' },
+  { id: 'compost',  emoji: '🪣',  label: 'Compost / mulch' },
+  { id: 'watering', emoji: '💧',  label: 'Watering' },
+  { id: 'planting', emoji: '🌱',  label: 'Planting' },
+  { id: 'pruning',  emoji: '✂️',  label: 'Pruning' },
+];
+
+function tcLogCare(id) {
+  const area = tcGet(id);
+  if (!area) return;
+  const content = document.getElementById('myblock-dashboard-content');
+  if (!content) return;
+  const existing = document.getElementById('tc-inline-log');
+  if (existing) { existing.querySelector('input') && existing.querySelector('input').focus(); return; }
+
+  const checkboxes = TC_ACTIVITIES.map(a =>
+    `<label style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:12px;background:var(--bg);user-select:none">
+      <input type="checkbox" id="tc-act-${a.id}" value="${a.id}" style="accent-color:var(--accent);width:14px;height:14px">
+      <span>${a.emoji} ${a.label}</span>
+    </label>`
+  ).join('');
+
+  const form = document.createElement('div');
+  form.id = 'tc-inline-log';
+  form.style.cssText = 'background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:16px;margin-bottom:16px';
+  form.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Log Care Activities</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' + checkboxes + '</div>' +
+    '<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Note (optional — any deviation for specific trees, etc.)</div>' +
+    '<textarea id="tc-log-note" rows="2" placeholder="e.g. watered all except 3 trees near corner (dry soil), litter heavy on south end" ' +
+      'style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg);color:var(--text);font-family:\'Nunito\',sans-serif;resize:vertical;outline:none"></textarea>' +
+    '<div style="display:flex;gap:8px;margin-top:10px">' +
+      '<button onclick="tcLogCareSubmit(\'' + id + '\')" ' +
+        'style="flex:1;padding:9px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✅ Save Care Event</button>' +
+      '<button onclick="document.getElementById(\'tc-inline-log\').remove()" ' +
+        'style="padding:9px 14px;background:var(--bg4);color:var(--text2);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Cancel</button>' +
+    '</div>';
+
+  content.insertBefore(form, content.firstChild);
+}
+
+async function tcLogCareSubmit(id) {
+  const note = (document.getElementById('tc-log-note') || {}).value?.trim() || '';
+  const selected = TC_ACTIVITIES.map(a => a.id).filter(actId => {
+    const el = document.getElementById('tc-act-' + actId);
+    return el && el.checked;
+  });
+  const area = tcGet(id);
+  if (!area) return;
+
+  const event = { date: new Date().toISOString(), activities: selected, note };
+
+  if (TC_SHEETS_URL) {
+    const result = await tcSheetsPost({ action: 'addCareEvent', areaId: id, event });
+    if (result && result.area) {
+      tcMergeServerData(tcLoad().map(a => a.id === result.area.id ? result.area : a));
+    } else {
+      if (!area.careEvents) area.careEvents = [];
+      area.careEvents.push(event);
+      await tcUpsert(area);
+    }
+  } else {
+    if (!area.careEvents) area.careEvents = [];
+    area.careEvents.push(event);
+    await tcUpsert(area);
+  }
+
+  const form = document.getElementById('tc-inline-log');
+  if (form) form.remove();
+  renderClaimedBlocksSidebar();
+  tcOpenDashboard(id);
+  tcRenderMain();
+  tcRenderBlocksMap();
+  tcUpdateProgress();
+  updateStats();
+}
+
+async function tcDeleteCareEvent(areaId, eventIdx) {
+  const area = tcGet(areaId);
+  if (!area || !area.careEvents) return;
+
+  if (TC_SHEETS_URL) {
+    const ev = area.careEvents[eventIdx];
+    const serverId = ev && ev._serverId;
+    if (serverId) {
+      const result = await tcSheetsPost({ action: 'deleteCareEvent', areaId, serverId });
+      if (result && result.area) {
+        tcMergeServerData(tcLoad().map(a => a.id === result.area.id ? result.area : a));
+      } else {
+        area.careEvents.splice(eventIdx, 1);
+        await tcUpsert(area);
+      }
+    } else {
+      area.careEvents.splice(eventIdx, 1);
+      await tcUpsert(area);
+    }
+  } else {
+    area.careEvents.splice(eventIdx, 1);
+    await tcUpsert(area);
+  }
+
+  renderClaimedBlocksSidebar();
+  tcOpenDashboard(areaId);
+  tcRenderMain();
+  tcUpdateProgress();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+function tcOpenDashboard(id) {
+  const area = tcGet(id);
+  if (!area) return;
+  const noSel = document.getElementById('myblock-no-selection');
+  const content = document.getElementById('myblock-dashboard-content');
+  if (noSel) noSel.style.display = 'none';
+  if (!content) return;
+  content.style.display = 'block';
+
+  const cared = area.careEvents && area.careEvents.length > 0;
+  const statusColor = cared ? '#2e8b57' : '#c47d1a';
+  const statusLabel = cared ? '✅ Care Logged' : '⏳ Watching — no care logged yet';
+
+  // Aggregate activity counts for this area
+  const actCounts = {};
+  TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; });
+  (area.careEvents || []).forEach(ev => {
+    (ev.activities || []).forEach(a => { if (actCounts[a] !== undefined) actCounts[a]++; });
+  });
+  const hasAnyAct = Object.values(actCounts).some(v => v > 0);
+
+  // Activity summary strip
+  const actSummary = hasAnyAct
+    ? TC_ACTIVITIES.filter(a => actCounts[a.id] > 0).map(a =>
+        '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);' +
+        'border-radius:20px;padding:3px 9px;font-size:11px;white-space:nowrap">' +
+        a.emoji + ' ' + a.label + ' <strong>×' + actCounts[a.id] + '</strong></span>'
+      ).join(' ')
+    : '';
+
+  // Build care event rows
+  const careRows = (area.careEvents || []).map((ev, i) => {
+    const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    const badges = (ev.activities || []).map(aid => {
+      const a = TC_ACTIVITIES.find(x => x.id === aid);
+      return a ? '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--bg3);' +
+        'border:1px solid var(--border);border-radius:12px;padding:2px 7px;font-size:10px">' +
+        a.emoji + ' ' + a.label + '</span>' : '';
+    }).join(' ');
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text)">Visit ' + (i+1) + ' · ' + d + '</div>' +
+        '<button onclick="tcDeleteCareEvent(\'' + area.id + '\',' + i + ')" ' +
+          'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px">🗑</button>' +
+      '</div>' +
+      (badges ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">' + badges + '</div>' : '') +
+      (ev.note ? '<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">📝 ' + ev.note + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  content.innerHTML =
+    // Header
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px">' +
+      '<div>' +
+        '<h2 style="font-family:\'Lora\',serif;font-size:19px;font-weight:700;margin-bottom:4px">' + area.name + '</h2>' +
+        '<div style="font-size:11px;color:var(--text3)">Added ' +
+          new Date(area.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) +
+          ' · ' + area.treeCount + ' trees</div>' +
+      '</div>' +
+      '<button onclick="tcConfirmRemove(\'' + area.id + '\')" ' +
+        'style="padding:6px 12px;background:var(--bg3);color:var(--danger);border:1px solid var(--danger);' +
+        'border-radius:7px;font-size:11px;font-weight:600;cursor:pointer">🗑 Remove</button>' +
+    '</div>' +
+
+    // Status card
+    '<div style="background:var(--bg2);border:1px solid var(--border);border-left:4px solid ' + statusColor + ';' +
+      'border-radius:8px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+      '<div>' +
+        '<div style="font-size:12px;font-weight:700;color:' + statusColor + ';margin-bottom:2px">' + statusLabel + '</div>' +
+        '<div style="font-size:11px;color:var(--text3)">' +
+          (cared ? 'These ' + area.treeCount + ' trees count toward the 1,000-tree goal.'
+                 : 'Log a care event to count these ' + area.treeCount + ' trees toward the goal.') +
+        '</div>' +
+      '</div>' +
+      '<div style="text-align:center;flex-shrink:0">' +
+        '<div style="font-family:\'Lora\',serif;font-size:32px;font-weight:700;color:var(--accent)">' + area.treeCount + '</div>' +
+        '<div style="font-size:10px;color:var(--text3)">trees</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Activity summary for this area
+    (hasAnyAct
+      ? '<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;' +
+        'letter-spacing:0.06em;margin-bottom:6px">Activities done here</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:5px">' + actSummary + '</div></div>'
+      : '') +
+
+    // Log care button
+    '<button onclick="tcLogCare(\'' + area.id + '\')" ' +
+      'style="width:100%;padding:11px;background:var(--accent);color:white;border:none;border-radius:8px;' +
+      'font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif;margin-bottom:16px">' +
+      '🌱 Log Care Event</button>' +
+
+    // Care log
+    (cared
+      ? '<div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">Care Log</div>' +
+        '<div>' + careRows + '</div>'
+      : '<div style="background:var(--bg3);border-radius:8px;padding:16px;text-align:center;color:var(--text3);font-size:12px;line-height:1.6">' +
+        'No care events yet. Log care to count these trees toward the 1,000-tree goal.</div>');
+}
+
+// ── openClaimWizard = now shows draw panel in the view ────────
+function openClaimWizard() {
+  tcShowDrawMode();
+}
+function closeClaimWizard() {
+  tcHideDrawMode();
+}
+function closeLogCare() {
+  const modal = document.getElementById('log-care-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchViewById(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const viewEl = document.getElementById(view + '-view');
+  if (viewEl) viewEl.classList.add('active');
+  const navEl = document.getElementById(view + '-nav-btn');
+  if (navEl) navEl.classList.add('active');
+  if (view === 'myblock') renderClaimedBlocksSidebar();
+}
+
 
 // Scripts embedded inline
 
@@ -2110,10 +3121,24 @@ window.addEventListener('load', () => {
   applyFilters(false);
   document.getElementById('tree-count').textContent = allTrees.length.toLocaleString() + ' trees';
 
-  // Scripts are embedded — init immediately
   initMap();
-  updateMap(); // render markers now that map exists
+  updateMap();
+  renderPlantingsLayer();
+  const ptBtn = document.getElementById('plantings-toggle');
+  if (ptBtn) { ptBtn.classList.add('on'); ptBtn.textContent = `🌱 ${plantingsGeocoded.length} Plantings`; }
   updateStats();
+  tcUpdateProgress();
+  tcRenderMain();
+
+  // Sync with backend (if configured) — merges server state into localStorage,
+  // then refreshes all UI. Works silently; falls back to local data if offline.
+  tcInitSync().then(() => {
+    renderClaimedBlocksSidebar();
+    tcUpdateProgress();
+    tcRenderMain();
+    tcRenderBlocksMap();
+    updateStats();
+  });
 });
 </script>
 </body>
