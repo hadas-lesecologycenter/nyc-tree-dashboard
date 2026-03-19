@@ -2415,7 +2415,7 @@ function init() {
 // ── Google Sheets config ──────────────────────────────────────
 // Paste your Apps Script Web App URL here after setup.
 // Leave as '' to use localStorage only (no sharing).
-const TC_SHEETS_URL = 'https://script.google.com/a/macros/lesecologycenter.org/s/AKfycbwaJizSUtR2QqrHZWy8yQJQIxc7sfpWRNQg0KmaOWeg4HAr53a6vmi_vJEJgRzvm5rf/exec';
+const TC_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyHWdvS3QUeo2xYTGWZ7_ycjnAavdMhOqy4Q_axVZK6kbH2NX_efIGasF6bGi9KySX0/exec';
 
 // ── Sync helpers ──────────────────────────────────────────────
 function tcShowSyncStatus(msg, isError) {
@@ -2436,20 +2436,38 @@ function tcShowSyncStatus(msg, isError) {
   el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
 }
 
-// Send action to Apps Script via GET (avoids CORS preflight issues with Google Workspace)
-async function tcSheetsPost(body) {
-  if (!TC_SHEETS_URL) return null;
-  try {
-    // Encode payload as a query parameter — Apps Script doGet receives it via e.parameter.data
-    const url = TC_SHEETS_URL + '?data=' + encodeURIComponent(JSON.stringify(body));
-    const res = await fetch(url, { redirect: 'follow' });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Server error');
-    return data;
-  } catch(e) {
-    console.warn('Sheets sync error:', e.message);
-    return null;
-  }
+// Send action to Apps Script via JSONP — bypasses CORS entirely,
+// works even with Google Workspace domain restrictions.
+function tcSheetsPost(body) {
+  if (!TC_SHEETS_URL) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const cbName = '_tc_cb_' + Date.now();
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      console.warn('Sheets sync timeout');
+      resolve(null);
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data) {
+      cleanup();
+      if (data && data.ok) resolve(data);
+      else { console.warn('Sheets error:', data && data.error); resolve(null); }
+    };
+
+    const url = TC_SHEETS_URL +
+      '?callback=' + cbName +
+      '&data='     + encodeURIComponent(JSON.stringify(body));
+    script.src = url;
+    script.onerror = () => { cleanup(); resolve(null); };
+    document.head.appendChild(script);
+  });
 }
 
 // Merge server areas into localStorage (server is source of truth)
