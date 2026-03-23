@@ -1577,7 +1577,7 @@ function updateMap() {
         <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
           <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} Priority · ${tree._priority}/100</span>
+          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} Priority · ${tree._priority}/6</span>
         </div>
 
       </div>
@@ -1835,7 +1835,7 @@ function showPriorityDetail(tree) {
         </div>
       </div>
       <div class="detail-priority-row">
-        <div class="detail-score" style="background:${pm.bg};color:${pm.color}">${tree._priority}/100</div>
+        <div class="detail-score" style="background:${pm.bg};color:${pm.color}">${tree._priority}/6</div>
         <div>
           <div style="font-weight:700;color:${pm.color}">${pm.label} Priority</div>
           <div class="detail-score-label">Care urgency score</div>
