@@ -1057,7 +1057,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
     </div>
     <div class="charts-grid">
-      <div class="chart-card full"><div class="chart-title">Care Activities by Type</div><div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div></div>
+      <div class="chart-card full"><div class="chart-title">Care Activities by Type (trees reached, all time)</div><div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div></div>
+      <div class="chart-card" style="flex:1.6;min-width:260px">
+        <div class="chart-title">Trees Cared For — by Month</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="monthly-trees-chart"></canvas></div>
+      </div>
+      <div class="chart-card" style="flex:1;min-width:220px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="chart-title" style="margin:0">Activity Mix</span>
+          <select id="monthly-pie-month" onchange="updateStats()"
+            style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;cursor:pointer"></select>
+        </div>
+        <div class="chart-wrap" style="height:200px"><canvas id="monthly-activities-chart"></canvas></div>
+      </div>
       <div class="chart-card full"><div class="chart-title">Top 10 Species in CB3 Area</div><div class="chart-wrap" style="height:260px"><canvas id="species-chart"></canvas></div></div>
     </div>
   </div>
@@ -1096,8 +1108,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:4px">🌿 Tree Care</h2>
-          <p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px">Draw an area on the map to claim the trees you steward.</p>
-          <button onclick="openClaimWizard()" style="width:100%;padding:9px 14px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">+ Claim a Block</button>
+          <p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px">Track stewardship across your blocks — or log care for any address.</p>
+          <div style="display:flex;gap:8px">
+            <button onclick="openClaimWizard()" style="flex:1;padding:9px 10px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">+ Claim a Block</button>
+            <button onclick="tcShowAddressMode()" style="flex:1;padding:9px 10px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">📍 Log by Address</button>
+          </div>
         </div>
         <div style="margin:10px 16px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0">
           <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">🎯 Goal: 1,000 Trees</div>
@@ -1141,6 +1156,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </div>
           </div>
           <div id="tc-draw-map" style="flex:1;min-height:0"></div>
+
+          <!-- Outside-CB3 confirmation bar — shown after fetch, hidden otherwise -->
+          <div id="tc-outside-confirm" style="display:none;padding:12px 16px;background:#fdf3e3;border-top:2px solid #c47d1a;flex-shrink:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+              <div>
+                <div id="tc-outside-msg" style="font-size:12px;font-weight:700;color:#5a3e10;margin-bottom:2px"></div>
+                <div style="font-size:11px;color:#7a5a20">Do the dots look right? Redraw to adjust, or confirm to continue.</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0">
+                <button onclick="tcOutsideRedraw()"
+                  style="padding:7px 14px;background:white;color:#c47d1a;border:1px solid #c47d1a;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">
+                  ↩ Redraw</button>
+                <button onclick="tcOutsideConfirm()"
+                  style="padding:7px 14px;background:#2e8b57;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">
+                  ✓ Looks good</button>
+              </div>
+            </div>
+          </div>
+
           <div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0">
             <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
               <input id="tc-draw-name" type="text" placeholder="Area name (e.g. Delancey & Essex)"
@@ -1150,6 +1184,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button id="tc-save-btn" onclick="tcSaveArea()" disabled
               style="width:100%;padding:10px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;opacity:0.4">
               🌿 Claim This Area</button>
+          </div>
+        </div>
+
+        <!-- ADDRESS PANEL — log care by address, no drawing needed -->
+        <div id="tc-address-panel" style="flex:1;display:none;flex-direction:column;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+            <div>
+              <div style="font-family:'Lora',serif;font-size:15px;font-weight:700">Log by Address</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">For trees outside your drawn areas.</div>
+            </div>
+            <button onclick="tcHideAddressMode()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:20px">
+            <div style="margin-bottom:14px">
+              <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Address or block name</label>
+              <input id="tc-addr-name" type="text" placeholder="e.g. 243 Henry St, or E 7th &amp; Ave C"
+                style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:'Nunito',sans-serif;box-sizing:border-box">
+            </div>
+            <div style="margin-bottom:14px">
+              <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Number of trees</label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <input id="tc-addr-count" type="number" min="1" value="1" placeholder="1"
+                  style="width:100px;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:'Nunito',sans-serif">
+                <span style="font-size:12px;color:var(--text3)">trees at this location</span>
+              </div>
+            </div>
+            <div style="margin-bottom:20px">
+              <label style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px">Note (optional)</label>
+              <textarea id="tc-addr-note" rows="2" placeholder="e.g. ESCR planting on corner, recently mulched"
+                style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--bg);color:var(--text);outline:none;font-family:'Nunito',sans-serif;resize:vertical"></textarea>
+            </div>
+            <div style="background:var(--bg3);border-radius:8px;padding:12px 14px;margin-bottom:20px;font-size:12px;color:var(--text2);line-height:1.6">
+              💡 This creates a named area with the tree count you enter. You can log care events and activities against it just like any drawn area — and it counts toward the 1,000-tree goal.
+            </div>
+            <button onclick="tcSaveAddressArea()"
+              style="width:100%;padding:11px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+              📍 Add This Location</button>
           </div>
         </div>
 
@@ -1571,15 +1642,21 @@ function updateMap() {
     });
 
     const m = L.marker([lat, lng], { icon });
+    const treeKey = 'tree_' + (tree.tree_id || (lat + '_' + lng));
     m.bindPopup(`
-      <div style="font-family:'Nunito',sans-serif;min-width:200px">
+      <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
         <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
         <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} Priority · ${tree._priority}/100</span>
+          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 6</span>
         </div>
-
+        <div id="popup-log-${treeKey}">
+          <button onclick="tcPopupLogCare('${treeKey}','${(tree.spc_common||'Unknown').replace(/'/g,"\\'")}','${(tree.address||'').replace(/'/g,"\\'")}','${tree.tree_id||''}')"
+            style="width:100%;padding:7px;background:var(--accent,#2e8b57);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+            🌱 Log Care
+          </button>
+        </div>
       </div>
     `);
     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
@@ -1635,6 +1712,8 @@ function togglePrioritySidebar() {
 })();
 
 let activitiesChart = null;
+let monthlyTreesChart = null;
+let monthlyActivitiesChart = null;
 
 function updateStats() {
   const trees = filteredTrees;
@@ -1660,8 +1739,12 @@ function updateStats() {
   document.getElementById('s-poor').textContent = (byHealth.Poor||0).toLocaleString();
   document.getElementById('s-avg').textContent = total ? Math.round(totalPriority/total) : 0;
 
-  // Goal progress (tree count, not activity count)
-  const goalTotal = tcAreas.reduce((s, a) => s + (a.careEvents && a.careEvents.length ? (a.treeCount || 0) : 0), 0);
+  // Goal progress — use max event tree count per area (same logic as tcUpdateProgress)
+  const goalTotal = tcAreas.reduce((s, a) => {
+    if (!a.careEvents || !a.careEvents.length) return s;
+    const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
+    return s + maxCount;
+  }, 0);
   const goalPct = Math.min(100, Math.round((goalTotal / 1000) * 100));
   const fillEl = document.getElementById('s-goal-fill');
   const textEl = document.getElementById('s-goal-text');
@@ -1673,34 +1756,59 @@ function updateStats() {
       (tcAreas.filter(a => a.careEvents && a.careEvents.length).length !== 1 ? 's' : '') + ' with care logged'
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
 
-  // ── Care activities by type ──────────────────────────────────
-  // Count trees reached per activity type (area.treeCount per area, once per activity)
-  const actCounts = {};
-  const actLocations = {};   // actId → [{name, trees}, ...]
-  TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; actLocations[a.id] = []; });
+  // ── Build unified data structure for all charts ───────────────
+  // For each care event, use its effective tree count (override or area default).
+  // Each activity is counted once per area per month (deduped by taking the max
+  // tree count seen for that activity in that month for that area).
+  const byMonth  = {};  // { 'YYYY-MM': { actId: trees } }
+  const allTime  = {};  // { actId: trees }
+  const allTimeLocations = {}; // { actId: [{name, trees}] }
+  TC_ACTIVITIES.forEach(a => { allTime[a.id] = 0; allTimeLocations[a.id] = []; });
+
   tcAreas.forEach(area => {
-    const trees = area.treeCount || 0;
-    const seen = new Set();  // count each activity once per area (not per event)
+    // Per-month: track max tree count seen per actId for this area
+    const maxPerMonthAct = {}; // { 'YYYY-MM|actId': maxCount }
+    const maxAllTimeAct  = {}; // { actId: maxCount }
+
     (area.careEvents || []).forEach(ev => {
+      const month      = (ev.date || '').slice(0, 7);
+      if (!month) return;
+      const evCount = tcEventTreeCount(area, ev);
+
       (ev.activities || []).forEach(aid => {
-        if (actCounts[aid] !== undefined && !seen.has(aid)) {
-          actCounts[aid] += trees;
-          actLocations[aid].push({ name: area.name, trees });
-          seen.add(aid);
-        }
+        // Per-month max
+        const mKey = month + '|' + aid;
+        maxPerMonthAct[mKey] = Math.max(maxPerMonthAct[mKey] || 0, evCount);
+        // All-time max
+        maxAllTimeAct[aid] = Math.max(maxAllTimeAct[aid] || 0, evCount);
       });
+    });
+
+    // Commit per-month maxes to byMonth
+    Object.entries(maxPerMonthAct).forEach(([mKey, count]) => {
+      const [month, aid] = mKey.split('|');
+      if (!byMonth[month]) byMonth[month] = {};
+      byMonth[month][aid] = (byMonth[month][aid] || 0) + count;
+    });
+
+    // Commit all-time maxes
+    Object.entries(maxAllTimeAct).forEach(([aid, count]) => {
+      if (allTime[aid] !== undefined) {
+        allTime[aid] += count;
+        allTimeLocations[aid].push({ name: area.name, trees: count });
+      }
     });
   });
 
+  // ── All-time activities bar chart ─────────────────────────────
   const actCtx = document.getElementById('activities-chart');
   if (actCtx) {
     if (activitiesChart) activitiesChart.destroy();
-    const labels = TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label);
-    const data   = TC_ACTIVITIES.map(a => actCounts[a.id]);
+    const labels  = TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label);
+    const data    = TC_ACTIVITIES.map(a => allTime[a.id]);
     const hasData = data.some(v => v > 0);
 
     if (!hasData) {
-      // No data yet — show placeholder message
       const ctx = actCtx.getContext('2d');
       ctx.clearRect(0, 0, actCtx.width, actCtx.height);
       ctx.fillStyle = '#9c9080';
@@ -1713,12 +1821,8 @@ function updateStats() {
         type: 'bar',
         data: {
           labels,
-          datasets: [{
-            data,
-            backgroundColor: palette.map(c => c + 'cc'),
-            borderColor: palette,
-            borderWidth: 2, borderRadius: 4
-          }]
+          datasets: [{ data, backgroundColor: palette.map(c => c + 'cc'),
+            borderColor: palette, borderWidth: 2, borderRadius: 4 }]
         },
         options: {
           indexAxis: 'y',
@@ -1726,14 +1830,10 @@ function updateStats() {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: function(ctx) {
-                  return ' ' + ctx.parsed.x.toLocaleString() + ' trees';
-                },
-                afterLabel: function(ctx) {
-                  const aid = TC_ACTIVITIES[ctx.dataIndex].id;
-                  const locs = actLocations[aid];
-                  if (!locs.length) return '';
-                  return locs.map(l => '  ' + l.name + ' (' + l.trees + ' trees)').join('\n');
+                label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' trees',
+                afterLabel: ctx => {
+                  const locs = allTimeLocations[TC_ACTIVITIES[ctx.dataIndex].id];
+                  return locs.length ? locs.map(l => '  ' + l.name + ' (' + l.trees + ')').join('\n') : '';
                 }
               }
             }
@@ -1741,6 +1841,123 @@ function updateStats() {
           scales: {
             x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' }, beginAtZero: true, precision: 0 },
             y: { ticks: { color: '#2c2a24', font: { size: 11, family: 'Nunito' } }, grid: { display: false } }
+          },
+          maintainAspectRatio: false
+        }
+      });
+    }
+  }
+
+  // ── Monthly trees bar chart ───────────────────────────────────
+  // Per month per area: use the max tree count seen across all events that month.
+  const monthlyTreeTotals = {}; // { 'YYYY-MM': trees }
+  tcAreas.forEach(area => {
+    const maxPerMonth = {}; // { 'YYYY-MM': maxCount }
+    (area.careEvents || []).forEach(ev => {
+      const month = (ev.date || '').slice(0, 7);
+      if (!month) return;
+      const evCount = tcEventTreeCount(area, ev);
+      maxPerMonth[month] = Math.max(maxPerMonth[month] || 0, evCount);
+    });
+    Object.entries(maxPerMonth).forEach(([month, count]) => {
+      monthlyTreeTotals[month] = (monthlyTreeTotals[month] || 0) + count;
+    });
+  });
+
+  const sortedMonths = Object.keys(monthlyTreeTotals).sort();
+
+  const mtCtx = document.getElementById('monthly-trees-chart');
+  if (mtCtx) {
+    if (monthlyTreesChart) monthlyTreesChart.destroy();
+    if (!sortedMonths.length) {
+      const ctx = mtCtx.getContext('2d');
+      ctx.clearRect(0, 0, mtCtx.width, mtCtx.height);
+      ctx.fillStyle = '#9c9080'; ctx.font = '13px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data yet', mtCtx.offsetWidth / 2, 60);
+    } else {
+      const monthLabels = sortedMonths.map(m => {
+        const [y, mo] = m.split('-');
+        return new Date(+y, +mo - 1, 1).toLocaleString('en-US', { month: 'short', year: '2-digit' });
+      });
+      monthlyTreesChart = new Chart(mtCtx.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: monthLabels,
+          datasets: [{
+            data: sortedMonths.map(m => monthlyTreeTotals[m]),
+            backgroundColor: '#4a7c59cc',
+            borderColor: '#2e8b57',
+            borderWidth: 2, borderRadius: 4
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' trees' } }
+          },
+          scales: {
+            x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' }, beginAtZero: true, precision: 0 }
+          },
+          maintainAspectRatio: false
+        }
+      });
+    }
+  }
+
+  // ── Monthly activity pie chart ────────────────────────────────
+  // Populate month selector dropdown
+  const monthSel = document.getElementById('monthly-pie-month');
+  if (monthSel) {
+    const prevVal = monthSel.value;
+    monthSel.innerHTML = '';
+    if (!sortedMonths.length) {
+      const opt = document.createElement('option'); opt.textContent = 'No data'; monthSel.appendChild(opt);
+    } else {
+      sortedMonths.slice().reverse().forEach(m => {
+        const opt = document.createElement('option');
+        const [y, mo] = m.split('-');
+        opt.value = m;
+        opt.textContent = new Date(+y, +mo - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        monthSel.appendChild(opt);
+      });
+      // Keep previous selection if still valid, else default to most recent
+      if (prevVal && sortedMonths.includes(prevVal)) monthSel.value = prevVal;
+      else monthSel.value = sortedMonths[sortedMonths.length - 1];
+    }
+  }
+
+  const maCtx = document.getElementById('monthly-activities-chart');
+  if (maCtx) {
+    if (monthlyActivitiesChart) monthlyActivitiesChart.destroy();
+    const selectedMonth = monthSel ? monthSel.value : '';
+    const monthData     = selectedMonth && byMonth[selectedMonth] ? byMonth[selectedMonth] : {};
+    const pieData       = TC_ACTIVITIES.map(a => monthData[a.id] || 0);
+    const pieHasData    = pieData.some(v => v > 0);
+    const palette       = ['#e67e22','#2e8b57','#8B4513','#4a7c59','#2980b9','#1a5c38','#c47d1a'];
+
+    if (!pieHasData) {
+      const ctx = maCtx.getContext('2d');
+      ctx.clearRect(0, 0, maCtx.width, maCtx.height);
+      ctx.fillStyle = '#9c9080'; ctx.font = '12px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No activities for this month', maCtx.offsetWidth / 2, 80);
+    } else {
+      monthlyActivitiesChart = new Chart(maCtx.getContext('2d'), {
+        type: 'pie',
+        data: {
+          labels: TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label),
+          datasets: [{
+            data: pieData,
+            backgroundColor: palette,
+            borderColor: '#fff',
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'right', labels: { color: '#2c2a24', font: { size: 10, family: 'Nunito' }, boxWidth: 12, padding: 8 } },
+            tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() + ' trees' } }
           },
           maintainAspectRatio: false
         }
@@ -1835,11 +2052,7 @@ function showPriorityDetail(tree) {
         </div>
       </div>
       <div class="detail-priority-row">
-        <div class="detail-score" style="background:${pm.bg};color:${pm.color}">${tree._priority}/100</div>
-        <div>
-          <div style="font-weight:700;color:${pm.color}">${pm.label} Priority</div>
-          <div class="detail-score-label">Care urgency score</div>
-        </div>
+        <div class="detail-score" style="background:${pm.bg};color:${pm.color}">${pm.label} / 6</div>
       </div>
     </div>
     <div class="detail-body">
@@ -2225,8 +2438,7 @@ function openTreeDetail(tree, dot) {
 
   // Priority badge
   document.getElementById('btp-badge').innerHTML = `
-    <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">${pm.label}</span>
-    <span style="font-size:13px;font-weight:700;margin-left:8px;color:${pm.color}">Tier ${tree._priority} / 6</span>
+    <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">${pm.label} / 6</span>
     ${isEscr ? '<span style="margin-left:8px;background:rgba(74,124,89,0.15);color:var(--accent);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600">🌱 ESCR</span>' : ''}
   `;
 
@@ -2234,7 +2446,6 @@ function openTreeDetail(tree, dot) {
   const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
   const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
   let breakdownHTML = `
-    <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Priority Tier ${bd.tier} / 6</div>
     <div style="margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
         <span style="font-size:18px">${bd.young ? '✅' : '⬜'}</span>
@@ -2302,12 +2513,10 @@ function openMapTreeDetail(tree) {
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
   document.getElementById('mtp-title').textContent = species;
   document.getElementById('mtp-badge').innerHTML =
-    '<span style="background:' + pm.color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + pm.label + '</span>' +
-    '<span style="font-size:13px;font-weight:700;margin-left:8px;color:' + pm.color + '">Tier ' + tree._priority + ' / 6</span>';
+    '<span style="background:' + pm.color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + pm.label + ' / 6</span>';
   const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
   const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
   document.getElementById('mtp-breakdown').innerHTML =
-    '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Priority Tier ' + bd.tier + ' / 6</div>' +
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
       '<span style="font-size:16px">' + (bd.young ? '✅' : '⬜') + '</span>' +
       '<div><div style="font-size:11px;font-weight:600;color:' + youngColor + '">🌱 Young / ESCR</div>' +
@@ -2511,6 +2720,83 @@ function tcLoad() {
 function tcSave(areas) { localStorage.setItem('tc_areas', JSON.stringify(areas)); }
 function tcGet(id) { return tcLoad().find(a => a.id === id) || null; }
 
+// ── Quick tree care log (from map popup, no named area) ────────
+function tcLoadTreeLogs() {
+  try { return JSON.parse(localStorage.getItem('tc_tree_logs') || '[]'); } catch(e) { return []; }
+}
+function tcSaveTreeLogs(logs) { localStorage.setItem('tc_tree_logs', JSON.stringify(logs)); }
+
+function tcPopupLogCare(treeKey, species, address, treeId) {
+  const container = document.getElementById('popup-log-' + treeKey);
+  if (!container) return;
+  const checks = TC_ACTIVITIES.map(a =>
+    `<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;background:#fff;user-select:none">
+      <input type="checkbox" data-act="${a.id}" style="accent-color:#2e8b57;width:13px;height:13px">
+      <span>${a.emoji} ${a.label}</span>
+    </label>`
+  ).join('');
+  container.innerHTML =
+    '<div style="font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Log Care Activities</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">' + checks + '</div>' +
+    '<textarea id="popup-note-' + treeKey + '" rows="2" placeholder="Optional note…" ' +
+      'style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Nunito,sans-serif;resize:none;margin-bottom:8px"></textarea>' +
+    '<div style="display:flex;gap:6px">' +
+      '<button onclick="tcPopupLogSubmit(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
+        'style="flex:1;padding:7px;background:#2e8b57;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✅ Save</button>' +
+      '<button onclick="tcPopupLogCancel(\'' + treeKey + '\')" ' +
+        'style="padding:7px 12px;background:#f5f0e8;color:#6b6456;border:1px solid #ddd;border-radius:6px;font-size:11px;cursor:pointer">Cancel</button>' +
+    '</div>';
+}
+
+function tcPopupLogCancel(treeKey) {
+  const container = document.getElementById('popup-log-' + treeKey);
+  if (!container) return;
+  container.innerHTML =
+    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'\',\'\',\'\')" ' +
+      'style="width:100%;padding:7px;background:#2e8b57;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">' +
+      '🌱 Log Care</button>';
+}
+
+async function tcPopupLogSubmit(treeKey, species, address, treeId) {
+  const container = document.getElementById('popup-log-' + treeKey);
+  if (!container) return;
+  const selected = Array.from(container.querySelectorAll('input[data-act]:checked')).map(el => el.dataset.act);
+  if (!selected.length) { alert('Please select at least one activity.'); return; }
+  const noteEl = document.getElementById('popup-note-' + treeKey);
+  const note = noteEl ? noteEl.value.trim() : '';
+  const log = {
+    id: 'tlog_' + Date.now(),
+    treeKey, treeId, species, address,
+    date: new Date().toISOString(),
+    activities: selected,
+    note,
+  };
+  // Save locally
+  const logs = tcLoadTreeLogs();
+  logs.push(log);
+  tcSaveTreeLogs(logs);
+  // Sync to Sheets if connected
+  if (TC_SHEETS_URL) {
+    tcSheetsPost({ action: 'logTreeCare', log }).catch(() => {});
+  }
+  // Update stats
+  tcUpdateProgress();
+  updateStats();
+  // Show confirmation in popup
+  container.innerHTML =
+    '<div style="text-align:center;padding:8px 0;color:#2e8b57;font-size:12px;font-weight:700">✅ Care logged!</div>' +
+    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
+      'style="width:100%;padding:6px;background:#f5f0e8;color:#2e8b57;border:1px solid #2e8b57;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">' +
+      '+ Log another visit</button>';
+}
+
+// Returns the effective tree count for a care event:
+// uses event-level override if set, otherwise falls back to area default.
+function tcEventTreeCount(area, event) {
+  if (event && typeof event.treeCountOverride === 'number') return event.treeCountOverride;
+  return area.treeCount || 0;
+}
+
 async function tcUpsert(area) {
   // Write to localStorage immediately (optimistic)
   const all = tcLoad();
@@ -2610,7 +2896,13 @@ function tcRenderBlocksMap() {
 // ── Progress (only counts areas with care events) ─────────────
 function tcUpdateProgress() {
   const areas = tcLoad();
-  const total = areas.reduce((s, a) => s + (a.careEvents && a.careEvents.length ? (a.treeCount || 0) : 0), 0);
+  // Use the max tree count seen across all events for each area
+  // (an area's contribution = highest treeCountOverride seen, or area default)
+  const total = areas.reduce((s, a) => {
+    if (!a.careEvents || !a.careEvents.length) return s;
+    const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
+    return s + maxCount;
+  }, 0);
   const pct = Math.min(100, Math.round((total / 1000) * 100));
   const fillEl = document.getElementById('tc-progress-fill');
   const textEl = document.getElementById('tc-progress-text');
@@ -2670,6 +2962,7 @@ function tcRefreshDrawAreas() {
 
 function tcShowDrawMode() {
   document.getElementById('tc-list-panel').style.display = 'none';
+  document.getElementById('tc-address-panel').style.display = 'none';
   tcPanMode = true;
   const panBtn = document.getElementById('tc-pan-toggle');
   if (panBtn) { panBtn.textContent = '✏️ Draw Mode'; panBtn.style.background = 'var(--accent)'; panBtn.style.color = 'white'; panBtn.style.border = '1px solid var(--accent)'; }
@@ -2680,6 +2973,12 @@ function tcShowDrawMode() {
   document.getElementById('tc-draw-name').value = '';
   document.getElementById('tc-draw-count').textContent = '';
   tcDrawPolygon = null;
+  tcDrawPoints  = [];
+  // Reset outside-CB3 state
+  tcOutsideTrees = [];
+  if (tcOutsideDotsLayer) { tcOutsideDotsLayer.remove(); tcOutsideDotsLayer = null; }
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  if (confirmBar) confirmBar.style.display = 'none';
 
   setTimeout(() => {
     if (!tcDrawMap) {
@@ -2691,7 +2990,6 @@ function tcShowDrawMode() {
       tcRefreshDrawDots();
       tcSetupDrawInteraction();
     }
-    // Apply current pan/draw state to map
     if (tcPanMode) {
       tcDrawMap.dragging.enable();
       tcDrawMap.getContainer().style.cursor = 'grab';
@@ -2700,6 +2998,8 @@ function tcShowDrawMode() {
       tcDrawMap.getContainer().style.cursor = 'crosshair';
     }
     tcRefreshDrawAreas();
+    // Also render any stored outside-CB3 trees from previously saved areas
+    tcRefreshOutsideTrees();
     tcDrawMap.invalidateSize();
   }, 80);
 }
@@ -2769,25 +3069,267 @@ function tcSetupDrawInteraction() {
   container.addEventListener('touchend', function() { if(!tcDrawActive)return; tcDrawActive=false; tcDrawMap.dragging.enable(); tcFinalizeDrawing(); });
 }
 
-function tcFinalizeDrawing() {
+// Show outside-CB3 trees from all saved areas as context dots on the draw map
+let tcSavedOutsideDotsLayer = null;
+function tcRefreshOutsideTrees() {
+  if (!tcDrawMap) return;
+  if (tcSavedOutsideDotsLayer) { tcSavedOutsideDotsLayer.remove(); tcSavedOutsideDotsLayer = null; }
+  const areas = tcLoad();
+  const allOutside = areas.flatMap(a => a.outsideTrees || []);
+  if (!allOutside.length) return;
+  tcSavedOutsideDotsLayer = L.layerGroup().addTo(tcDrawMap);
+  allOutside.forEach(t => {
+    const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
+    if (!lat || !lng) return;
+    const pm = getPriorityMeta(t._priority || 0);
+    L.circleMarker([lat, lng], {
+      radius: 5, fillColor: pm.color, color: '#fff',
+      fillOpacity: 0.9, weight: 1.5, interactive: false
+    }).addTo(tcSavedOutsideDotsLayer);
+  });
+}
+let tcOutsideTrees = [];
+let tcOutsideDotsLayer = null;
+
+async function tcFinalizeDrawing() {
   const simplified = tcSimplify(tcDrawPoints);
   tcDrawPolygon = simplified.length >= 3 ? simplified : null;
   if (tcDrawPolyPreview) { tcDrawPolyPreview.remove(); tcDrawPolyPreview = null; }
-  if (tcDrawPolygon) {
-    tcDrawPolyPreview = L.polygon(tcDrawPolygon, { color:'#4a7c59', fillColor:'#4a7c59', fillOpacity:0.2, weight:2.5 }).addTo(tcDrawMap);
-    const count = tcCountTrees(tcDrawPolygon);
-    const hint = document.getElementById('tc-draw-hint');
-    const saveBtn = document.getElementById('tc-save-btn');
-    const countEl = document.getElementById('tc-draw-count');
-    if (hint) hint.textContent = '✅ ' + count + ' trees inside. Enter a name and save.';
-    if (countEl) countEl.textContent = count + ' trees';
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+  if (!tcDrawPolygon) return;
+
+  tcDrawPolyPreview = L.polygon(tcDrawPolygon, {
+    color:'#4a7c59', fillColor:'#4a7c59', fillOpacity:0.2, weight:2.5
+  }).addTo(tcDrawMap);
+
+  const embeddedCount = tcCountTrees(tcDrawPolygon);
+
+  if (embeddedCount > 0) {
+    // Inside CB3 — normal flow
+    tcOutsideTrees = [];
+    _tcShowSaveBar(embeddedCount, false);
+  } else {
+    // Outside CB3 — fetch from NYC Open Data
+    _tcShowSaveBar(0, true, true); // show loading state
+    tcOutsideTrees = await tcFetchOutsideTrees(tcDrawPolygon);
+    _tcShowOutsideFetchedDots(tcOutsideTrees);
+    _tcShowOutsideConfirm(tcOutsideTrees.length);
+  }
+}
+
+function _tcShowSaveBar(count, isOutside, isLoading) {
+  const hint    = document.getElementById('tc-draw-hint');
+  const saveBtn = document.getElementById('tc-save-btn');
+  const countEl = document.getElementById('tc-draw-count');
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  if (confirmBar) confirmBar.style.display = 'none';
+
+  if (isLoading) {
+    if (hint)    hint.textContent = '⟳ Fetching trees from NYC Open Data…';
+    if (countEl) countEl.textContent = '';
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.4'; }
+    return;
+  }
+  const label = count === 1 ? '1 tree' : count + ' trees';
+  if (hint)    hint.textContent = '✅ ' + label + ' inside. Enter a name and save.';
+  if (countEl) countEl.textContent = label;
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+}
+
+function _tcShowOutsideFetchedDots(trees) {
+  // Clear previous outside dots
+  if (tcOutsideDotsLayer) { tcOutsideDotsLayer.remove(); tcOutsideDotsLayer = null; }
+  if (!tcDrawMap || !trees.length) return;
+  tcOutsideDotsLayer = L.layerGroup().addTo(tcDrawMap);
+  trees.forEach(t => {
+    const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
+    if (!lat || !lng) return;
+    const pm = getPriorityMeta(t._priority || calcPriority(t));
+    L.circleMarker([lat, lng], {
+      radius: 5, fillColor: pm.color, color: '#fff',
+      fillOpacity: 0.9, weight: 1.5, interactive: false
+    }).addTo(tcOutsideDotsLayer);
+  });
+}
+
+function _tcShowOutsideConfirm(count) {
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  const msg        = document.getElementById('tc-outside-msg');
+  const hint       = document.getElementById('tc-draw-hint');
+  const saveBtn    = document.getElementById('tc-save-btn');
+  const countEl    = document.getElementById('tc-draw-count');
+
+  if (count === 0) {
+    // API returned nothing — show confirm bar anyway so user can proceed manually
+    if (msg) msg.textContent = 'No trees found via NYC Open Data. You can still save and enter the count manually.';
+    if (confirmBar) confirmBar.style.display = 'block';
+    if (hint) hint.textContent = 'The NYC tree API may be unreachable. Confirm to save with a manual count, or redraw.';
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.4'; }
+    if (countEl) countEl.textContent = '0 trees';
+    return;
+  }
+
+  const label = count === 1 ? '1 tree found outside CB3.' : count + ' trees found outside CB3.';
+  if (msg) msg.textContent = label;
+  if (confirmBar) confirmBar.style.display = 'block';
+  if (hint) hint.textContent = 'Review the dots on the map, then confirm or redraw.';
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.4'; }
+  if (countEl) countEl.textContent = count + ' trees';
+}
+
+// User clicks Redraw — clear polygon, keep fetched dots visible
+function tcOutsideRedraw() {
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  if (confirmBar) confirmBar.style.display = 'none';
+  if (tcDrawPolyPreview) { tcDrawPolyPreview.remove(); tcDrawPolyPreview = null; }
+  tcDrawPolygon = null;
+  tcDrawPoints  = [];
+  // Switch to draw mode so they can draw again
+  tcPanMode = false;
+  const panBtn = document.getElementById('tc-pan-toggle');
+  if (panBtn) { panBtn.textContent = '🖐 Pan Mode'; panBtn.style.background = 'var(--bg3)'; panBtn.style.color = 'var(--text2)'; panBtn.style.border = '1px solid var(--border)'; }
+  if (tcDrawMap) { tcDrawMap.dragging.disable(); tcDrawMap.getContainer().style.cursor = 'crosshair'; }
+  const hint = document.getElementById('tc-draw-hint');
+  if (hint) hint.textContent = 'Trees shown as dots. Draw a new boundary around them.';
+  const saveBtn = document.getElementById('tc-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.4'; }
+  const countEl = document.getElementById('tc-draw-count');
+  if (countEl) countEl.textContent = '';
+  // NOTE: tcOutsideTrees and tcOutsideDotsLayer stay — dots remain visible
+}
+
+// User clicks Confirm — proceed to save bar
+function tcOutsideConfirm() {
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  if (confirmBar) confirmBar.style.display = 'none';
+  const count = tcOutsideTrees.length;
+  const hint    = document.getElementById('tc-draw-hint');
+  const saveBtn = document.getElementById('tc-save-btn');
+  const countEl = document.getElementById('tc-draw-count');
+  const label = count === 1 ? '1 tree' : count + ' trees';
+  if (hint) hint.textContent = count > 0
+    ? '✅ ' + label + ' confirmed. Enter a name and save.'
+    : '⚠ No trees found — enter a name, save, then edit the count in the dashboard.';
+  if (countEl) countEl.textContent = count > 0 ? label : '0 trees';
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+}
+
+// Fetch trees from NYC Open Data API within a polygon
+async function tcFetchOutsideTrees(polygon) {
+  try {
+    // Step 1: Compute bounding box from polygon (much more reliable than WKT queries)
+    const lats = polygon.map(p => p[0]);
+    const lngs = polygon.map(p => p[1]);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+    // Add a small buffer to the bounding box (about 50m) to catch edge trees
+    const buffer = 0.0005;
+
+    // Step 2: Query NYC Open Data by bounding box — far more reliable than WKT polygon queries
+    // Uses the standard latitude/longitude range filters which are always supported
+    const url = 'https://data.cityofnewyork.us/resource/uvpi-gqnh.json' +
+      '?$where=' + encodeURIComponent(
+        'latitude > ' + (minLat - buffer) +
+        ' AND latitude < ' + (maxLat + buffer) +
+        ' AND longitude > ' + (minLng - buffer) +
+        ' AND longitude < ' + (maxLng + buffer) +
+        ' AND status = \'Alive\''
+      ) +
+      '&$limit=1000' +
+      '&$select=tree_id,spc_common,spc_latin,health,status,address,zipcode,latitude,longitude,tree_dbh,nta_name,boroname,steward,sidewalk';
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+    // Step 3: Client-side point-in-polygon filter to get only trees inside the drawn polygon
+    // (bounding box may include trees in corners outside the polygon)
+    return data
+      .filter(t => {
+        const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
+        if (!lat || !lng) return false;
+        return tcPIP([lat, lng], polygon); // reuse existing PIP function
+      })
+      .map(t => {
+        const tree = {
+          ...t,
+          lat: parseFloat(t.latitude),
+          lng: parseFloat(t.longitude),
+          _isOutsideCB3: true,
+        };
+        tree._priority = calcPriority(tree);
+        return tree;
+      });
+
+  } catch(e) {
+    console.warn('NYC API fetch failed:', e.message);
+    return [];
   }
 }
 
 function tcHideDrawMode() {
   document.getElementById('tc-draw-panel').style.display = 'none';
   document.getElementById('tc-list-panel').style.display = 'flex';
+  // Clean up any outside-CB3 state
+  tcOutsideTrees = [];
+  if (tcOutsideDotsLayer) { tcOutsideDotsLayer.remove(); tcOutsideDotsLayer = null; }
+  const confirmBar = document.getElementById('tc-outside-confirm');
+  if (confirmBar) confirmBar.style.display = 'none';
+}
+
+// ── Address mode — log care for any location without drawing ──
+function tcShowAddressMode() {
+  document.getElementById('tc-list-panel').style.display = 'none';
+  document.getElementById('tc-draw-panel').style.display = 'none';
+  document.getElementById('tc-address-panel').style.display = 'flex';
+  // Clear fields
+  const n = document.getElementById('tc-addr-name');
+  const c = document.getElementById('tc-addr-count');
+  const t = document.getElementById('tc-addr-note');
+  if (n) { n.value = ''; n.style.borderColor = ''; }
+  if (c) c.value = '1';
+  if (t) t.value = '';
+  setTimeout(() => { if (n) n.focus(); }, 80);
+}
+
+function tcHideAddressMode() {
+  document.getElementById('tc-address-panel').style.display = 'none';
+  document.getElementById('tc-list-panel').style.display = 'flex';
+}
+
+async function tcSaveAddressArea() {
+  const nameEl  = document.getElementById('tc-addr-name');
+  const countEl = document.getElementById('tc-addr-count');
+  const noteEl  = document.getElementById('tc-addr-note');
+  const name    = nameEl  ? nameEl.value.trim()          : '';
+  const count   = countEl ? parseInt(countEl.value) || 1 : 1;
+  const note    = noteEl  ? noteEl.value.trim()          : '';
+
+  if (!name) {
+    if (nameEl) { nameEl.style.borderColor = 'var(--danger)'; nameEl.focus(); }
+    return;
+  }
+
+  const area = {
+    id:         'tc_addr_' + Date.now(),
+    name:       name,
+    polygon:    [],          // no polygon — address-based area
+    treeCount:  count,
+    createdAt:  new Date().toISOString(),
+    status:     'watching',
+    careEvents: [],
+    isAddressBased: true,    // flag so UI can show it differently
+    addressNote: note,
+  };
+
+  await tcUpsert(area);
+  tcHideAddressMode();
+  renderClaimedBlocksSidebar();
+  tcSelectArea(area.id);
+  tcUpdateProgress();
+  updateStats();
 }
 
 async function tcSaveArea() {
@@ -2795,15 +3337,38 @@ async function tcSaveArea() {
   const name = nameEl ? nameEl.value.trim() : '';
   if (!name) { if (nameEl) { nameEl.style.borderColor = 'var(--danger)'; nameEl.focus(); } return; }
   if (!tcDrawPolygon || tcDrawPolygon.length < 3) { alert('Please draw an area first.'); return; }
+
+  const isOutside = tcOutsideTrees.length > 0;
+  const treeCount = isOutside ? tcOutsideTrees.length : tcCountTrees(tcDrawPolygon);
+
   const area = {
-    id: 'tc_' + Date.now(),
-    name: name,
-    polygon: tcDrawPolygon,
-    treeCount: tcCountTrees(tcDrawPolygon),
-    createdAt: new Date().toISOString(),
-    status: 'watching',
-    careEvents: []
+    id:          'tc_' + Date.now(),
+    name:        name,
+    polygon:     tcDrawPolygon,
+    treeCount:   treeCount,
+    createdAt:   new Date().toISOString(),
+    status:      'watching',
+    careEvents:  [],
+    // Store fetched outside trees so they can be re-shown on the TC map
+    outsideTrees: isOutside ? tcOutsideTrees.map(t => ({
+      tree_id:    t.tree_id,
+      spc_common: t.spc_common,
+      health:     t.health,
+      address:    t.address,
+      latitude:   t.latitude,
+      longitude:  t.longitude,
+      tree_dbh:   t.tree_dbh,
+      nta_name:   t.nta_name,
+      boroname:   t.boroname,
+      _priority:  t._priority,
+      _isOutsideCB3: true,
+    })) : [],
   };
+
+  // Clear outside dots and state before saving
+  tcOutsideTrees = [];
+  if (tcOutsideDotsLayer) { tcOutsideDotsLayer.remove(); tcOutsideDotsLayer = null; }
+
   await tcUpsert(area);
   tcHideDrawMode();
   renderClaimedBlocksSidebar();
@@ -2850,6 +3415,7 @@ function renderClaimedBlocksSidebar() {
         '<div style="flex:1;min-width:0">' +
           '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
             '<span style="font-size:10px">' + (cared ? '✅' : '⏳') + '</span>' +
+            (area.isAddressBased ? '<span style="font-size:9px;background:var(--bg4);border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--text3);flex-shrink:0">📍 address</span>' : '') +
             '<div style="font-size:12px;font-weight:700;color:var(--text);font-family:\'Lora\',serif;' +
               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + area.name + '</div>' +
           '</div>' +
@@ -2871,6 +3437,24 @@ function tcShowNoSelection() {
   const content = document.getElementById('myblock-dashboard-content');
   if (noSel) noSel.style.display = 'flex';
   if (content) content.style.display = 'none';
+}
+
+async function tcEditAddressCount(id) {
+  const area = tcGet(id);
+  if (!area) return;
+  const newCount = prompt('Update tree count for "' + area.name + '":', area.treeCount);
+  if (newCount === null) return; // cancelled
+  const n = parseInt(newCount);
+  if (!n || n < 1) { alert('Please enter a number greater than 0.'); return; }
+  area.treeCount = n;
+  tcSave(tcLoad().map(a => a.id === area.id ? area : a)); // write synchronously first
+  const openForm = document.getElementById('tc-inline-log');
+  if (openForm) openForm.remove();
+  await tcUpsert(area);
+  renderClaimedBlocksSidebar();
+  tcOpenDashboard(id);
+  tcUpdateProgress();
+  updateStats();
 }
 
 function tcSelectArea(id) {
@@ -2909,6 +3493,10 @@ function tcLogCare(id) {
   const existing = document.getElementById('tc-inline-log');
   if (existing) { existing.querySelector('input') && existing.querySelector('input').focus(); return; }
 
+  // Hide the Log Care Event button while form is open
+  const logBtn = document.getElementById('tc-log-care-btn');
+  if (logBtn) logBtn.style.display = 'none';
+
   const checkboxes = TC_ACTIVITIES.map(a =>
     `<label style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:12px;background:var(--bg);user-select:none">
       <input type="checkbox" id="tc-act-${a.id}" value="${a.id}" style="accent-color:var(--accent);width:14px;height:14px">
@@ -2922,13 +3510,21 @@ function tcLogCare(id) {
   form.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Log Care Activities</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' + checkboxes + '</div>' +
-    '<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Note (optional — any deviation for specific trees, etc.)</div>' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">' +
+      '<div style="flex:1">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px">Trees cared for this visit</div>' +
+        '<div style="font-size:10px;color:var(--text3)">Override the area default (' + (area.treeCount || 0) + ') for this event only</div>' +
+      '</div>' +
+      '<input type="number" id="tc-log-tree-count" min="1" value="' + (area.treeCount || 0) + '" ' +
+        'style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center;background:var(--bg2);color:var(--text);font-family:\'Nunito\',sans-serif">' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Note (optional)</div>' +
     '<textarea id="tc-log-note" rows="2" placeholder="e.g. watered all except 3 trees near corner (dry soil), litter heavy on south end" ' +
       'style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg);color:var(--text);font-family:\'Nunito\',sans-serif;resize:vertical;outline:none"></textarea>' +
     '<div style="display:flex;gap:8px;margin-top:10px">' +
       '<button onclick="tcLogCareSubmit(\'' + id + '\')" ' +
         'style="flex:1;padding:9px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✅ Save Care Event</button>' +
-      '<button onclick="document.getElementById(\'tc-inline-log\').remove()" ' +
+      '<button onclick="document.getElementById(\'tc-inline-log\').remove();var b=document.getElementById(\'tc-log-care-btn\');if(b)b.style.display=\'\'" ' +
         'style="padding:9px 14px;background:var(--bg4);color:var(--text2);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Cancel</button>' +
     '</div>';
 
@@ -2944,7 +3540,18 @@ async function tcLogCareSubmit(id) {
   const area = tcGet(id);
   if (!area) return;
 
-  const event = { date: new Date().toISOString(), activities: selected, note };
+  // Capture tree count override — only store if it differs from the area default
+  const countEl = document.getElementById('tc-log-tree-count');
+  const enteredCount = countEl ? parseInt(countEl.value) || 0 : 0;
+  const defaultCount = area.treeCount || 0;
+  const treeCountOverride = enteredCount !== defaultCount ? enteredCount : undefined;
+
+  const event = {
+    date: new Date().toISOString(),
+    activities: selected,
+    note,
+    ...(treeCountOverride !== undefined && { treeCountOverride }),
+  };
 
   if (TC_SHEETS_URL) {
     const result = await tcSheetsPost({ action: 'addCareEvent', areaId: id, event });
@@ -3041,9 +3648,14 @@ function tcOpenDashboard(id) {
         'border:1px solid var(--border);border-radius:12px;padding:2px 7px;font-size:10px">' +
         a.emoji + ' ' + a.label + '</span>' : '';
     }).join(' ');
+    const hasOverride = typeof ev.treeCountOverride === 'number';
+    const overrideTag = hasOverride
+      ? '<span style="font-size:10px;background:#fdf3e3;border:1px solid #f0c070;border-radius:10px;' +
+        'padding:1px 7px;color:#7a5a20;font-weight:600;margin-left:6px">🌳 ' + ev.treeCountOverride + ' trees this visit</span>'
+      : '';
     return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-        '<div style="font-size:12px;font-weight:600;color:var(--text)">Visit ' + (i+1) + ' · ' + d + '</div>' +
+        '<div style="font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:4px">Visit ' + (i+1) + ' · ' + d + overrideTag + '</div>' +
         '<button onclick="tcDeleteCareEvent(\'' + area.id + '\',' + i + ')" ' +
           'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px">🗑</button>' +
       '</div>' +
@@ -3056,10 +3668,20 @@ function tcOpenDashboard(id) {
     // Header
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px">' +
       '<div>' +
-        '<h2 style="font-family:\'Lora\',serif;font-size:19px;font-weight:700;margin-bottom:4px">' + area.name + '</h2>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
+          '<h2 style="font-family:\'Lora\',serif;font-size:19px;font-weight:700">' + area.name + '</h2>' +
+          (area.isAddressBased ? '<span style="font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--text3);font-weight:600">📍 Address-based</span>' : '') +
+        '</div>' +
         '<div style="font-size:11px;color:var(--text3)">Added ' +
           new Date(area.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) +
-          ' · ' + area.treeCount + ' trees</div>' +
+          ' · ' + area.treeCount + ' trees' +
+          (area.isAddressBased
+            ? ' · <a href="#" onclick="tcEditAddressCount(\'' + area.id + '\');return false;" style="color:var(--accent);text-decoration:none;font-weight:600">edit count</a>'
+            : '') +
+        '</div>' +
+        (area.isAddressBased && area.addressNote
+          ? '<div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic">📝 ' + area.addressNote + '</div>'
+          : '') +
       '</div>' +
       '<button onclick="tcConfirmRemove(\'' + area.id + '\')" ' +
         'style="padding:6px 12px;background:var(--bg3);color:var(--danger);border:1px solid var(--danger);' +
@@ -3090,7 +3712,7 @@ function tcOpenDashboard(id) {
       : '') +
 
     // Log care button
-    '<button onclick="tcLogCare(\'' + area.id + '\')" ' +
+    '<button id="tc-log-care-btn" onclick="tcLogCare(\'' + area.id + '\')" ' +
       'style="width:100%;padding:11px;background:var(--accent);color:white;border:none;border-radius:8px;' +
       'font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif;margin-bottom:16px">' +
       '🌱 Log Care Event</button>' +
