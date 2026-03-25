@@ -928,6 +928,144 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leaflet-popup-content-wrapper { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
   .leaflet-popup-tip { background: var(--bg2); }
   .leaflet-popup-content { margin: 12px 14px; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE RESPONSIVE  ≤ 768px  —  collapsible panels
+  ═══════════════════════════════════════════════════════════════ */
+  @media (max-width: 768px) {
+
+    /* ── Header: compact, nav scrolls horizontally ── */
+    header { height: auto; padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
+    .brand-sub { display: none; }
+    .brand-name { font-size: 14px; }
+    nav {
+      width: 100%; margin-left: 0;
+      overflow-x: auto; overflow-y: hidden;
+      flex-wrap: nowrap; gap: 4px;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    .nav-btn { padding: 7px 12px; font-size: 12px; white-space: nowrap; min-height: 36px; }
+
+    /* ── Filter bar: horizontal scroll ── */
+    .filter-bar {
+      overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px;
+      scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-label { display: none; }
+    .filter-bar select { min-height: 32px; font-size: 13px; }
+
+    /* ── Map view ── */
+    #map-tree-panel {
+      position: absolute !important;
+      top: auto !important;
+      bottom: 0 !important; right: 0 !important; left: 0 !important;
+      width: 100% !important;
+      height: auto;
+      max-height: 62dvh;
+      border-left: none !important;
+      border-top: 2px solid var(--border) !important;
+      border-radius: 14px 14px 0 0;
+      overflow-y: auto;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.13) !important;
+      z-index: 1001 !important;
+    }
+    #map-tree-panel-handle {
+      display: block !important;
+      width: 36px; height: 4px;
+      background: var(--border2); border-radius: 2px;
+      margin: 10px auto 0;
+    }
+
+    /* ── Tree Care: single scrolling column ── */
+    #myblock-layout {
+      flex-direction: column !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      height: 100% !important;
+    }
+    #myblock-sidebar {
+      width: 100% !important;
+      border-right: none !important;
+      border-bottom: 1px solid var(--border) !important;
+      /* No fixed height — let content breathe */
+      height: auto !important;
+      flex-shrink: 0 !important;
+      overflow: visible !important;
+    }
+    #myblock-sidebar-inner {
+      overflow: visible !important;
+      height: auto !important;
+      flex: none !important;
+    }
+    #myblock-empty {
+      flex: none !important;
+    }
+    #claimed-blocks-list {
+      flex: none !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    #myblock-dashboard {
+      width: 100% !important;
+      flex-shrink: 0 !important;
+      overflow: visible !important;
+      min-height: 60vh;
+    }
+    #myblock-dashboard-content {
+      padding: 14px !important;
+      max-width: 100% !important;
+    }
+
+    /* ── Stats: 2-col stat cards, charts stack ── */
+    #stats-view { padding: 12px !important; gap: 12px !important; }
+    .summary-row {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px !important;
+    }
+    .charts-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px !important;
+    }
+    .chart-card { min-width: 0 !important; flex: none !important; }
+
+    /* ── Top Blocks: stack list above map ── */
+    #blocks-view > div { flex-direction: column !important; }
+    #blocks-view > div > div:first-child {
+      width: 100% !important;
+      max-height: 40dvh;
+      overflow-y: auto;
+    }
+    #blocks-view > div > div:last-child {
+      border-left: none !important;
+      border-top: 1px solid var(--border);
+      flex: 1;
+    }
+
+    /* ── General touch ergonomics ── */
+    button { min-height: 40px; }
+    input[type="text"], textarea { font-size: 16px; }
+
+    /* Hide the collapse toggle on mobile — not needed with scroll layout */
+    #myblock-sidebar-toggle { display: none !important; }
+  }
+
+  /* Desktop sidebar sizing */
+  #myblock-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* Desktop: hide mobile-only elements */
+  #map-tree-panel-handle { display: none; }
+  #myblock-sidebar-toggle { display: none; }
 </style>
 </head>
 <body>
@@ -968,6 +1106,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div id="map-view" class="view active">
     <div id="map"></div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
+      <div id="map-tree-panel-handle"></div>
       <div style="padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div id="mtp-title" style="font-family:'Lora',serif;font-size:15px;font-weight:700;line-height:1.3;padding-right:8px"></div>
@@ -976,6 +1115,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-badge" style="margin-bottom:12px"></div>
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
+        <div id="mtp-log-area" style="margin-top:14px"></div>
       </div>
     </div>
     <div class="map-overlay">
@@ -1104,8 +1244,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
-    <div style="display:flex;height:100%;overflow:hidden">
-      <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+    <div id="myblock-layout" style="display:flex;height:100%;overflow:hidden">
+      <div id="myblock-sidebar" style="background:var(--bg2);display:flex;flex-direction:column;">
+        <!-- Mobile-only collapse toggle -->
+        <div id="myblock-sidebar-toggle" onclick="mobToggleSidebar()">
+          <span style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:var(--text)">🌿 My Blocks & Trees</span>
+          <span style="color:var(--accent);font-weight:700">⌃</span>
+        </div>
+        <div id="myblock-sidebar-inner" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;overflow-x:hidden">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:4px">🌿 Tree Care</h2>
           <p style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px">Track stewardship across your blocks — or log care for any address.</p>
@@ -1127,6 +1273,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div style="font-size:12px;line-height:1.6">Click "Claim a Block" to start tracking stewardship.</div>
         </div>
         <div id="claimed-blocks-list" style="flex:1;overflow-y:auto;padding:8px 0;display:none"></div>
+        </div><!-- /myblock-sidebar-inner -->
       </div>
       <div id="myblock-dashboard" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)">
 
@@ -1642,23 +1789,7 @@ function updateMap() {
     });
 
     const m = L.marker([lat, lng], { icon });
-    const treeKey = 'tree_' + (tree.tree_id || (lat + '_' + lng));
-    m.bindPopup(`
-      <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
-        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
-        <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 6</span>
-        </div>
-        <div id="popup-log-${treeKey}">
-          <button onclick="tcPopupLogCare('${treeKey}','${(tree.spc_common||'Unknown').replace(/'/g,"\\'")}','${(tree.address||'').replace(/'/g,"\\'")}','${tree.tree_id||''}')"
-            style="width:100%;padding:7px;background:var(--accent,#2e8b57);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
-            🌱 Log Care
-          </button>
-        </div>
-      </div>
-    `);
+    m.bindTooltip(`<span style="font-family:'Nunito',sans-serif;font-size:12px">${tree.spc_common||'Unknown'}</span>`, { sticky: true });
     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
     m.addTo(markersLayer);
   });
@@ -1739,12 +1870,15 @@ function updateStats() {
   document.getElementById('s-poor').textContent = (byHealth.Poor||0).toLocaleString();
   document.getElementById('s-avg').textContent = total ? Math.round(totalPriority/total) : 0;
 
-  // Goal progress — use max event tree count per area (same logic as tcUpdateProgress)
-  const goalTotal = tcAreas.reduce((s, a) => {
+  // Goal progress — use max event tree count per area + unique individual tree logs
+  const goalAreaTotal = tcAreas.reduce((s, a) => {
     if (!a.careEvents || !a.careEvents.length) return s;
     const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
     return s + maxCount;
   }, 0);
+  const quickLogs = tcLoadTreeLogs();
+  const quickUnique = new Set(quickLogs.map(l => l.treeId).filter(Boolean)).size;
+  const goalTotal = goalAreaTotal + quickUnique;
   const goalPct = Math.min(100, Math.round((goalTotal / 1000) * 100));
   const fillEl = document.getElementById('s-goal-fill');
   const textEl = document.getElementById('s-goal-text');
@@ -1753,7 +1887,8 @@ function updateStats() {
   if (textEl) textEl.textContent = goalTotal.toLocaleString() + ' / 1,000 trees cared for (' + goalPct + '%)';
   if (subEl)  subEl.textContent = goalTotal > 0
     ? tcAreas.filter(a => a.careEvents && a.careEvents.length).length + ' area' +
-      (tcAreas.filter(a => a.careEvents && a.careEvents.length).length !== 1 ? 's' : '') + ' with care logged'
+      (tcAreas.filter(a => a.careEvents && a.careEvents.length).length !== 1 ? 's' : '') + ' with care logged' +
+      (quickUnique > 0 ? ' + ' + quickUnique + ' individual tree' + (quickUnique !== 1 ? 's' : '') + ' logged from map' : '')
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
 
   // ── Build unified data structure for all charts ───────────────
@@ -2072,11 +2207,13 @@ function showPriorityDetail(tree) {
 
 
 // ========== VIEW SWITCHING ==========
-function switchView(view) {
+function switchView(view, callerBtn) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`${view}-view`).classList.add('active');
-  event.currentTarget.classList.add('active');
+  // Highlight the correct nav button
+  const btn = callerBtn || (typeof event !== 'undefined' && event && event.currentTarget) || document.querySelector(`.nav-btn[onclick*="'${view}'"]`);
+  if (btn && btn.classList) btn.classList.add('active');
   if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
   if (view === 'stats') updateStats();
   if (view === 'blocks') {
@@ -2087,7 +2224,6 @@ function switchView(view) {
     tcUpdateProgress();
   }
   if (view === 'blocks') {
-    // also render claimed areas on blocks map
     setTimeout(tcRenderBlocksMap, 200);
   }
 }
@@ -2544,12 +2680,59 @@ function openMapTreeDetail(tree) {
       '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
       '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>';
   }).join('');
+
+  // Reset and wire the Log Care button
+  const logArea = document.getElementById('mtp-log-area');
+  if (logArea) {
+    logArea.innerHTML = '<button style="width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif">🌱 Log Care</button>';
+    logArea.querySelector('button').addEventListener('click', () => tcPopupLogCare(null, tree, logArea));
+  }
 }
 
 function closeMapTreeDetail() {
   const panel = document.getElementById('map-tree-panel');
   if (panel) panel.style.display = 'none';
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+}
+
+function openMapPlantingDetail(tree) {
+  const p = tree._plantingData || {};
+  const panel = document.getElementById('map-tree-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+
+  document.getElementById('mtp-title').textContent = tree.spc_common;
+  document.getElementById('mtp-badge').innerHTML =
+    '<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">🌱 New Planting</span>';
+
+  // Simplified breakdown — no priority tiers for plantings
+  document.getElementById('mtp-breakdown').innerHTML =
+    '<div style="font-size:11px;color:var(--text2);line-height:1.7">' +
+      (p.planted ? '<div>📅 Planted: <strong>' + p.planted + '</strong></div>' : '') +
+      (p.nta    ? '<div>📍 Neighborhood: <strong>' + p.nta + '</strong></div>' : '') +
+      (p.guard && p.guard !== '#ERROR!' ? '<div>🛡 Guard: <strong>' + p.guard + '</strong></div>' : '') +
+    '</div>';
+
+  const rows = [
+    ['Address', p.num + ' ' + p.street],
+    p.code    ? ['Code',    p.code]    : null,
+    p.planted ? ['Planted', p.planted] : null,
+    p.nta     ? ['NTA',     p.nta]     : null,
+    p.guard && p.guard !== '#ERROR!' ? ['Guard', p.guard] : null,
+  ].filter(Boolean);
+  document.getElementById('mtp-fields').innerHTML = rows.map(r =>
+    '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
+      '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>'
+  ).join('');
+
+  // Log Care button — same real DOM wiring as census trees
+  const logArea = document.getElementById('mtp-log-area');
+  if (logArea) {
+    logArea.innerHTML = '<button style="width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif">🌱 Log Care</button>';
+    logArea.querySelector('button').addEventListener('click', () => tcPopupLogCare(null, tree, logArea));
+  }
 }
 
 // ========== PLANTINGS LAYER ==========
@@ -2581,15 +2764,15 @@ function renderPlantingsLayer() {
       iconSize: [9, 9], iconAnchor: [4.5, 4.5]
     });
     const m = L.marker([p.lat, p.lng], { icon });
-    m.bindPopup(`
-      <div style="font-family:'Nunito',sans-serif;min-width:200px">
-        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:#2e2b23">🌱 New Planting</div>
-        <div style="font-size:12px;font-style:italic;color:#4a7c59;margin-bottom:6px">${p.species || p.code}</div>
-        <div style="font-size:11px;color:#6e6558;margin-bottom:2px">${p.num} ${p.street}</div>
-        <div style="font-size:11px;color:#6e6558;margin-bottom:2px">${p.nta} · Planted ${p.planted}</div>
-        <div style="font-size:11px;color:#6e6558">${p.guard !== '#ERROR!' ? p.guard : 'Guard info unavailable'}</div>
-      </div>
-    `);
+    const plantingTree = {
+      tree_id: ('planting_' + (p.num || '') + '_' + (p.street || '') + '_' + (p.planted || '')).replace(/\s+/g, '_'),
+      spc_common: p.species || p.code || 'New Planting',
+      address: p.num + ' ' + p.street,
+      _isPlanting: true,
+      _plantingData: p,
+    };
+    m.bindTooltip(`<span style="font-family:'Nunito',sans-serif;font-size:12px">🌱 ${p.species || p.code || 'New Planting'}</span>`, { sticky: true });
+    m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapPlantingDetail(plantingTree); });
     m.addTo(plantingsLayer);
   });
 
@@ -2624,7 +2807,7 @@ function init() {
 // ── Google Sheets config ──────────────────────────────────────
 // Paste your Apps Script Web App URL here after setup.
 // Leave as '' to use localStorage only (no sharing).
-const TC_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyHWdvS3QUeo2xYTGWZ7_ycjnAavdMhOqy4Q_axVZK6kbH2NX_efIGasF6bGi9KySX0/exec';
+const TC_SHEETS_URL = '';
 
 // ── Sync helpers ──────────────────────────────────────────────
 function tcShowSyncStatus(msg, isError) {
@@ -2720,74 +2903,72 @@ function tcLoad() {
 function tcSave(areas) { localStorage.setItem('tc_areas', JSON.stringify(areas)); }
 function tcGet(id) { return tcLoad().find(a => a.id === id) || null; }
 
-// ── Quick tree care log (from map popup, no named area) ────────
+// ── Quick tree care log (from map panel, no named area) ────────
 function tcLoadTreeLogs() {
   try { return JSON.parse(localStorage.getItem('tc_tree_logs') || '[]'); } catch(e) { return []; }
 }
 function tcSaveTreeLogs(logs) { localStorage.setItem('tc_tree_logs', JSON.stringify(logs)); }
 
-function tcPopupLogCare(treeKey, species, address, treeId) {
-  const container = document.getElementById('popup-log-' + treeKey);
+function tcPopupLogCare(marker, tree, container) {
+  // container: DOM element to render the form into
+  // marker: unused now (kept for signature compatibility), pass null
   if (!container) return;
+
   const checks = TC_ACTIVITIES.map(a =>
-    `<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;background:#fff;user-select:none">
-      <input type="checkbox" data-act="${a.id}" style="accent-color:#2e8b57;width:13px;height:13px">
+    `<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;background:var(--bg);user-select:none">
+      <input type="checkbox" data-act="${a.id}" style="accent-color:var(--accent);width:13px;height:13px">
       <span>${a.emoji} ${a.label}</span>
     </label>`
   ).join('');
+
   container.innerHTML =
-    '<div style="font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Log Care Activities</div>' +
+    '<div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Log Care Activities</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">' + checks + '</div>' +
-    '<textarea id="popup-note-' + treeKey + '" rows="2" placeholder="Optional note…" ' +
-      'style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Nunito,sans-serif;resize:none;margin-bottom:8px"></textarea>' +
+    '<textarea class="tc-popup-note" rows="2" placeholder="Optional note…" ' +
+      'style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Nunito,sans-serif;resize:none;margin-bottom:8px;background:var(--bg);color:var(--text)"></textarea>' +
     '<div style="display:flex;gap:6px">' +
-      '<button onclick="tcPopupLogSubmit(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
-        'style="flex:1;padding:7px;background:#2e8b57;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✅ Save</button>' +
-      '<button onclick="tcPopupLogCancel(\'' + treeKey + '\')" ' +
-        'style="padding:7px 12px;background:#f5f0e8;color:#6b6456;border:1px solid #ddd;border-radius:6px;font-size:11px;cursor:pointer">Cancel</button>' +
+      '<button class="tc-popup-save" style="flex:1;padding:7px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✅ Save</button>' +
+      '<button class="tc-popup-cancel" style="padding:7px 12px;background:var(--bg4);color:var(--text2);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Cancel</button>' +
     '</div>';
+
+  container.querySelector('.tc-popup-save').addEventListener('click', () => tcPopupLogSubmit(tree, container));
+  container.querySelector('.tc-popup-cancel').addEventListener('click', () => tcPopupLogReset(tree, container));
 }
 
-function tcPopupLogCancel(treeKey) {
-  const container = document.getElementById('popup-log-' + treeKey);
+function tcPopupLogReset(tree, container) {
   if (!container) return;
-  container.innerHTML =
-    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'\',\'\',\'\')" ' +
-      'style="width:100%;padding:7px;background:#2e8b57;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">' +
-      '🌱 Log Care</button>';
+  container.innerHTML = '<button style="width:100%;padding:9px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif">🌱 Log Care</button>';
+  container.querySelector('button').addEventListener('click', () => tcPopupLogCare(null, tree, container));
 }
 
-async function tcPopupLogSubmit(treeKey, species, address, treeId) {
-  const container = document.getElementById('popup-log-' + treeKey);
-  if (!container) return;
+async function tcPopupLogSubmit(tree, container) {
   const selected = Array.from(container.querySelectorAll('input[data-act]:checked')).map(el => el.dataset.act);
   if (!selected.length) { alert('Please select at least one activity.'); return; }
-  const noteEl = document.getElementById('popup-note-' + treeKey);
+  const noteEl = container.querySelector('.tc-popup-note');
   const note = noteEl ? noteEl.value.trim() : '';
   const log = {
     id: 'tlog_' + Date.now(),
-    treeKey, treeId, species, address,
+    treeId: tree.tree_id || '',
+    species: tree.spc_common || '',
+    address: tree.address || '',
+    isPlanting: tree._isPlanting || false,
     date: new Date().toISOString(),
     activities: selected,
     note,
   };
-  // Save locally
   const logs = tcLoadTreeLogs();
   logs.push(log);
   tcSaveTreeLogs(logs);
-  // Sync to Sheets if connected
+  tcUpdateProgress();
+  updateStats();
+  renderClaimedBlocksSidebar();
   if (TC_SHEETS_URL) {
     tcSheetsPost({ action: 'logTreeCare', log }).catch(() => {});
   }
-  // Update stats
-  tcUpdateProgress();
-  updateStats();
-  // Show confirmation in popup
   container.innerHTML =
-    '<div style="text-align:center;padding:8px 0;color:#2e8b57;font-size:12px;font-weight:700">✅ Care logged!</div>' +
-    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
-      'style="width:100%;padding:6px;background:#f5f0e8;color:#2e8b57;border:1px solid #2e8b57;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">' +
-      '+ Log another visit</button>';
+    '<div style="text-align:center;padding:8px 0;color:var(--accent);font-size:12px;font-weight:700">✅ Care logged!</div>' +
+    '<button style="width:100%;padding:6px;background:var(--bg3);color:var(--accent);border:1px solid var(--accent);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">+ Log another visit</button>';
+  container.querySelector('button').addEventListener('click', () => tcPopupLogCare(null, tree, container));
 }
 
 // Returns the effective tree count for a care event:
@@ -2896,13 +3077,15 @@ function tcRenderBlocksMap() {
 // ── Progress (only counts areas with care events) ─────────────
 function tcUpdateProgress() {
   const areas = tcLoad();
-  // Use the max tree count seen across all events for each area
-  // (an area's contribution = highest treeCountOverride seen, or area default)
-  const total = areas.reduce((s, a) => {
+  const areaTotal = areas.reduce((s, a) => {
     if (!a.careEvents || !a.careEvents.length) return s;
     const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
     return s + maxCount;
   }, 0);
+  // Also count unique individual trees logged from the map (deduped by treeId)
+  const treeLogs = tcLoadTreeLogs();
+  const uniqueTreeIds = new Set(treeLogs.map(l => l.treeId).filter(Boolean));
+  const total = areaTotal + uniqueTreeIds.size;
   const pct = Math.min(100, Math.round((total / 1000) * 100));
   const fillEl = document.getElementById('tc-progress-fill');
   const textEl = document.getElementById('tc-progress-text');
@@ -3383,16 +3566,17 @@ let tcSelectedId = null;
 
 function renderClaimedBlocksSidebar() {
   const areas = tcLoad();
+  const treeLogs = tcLoadTreeLogs();
   const emptyEl = document.getElementById('myblock-empty');
   const listEl  = document.getElementById('claimed-blocks-list');
   if (!listEl) return;
 
   const navBtn = document.getElementById('myblock-nav-btn');
-  if (navBtn) navBtn.innerHTML = areas.length
-    ? '🌿 Tree Care <span class="badge">' + areas.length + '</span>'
+  if (navBtn) navBtn.innerHTML = (areas.length || treeLogs.length)
+    ? '🌿 Tree Care <span class="badge">' + (areas.length + (treeLogs.length ? 1 : 0)) + '</span>'
     : '🌿 Tree Care';
 
-  if (!areas.length) {
+  if (!areas.length && !treeLogs.length) {
     if (emptyEl) emptyEl.style.display = 'flex';
     listEl.style.display = 'none';
     listEl.innerHTML = '';
@@ -3403,33 +3587,140 @@ function renderClaimedBlocksSidebar() {
   listEl.style.display = 'block';
   listEl.innerHTML = '';
 
-  areas.forEach(area => {
-    const isSelected = area.id === tcSelectedId;
-    const cared = area.careEvents && area.careEvents.length > 0;
-    const row = document.createElement('div');
-    row.style.cssText = 'padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;' +
-      'background:' + (isSelected ? 'var(--bg4)' : 'transparent') + ';' +
-      'border-left:' + (isSelected ? '3px solid var(--accent)' : '3px solid transparent');
-    row.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
-            '<span style="font-size:10px">' + (cared ? '✅' : '⏳') + '</span>' +
-            (area.isAddressBased ? '<span style="font-size:9px;background:var(--bg4);border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--text3);flex-shrink:0">📍 address</span>' : '') +
-            '<div style="font-size:12px;font-weight:700;color:var(--text);font-family:\'Lora\',serif;' +
-              'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + area.name + '</div>' +
+  // ── Claimed areas ──────────────────────────────────────────────
+  if (areas.length) {
+    const areaHeader = document.createElement('div');
+    areaHeader.style.cssText = 'padding:6px 16px 4px;font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3)';
+    areaHeader.textContent = 'Claimed Areas';
+    listEl.appendChild(areaHeader);
+
+    areas.forEach(area => {
+      const isSelected = area.id === tcSelectedId;
+      const cared = area.careEvents && area.careEvents.length > 0;
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;' +
+        'background:' + (isSelected ? 'var(--bg4)' : 'transparent') + ';' +
+        'border-left:' + (isSelected ? '3px solid var(--accent)' : '3px solid transparent');
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
+              '<span style="font-size:10px">' + (cared ? '✅' : '⏳') + '</span>' +
+              (area.isAddressBased ? '<span style="font-size:9px;background:var(--bg4);border:1px solid var(--border);border-radius:3px;padding:0 4px;color:var(--text3);flex-shrink:0">📍 address</span>' : '') +
+              '<div style="font-size:12px;font-weight:700;color:var(--text);font-family:\'Lora\',serif;' +
+                'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + area.name + '</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--text3)">' + area.treeCount + ' trees' +
+              (cared ? ' · ' + area.careEvents.length + ' care event' + (area.careEvents.length > 1 ? 's' : '') : ' · watching') +
+            '</div>' +
           '</div>' +
-          '<div style="font-size:10px;color:var(--text3)">' + area.treeCount + ' trees' +
-            (cared ? ' · ' + area.careEvents.length + ' care event' + (area.careEvents.length > 1 ? 's' : '') : ' · watching') +
+          '<button onclick="event.stopPropagation();tcConfirmRemove(\'' + area.id + '\')" ' +
+            'style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);padding:1px 3px;flex-shrink:0">✕</button>' +
+        '</div>';
+      row.onclick = () => tcSelectArea(area.id);
+      listEl.appendChild(row);
+    });
+  }
+
+  // ── Individual tree logs ───────────────────────────────────────
+  if (treeLogs.length) {
+    const logHeader = document.createElement('div');
+    logHeader.style.cssText = 'padding:' + (areas.length ? '14px' : '6px') + ' 16px 4px;font-size:9px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);' + (areas.length ? 'border-top:1px solid var(--border)' : '');
+    logHeader.textContent = 'Individual Trees';
+    listEl.appendChild(logHeader);
+
+    // Group logs by treeId
+    const byTree = {};
+    treeLogs.forEach(log => {
+      const key = log.treeId || ('_notree_' + log.address);
+      if (!byTree[key]) byTree[key] = { treeId: log.treeId, species: log.species, address: log.address, isPlanting: log.isPlanting || false, logs: [] };
+      byTree[key].logs.push(log);
+    });
+
+    Object.values(byTree).forEach(tree => {
+      const isSelected = tcSelectedId === ('treelog_' + (tree.treeId || tree.address));
+      const lastDate = tree.logs.slice().sort((a, b) => b.date > a.date ? 1 : -1)[0]?.date;
+      const lastDateStr = lastDate ? new Date(lastDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      const allActivities = [...new Set(tree.logs.flatMap(l => l.activities || []))];
+      const treeIcon = tree.isPlanting ? '🌱' : '🌳';
+      const row = document.createElement('div');
+      row.style.cssText = 'padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;' +
+        'background:' + (isSelected ? 'var(--bg4)' : 'transparent') + ';' +
+        'border-left:' + (isSelected ? '3px solid var(--accent)' : '3px solid transparent');
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
+              '<span style="font-size:10px">' + treeIcon + '</span>' +
+              (tree.isPlanting ? '<span style="font-size:9px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:3px;padding:0 4px;color:#2e7d32;flex-shrink:0">new planting</span>' : '') +
+              '<div style="font-size:12px;font-weight:700;color:var(--text);font-family:\'Lora\',serif;' +
+                'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:capitalize">' +
+                (tree.species || 'Unknown species') + '</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--text3)">' +
+              (tree.address || '') +
+              ' · ' + tree.logs.length + ' visit' + (tree.logs.length !== 1 ? 's' : '') +
+              (lastDateStr ? ' · last ' + lastDateStr : '') +
+            '</div>' +
+            (allActivities.length ? '<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px">' +
+              allActivities.map(id => {
+                const act = TC_ACTIVITIES.find(a => a.id === id);
+                return act ? '<span style="font-size:9px;background:var(--bg4);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--text2)">' + act.emoji + ' ' + act.label + '</span>' : '';
+              }).join('') + '</div>' : '') +
+          '</div>' +
+        '</div>';
+      row.onclick = () => tcSelectTreeLog('treelog_' + (tree.treeId || tree.address), tree);
+      listEl.appendChild(row);
+    });
+  }
+
+  tcUpdateProgress();
+}
+
+function tcSelectTreeLog(selId, tree) {
+  tcSelectedId = selId;
+  renderClaimedBlocksSidebar();
+  // Show detail panel on the right
+  const noSel = document.getElementById('myblock-no-selection');
+  const content = document.getElementById('myblock-dashboard-content');
+  if (noSel) noSel.style.display = 'none';
+  if (content) {
+    content.style.display = 'block';
+    const sortedLogs = tree.logs.slice().sort((a, b) => b.date > a.date ? 1 : -1);
+    content.innerHTML =
+      '<div style="padding:20px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">' +
+          '<div style="font-size:28px">' + (tree.isPlanting ? '🌱' : '🌳') + '</div>' +
+          '<div>' +
+            '<div style="font-family:\'Lora\',serif;font-size:17px;font-weight:700;color:var(--text);text-transform:capitalize">' + (tree.species || 'Unknown species') + '</div>' +
+            (tree.isPlanting ? '<div style="font-size:10px;font-weight:700;color:#2e7d32;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px">New Planting</div>' : '') +
+            '<div style="font-size:12px;color:var(--text3);margin-top:2px">' + (tree.address || '') + '</div>' +
+            (tree.treeId && !tree.isPlanting ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">Tree ID: ' + tree.treeId + '</div>' : '') +
           '</div>' +
         '</div>' +
-        '<button onclick="event.stopPropagation();tcConfirmRemove(\'' + area.id + '\')" ' +
-          'style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text3);padding:1px 3px;flex-shrink:0">✕</button>' +
+        '<div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:24px">' +
+          '<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--accent)">' + tree.logs.length + '</div><div style="font-size:10px;color:var(--text3)">visits logged</div></div>' +
+          '<div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--accent)">' +
+            [...new Set(tree.logs.flatMap(l => l.activities || []))].length +
+          '</div><div style="font-size:10px;color:var(--text3)">activities</div></div>' +
+        '</div>' +
+        '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);margin-bottom:8px">Care History</div>' +
+        sortedLogs.map(log => {
+          const d = log.date ? new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const acts = (log.activities || []).map(id => {
+            const act = TC_ACTIVITIES.find(a => a.id === id);
+            return act ? act.emoji + ' ' + act.label : id;
+          }).join(', ');
+          return '<div style="padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+              '<span style="font-size:12px;font-weight:700;color:var(--text)">' + d + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text2)">' + (acts || 'No activities') + '</div>' +
+            (log.note ? '<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">"' + log.note + '"</div>' : '') +
+          '</div>';
+        }).join('') +
       '</div>';
-    row.onclick = () => tcSelectArea(area.id);
-    listEl.appendChild(row);
-  });
-  tcUpdateProgress();
+  }
 }
 
 function tcShowNoSelection() {
@@ -3776,6 +4067,49 @@ window.addEventListener('load', () => {
     tcRenderBlocksMap();
     updateStats();
   });
+});
+</script>
+<script>
+// ── Mobile collapsible panel helpers ─────────────────────────────
+function isMobile() { return window.innerWidth <= 768; }
+
+// Tree Care sidebar: toggle collapsed/expanded
+function mobToggleSidebar() {
+  if (!isMobile()) return;
+  const sb = document.getElementById('myblock-sidebar');
+  sb.classList.toggle('mob-collapsed');
+  // After expanding, invalidate map if visible
+  if (!sb.classList.contains('mob-collapsed') && typeof mapInstance !== 'undefined' && mapInstance) {
+    setTimeout(() => mapInstance.invalidateSize(), 310);
+  }
+}
+
+// Start sidebar collapsed on mobile when entering the view
+const _origSwitchView = switchView;
+switchView = function(view, callerBtn) {
+  _origSwitchView(view, callerBtn);
+};
+
+// Collapse sidebar when user selects an area or tree (so dashboard is fully visible)
+const _origTcSelectArea = tcSelectArea;
+tcSelectArea = function(id) {
+  _origTcSelectArea(id);
+  if (isMobile()) {
+    document.getElementById('myblock-sidebar').classList.add('mob-collapsed');
+  }
+};
+
+const _origTcSelectTreeLog = tcSelectTreeLog;
+tcSelectTreeLog = function(selId, tree) {
+  _origTcSelectTreeLog(selId, tree);
+  if (isMobile()) {
+    document.getElementById('myblock-sidebar').classList.add('mob-collapsed');
+  }
+};
+
+// On first load: start sidebar EXPANDED on mobile so content is visible
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isMobile()) return;
 });
 </script>
 </body>
