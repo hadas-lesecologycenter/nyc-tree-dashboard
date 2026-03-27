@@ -99,9 +99,9 @@ def fetch_all_activities():
         null_count = len(data["errors"])
         print(f"  Warning: {null_count} activities skipped (deleted trees)")
 
-    rows = (data.get("data", {})
-                .get("treeGroupById", {})
-                .get("recentActivities", []))
+    rows = ((data.get("data") or {})
+                .get("treeGroupById") or {})
+    rows = rows.get("recentActivities") or []
 
     activities = []
     for r in rows:
