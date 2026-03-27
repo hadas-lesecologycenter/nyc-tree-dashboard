@@ -17,8 +17,6 @@ GROUP_ID     = 14
 API_URL      = "https://www.nycgovparks.org/api-treemap/graphql"
 OUTPUT_FILE  = "data/activities.csv"
 FIELDNAMES   = ["id", "date", "treeId", "species", "address", "activitiesDone", "durationMinutes", "scrapedAt"]
-PAGE_SIZE    = 50   # activities per request
-MAX_PAGES    = 20   # safety cap: fetches up to 1,000 activities per run
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -27,19 +25,24 @@ HEADERS = {
     "Origin":       "https://tree-map.nycgovparks.org",
 }
 
-# GraphQL query for a page of activity reports for a group
+# GraphQL query — mirrors the exact query the NYC Tree Map page uses,
+# but with a much higher limit to get all activities not just 5.
 ACTIVITY_QUERY = """
-query GroupActivityReports($groupId: Int!, $limit: Int!, $offset: Int!) {
-  activityReports(groupId: $groupId, limit: $limit, offset: $offset) {
+query activitiesAndUser($id: Int!) {
+  treeGroupById(id: $id) {
     id
-    date
-    treeId
-    duration
-    stewardshipActivities
-    tree {
-      closestAddress
-      species {
-        commonName
+    recentActivities(limit: 10000) {
+      id
+      duration
+      treeId
+      date
+      stewardshipActivities
+      tree {
+        id
+        closestAddress
+        species {
+          commonName
+        }
       }
     }
   }
@@ -56,51 +59,41 @@ def format_date(ts):
     except Exception:
         return str(ts)
 
-def fetch_page(offset):
-    """Fetch one page of activity reports from the GraphQL API."""
+def fetch_all_activities():
+    """Fetch all activities for the group in a single GraphQL request."""
+    scraped_at = datetime.now().strftime("%Y-%m-%d")
+
     payload = {
-        "query":     ACTIVITY_QUERY,
-        "variables": {"groupId": GROUP_ID, "limit": PAGE_SIZE, "offset": offset},
+        "operationName": "activitiesAndUser",
+        "variables":     {"id": GROUP_ID},
+        "query":         ACTIVITY_QUERY,
     }
     resp = requests.post(API_URL, headers=HEADERS, json=payload, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     if "errors" in data:
         raise Exception(f"GraphQL errors: {data['errors']}")
-    return data.get("data", {}).get("activityReports", [])
 
-def fetch_all_activities():
-    """Page through the API until we run out of results or hit MAX_PAGES."""
-    all_activities = []
-    scraped_at = datetime.now().strftime("%Y-%m-%d")
+    rows = (data.get("data", {})
+                .get("treeGroupById", {})
+                .get("recentActivities", []))
 
-    for page in range(MAX_PAGES):
-        offset = page * PAGE_SIZE
-        print(f"  Fetching page {page + 1} (offset {offset})...")
-        rows = fetch_page(offset)
-        if not rows:
-            print(f"  No more results at offset {offset}.")
-            break
+    activities = []
+    for r in rows:
+        tree    = r.get("tree") or {}
+        species = tree.get("species") or {}
+        activities.append({
+            "id":              r.get("id", ""),
+            "date":            format_date(r.get("date")),
+            "treeId":          r.get("treeId", ""),
+            "species":         species.get("commonName", ""),
+            "address":         tree.get("closestAddress", ""),
+            "activitiesDone":  "; ".join(r.get("stewardshipActivities") or []),
+            "durationMinutes": r.get("duration", ""),
+            "scrapedAt":       scraped_at,
+        })
 
-        for r in rows:
-            tree    = r.get("tree") or {}
-            species = tree.get("species") or {}
-            all_activities.append({
-                "id":              r.get("id", ""),
-                "date":            format_date(r.get("date")),
-                "treeId":          r.get("treeId", ""),
-                "species":         species.get("commonName", ""),
-                "address":         tree.get("closestAddress", ""),
-                "activitiesDone":  "; ".join(r.get("stewardshipActivities") or []),
-                "durationMinutes": r.get("duration", ""),
-                "scrapedAt":       scraped_at,
-            })
-
-        if len(rows) < PAGE_SIZE:
-            # Last page — no need to fetch further
-            break
-
-    return all_activities
+    return activities
 
 def load_existing_ids():
     """Load activity IDs already in the CSV to avoid duplicates."""
