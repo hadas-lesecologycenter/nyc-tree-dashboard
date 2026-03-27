@@ -45,6 +45,13 @@ query activitiesAndUser($id: Int!) {
       treeId
       date
       stewardshipActivities
+      tree {
+        id
+        closestAddress
+        species {
+          commonName
+        }
+      }
     }
   }
 }
@@ -84,8 +91,13 @@ def fetch_all_activities():
     resp = session.post(API_URL, json=payload, timeout=30)
     resp.raise_for_status()
     data = resp.json()
+
+    # The API returns errors for activities where the tree has been deleted
+    # (null tree). We log the count but don't crash — just use whatever rows
+    # came back successfully alongside the errors.
     if "errors" in data:
-        raise Exception(f"GraphQL errors: {data['errors']}")
+        null_count = len(data["errors"])
+        print(f"  Warning: {null_count} activities skipped (deleted trees)")
 
     rows = (data.get("data", {})
                 .get("treeGroupById", {})
@@ -93,12 +105,16 @@ def fetch_all_activities():
 
     activities = []
     for r in rows:
+        if r is None:
+            continue
+        tree    = r.get("tree") or {}
+        species = tree.get("species") or {}
         activities.append({
             "id":              r.get("id", ""),
             "date":            format_date(r.get("date")),
             "treeId":          r.get("treeId", ""),
-            "species":         "",
-            "address":         "",
+            "species":         species.get("commonName", ""),
+            "address":         tree.get("closestAddress", ""),
             "activitiesDone":  "; ".join(r.get("stewardshipActivities") or []),
             "durationMinutes": r.get("duration", ""),
             "scrapedAt":       scraped_at,
