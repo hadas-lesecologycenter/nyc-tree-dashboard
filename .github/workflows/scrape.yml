@@ -31,5 +31,4 @@ jobs:
           git config user.name "Tree Scraper Bot"
           git config user.email "bot@lesecologycenter.org"
           git add data/activities.csv
-          git diff --staged --quiet || git commit -m "Daily scrape $(date +'%Y-%m-%d')"
-          git push
+          git diff --staged --quiet || (git commit -m "Daily scrape $(date +'%Y-%m-%d')" && git pull --rebase && git push)
