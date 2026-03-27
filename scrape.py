@@ -1,7 +1,7 @@
 """
 LES Ecology Center — Daily Tree Activity Scraper
 =================================================
-Fetches the most recent activities from the NYC Tree Map group page
+Fetches activities from the NYC Tree Map GraphQL API for group 14
 and appends any new ones to data/activities.csv.
 
 Runs daily via GitHub Actions.
@@ -13,10 +13,38 @@ import os
 import requests
 from datetime import datetime
 
-GROUP_ID = 14
-GROUP_URL = f"https://tree-map.nycgovparks.org/tree-map/group/{GROUP_ID}"
-OUTPUT_FILE = "data/activities.csv"
-FIELDNAMES = ["id", "date", "treeId", "species", "address", "activitiesDone", "durationMinutes", "scrapedAt"]
+GROUP_ID     = 14
+API_URL      = "https://www.nycgovparks.org/api-treemap/graphql"
+OUTPUT_FILE  = "data/activities.csv"
+FIELDNAMES   = ["id", "date", "treeId", "species", "address", "activitiesDone", "durationMinutes", "scrapedAt"]
+PAGE_SIZE    = 50   # activities per request
+MAX_PAGES    = 20   # safety cap: fetches up to 1,000 activities per run
+
+HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer":      "https://tree-map.nycgovparks.org/",
+    "Origin":       "https://tree-map.nycgovparks.org",
+}
+
+# GraphQL query for a page of activity reports for a group
+ACTIVITY_QUERY = """
+query GroupActivityReports($groupId: Int!, $limit: Int!, $offset: Int!) {
+  activityReports(groupId: $groupId, limit: $limit, offset: $offset) {
+    id
+    date
+    treeId
+    duration
+    stewardshipActivities
+    tree {
+      closestAddress
+      species {
+        commonName
+      }
+    }
+  }
+}
+"""
 
 def format_date(ts):
     if not ts:
@@ -28,59 +56,51 @@ def format_date(ts):
     except Exception:
         return str(ts)
 
-def resolve_ref(apollo, ref_obj):
-    if isinstance(ref_obj, dict) and "__ref" in ref_obj:
-        return apollo.get(ref_obj["__ref"], {})
-    return ref_obj or {}
-
-def fetch_group_page():
-    """Fetch the group page HTML and extract __NEXT_DATA__."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-        "Referer": "https://tree-map.nycgovparks.org/",
+def fetch_page(offset):
+    """Fetch one page of activity reports from the GraphQL API."""
+    payload = {
+        "query":     ACTIVITY_QUERY,
+        "variables": {"groupId": GROUP_ID, "limit": PAGE_SIZE, "offset": offset},
     }
-    resp = requests.get(GROUP_URL, headers=headers, timeout=30)
+    resp = requests.post(API_URL, headers=HEADERS, json=payload, timeout=30)
     resp.raise_for_status()
+    data = resp.json()
+    if "errors" in data:
+        raise Exception(f"GraphQL errors: {data['errors']}")
+    return data.get("data", {}).get("activityReports", [])
 
-    # Extract __NEXT_DATA__ JSON from HTML
-    import re
-    match = re.search(
-        r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>',
-        resp.text,
-        re.DOTALL
-    )
-    if not match:
-        raise Exception("Could not find __NEXT_DATA__ in page")
+def fetch_all_activities():
+    """Page through the API until we run out of results or hit MAX_PAGES."""
+    all_activities = []
+    scraped_at = datetime.now().strftime("%Y-%m-%d")
 
-    return json.loads(match.group(1))
+    for page in range(MAX_PAGES):
+        offset = page * PAGE_SIZE
+        print(f"  Fetching page {page + 1} (offset {offset})...")
+        rows = fetch_page(offset)
+        if not rows:
+            print(f"  No more results at offset {offset}.")
+            break
 
-def extract_activities(next_data):
-    """Extract ActivityReport entries from Apollo cache."""
-    apollo = next_data.get("props", {}).get("pageProps", {}).get("__APOLLO_STATE__", {})
-    activities = []
-    scraped_at = datetime.utcnow().strftime("%Y-%m-%d")
+        for r in rows:
+            tree    = r.get("tree") or {}
+            species = tree.get("species") or {}
+            all_activities.append({
+                "id":              r.get("id", ""),
+                "date":            format_date(r.get("date")),
+                "treeId":          r.get("treeId", ""),
+                "species":         species.get("commonName", ""),
+                "address":         tree.get("closestAddress", ""),
+                "activitiesDone":  "; ".join(r.get("stewardshipActivities") or []),
+                "durationMinutes": r.get("duration", ""),
+                "scrapedAt":       scraped_at,
+            })
 
-    for key, value in apollo.items():
-        if not key.startswith("ActivityReport:") or not isinstance(value, dict):
-            continue
-        tree_ref = value.get("tree", {})
-        tree = resolve_ref(apollo, tree_ref)
-        species_ref = tree.get("species", {})
-        species = resolve_ref(apollo, species_ref)
+        if len(rows) < PAGE_SIZE:
+            # Last page — no need to fetch further
+            break
 
-        activities.append({
-            "id": value.get("id", ""),
-            "date": format_date(value.get("date")),
-            "treeId": value.get("treeId", ""),
-            "species": species.get("commonName", ""),
-            "address": tree.get("closestAddress", ""),
-            "activitiesDone": "; ".join(value.get("stewardshipActivities", [])),
-            "durationMinutes": value.get("duration", ""),
-            "scrapedAt": scraped_at,
-        })
-
-    return activities
+    return all_activities
 
 def load_existing_ids():
     """Load activity IDs already in the CSV to avoid duplicates."""
@@ -116,12 +136,11 @@ def count_total():
         return sum(1 for _ in csv.DictReader(f))
 
 if __name__ == "__main__":
-    print(f"Scraping NYC Tree Map group {GROUP_ID}...")
+    print(f"Scraping NYC Tree Map group {GROUP_ID} via GraphQL API...")
 
     try:
-        next_data = fetch_group_page()
-        activities = extract_activities(next_data)
-        print(f"Found {len(activities)} activities on page")
+        activities = fetch_all_activities()
+        print(f"Found {len(activities)} activities from API")
 
         existing_ids = load_existing_ids()
         print(f"Existing records in CSV: {len(existing_ids)}")
@@ -133,7 +152,7 @@ if __name__ == "__main__":
         print(f"Total activities in CSV: {total}")
 
         if added == 0:
-            print("No new activities today.")
+            print("No new activities since last run.")
         else:
             print(f"Successfully added {added} new activities!")
 
