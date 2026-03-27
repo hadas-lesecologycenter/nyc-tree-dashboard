@@ -45,13 +45,6 @@ query activitiesAndUser($id: Int!) {
       treeId
       date
       stewardshipActivities
-      tree {
-        id
-        closestAddress
-        species {
-          commonName
-        }
-      }
     }
   }
 }
@@ -100,14 +93,12 @@ def fetch_all_activities():
 
     activities = []
     for r in rows:
-        tree    = r.get("tree") or {}
-        species = tree.get("species") or {}
         activities.append({
             "id":              r.get("id", ""),
             "date":            format_date(r.get("date")),
             "treeId":          r.get("treeId", ""),
-            "species":         species.get("commonName", ""),
-            "address":         tree.get("closestAddress", ""),
+            "species":         "",
+            "address":         "",
             "activitiesDone":  "; ".join(r.get("stewardshipActivities") or []),
             "durationMinutes": r.get("duration", ""),
             "scrapedAt":       scraped_at,
