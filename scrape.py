@@ -19,10 +19,18 @@ OUTPUT_FILE  = "data/activities.csv"
 FIELDNAMES   = ["id", "date", "treeId", "species", "address", "activitiesDone", "durationMinutes", "scrapedAt"]
 
 HEADERS = {
-    "Content-Type": "application/json",
-    "User-Agent":   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Referer":      "https://tree-map.nycgovparks.org/",
-    "Origin":       "https://tree-map.nycgovparks.org",
+    "Content-Type":  "application/json",
+    "User-Agent":    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept":        "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer":       "https://tree-map.nycgovparks.org/tree-map/group/14",
+    "Origin":        "https://tree-map.nycgovparks.org",
+    "sec-ch-ua":     '"Google Chrome";v="123", "Not:A-Brand";v="8"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
 }
 
 # GraphQL query — mirrors the exact query the NYC Tree Map page uses,
@@ -63,12 +71,24 @@ def fetch_all_activities():
     """Fetch all activities for the group in a single GraphQL request."""
     scraped_at = datetime.now().strftime("%Y-%m-%d")
 
+    session = requests.Session()
+    session.headers.update(HEADERS)
+
+    # Visit the group page first so the server sees a normal browsing session
+    # and sets any cookies it expects before we hit the API.
+    print("  Visiting group page to establish session...")
+    session.get(
+        f"https://tree-map.nycgovparks.org/tree-map/group/{GROUP_ID}",
+        timeout=30
+    )
+
     payload = {
         "operationName": "activitiesAndUser",
         "variables":     {"id": GROUP_ID},
         "query":         ACTIVITY_QUERY,
     }
-    resp = requests.post(API_URL, headers=HEADERS, json=payload, timeout=30)
+    print("  Querying GraphQL API...")
+    resp = session.post(API_URL, json=payload, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     if "errors" in data:
