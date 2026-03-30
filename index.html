@@ -3975,7 +3975,7 @@ function switchViewById(view) {
 (function() {
   var link = document.getElementById('sync-bookmarklet-link');
   if (!link) return;
-  var src = 'https://cdn.jsdelivr.net/gh/hadas-lesecologycenter/nyc-tree-dashboard@main/bookmarklet/sync.js';
+  var src = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/bookmarklet/sync.js';
   link.href = 'javascript:(function(){var s=document.createElement("script");s.src="' + src + '?t="+Date.now();document.head.appendChild(s);})()';
 })();
 
