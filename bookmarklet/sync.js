@@ -60,7 +60,34 @@
     'User-Agent': 'nyc-tree-bookmarklet'
   };
 
-  // ── GraphQL queries ───────────────────────────────────────────────────────
+  // ── Read activities already loaded in the page (Apollo cache) ───────────────
+  function readFromApolloCache() {
+    try {
+      var client = window.__APOLLO_CLIENT__;
+      if (!client) return null;
+      var cache = client.cache.extract();
+      if (!cache) return null;
+
+      // Collect all Activity-shaped objects from the cache
+      var activities = [];
+      Object.keys(cache).forEach(function (key) {
+        var obj = cache[key];
+        // Activity records have id, date, treeId, stewardshipActivities
+        if (obj && obj.id && obj.date && obj.stewardshipActivities) {
+          activities.push(obj);
+        }
+      });
+
+      if (activities.length === 0) return null;
+      console.log('[TreeSync] Apollo cache: found ' + activities.length + ' activities');
+      return activities;
+    } catch (e) {
+      console.warn('[TreeSync] Apollo cache read failed:', e.message);
+      return null;
+    }
+  }
+
+  // ── GraphQL queries (fallback when cache is unavailable) ─────────────────────
   var PAGINATED_QUERY = [
     'query GroupActivityReports($groupId:Int!,$limit:Int!,$offset:Int!){',
     '  activityReports(groupId:$groupId,limit:$limit,offset:$offset){',
@@ -89,7 +116,7 @@
     }).then(function (r) { return r.json(); });
   }
 
-  // ── Fetch all activities ──────────────────────────────────────────────────
+  // ── Fetch all activities (API fallback) ───────────────────────────────────
   function fetchActivities() {
     var PAGE = 200;
     var allRows = [];
@@ -139,13 +166,19 @@
   }
 
   // ── Main sync flow ────────────────────────────────────────────────────────
+  // Try Apollo cache first (fastest, most complete), then fall back to API
+  var cachedRows = readFromApolloCache();
+  var activitiesPromise = cachedRows
+    ? Promise.resolve(cachedRows)
+    : fetchActivities();
+
   Promise.all([
     // Load current CSV from GitHub
     fetch('https://api.github.com/repos/' + REPO + '/contents/' + CSV_PATH, { headers: ghHeaders })
       .then(function (r) { return r.json(); })
       .catch(function () { return null; }),
-    // Fetch activities from NYC Tree Map
-    fetchActivities()
+    // Activities from cache or API
+    activitiesPromise
   ]).then(function (results) {
     var ghFile    = results[0];
     var rawRows   = results[1];
