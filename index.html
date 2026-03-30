@@ -1635,9 +1635,29 @@ function getMarkerSize(tree) {
   return 9;
 }
 
+// Returns a Set of tree_ids that have at least one scraped care event.
+function getCaredForTreeIds() {
+  const ids = new Set();
+  if (!_tcScrapedAreas || !_tcScrapedAreas.length) return ids;
+  _tcScrapedAreas.forEach(area => {
+    // Each scraped area has a treeId embedded in its id or name
+    // The CSV treeId column maps directly to census tree_id
+    if (area._fromScraper && area.careEvents && area.careEvents.length) {
+      // Extract treeId from the area id: 'tc_scraped_' prefix was built from address,
+      // but the raw treeId is stored in the original rows — look it up via name match
+      // against allTrees, or read directly from the area's addressNote treeId hint.
+      // Most reliably: scan the CSV rows cached in _tcScrapedAreas for treeId.
+      if (area._treeId) ids.add(String(area._treeId));
+    }
+  });
+  return ids;
+}
+
 function updateMap() {
   if (!mapInstance) return;
   markersLayer.clearLayers();
+
+  const caredFor = getCaredForTreeIds();
 
   filteredTrees.forEach(tree => {
     const lat = parseFloat(tree.latitude || tree.lat);
@@ -1648,11 +1668,15 @@ function updateMap() {
     const size = getMarkerSize(tree);
     const pm = getPriorityMeta(tree._priority || 0);
     const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health||'').toLowerCase()] || '#9c9080';
+    const wasCaredFor = caredFor.has(String(tree.tree_id));
 
     const icon = L.divIcon({
       className: '',
-      html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.2);cursor:pointer;transition:all 0.2s"></div>`,
-      iconSize: [size, size], iconAnchor: [size/2, size/2]
+      html: wasCaredFor
+        ? `<div style="width:${size+4}px;height:${size+4}px;border-radius:50%;background:#2e8b57;border:3px solid #fff;box-shadow:0 0 0 2px #2e8b57,0 2px 6px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;font-weight:900">✓</div>`
+        : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.2);cursor:pointer;transition:all 0.2s"></div>`,
+      iconSize: wasCaredFor ? [size+4, size+4] : [size, size],
+      iconAnchor: wasCaredFor ? [(size+4)/2, (size+4)/2] : [size/2, size/2]
     });
 
     const m = L.marker([lat, lng], { icon });
@@ -2718,11 +2742,11 @@ function tcBuildScrapedAreas(rows, treeById) {
       .filter(Boolean);
 
     const event = { date: new Date(rawDate).toISOString(), activities, note: '', _fromScraper: true };
-    if (!byAddress[address]) byAddress[address] = { tree, species, events: [] };
+    if (!byAddress[address]) byAddress[address] = { tree, species, treeId: row.treeId, events: [] };
     byAddress[address].events.push(event);
   });
 
-  return Object.entries(byAddress).map(([address, { tree, species, events }]) => ({
+  return Object.entries(byAddress).map(([address, { tree, species, events, treeId }]) => ({
     id:             'tc_scraped_' + address.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
     name:           address,
     polygon:        [],
@@ -2733,6 +2757,7 @@ function tcBuildScrapedAreas(rows, treeById) {
     isAddressBased: true,
     addressNote:    (species ? species + ' · ' : '') + 'from NYC Tree Map',
     _fromScraper:   true,
+    _treeId:        treeId || null,
   }));
 }
 
@@ -4015,6 +4040,7 @@ window.addEventListener('load', () => {
       tcUpdateProgress();
       tcRenderMain();
       tcRenderBlocksMap();
+      updateMap(); // highlight cared-for trees on the main map
       updateStats();
       tcShowSyncStatus('✓ Loaded ' + _tcScrapedAreas.length + ' area' + (_tcScrapedAreas.length > 1 ? 's' : '') + ' from NYC Tree Map');
     }
