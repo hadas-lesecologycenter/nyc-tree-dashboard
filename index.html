@@ -2626,13 +2626,16 @@ function init() {
 // Leave as '' to use localStorage only (no sharing).
 const TC_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyHWdvS3QUeo2xYTGWZ7_ycjnAavdMhOqy4Q_axVZK6kbH2NX_efIGasF6bGi9KySX0/exec';
 
-// ── NYC Tree Map scraper Sheet config ────────────────────────
-// Raw URL of data/activities.csv in the scraper GitHub repo.
-// Format: https://raw.githubusercontent.com/YOUR-ORG/YOUR-REPO/main/data/activities.csv
-// The scraper writes these exact columns:
-//   id, date, treeId, species, address, activitiesDone, durationMinutes, scrapedAt
-// where activitiesDone is semicolon-separated, e.g. "Watering; Weeding"
-const TC_SCRAPED_SHEET_CSV_URL = 'https://cdn.jsdelivr.net/gh/hadas-lesecologycenter/nyc-tree-dashboard@main/data/activities.csv'; // ← paste raw GitHub CSV URL here
+// ── NYC Tree Map proxy config ─────────────────────────────────
+// URL of the Google Apps Script proxy (apps-script-proxy.js in this repo).
+// When set, the dashboard fetches live activities directly from the NYC Tree Map
+// API via the proxy — no IP blocking, no daily scraper needed.
+// Leave as '' to fall back to the CSV below.
+const TC_TREEMAP_PROXY_URL = ''; // ← paste your Apps Script Web App URL here
+
+// ── NYC Tree Map CSV fallback ─────────────────────────────────
+// Used when TC_TREEMAP_PROXY_URL is empty or the proxy request fails.
+const TC_SCRAPED_SHEET_CSV_URL = 'https://cdn.jsdelivr.net/gh/hadas-lesecologycenter/nyc-tree-dashboard@main/data/activities.csv';
 
 // In-memory store for scraped events — never written to localStorage.
 // Shape is identical to manually-created areas so all existing UI works unchanged.
@@ -2673,89 +2676,131 @@ function tcParseCSVLine(line) {
   return result;
 }
 
-// Fetch scraped activities from the raw GitHub CSV and build in-memory areas.
-// Each unique address becomes one address-based area; multiple visits to the
-// same address accumulate as care events on that area.
+// Build the census tree_id → tree lookup used by both fetch paths.
+function tcBuildTreeIndex() {
+  const treeById = {};
+  if (typeof allTrees !== 'undefined') {
+    allTrees.forEach(t => { if (t.tree_id) treeById[String(t.tree_id)] = t; });
+  }
+  return treeById;
+}
+
+// Convert a flat list of activity row objects into the _tcScrapedAreas format.
+// Each row needs: treeId, date (YYYY-MM-DD), activitiesDone (semicolon-sep),
+// address (fallback), species (fallback).
+function tcBuildScrapedAreas(rows, treeById) {
+  const byAddress = {};
+  rows.forEach(row => {
+    const { treeId, date: rawDate, activitiesDone: rawActs, address: rowAddr, species: rowSpecies } = row;
+    if (!rawDate) return;
+    const tree    = treeById[String(treeId || '')];
+    const address = (tree && tree.address) || rowAddr || ('Tree #' + treeId);
+    const species = (tree && tree.spc_common) || rowSpecies || '';
+
+    const activities = (rawActs || '')
+      .split(';')
+      .map(a => a.trim().toLowerCase())
+      .map(a => TC_ACTIVITY_TYPE_MAP[a])
+      .filter(Boolean);
+
+    const event = { date: new Date(rawDate).toISOString(), activities, note: '', _fromScraper: true };
+    if (!byAddress[address]) byAddress[address] = { tree, species, events: [] };
+    byAddress[address].events.push(event);
+  });
+
+  return Object.entries(byAddress).map(([address, { tree, species, events }]) => ({
+    id:             'tc_scraped_' + address.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
+    name:           address,
+    polygon:        [],
+    treeCount:      1,
+    createdAt:      events[0].date,
+    status:         'watching',
+    careEvents:     events,
+    isAddressBased: true,
+    addressNote:    (species ? species + ' · ' : '') + 'from NYC Tree Map',
+    _fromScraper:   true,
+  }));
+}
+
+// Fetch activities from the Google Apps Script proxy (JSON).
+async function tcFetchFromProxy() {
+  const res = await fetch(TC_TREEMAP_PROXY_URL);
+  if (!res.ok) throw new Error('Proxy HTTP ' + res.status);
+  const json = await res.json();
+  if (json.error) throw new Error('Proxy error: ' + json.error);
+  return (json.activities || []).map(a => ({
+    treeId:        a.treeId,
+    date:          a.date,
+    activitiesDone: a.activitiesDone,
+    address:       a.address,
+    species:       a.species,
+  }));
+}
+
+// Fetch activities from the fallback CSV on GitHub/jsDelivr.
+async function tcFetchFromCSV() {
+  const res = await fetch(TC_SCRAPED_SHEET_CSV_URL);
+  if (!res.ok) throw new Error('CSV HTTP ' + res.status);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  const header = tcParseCSVLine(lines[0]).map(h => h.toLowerCase());
+  const col = h => header.indexOf(h);
+  const iTreeId  = col('treeid');
+  const iDate    = col('date');
+  const iActs    = col('activitiesdone');
+  const iAddress = col('address');
+  const iSpecies = col('species');
+  if (iTreeId < 0 || iDate < 0 || iActs < 0) {
+    console.warn('TC scraper CSV: unexpected columns', header);
+    return [];
+  }
+
+  const rows = [];
+  lines.slice(1).forEach(line => {
+    if (!line.trim()) return;
+    const r = tcParseCSVLine(line);
+    rows.push({
+      treeId:         r[iTreeId]  || '',
+      date:           r[iDate]    || '',
+      activitiesDone: r[iActs]    || '',
+      address:        iAddress >= 0 ? r[iAddress] : '',
+      species:        iSpecies >= 0 ? r[iSpecies] : '',
+    });
+  });
+  return rows;
+}
+
+// Main entry point — tries the proxy, falls back to CSV.
 // Does NOT touch localStorage — scraped data is always read-only.
 async function tcSyncScrapedActivities() {
-  if (!TC_SCRAPED_SHEET_CSV_URL) return;
-  try {
-    const res = await fetch(TC_SCRAPED_SHEET_CSV_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return;
+  const treeById = tcBuildTreeIndex();
+  let rows = null;
+  let source = '';
 
-    // Parse header: id, date, treeId, species, address, activitiesDone, durationMinutes, scrapedAt
-    const header = tcParseCSVLine(lines[0]).map(h => h.toLowerCase());
-    const col = h => header.indexOf(h);
-    const iTreeId  = col('treeid');
-    const iDate    = col('date');
-    const iActs    = col('activitiesdone');
-    const iAddress = col('address');
-    const iSpecies = col('species');
-    if (iTreeId < 0 || iDate < 0 || iActs < 0) {
-      console.warn('TC scraper CSV: unexpected columns', header);
-      return;
+  if (TC_TREEMAP_PROXY_URL) {
+    try {
+      rows = await tcFetchFromProxy();
+      source = 'NYC Tree Map (live)';
+    } catch (e) {
+      console.warn('TC proxy fetch failed, falling back to CSV:', e.message);
     }
-
-    // Build tree_id → census tree lookup for matching to existing app trees
-    const treeById = {};
-    if (typeof allTrees !== 'undefined') {
-      allTrees.forEach(t => { if (t.tree_id) treeById[String(t.tree_id)] = t; });
-    }
-
-    // Group events by address (one area per unique address)
-    const byAddress = {}; // { address: { tree, species, events[] } }
-
-    lines.slice(1).forEach(line => {
-      if (!line.trim()) return;
-      const r = tcParseCSVLine(line);
-      const treeId  = r[iTreeId]  || '';
-      const rawDate = r[iDate]    || '';
-      const rawActs = r[iActs]    || '';
-      // Prefer census tree address; fall back to scraper's address field
-      const tree    = treeById[treeId];
-      const address = (tree && tree.address) || (iAddress >= 0 ? r[iAddress] : '') || ('Tree #' + treeId);
-      const species = (tree && tree.spc_common) || (iSpecies >= 0 ? r[iSpecies] : '');
-      if (!rawDate) return;
-
-      // activitiesDone is semicolon-separated: "Watering; Weeding"
-      const activities = rawActs
-        .split(';')
-        .map(a => a.trim().toLowerCase())
-        .map(a => TC_ACTIVITY_TYPE_MAP[a])
-        .filter(Boolean);
-
-      const event = {
-        date:         new Date(rawDate).toISOString(),
-        activities:   activities,
-        note:         '',
-        _fromScraper: true,
-      };
-
-      if (!byAddress[address]) {
-        byAddress[address] = { tree, species, events: [] };
-      }
-      byAddress[address].events.push(event);
-    });
-
-    _tcScrapedAreas = Object.entries(byAddress).map(([address, { tree, species, events }]) => ({
-      id:             'tc_scraped_' + address.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, ''),
-      name:           address,
-      polygon:        [],
-      treeCount:      1,
-      createdAt:      events[0].date,
-      status:         'watching',
-      careEvents:     events,
-      isAddressBased: true,
-      addressNote:    (species ? species + ' · ' : '') + 'from NYC Tree Map',
-      _fromScraper:   true,
-    }));
-
-  } catch(e) {
-    console.warn('TC scraper CSV sync failed:', e.message);
   }
+
+  if (!rows && TC_SCRAPED_SHEET_CSV_URL) {
+    try {
+      rows = await tcFetchFromCSV();
+      source = 'NYC Tree Map (cached)';
+    } catch (e) {
+      console.warn('TC CSV sync failed:', e.message);
+    }
+  }
+
+  if (!rows || !rows.length) return;
+
+  _tcScrapedAreas = tcBuildScrapedAreas(rows, treeById);
+  console.log(`TC: loaded ${_tcScrapedAreas.length} areas from ${source}`);
 }
 
 // ── Sync helpers ──────────────────────────────────────────────
