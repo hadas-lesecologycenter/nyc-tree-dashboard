@@ -4,3 +4,859 @@ id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt
 83533,2026-03-24,2122382,thornless honeylocust,484 East Houston Street,Cleared Litter/Waste,10,2026-03-27
 83524,2026-03-24,14051588,American elm,484 East Houston Street,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,20,2026-03-27
 83525,2026-03-24,14051576,pin oak,500 East Houston Street,Weeded; Managed Soil; Cleared Litter/Waste,20,2026-03-27
+41549,2022-09-24,6582163,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+72494,2025-05-15,2139923,,,Cleared Litter/Waste; Managed Soil,10,2026-03-30
+58068,2024-04-16,2137214,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+81808,2025-12-09,13851725,,,Cleared Litter/Waste,5,2026-03-30
+34485,2021-11-13,4612428,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+6663,2017-10-14,1425923,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+9184,2018-04-04,1387261,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+83980,2026-03-30,2110975,,,Cleared Litter/Waste,5,2026-03-30
+71544,2025-05-03,2125464,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,20,2026-03-30
+83016,2026-03-12,2116172,,,Cleared Litter/Waste,5,2026-03-30
+83594,2026-03-22,220508,,,Cleared Litter/Waste,5,2026-03-30
+40956,2022-08-26,2118691,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,10,2026-03-30
+34482,2021-11-13,4613519,,,Managed Soil; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded,20,2026-03-30
+72510,2025-05-15,13377139,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+76767,2025-08-12,13862668,,,Watered; Cleared Litter/Waste; Landscaped/Planted Flowers,15,2026-03-30
+76983,2025-08-16,15197139,,,Cleared Litter/Waste; Watered; Weeded; Managed Soil,15,2026-03-30
+27535,2020-11-07,3650425,,,Pruning; Cleared Litter/Waste; Weeded,15,2026-03-30
+72504,2025-05-15,2139913,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+83599,2026-03-22,2114530,,,Cleared Litter/Waste,5,2026-03-30
+83539,2026-03-24,2122383,,,Cleared Litter/Waste,10,2026-03-30
+61391,2024-06-07,2116194,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+6644,2017-10-14,1420902,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+6631,2017-10-14,1423432,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+42555,2022-11-04,1426706,,,Mulched; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+73458,2025-06-11,2143732,,,Weeded; Cleared Litter/Waste; Managed Soil; Watered,15,2026-03-30
+6703,2017-10-18,2137216,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+11954,2018-08-16,4598990,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+17567,2019-04-24,1387259,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+83689,2026-03-22,2121925,,,Cleared Litter/Waste,5,2026-03-30
+23046,2019-10-30,3658665,,,Cleared Litter/Waste; Managed Soil; Mulched; Watered; Weeded,15,2026-03-30
+78921,2025-10-04,15197100,,,Cleared Litter/Waste,10,2026-03-30
+25209,2020-03-21,3648487,,,Pruning; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+41943,2022-10-15,2112698,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+40650,2022-08-10,2122603,,,Cleared Litter/Waste; Weeded,15,2026-03-30
+83598,2026-03-22,11139780,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+42179,2022-10-21,3637854,,,Pruning; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+83261,2026-03-19,2120002,,,Cleared Litter/Waste,10,2026-03-30
+27244,2020-10-16,1048713,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+75218,2025-06-21,2144188,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70569,2025-04-12,2122301,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+83213,2026-03-12,2145909,,,Cleared Litter/Waste,5,2026-03-30
+40965,2022-08-26,5930798,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+30680,2021-05-06,3357384,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+11926,2018-06-10,2118543,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+24206,2019-12-15,3368265,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Pruning,30,2026-03-30
+83979,2026-03-30,2110974,,,Cleared Litter/Waste,5,2026-03-30
+40954,2022-08-26,12230457,,,Cleared Litter/Waste; Mulched; Managed Soil; Weeded,10,2026-03-30
+69704,2025-03-22,10097970,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83231,2026-03-12,2145914,,,Cleared Litter/Waste,5,2026-03-30
+67274,2024-11-18,10165397,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+27375,2020-10-25,3364773,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+70924,2025-04-22,11184820,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61395,2024-06-07,2116198,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+34149,2021-10-22,1447347,,,Weeded; Cleared Litter/Waste,5,2026-03-30
+76768,2025-08-07,2121959,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Watered; Mulched,15,2026-03-30
+41940,2022-10-15,2112695,,,Mulched; Landscaped/Planted Flowers; Weeded; Managed Soil; Cleared Litter/Waste,20,2026-03-30
+77162,2025-08-20,12400955,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+61371,2024-06-13,2141267,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67569,2024-11-25,13883694,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+42557,2022-11-04,1426704,,,Cleared Litter/Waste,15,2026-03-30
+11956,2018-08-16,4599015,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+34145,2021-10-22,1447166,,,Cleared Litter/Waste; Weeded,5,2026-03-30
+27373,2020-10-25,3647116,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+25858,2020-05-21,3661246,,,Cleared Litter/Waste; Pruning,15,2026-03-30
+75234,2025-07-12,14051585,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+6646,2017-06-14,1420900,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+17563,2019-04-24,1387255,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+27231,2020-10-14,3661246,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+83535,2026-03-24,2122380,,,Cleared Litter/Waste; Weeded,10,2026-03-30
+83698,2026-03-22,11139414,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11922,2018-06-10,2118535,,,Watered; Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+30186,2021-04-18,3650425,,,Managed Soil; Pruning; Cleared Litter/Waste,15,2026-03-30
+38826,2022-05-20,2111046,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75224,2025-06-21,2144195,,,Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+9187,2018-04-04,2128447,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+41947,2022-10-15,10183252,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70928,2025-04-22,14121311,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+38827,2022-05-20,2111045,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83547,2026-03-22,13851729,,,Cleared Litter/Waste; Weeded; Managed Soil,10,2026-03-30
+83978,2026-03-30,2110973,,,Cleared Litter/Waste,5,2026-03-30
+66361,2024-10-25,5782990,,,Mulched; Watered; Cleared Litter/Waste; Weeded; Managed Soil,45,2026-03-30
+76980,2025-08-16,14085341,,,Watered; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+40396,2022-07-22,2111016,,,Cleared Litter/Waste,5,2026-03-30
+83259,2026-03-19,2119951,,,Cleared Litter/Waste; Weeded; Managed Soil,10,2026-03-30
+70934,2025-04-22,14113602,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+83983,2026-03-30,2116235,,,Cleared Litter/Waste,5,2026-03-30
+6658,2017-10-14,1420889,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+75227,2025-06-21,2144198,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+78911,2025-10-04,14103655,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75215,2025-06-21,2144184,,,Watered,10,2026-03-30
+61379,2024-06-13,2141260,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+81750,2025-12-09,14090746,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+66364,2024-10-26,4613519,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Weeded; Mulched; Managed Soil,30,2026-03-30
+83553,2026-03-22,221307,,,Cleared Litter/Waste,5,2026-03-30
+70927,2025-04-22,15838129,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+40961,2022-08-26,5240533,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,10,2026-03-30
+78922,2025-10-04,10183247,,,Cleared Litter/Waste,10,2026-03-30
+70921,2025-04-19,1425161,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27201,2020-10-11,3357651,,,Pruning; Cleared Litter/Waste; Weeded,30,2026-03-30
+23948,2019-12-06,3368551,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning; Weeded,45,2026-03-30
+83534,2026-03-24,2122381,,,Cleared Litter/Waste; Mulched; Weeded; Managed Soil,30,2026-03-30
+61390,2024-06-07,2116193,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+67266,2024-11-16,2116169,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+72508,2025-05-15,2139909,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70926,2025-04-22,2111126,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83541,2026-03-24,4608584,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,20,2026-03-30
+69705,2025-03-22,10097588,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+75216,2025-06-21,2144186,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+78022,2025-09-09,15216596,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+79609,2025-10-21,10202530,,,Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,35,2026-03-30
+83984,2026-03-30,17042428,,,Cleared Litter/Waste,5,2026-03-30
+40404,2022-07-22,2145854,,,Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+83023,2026-03-12,2116178,,,Cleared Litter/Waste,5,2026-03-30
+67564,2024-11-25,2114454,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+27202,2020-10-11,3641679,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+17562,2019-04-24,1387254,,,Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+58065,2024-04-16,2121472,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+41548,2022-09-24,6582162,,,Weeded; Cleared Litter/Waste; Managed Soil; Mulched,15,2026-03-30
+6627,2017-10-14,1423435,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+70930,2025-04-22,15197095,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70919,2025-04-19,15075334,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+70565,2025-04-12,2110185,,,Cleared Litter/Waste; Managed Soil,5,2026-03-30
+83044,2026-03-12,2145898,,,Cleared Litter/Waste,5,2026-03-30
+6634,2017-10-14,1421432,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+81813,2025-12-09,2145917,,,Cleared Litter/Waste,5,2026-03-30
+83693,2026-03-22,2121921,,,Cleared Litter/Waste,5,2026-03-30
+70925,2025-04-22,15971243,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27528,2020-11-07,3353640,,,Weeded; Pruning; Cleared Litter/Waste,30,2026-03-30
+41551,2022-09-24,2122305,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11953,2018-08-16,4599016,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+67265,2024-11-16,2116168,,,Managed Soil; Weeded; Cleared Litter/Waste,10,2026-03-30
+9177,2018-04-04,1387254,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+40967,2022-08-26,2122511,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+72511,2025-05-15,2141017,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+27392,2020-10-28,4692352,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+32781,2021-08-09,4598996,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83567,2026-03-22,220506,,,Cleared Litter/Waste,5,2026-03-30
+83692,2026-03-22,13869137,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27388,2020-10-28,4674802,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+25205,2020-03-18,3346831,,,Pruning,15,2026-03-30
+66376,2024-10-26,2146517,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+70910,2025-04-19,1425115,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6655,2017-10-14,1420892,,,Cleared Litter/Waste,30,2026-03-30
+30194,2021-04-18,4698175,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+6625,2017-10-14,1423438,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+60020,2024-05-13,2119542,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+6662,2017-10-14,1420885,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+79942,2025-10-26,3206534,,,Mulched; Managed Soil; Landscaped/Planted Flowers; Cleared Litter/Waste,10,2026-03-30
+25213,2020-03-21,3652241,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+6628,2017-10-14,4664365,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67844,2024-12-07,10183645,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83593,2026-03-22,220507,,,Cleared Litter/Waste,5,2026-03-30
+73453,2025-06-11,2143740,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+27364,2020-10-23,3357595,,,Cleared Litter/Waste; Weeded; Pruning,30,2026-03-30
+9185,2018-04-04,1387262,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+40403,2022-07-22,2111038,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+70566,2025-04-12,2110184,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded,15,2026-03-30
+11937,2018-06-10,2132914,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+25212,2020-03-21,3536813,,,Managed Soil; Cleared Litter/Waste; Pruning,15,2026-03-30
+30681,2021-05-06,3364450,,,Weeded; Pruning; Cleared Litter/Waste,30,2026-03-30
+6706,2017-10-18,2121470,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+81810,2025-12-09,2145914,,,Cleared Litter/Waste,5,2026-03-30
+70922,2025-04-19,10266702,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61366,2024-06-13,2141272,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+77157,2025-08-20,2121962,,,Cleared Litter/Waste,5,2026-03-30
+34483,2021-11-13,4613536,,,Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+32782,2021-08-09,4598994,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83552,2026-03-22,2114537,,,Cleared Litter/Waste,5,2026-03-30
+83695,2026-03-22,2121919,,,Cleared Litter/Waste,5,2026-03-30
+67263,2024-11-16,13852124,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+79939,2025-10-25,4604009,,,Mulched; Managed Soil; Cleared Litter/Waste,5,2026-03-30
+27203,2020-10-11,3364057,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+48605,2023-06-06,2110177,,,Managed Soil; Cleared Litter/Waste,15,2026-03-30
+81751,2025-12-09,2116163,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+50997,2023-08-29,2112549,,,Weeded; Cleared Litter/Waste; Managed Soil,2,2026-03-30
+76763,2025-08-12,2110141,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+6645,2017-10-14,1420901,,,Weeded; Cleared Litter/Waste,30,2026-03-30
+6629,2017-10-14,1423433,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+42553,2022-11-04,2110989,,,Mulched; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+66359,2024-10-25,12401352,,,Mulched; Watered; Cleared Litter/Waste; Weeded; Managed Soil,45,2026-03-30
+9186,2018-04-04,2128446,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+79614,2025-10-23,5785036,,,Landscaped/Planted Flowers,5,2026-03-30
+40401,2022-07-22,2111034,,,Cleared Litter/Waste,5,2026-03-30
+24499,2020-01-07,3368798,,,Pruning,15,2026-03-30
+25207,2020-03-18,3638233,,,Pruning,15,2026-03-30
+75214,2025-06-21,2144185,,,Mulched; Weeded; Watered; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+41550,2022-09-24,6582164,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+69878,2025-03-29,10340920,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83612,2026-03-22,2121683,,,Cleared Litter/Waste,5,2026-03-30
+24205,2019-12-15,3350306,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil,30,2026-03-30
+17566,2019-04-24,1387258,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+27193,2020-10-11,3657142,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+60013,2024-05-13,2119549,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+6679,2017-10-14,1425850,,,Weeded; Cleared Litter/Waste,30,2026-03-30
+77151,2025-08-19,2121953,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+67249,2024-11-16,2116166,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded,20,2026-03-30
+83607,2026-03-22,2121684,,,Cleared Litter/Waste,5,2026-03-30
+67841,2024-12-07,2110936,,,Mulched; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+75235,2025-07-12,14495891,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75231,2025-07-12,14177850,,,Cleared Litter/Waste; Watered,10,2026-03-30
+80295,2025-11-08,13846309,,,Pruning,10,2026-03-30
+25859,2020-05-20,3661246,,,Managed Soil,15,2026-03-30
+60021,2024-05-13,2119541,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83012,2026-03-12,2116168,,,Cleared Litter/Waste,5,2026-03-30
+70935,2025-04-22,2112411,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+83017,2026-03-12,2116173,,,Cleared Litter/Waste,5,2026-03-30
+40654,2022-08-10,6134273,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+78401,2025-09-21,13765569,,,Watered; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil; Mulched,20,2026-03-30
+9189,2018-04-04,1387263,,,Cleared Litter/Waste,5,2026-03-30
+27281,2020-10-17,3661314,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+23920,2019-12-05,3657142,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning,10,2026-03-30
+83025,2026-03-12,2116180,,,Cleared Litter/Waste,5,2026-03-30
+80291,2025-11-08,13851722,,,Pruning,10,2026-03-30
+61370,2024-06-13,13318005,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,30,2026-03-30
+78923,2025-10-04,15197098,,,Cleared Litter/Waste,10,2026-03-30
+25238,2020-04-07,3354427,,,Pruning,15,2026-03-30
+83551,2026-03-22,2114539,,,Managed Soil; Cleared Litter/Waste; Weeded,15,2026-03-30
+11934,2018-06-10,2132907,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+75236,2025-07-12,16153938,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+73456,2025-06-11,2143735,,,Weeded; Cleared Litter/Waste; Watered; Managed Soil,15,2026-03-30
+40959,2022-08-26,2118694,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+27199,2020-10-11,3355032,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+79607,2025-10-21,5778757,,,Watered; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,35,2026-03-30
+6638,2017-10-14,1421428,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67276,2024-11-18,10164127,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6659,2017-10-14,1420888,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83020,2026-03-12,2116176,,,Cleared Litter/Waste,5,2026-03-30
+72507,2025-05-15,2139910,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+41553,2022-09-24,2122308,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+76985,2025-08-16,2143763,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6652,2017-10-14,106825,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+27401,2020-10-31,3365027,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+27297,2020-10-18,373071,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+40963,2022-08-26,5239728,,,Managed Soil; Weeded; Cleared Litter/Waste; Mulched,10,2026-03-30
+61372,2024-06-13,13318004,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+40398,2022-07-22,2111018,,,Cleared Litter/Waste,5,2026-03-30
+69710,2025-03-22,2110202,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+61394,2024-06-07,2116197,,,Managed Soil; Weeded; Cleared Litter/Waste,60,2026-03-30
+25206,2020-03-18,3644415,,,Pruning,15,2026-03-30
+73159,2025-05-29,11537810,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+20353,2019-08-07,2946399,,,Cleared Litter/Waste; Managed Soil; Mulched; Weeded,10,2026-03-30
+78913,2025-10-04,14103656,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+72509,2025-05-15,2139908,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+78914,2025-10-04,5000025,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded,15,2026-03-30
+11932,2018-06-10,2118531,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+41547,2022-09-24,6582161,,,Managed Soil; Weeded; Cleared Litter/Waste,20,2026-03-30
+80289,2025-11-08,13852122,,,Pruning,10,2026-03-30
+83015,2026-03-12,2116171,,,Cleared Litter/Waste,5,2026-03-30
+27367,2020-10-23,3653300,,,Cleared Litter/Waste; Weeded; Pruning,30,2026-03-30
+27485,2020-11-04,3344264,,,Cleared Litter/Waste; Weeded; Pruning,30,2026-03-30
+6670,2017-10-14,1425912,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+70563,2025-04-12,2122296,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+67267,2024-11-16,2116170,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+4102,2017-07-20,2142458,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,45,2026-03-30
+78919,2025-10-04,2145942,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+67565,2024-11-25,2114456,,,Cleared Litter/Waste,5,2026-03-30
+75226,2025-06-21,2144197,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+9173,2018-04-04,1387250,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+11951,2018-08-02,4598996,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+27365,2020-10-23,3659437,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+24500,2020-01-07,3349344,,,Pruning,15,2026-03-30
+11945,2018-08-02,4599345,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+24473,2020-01-05,4627153,,,Pruning,15,2026-03-30
+83988,2026-03-30,13883296,,,Cleared Litter/Waste,5,2026-03-30
+11949,2018-08-02,3904835,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+78766,2025-10-01,14500058,,,Watered,5,2026-03-30
+83019,2026-03-12,2116175,,,Cleared Litter/Waste,5,2026-03-30
+6626,2017-10-14,1423437,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67570,2024-11-25,10164543,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6702,2017-10-18,2137217,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+34193,2021-10-29,2122291,,,Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste,30,2026-03-30
+73156,2025-05-29,2110176,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+11901,2018-06-10,2118534,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+70914,2025-04-19,1425039,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+83215,2026-03-12,2145911,,,Cleared Litter/Waste,5,2026-03-30
+40968,2022-08-26,2122510,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+75238,2025-07-12,5242532,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83043,2026-03-12,12158994,,,Cleared Litter/Waste,5,2026-03-30
+67275,2024-11-18,11775832,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75222,2025-06-21,2144193,,,Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+83702,2026-03-22,2121912,,,Cleared Litter/Waste,5,2026-03-30
+6620,2017-10-14,1423439,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+75223,2025-06-21,2144194,,,Weeded; Cleared Litter/Waste; Managed Soil; Mulched,10,2026-03-30
+83609,2026-03-22,2121657,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+40955,2022-08-26,2118690,,,Managed Soil; Weeded; Cleared Litter/Waste; Mulched,10,2026-03-30
+80092,2025-11-04,15218038,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil; Mulched,20,2026-03-30
+27200,2020-10-11,3650198,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+27372,2020-10-25,3352640,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+50998,2023-08-29,2143705,,,Weeded; Cleared Litter/Waste; Managed Soil,2,2026-03-30
+77408,2025-08-27,15936570,,,Watered; Managed Soil; Cleared Litter/Waste; Weeded,15,2026-03-30
+78908,2025-10-04,14103654,,,Mulched; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27197,2020-10-11,3361244,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+24477,2020-01-04,3367302,,,Pruning,15,2026-03-30
+83604,2026-03-22,2121687,,,Cleared Litter/Waste,5,2026-03-30
+80093,2025-11-04,10187626,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+9183,2018-04-04,1387260,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+30191,2021-04-18,4685891,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+11939,2018-06-10,2133076,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83265,2026-03-19,11484349,,,Cleared Litter/Waste; Mulched; Managed Soil,20,2026-03-30
+41552,2022-09-24,2122306,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+25239,2020-04-07,3637450,,,Cleared Litter/Waste; Pruning,15,2026-03-30
+6701,2017-10-18,2137218,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+70918,2025-04-19,1425047,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+6676,2017-10-14,1425856,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+40953,2022-08-26,5917607,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,10,2026-03-30
+78909,2025-10-04,2146516,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+78918,2025-10-04,15197099,,,Cleared Litter/Waste,10,2026-03-30
+70564,2025-04-12,4599653,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+83537,2026-03-24,2122379,,,Cleared Litter/Waste,10,2026-03-30
+83602,2026-03-22,2116856,,,Cleared Litter/Waste,5,2026-03-30
+83253,2026-03-19,2118613,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+67278,2024-11-18,2122336,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+27529,2020-11-07,3657266,,,Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+83263,2026-03-19,2120000,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+69708,2025-03-22,2110199,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83982,2026-03-30,2116234,,,Cleared Litter/Waste,5,2026-03-30
+27400,2020-10-31,3368551,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+24484,2020-01-07,3661086,,,Pruning,15,2026-03-30
+67259,2024-11-16,13851725,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+11931,2018-06-10,2118530,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+50440,2023-08-15,11184430,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+81264,2025-11-24,13852135,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+76986,2025-08-16,2143764,,,Watered; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+34194,2021-10-29,2122290,,,Weeded; Cleared Litter/Waste; Landscaped/Planted Flowers,30,2026-03-30
+76758,2025-08-12,14500060,,,Watered; Cleared Litter/Waste; Weeded,15,2026-03-30
+83021,2026-03-12,13851726,,,Cleared Litter/Waste,5,2026-03-30
+81263,2025-11-24,13851734,,,Mulched; Landscaped/Planted Flowers; Managed Soil; Cleared Litter/Waste,25,2026-03-30
+40653,2022-08-10,12776279,,,Cleared Litter/Waste,10,2026-03-30
+83217,2026-03-12,13851725,,,Cleared Litter/Waste,5,2026-03-30
+6640,2017-10-14,1421426,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+76982,2025-08-16,15378280,,,Weeded; Cleared Litter/Waste; Watered; Managed Soil,15,2026-03-30
+79941,2025-10-25,2121954,,,Mulched; Managed Soil; Cleared Litter/Waste; Landscaped/Planted Flowers,5,2026-03-30
+11943,2018-08-02,2111085,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+11928,2018-06-10,2118527,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+60017,2024-05-13,2119545,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+83022,2026-03-12,13851726,,,Cleared Litter/Waste,5,2026-03-30
+11936,2018-06-10,2132913,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+34146,2021-10-22,1447330,,,Weeded; Cleared Litter/Waste,5,2026-03-30
+83704,2026-03-22,11139408,,,Cleared Litter/Waste,5,2026-03-30
+27233,2020-10-15,3149328,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+80292,2025-11-08,13846310,,,Pruning,15,2026-03-30
+75237,2025-07-12,5243733,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+61386,2024-06-07,2116189,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+83690,2026-03-22,2121924,,,Cleared Litter/Waste,5,2026-03-30
+69709,2025-03-22,6505691,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+40652,2022-08-10,2118680,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+76771,2025-08-06,11790392,,,Cleared Litter/Waste,5,2026-03-30
+34486,2021-11-13,2146518,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+69707,2025-03-22,2121700,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+61393,2024-06-07,2116195,,,Cleared Litter/Waste; Weeded; Managed Soil,60,2026-03-30
+61378,2024-06-13,2141261,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+83986,2026-03-30,15957971,,,Cleared Litter/Waste,5,2026-03-30
+83608,2026-03-22,2121684,,,Cleared Litter/Waste,5,2026-03-30
+83013,2026-03-12,2116169,,,Cleared Litter/Waste,5,2026-03-30
+79610,2025-10-23,14500041,,,Mulched; Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,25,2026-03-30
+80884,2025-11-18,10183645,,,Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+70920,2025-04-19,1425163,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+30190,2021-04-18,4671883,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+27387,2020-10-28,2173517,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+72503,2025-05-15,2139914,,,Managed Soil; Weeded,5,2026-03-30
+6677,2017-10-14,1425855,,,Managed Soil; Cleared Litter/Waste,30,2026-03-30
+24203,2019-12-15,3655710,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched,45,2026-03-30
+80886,2025-11-18,2110908,,,Weeded; Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil,25,2026-03-30
+66366,2024-10-26,14103656,,,Landscaped/Planted Flowers,30,2026-03-30
+75240,2025-07-12,15216654,,,Cleared Litter/Waste; Watered,15,2026-03-30
+75239,2025-07-12,14022437,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+41944,2022-10-15,2112647,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+58069,2024-04-16,2137213,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+75229,2025-07-12,14177518,,,Watered; Cleared Litter/Waste,15,2026-03-30
+9172,2018-04-04,1387249,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+69712,2025-03-22,6505692,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70572,2025-04-12,4600465,,,Mulched; Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+83697,2026-03-22,11139413,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11952,2018-08-16,4599006,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+80290,2025-11-08,13851723,,,Pruning,15,2026-03-30
+67269,2024-11-16,2116172,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+78021,2025-09-09,5929596,,,Mulched; Weeded; Watered; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+40406,2022-07-22,10183640,,,Cleared Litter/Waste,5,2026-03-30
+69879,2025-03-29,2110234,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70917,2025-04-19,15815166,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+9188,2018-04-04,438713,,,Cleared Litter/Waste,5,2026-03-30
+66362,2024-10-25,2143740,,,Mulched; Watered; Cleared Litter/Waste; Weeded; Managed Soil,45,2026-03-30
+83047,2026-03-12,2145902,,,Cleared Litter/Waste,5,2026-03-30
+27530,2020-11-07,3348940,,,Weeded; Cleared Litter/Waste; Pruning,15,2026-03-30
+75225,2025-06-21,2144196,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+6657,2017-10-14,1420890,,,Cleared Litter/Waste,30,2026-03-30
+4099,2017-07-20,2142455,,,Watered,10,2026-03-30
+83549,2026-03-22,2114541,,,Cleared Litter/Waste,5,2026-03-30
+40649,2022-08-10,2122600,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+72501,2025-05-15,2139916,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+66375,2024-10-26,2146518,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+78399,2025-09-21,4608442,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil,20,2026-03-30
+67258,2024-11-16,2145912,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61383,2024-06-10,2143705,,,Managed Soil; Cleared Litter/Waste; Weeded,60,2026-03-30
+42554,2022-11-04,1426707,,,Mulched; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+6660,2017-10-14,1420887,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+6624,2017-10-14,1423442,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83014,2026-03-12,2116170,,,Cleared Litter/Waste,5,2026-03-30
+27185,2020-10-09,1048716,,,Pruning,15,2026-03-30
+50441,2023-08-15,5789305,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+20352,2019-08-07,5374206,,,Cleared Litter/Waste; Managed Soil,10,2026-03-30
+6649,2017-10-14,1420897,,,Cleared Litter/Waste,30,2026-03-30
+77158,2025-08-20,2121963,,,Cleared Litter/Waste,5,2026-03-30
+9180,2018-04-04,1387257,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+61387,2024-06-07,2116190,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+11941,2018-06-10,2133854,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83230,2026-03-12,2145913,,,Cleared Litter/Waste,10,2026-03-30
+32778,2021-08-09,4598990,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+11924,2018-06-10,2118541,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+76984,2025-08-16,15197138,,,Watered; Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+67846,2024-12-07,4614207,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+25211,2020-03-21,3365027,,,Managed Soil; Cleared Litter/Waste; Pruning,15,2026-03-30
+47030,2023-04-24,2134172,,,Managed Soil; Cleared Litter/Waste; Weeded,20,2026-03-30
+67264,2024-11-16,2116167,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+80085,2025-11-04,10187627,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+60015,2024-05-13,2119547,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6674,2017-10-14,1425863,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+17571,2019-04-24,2128445,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+67843,2024-12-07,10183644,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+9178,2018-04-04,1387255,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+25846,2020-05-19,3657090,,,Pruning; Cleared Litter/Waste; Managed Soil; Watered,30,2026-03-30
+83550,2026-03-22,2114540,,,Cleared Litter/Waste,5,2026-03-30
+83011,2026-03-12,2116167,,,Cleared Litter/Waste,5,2026-03-30
+83701,2026-03-22,2121913,,,Cleared Litter/Waste,5,2026-03-30
+77149,2025-08-21,2121959,,,Mulched; Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27464,2020-11-03,3356280,,,Cleared Litter/Waste; Weeded; Pruning,15,2026-03-30
+6669,2017-10-14,1425913,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+83606,2026-03-22,2121685,,,Cleared Litter/Waste,5,2026-03-30
+40399,2022-07-22,2111020,,,Cleared Litter/Waste,5,2026-03-30
+50996,2023-08-29,2143704,,,Weeded; Cleared Litter/Waste; Managed Soil,2,2026-03-30
+26160,2020-06-10,1423899,,,Mulched; Pruning; Cleared Litter/Waste; Managed Soil; Weeded,30,2026-03-30
+81807,2025-12-09,2145912,,,Cleared Litter/Waste,5,2026-03-30
+11957,2018-08-16,4599002,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+30187,2021-04-18,4625955,,,Pruning; Cleared Litter/Waste; Weeded,15,2026-03-30
+11930,2018-06-10,2118529,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67277,2024-11-18,4684626,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+6648,2017-10-14,1420898,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+40397,2022-07-22,2111017,,,Cleared Litter/Waste,5,2026-03-30
+72498,2025-05-15,2139919,,,Weeded; Mulched; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27391,2020-10-28,4638836,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+24474,2020-01-05,4661493,,,Pruning,15,2026-03-30
+27534,2020-11-07,3348672,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+79615,2025-10-23,4609673,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+17565,2019-04-24,1387257,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+9175,2018-04-04,1387252,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+67272,2024-11-16,14500060,,,Weeded; Managed Soil; Cleared Litter/Waste,10,2026-03-30
+79608,2025-10-21,12401352,,,Watered; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,35,2026-03-30
+6621,2017-10-14,1423440,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+11958,2018-06-10,2118538,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83691,2026-03-22,13868739,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+11929,2018-06-10,2118528,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+78018,2025-09-09,2118873,,,Watered; Cleared Litter/Waste; Weeded; Managed Soil; Mulched,20,2026-03-30
+81804,2025-12-09,2145909,,,Cleared Litter/Waste,5,2026-03-30
+6672,2017-10-14,1425869,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+83018,2026-03-12,13852124,,,Cleared Litter/Waste,5,2026-03-30
+72512,2025-05-15,2141019,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+25215,2020-03-21,3660857,,,Managed Soil; Cleared Litter/Waste; Pruning,15,2026-03-30
+32776,2021-08-09,4999994,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83536,2026-03-24,14051169,,,Cleared Litter/Waste; Weeded; Mulched; Managed Soil,30,2026-03-30
+77411,2025-08-27,11331381,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+25214,2020-03-21,3369541,,,Managed Soil; Cleared Litter/Waste; Pruning,15,2026-03-30
+83703,2026-03-22,259209,,,Cleared Litter/Waste,5,2026-03-30
+11925,2018-06-10,2118542,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+40400,2022-07-22,2111035,,,Cleared Litter/Waste,5,2026-03-30
+27398,2020-10-31,3350306,,,Cleared Litter/Waste; Pruning; Weeded,30,2026-03-30
+67252,2024-11-16,2116163,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+67260,2024-11-16,2145915,,,Weeded; Mulched; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+79938,2025-10-25,2121959,,,Mulched; Managed Soil; Cleared Litter/Waste,10,2026-03-30
+11946,2018-08-02,2111080,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+81749,2025-12-09,10202012,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+71543,2025-05-03,2125465,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+70972,2025-04-26,14352356,,,Cleared Litter/Waste,10,2026-03-30
+9195,2018-04-04,2128235,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+42552,2022-11-04,2110988,,,Mulched; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+67842,2024-12-07,2110935,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+30185,2021-04-18,4608908,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+83600,2026-03-22,2114529,,,Cleared Litter/Waste,5,2026-03-30
+6656,2017-10-14,1420891,,,Cleared Litter/Waste,30,2026-03-30
+78912,2025-10-04,4613519,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+23950,2019-12-06,3637795,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning,15,2026-03-30
+6632,2017-10-14,1423194,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+67273,2024-11-18,10164129,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83046,2026-03-12,14090746,,,Cleared Litter/Waste,5,2026-03-30
+76761,2025-08-12,2110220,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+6636,2017-10-14,1421429,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+81812,2025-12-09,2145916,,,Cleared Litter/Waste,5,2026-03-30
+30193,2021-04-18,4682074,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+83989,2026-03-30,2116286,,,Cleared Litter/Waste,5,2026-03-30
+42178,2022-10-21,3638725,,,Pruning; Managed Soil; Cleared Litter/Waste,10,2026-03-30
+83214,2026-03-12,2145910,,,Cleared Litter/Waste,5,2026-03-30
+83568,2026-03-22,221306,,,Cleared Litter/Waste,5,2026-03-30
+81748,2025-12-09,12158994,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded,15,2026-03-30
+27402,2020-10-31,3644372,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+83048,2026-03-12,2145903,,,Cleared Litter/Waste,5,2026-03-30
+80885,2025-11-18,2110909,,,Weeded; Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil,25,2026-03-30
+72502,2025-05-15,2139915,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+75220,2025-06-21,2144190,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+60016,2024-05-13,2119546,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+61380,2024-06-10,1417706,,,Managed Soil; Cleared Litter/Waste,60,2026-03-30
+27194,2020-10-11,3366033,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+83605,2026-03-22,2121686,,,Cleared Litter/Waste,5,2026-03-30
+6673,2017-10-14,1425864,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+83045,2026-03-12,2145899,,,Cleared Litter/Waste,5,2026-03-30
+32779,2021-08-09,4999996,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+72495,2025-05-15,2139922,,,Cleared Litter/Waste; Weeded; Managed Soil; Mulched,15,2026-03-30
+70909,2025-04-19,15893756,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+9174,2018-04-04,1387251,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+69711,2025-03-22,2110203,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61375,2024-06-13,2141264,,,Weeded; Cleared Litter/Waste; Managed Soil; Mulched,30,2026-03-30
+83262,2026-03-19,10622703,,,Cleared Litter/Waste; Weeded; Managed Soil; Mulched,20,2026-03-30
+77163,2025-08-21,3206534,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+76760,2025-08-12,10165397,,,Watered; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+76770,2025-08-04,4604009,,,Mulched; Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,120,2026-03-30
+67256,2024-11-16,2145910,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+41545,2022-09-24,2122304,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+6678,2017-10-14,1425851,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+79616,2025-10-23,2112343,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+80108,2025-11-04,12216772,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+77153,2025-08-20,2121955,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+79937,2025-10-25,13862668,,,Mulched; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+41546,2022-09-24,6582160,,,Weeded; Managed Soil; Cleared Litter/Waste,20,2026-03-30
+70933,2025-04-22,5783010,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+78910,2025-10-04,14103653,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83595,2026-03-22,11783528,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+73161,2025-05-29,11537811,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+6643,2017-10-14,5032669,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+17572,2019-04-24,2128235,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+67257,2024-11-16,2145911,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+58067,2024-04-16,2121470,,,Cleared Litter/Waste; Managed Soil,10,2026-03-30
+80887,2025-11-18,2110906,,,Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+70568,2025-04-12,2110182,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+9193,2018-04-04,1387267,,,Cleared Litter/Waste,5,2026-03-30
+27532,2020-11-07,3351255,,,Cleared Litter/Waste; Weeded; Pruning,15,2026-03-30
+26161,2020-06-10,1423885,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded; Pruning,30,2026-03-30
+77410,2025-08-27,11537346,,,Mulched; Watered; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+78398,2025-09-21,14051154,,,Mulched; Watered; Managed Soil; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded,30,2026-03-30
+50999,2023-08-29,2143706,,,Weeded; Cleared Litter/Waste; Managed Soil,2,2026-03-30
+11955,2018-08-16,4599022,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+69281,2025-03-07,2121959,,,Cleared Litter/Waste,10,2026-03-30
+27390,2020-10-28,4634771,,,Weeded; Pruning; Cleared Litter/Waste,15,2026-03-30
+42551,2022-11-04,2110987,,,Managed Soil; Cleared Litter/Waste; Mulched,15,2026-03-30
+83696,2026-03-22,2121918,,,Cleared Litter/Waste,5,2026-03-30
+24518,2020-01-07,2534441,,,Pruning,15,2026-03-30
+24475,2020-01-05,4673003,,,Pruning,15,2026-03-30
+83987,2026-03-30,13883295,,,Cleared Litter/Waste,5,2026-03-30
+6671,2017-10-14,1425910,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+66377,2024-10-26,2146516,,,Managed Soil,5,2026-03-30
+25216,2020-03-21,3365271,,,Managed Soil; Cleared Litter/Waste,15,2026-03-30
+76981,2025-08-16,14085342,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61373,2024-06-13,2141266,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+42177,2022-10-21,3367966,,,Pruning; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+34148,2021-10-22,1447337,,,Weeded; Cleared Litter/Waste,5,2026-03-30
+75217,2025-06-21,2144187,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+69706,2025-03-22,2121696,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+76766,2025-08-12,2110138,,,Mulched; Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+40408,2022-07-22,2145944,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+27363,2020-10-23,3367431,,,Cleared Litter/Waste; Weeded; Pruning,15,2026-03-30
+41945,2022-10-15,2112644,,,Mulched; Landscaped/Planted Flowers; Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+6666,2017-10-14,1425917,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+6637,2017-10-14,5029010,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+34150,2021-10-22,1447348,,,Weeded; Cleared Litter/Waste,5,2026-03-30
+83258,2026-03-19,2119950,,,Cleared Litter/Waste; Weeded; Managed Soil,10,2026-03-30
+78765,2025-10-01,14500060,,,Watered,5,2026-03-30
+24207,2019-12-15,5374206,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Pruning,30,2026-03-30
+9179,2018-04-04,1387256,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+60022,2024-05-13,2119540,,,Managed Soil; Cleared Litter/Waste,20,2026-03-30
+11948,2018-08-02,3904836,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+61365,2024-06-13,2141273,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+6647,2017-10-14,1420899,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+41942,2022-10-15,2112697,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+73459,2025-06-11,10202530,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27389,2020-10-28,4641760,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+40964,2022-08-26,2122513,,,Weeded; Managed Soil; Cleared Litter/Waste; Mulched,10,2026-03-30
+11950,2018-08-16,4598994,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+37442,2022-04-05,2137216,,,Weeded; Cleared Litter/Waste,20,2026-03-30
+81262,2025-11-24,11185841,,,Mulched; Landscaped/Planted Flowers; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+27374,2020-10-25,3343821,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+67261,2024-11-16,2145916,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11942,2018-08-02,2111086,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+83700,2026-03-22,2121914,,,Cleared Litter/Waste,5,2026-03-30
+80296,2025-11-08,2112359,,,Pruning,10,2026-03-30
+76762,2025-08-12,4613392,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+25204,2020-03-18,472711,,,Pruning,15,2026-03-30
+61374,2024-06-13,2141265,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+67271,2024-11-16,14500058,,,Weeded; Managed Soil,10,2026-03-30
+58066,2024-04-16,2121471,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+67255,2024-11-16,14090746,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+23951,2019-12-06,3366033,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning; Weeded,30,2026-03-30
+83611,2026-03-22,2121659,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+72513,2025-05-15,2141020,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+75221,2025-06-21,2144193,,,Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+27393,2020-10-28,3368776,,,Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+77413,2025-08-27,6544542,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+40655,2022-08-10,6134272,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11944,2018-08-02,2111084,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+61388,2024-06-07,2116191,,,Cleared Litter/Waste; Weeded; Managed Soil,60,2026-03-30
+40405,2022-07-22,2145855,,,Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+17561,2019-04-24,1387253,,,Cleared Litter/Waste; Managed Soil,5,2026-03-30
+78917,2025-10-04,11139378,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+39797,2022-06-30,4613535,,,Managed Soil; Mulched; Cleared Litter/Waste,20,2026-03-30
+72497,2025-05-15,2139920,,,Mulched; Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+61377,2024-06-13,2141262,,,Weeded; Mulched; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+34484,2021-11-13,4612420,,,Weeded; Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil,20,2026-03-30
+27463,2020-11-03,3369864,,,Weeded; Pruning; Cleared Litter/Waste,30,2026-03-30
+83232,2026-03-12,2145915,,,Cleared Litter/Waste,10,2026-03-30
+6623,2017-10-14,1423442,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+81806,2025-12-09,2145911,,,Cleared Litter/Waste,5,2026-03-30
+70570,2025-04-12,6582161,,,Cleared Litter/Waste; Managed Soil,5,2026-03-30
+83603,2026-03-22,2121688,,,Cleared Litter/Waste,5,2026-03-30
+78916,2025-10-04,16293529,,,Cleared Litter/Waste,10,2026-03-30
+40966,2022-08-26,1958059,,,Weeded; Managed Soil; Cleared Litter/Waste; Mulched,10,2026-03-30
+30192,2021-04-18,4622214,,,Managed Soil; Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+34147,2021-10-22,5784137,,,Weeded; Cleared Litter/Waste,5,2026-03-30
+6675,2017-10-14,1425862,,,Weeded; Cleared Litter/Waste,30,2026-03-30
+73157,2025-05-29,11537351,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+67845,2024-12-07,923093,,,Mulched; Managed Soil; Cleared Litter/Waste,10,2026-03-30
+6622,2017-10-14,1423441,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+27366,2020-10-23,3356309,,,Cleared Litter/Waste; Weeded; Pruning,30,2026-03-30
+25210,2020-03-21,3662647,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+23921,2019-12-05,3648487,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning,10,2026-03-30
+30682,2021-05-06,3658189,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+69714,2025-03-22,1098902,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+9191,2018-04-04,1387265,,,Cleared Litter/Waste,5,2026-03-30
+71545,2025-05-03,10183245,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+27196,2020-10-11,3369501,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+81753,2025-12-09,2116166,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83613,2026-03-22,2121682,,,Cleared Litter/Waste,5,2026-03-30
+32777,2021-08-09,4599022,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75219,2025-06-21,2144189,,,Mulched; Weeded; Cleared Litter/Waste; Watered; Managed Soil,15,2026-03-30
+61392,2024-06-07,2116196,,,Managed Soil; Weeded; Cleared Litter/Waste,60,2026-03-30
+83699,2026-03-22,11139411,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+41946,2022-10-15,2112643,,,Mulched; Landscaped/Planted Flowers; Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+67568,2024-11-25,14022435,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83981,2026-03-30,2110976,,,Cleared Litter/Waste,5,2026-03-30
+48608,2023-06-06,2146585,,,Managed Soil; Cleared Litter/Waste,15,2026-03-30
+72506,2025-05-15,2139911,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61368,2024-06-13,2141269,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,30,2026-03-30
+73155,2025-05-29,2121610,,,Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,75,2026-03-30
+67254,2024-11-16,12158994,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83614,2026-03-22,2121680,,,Cleared Litter/Waste,5,2026-03-30
+61384,2024-06-07,2116187,,,Managed Soil; Weeded; Cleared Litter/Waste,60,2026-03-30
+77148,2025-08-21,13862668,,,Mulched; Watered; Weeded; Managed Soil; Landscaped/Planted Flowers; Cleared Litter/Waste,15,2026-03-30
+42180,2022-10-21,3348711,,,Pruning; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+81809,2025-12-09,2145913,,,Cleared Litter/Waste,5,2026-03-30
+78397,2025-09-21,2131220,,,Mulched; Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+32775,2021-08-09,4599001,,,Mulched; Weeded; Managed Soil,15,2026-03-30
+81754,2025-12-09,2145902,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70923,2025-04-19,1425845,,,Cleared Litter/Waste; Weeded,15,2026-03-30
+78019,2025-09-09,2118870,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+11938,2018-06-10,2133818,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+71546,2025-05-03,14495878,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+75230,2025-06-21,14177850,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27533,2020-11-07,1615576,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+17564,2019-04-24,1387256,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+24476,2020-01-04,4648564,,,Pruning,15,2026-03-30
+27506,2020-11-05,3645572,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+70931,2025-04-22,15197094,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+4098,2017-07-20,2142455,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+6661,2017-10-14,1420886,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+32780,2021-08-09,4599006,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+79612,2025-10-23,10408119,,,Mulched; Watered; Cleared Litter/Waste; Weeded; Managed Soil,25,2026-03-30
+27399,2020-10-31,3536813,,,Weeded; Pruning; Landscaped/Planted Flowers,15,2026-03-30
+37443,2022-04-05,2137217,,,Weeded; Cleared Litter/Waste,20,2026-03-30
+77412,2025-08-27,2122345,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+4101,2017-07-20,2142457,,,Watered; Weeded; Managed Soil; Mulched; Cleared Litter/Waste,50,2026-03-30
+6667,2017-10-14,1425916,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+70929,2025-04-22,15197096,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+11900,2018-05-10,2118872,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,15,2026-03-30
+24472,2020-01-06,4655963,,,Pruning,15,2026-03-30
+80084,2025-11-04,2118640,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+24208,2019-12-15,3658665,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning; Watered,60,2026-03-30
+72499,2025-05-15,2139918,,,Weeded; Mulched; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83257,2026-03-19,2119949,,,Cleared Litter/Waste,10,2026-03-30
+27368,2020-10-23,3354623,,,Weeded; Pruning; Cleared Litter/Waste,15,2026-03-30
+83256,2026-03-19,2118610,,,Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+83216,2026-03-12,2145912,,,Cleared Litter/Waste,5,2026-03-30
+6630,2017-10-14,4658753,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+61396,2024-06-07,2116199,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+70932,2025-04-22,15196818,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+75228,2025-06-21,14177518,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+79611,2025-10-23,2112383,,,Watered; Mulched; Weeded; Managed Soil; Cleared Litter/Waste,25,2026-03-30
+83610,2026-03-22,2121658,,,Cleared Litter/Waste,5,2026-03-30
+9181,2018-04-04,1387258,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+67262,2024-11-16,2145917,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+73160,2025-05-29,11789072,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+66360,2024-10-25,5778757,,,Watered; Weeded; Cleared Litter/Waste; Mulched; Managed Soil,45,2026-03-30
+27403,2020-10-31,4684051,,,Weeded; Pruning; Cleared Litter/Waste,15,2026-03-30
+70562,2025-04-12,2122295,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+80882,2025-11-18,2110935,,,Managed Soil; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Mulched,25,2026-03-30
+50439,2023-08-15,14121312,,,Weeded; Cleared Litter/Waste; Managed Soil,120,2026-03-30
+83540,2026-03-24,10162200,,,Cleared Litter/Waste; Weeded; Mulched; Managed Soil,20,2026-03-30
+83977,2026-03-30,2110972,,,Cleared Litter/Waste,5,2026-03-30
+70911,2025-04-19,1425114,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+77161,2025-08-21,2121966,,,Mulched; Cleared Litter/Waste; Managed Soil,5,2026-03-30
+40960,2022-08-26,4642913,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+23949,2019-12-06,3343821,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched; Pruning,30,2026-03-30
+70970,2025-04-26,10266321,,,Cleared Litter/Waste,10,2026-03-30
+11927,2018-06-10,2118544,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+66369,2024-10-26,14103655,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,30,2026-03-30
+70573,2025-04-12,6582154,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+40656,2022-08-10,2121928,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+77150,2025-08-18,4604009,,,Cleared Litter/Waste,10,2026-03-30
+27448,2020-11-03,3359033,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+83597,2026-03-22,13868740,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+61369,2024-06-13,2141268,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+70567,2025-04-12,2110183,,,Mulched; Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+66374,2024-10-26,5000025,,,Mulched; Managed Soil; Cleared Litter/Waste; Weeded,20,2026-03-30
+6665,2017-10-14,1425919,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+72514,2025-05-15,2141021,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+75233,2025-07-12,14051578,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil; Mulched,15,2026-03-30
+40402,2022-07-22,3904834,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+17574,2019-04-24,2128231,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+70912,2025-04-19,15979246,,,Managed Soil,10,2026-03-30
+61367,2024-06-13,2141271,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+83255,2026-03-19,2118611,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+70971,2025-04-26,10267517,,,Cleared Litter/Waste,10,2026-03-30
+6651,2017-10-14,1420895,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+66363,2024-10-26,14103656,,,Weeded; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+27531,2020-11-07,3657984,,,Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+81756,2025-12-09,10183642,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+83548,2026-03-22,12158964,,,Cleared Litter/Waste; Managed Soil; Weeded,10,2026-03-30
+80094,2025-11-04,14051522,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+83538,2026-03-24,2120862,,,Cleared Litter/Waste,10,2026-03-30
+6664,2017-10-14,1425921,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+72500,2025-05-15,2139917,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+80293,2025-11-08,2112362,,,Pruning,10,2026-03-30
+27298,2020-10-18,4638836,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+37444,2022-04-05,4928383,,,Cleared Litter/Waste,20,2026-03-30
+83601,2026-03-22,2116855,,,Cleared Litter/Waste,5,2026-03-30
+83254,2026-03-19,2118612,,,Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+79613,2025-10-23,5785036,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+27232,2020-10-14,3369541,,,Pruning; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+77152,2025-08-20,2121954,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+77155,2025-08-20,11790392,,,Cleared Litter/Waste,5,2026-03-30
+6650,2017-10-14,1420896,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+70916,2025-04-19,1425041,,,Cleared Litter/Waste; Weeded; Managed Soil,15,2026-03-30
+11898,2018-05-10,2120926,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+67253,2024-11-16,10202012,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+17570,2019-04-24,1387262,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+9190,2018-04-04,1387264,,,Cleared Litter/Waste,5,2026-03-30
+66368,2024-10-26,14103652,,,Mulched; Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+6705,2017-10-18,2121471,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+78020,2025-09-09,5930797,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83596,2026-03-22,2114533,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+83264,2026-03-19,16423220,,,Cleared Litter/Waste; Managed Soil; Mulched,20,2026-03-30
+76759,2025-08-12,14500058,,,Watered; Cleared Litter/Waste; Weeded,15,2026-03-30
+83212,2026-03-12,2145908,,,Cleared Litter/Waste,5,2026-03-30
+80883,2025-11-18,2110936,,,Weeded; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,25,2026-03-30
+6639,2017-10-14,1421427,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+6668,2017-10-14,1425915,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+6704,2017-10-18,2121472,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+41941,2022-10-15,2112696,,,Mulched; Landscaped/Planted Flowers; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+77154,2025-08-20,2121958,,,Cleared Litter/Waste; Managed Soil,5,2026-03-30
+76142,2025-07-29,6505691,,,Watered; Managed Soil,30,2026-03-30
+77156,2025-08-20,658211,,,Cleared Litter/Waste; Managed Soil,5,2026-03-30
+80888,2025-11-18,2110905,,,Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,25,2026-03-30
+6642,2017-10-14,1421424,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+80095,2025-11-04,2118641,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,25,2026-03-30
+30189,2021-04-18,4699146,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+81811,2025-12-09,2145915,,,Cleared Litter/Waste,5,2026-03-30
+17573,2019-04-24,2128234,,,Cleared Litter/Waste; Managed Soil; Weeded,20,2026-03-30
+73158,2025-05-29,11537350,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11923,2010-06-10,2118538,,,Watered; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+40407,2022-07-22,2145945,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+81805,2025-12-09,2145910,,,Cleared Litter/Waste,5,2026-03-30
+76765,2025-08-12,2110139,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+67567,2024-11-25,4596928,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+83024,2026-03-12,2116179,,,Cleared Litter/Waste,5,2026-03-30
+40962,2022-08-26,5241332,,,Weeded; Cleared Litter/Waste,10,2026-03-30
+9194,2018-04-04,1387268,,,Cleared Litter/Waste,5,2026-03-30
+77159,2025-08-20,2121964,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+70969,2025-04-26,5664325,,,Cleared Litter/Waste,10,2026-03-30
+6633,2017-10-14,1421433,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+73455,2025-06-11,5778757,,,Weeded; Watered; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61385,2024-06-07,2116188,,,Weeded; Cleared Litter/Waste; Managed Soil,60,2026-03-30
+27184,2020-10-09,1048714,,,Pruning; Weeded; Cleared Litter/Waste,10,2026-03-30
+27198,2020-10-11,3658784,,,Pruning; Cleared Litter/Waste,15,2026-03-30
+83260,2026-03-19,2119952,,,Cleared Litter/Waste,10,2026-03-30
+17568,2019-04-24,1387260,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+81752,2025-12-09,2116165,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+9176,2018-04-04,1387253,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+80107,2025-11-04,16498098,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+83252,2026-03-19,6525292,,,Cleared Litter/Waste; Weeded; Managed Soil,20,2026-03-30
+6635,2017-10-14,1421430,,,Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+11899,2018-05-10,2124602,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,15,2026-03-30
+78920,2025-10-04,15197101,,,Cleared Litter/Waste,10,2026-03-30
+40958,2022-08-26,2118693,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,10,2026-03-30
+27449,2020-11-03,1048377,,,Pruning; Weeded; Cleared Litter/Waste,15,2026-03-30
+72496,2025-05-15,2139921,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+11935,2018-06-10,2132912,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+32774,2021-08-09,4598986,,,Cleared Litter/Waste; Weeded; Mulched; Managed Soil,15,2026-03-30
+78400,2025-09-21,14042109,,,Mulched; Watered; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,30,2026-03-30
+4103,2017-07-20,2142459,,,Weeded; Cleared Litter/Waste,40,2026-03-30
+81757,2025-12-09,2145908,,,Mulched; Cleared Litter/Waste; Weeded,15,2026-03-30
+61389,2024-06-07,2116192,,,Managed Soil; Weeded; Cleared Litter/Waste,60,2026-03-30
+30188,2021-04-18,4673591,,,Managed Soil; Cleared Litter/Waste; Pruning; Weeded,15,2026-03-30
+61382,2024-06-10,1417708,,,Managed Soil; Cleared Litter/Waste,60,2026-03-30
+40409,2022-07-22,2145943,,,Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+11940,2018-06-10,2133075,,,Watered; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+11933,2018-06-10,2132906,,,Watered; Weeded; Managed Soil; Cleared Litter/Waste,30,2026-03-30
+69713,2025-03-22,2110204,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+73457,2025-06-11,12401352,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+67268,2024-11-16,2116171,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+61376,2024-06-13,2141263,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,30,2026-03-30
+81265,2025-11-24,13851735,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,25,2026-03-30
+67251,2024-11-16,2116164,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+60018,2024-05-13,2119544,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+40957,2022-08-26,2118692,,,Mulched; Managed Soil; Weeded; Cleared Litter/Waste,10,2026-03-30
+76769,2025-08-06,4604009,,,Landscaped/Planted Flowers; Cleared Litter/Waste,15,2026-03-30
+83694,2026-03-22,2121920,,,Cleared Litter/Waste,5,2026-03-30
+6654,2017-10-14,1420893,,,Cleared Litter/Waste,30,2026-03-30
+75213,2025-06-21,2144184,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+79940,2025-10-25,2121953,,,Mulched; Managed Soil; Cleared Litter/Waste; Landscaped/Planted Flowers,10,2026-03-30
+48604,2023-06-06,2110176,,,Cleared Litter/Waste; Managed Soil,15,2026-03-30
+9192,2018-04-04,1387266,,,Cleared Litter/Waste,5,2026-03-30
+76764,2025-08-12,2110140,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+69280,2025-03-08,13862668,,,Mulched; Cleared Litter/Waste; Managed Soil,30,2026-03-30
+24521,2020-01-07,2534462,,,Pruning,15,2026-03-30
+48607,2023-06-06,2110266,,,Managed Soil; Cleared Litter/Waste,15,2026-03-30
+61381,2024-06-10,15197145,,,Cleared Litter/Waste; Managed Soil,60,2026-03-30
+83688,2026-03-22,2121926,,,Cleared Litter/Waste,5,2026-03-30
+80294,2025-11-08,2112361,,,Pruning,10,2026-03-30
+72493,2025-05-15,2139924,,,Cleared Litter/Waste; Managed Soil,10,2026-03-30
+70913,2025-04-19,1425037,,,Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+40651,2022-08-10,2122604,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+6641,2017-10-14,1421425,,,Weeded; Cleared Litter/Waste,30,2026-03-30
+9182,2018-04-04,1387259,,,Weeded; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+24478,2020-01-07,3363734,,,Pruning,15,2026-03-30
+78915,2025-10-04,2146523,,,Cleared Litter/Waste; Weeded; Mulched; Managed Soil,15,2026-03-30
+48606,2023-06-06,2110265,,,Managed Soil; Cleared Litter/Waste,15,2026-03-30
+75232,2025-07-12,14051168,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+66372,2024-10-26,14103653,,,Mulched; Cleared Litter/Waste; Weeded; Managed Soil,235,2026-03-30
+24204,2019-12-15,3638753,,,Cleared Litter/Waste; Landscaped/Planted Flowers; Managed Soil; Mulched,45,2026-03-30
+81755,2025-12-09,2145903,,,Mulched; Weeded; Cleared Litter/Waste,15,2026-03-30
+83211,2026-03-12,10183642,,,Cleared Litter/Waste,5,2026-03-30
+40648,2022-08-10,2122599,,,Managed Soil; Weeded; Cleared Litter/Waste,15,2026-03-30
+27195,2020-10-11,3647908,,,Cleared Litter/Waste; Pruning,15,2026-03-30
+6653,2017-10-14,1420894,,,Cleared Litter/Waste,30,2026-03-30
+70571,2025-04-12,284985,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+4100,2017-07-20,2142456,,,Watered; Weeded; Managed Soil; Mulched; Cleared Litter/Waste,50,2026-03-30
+67270,2024-11-18,4613392,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+27371,2020-10-25,154150,,,Pruning; Weeded; Cleared Litter/Waste,30,2026-03-30
+60014,2024-05-13,2119548,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+17569,2016-04-24,1387261,,,Cleared Litter/Waste; Managed Soil; Weeded,15,2026-03-30
+47029,2023-04-24,2134171,,,Managed Soil; Weeded; Cleared Litter/Waste,20,2026-03-30
+11947,2018-08-02,3904837,,,Weeded; Managed Soil; Mulched; Cleared Litter/Waste,30,2026-03-30
+77160,2025-08-20,2121965,,,Mulched; Landscaped/Planted Flowers; Cleared Litter/Waste; Weeded; Managed Soil,10,2026-03-30
+70915,2025-04-19,1425040,,,Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+77409,2025-08-27,4606812,,,Mulched; Watered; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+67250,2024-11-16,2116165,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,20,2026-03-30
+42556,2022-11-04,1426705,,,Mulched; Managed Soil; Cleared Litter/Waste,15,2026-03-30
+73454,2025-06-11,2143736,,,Watered; Weeded; Cleared Litter/Waste; Managed Soil,15,2026-03-30
+72505,2025-05-15,2139912,,,Mulched; Weeded; Cleared Litter/Waste; Managed Soil,10,2026-03-30
+60019,2024-05-13,2119543,,,Cleared Litter/Waste; Managed Soil,20,2026-03-30
+67566,2024-11-25,2114457,,,Cleared Litter/Waste,5,2026-03-30
+83985,2026-03-30,14108386,,,Cleared Litter/Waste,5,2026-03-30
