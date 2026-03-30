@@ -2669,11 +2669,10 @@ const TC_SHEETS_URL = '';
 // When set, the dashboard fetches live activities directly from the NYC Tree Map
 // API via the proxy — no IP blocking, no daily scraper needed.
 // Leave as '' to fall back to the CSV below.
-const TC_TREEMAP_PROXY_URL = 'https://script.google.com/macros/s/AKfycbyZgIhm4wS7fC6-yR8DoKXDaWLVvSqr1nAWu1DZJ7-fyPikdWy7hlGQz6NN3J8NG1-I4w/exec';
+const TC_TREEMAP_PROXY_URL = ''; // disabled — bookmarklet writes directly to GitHub
 
-// ── NYC Tree Map CSV fallback ─────────────────────────────────
-// Used when TC_TREEMAP_PROXY_URL is empty or the proxy request fails.
-const TC_SCRAPED_SHEET_CSV_URL = 'https://cdn.jsdelivr.net/gh/hadas-lesecologycenter/nyc-tree-dashboard@main/data/activities.csv';
+// Fetches the activities CSV from GitHub (updates within ~5 minutes of a bookmarklet sync).
+const TC_SCRAPED_SHEET_CSV_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/activities.csv';
 
 // In-memory store for scraped events — never written to localStorage.
 // Shape is identical to manually-created areas so all existing UI works unchanged.
