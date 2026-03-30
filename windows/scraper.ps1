@@ -8,6 +8,14 @@
 #      - Go to github.com → click your profile photo → Settings
 #      - Left sidebar → Developer settings → Personal access tokens → Tokens (classic)
 #      - "Generate new token (classic)" → check the "repo" box → click Generate
+
+# Keep window open no matter what — wrap everything so errors are always visible.
+trap {
+    Write-Host ""
+    Write-Host "ERROR: $_" -ForegroundColor Red
+    Read-Host "Press Enter to close"
+    exit 1
+}
 #      - Copy the token (starts with ghp_...)
 #   2. Right-click THIS FILE → "Run with PowerShell"
 #      It will ask for your token, save it, and schedule itself to run every day.
