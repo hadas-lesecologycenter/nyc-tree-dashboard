@@ -1131,13 +1131,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="myblock-dashboard" style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)">
 
         <!-- LIST / DASHBOARD PANEL -->
-        <div id="tc-list-panel" style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
-          <div id="myblock-no-selection" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);text-align:center;padding:40px">
-            <div style="font-size:48px;margin-bottom:16px">🏙</div>
-            <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Select a block</div>
-            <div style="font-size:13px;line-height:1.7;max-width:320px">Claim a block to track stewardship and log care events toward the 1,000-tree goal.</div>
+        <div id="tc-list-panel" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+          <div id="myblock-no-selection" style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
+            <div id="tc-care-map" style="flex:1;min-height:0"></div>
+            <div id="tc-care-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-size:11px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:none">
+              <div style="font-weight:700;margin-bottom:6px;color:var(--text)">Care Activity Map</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2e8b57;border:2px solid #fff;box-shadow:0 0 0 1.5px #2e8b57"></span> Tree cared for</div>
+              <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#bbb"></span> Other trees</div>
+            </div>
+            <div id="tc-care-map-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;pointer-events:none">
+              <div style="font-size:48px;margin-bottom:16px">🌿</div>
+              <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No care activities yet</div>
+              <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet on the NYC Tree Map<br>to sync your care activities here.</div>
+            </div>
           </div>
-          <div id="myblock-dashboard-content" style="display:none;padding:24px;max-width:760px"></div>
+          <div id="myblock-dashboard-content" style="display:none;padding:24px;max-width:760px;overflow-y:auto;flex:1"></div>
         </div>
 
         <!-- DRAW PANEL (replaces popup) -->
@@ -2123,6 +2131,7 @@ function switchView(view) {
   if (view === 'myblock') {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
+    setTimeout(tcRenderCareMap, 100);
   }
   if (view === 'blocks') {
     // also render claimed areas on blocks map
@@ -2677,6 +2686,112 @@ const TC_SCRAPED_SHEET_CSV_URL = 'https://raw.githubusercontent.com/hadas-leseco
 // In-memory store for scraped events — never written to localStorage.
 // Shape is identical to manually-created areas so all existing UI works unchanged.
 let _tcScrapedAreas = [];
+
+// ── Care Map (Tree Care tab) ──────────────────────────────────────────────────
+let tcCareMap = null;
+let tcCareMarkersLayer = null;
+
+function tcRenderCareMap() {
+  const container = document.getElementById('tc-care-map');
+  if (!container) return;
+
+  // Initialize map once
+  if (!tcCareMap) {
+    tcCareMap = L.map('tc-care-map', {
+      center: [40.7195, -73.9845],
+      zoom: 15,
+      zoomControl: true
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap contributors © CARTO',
+      maxZoom: 19
+    }).addTo(tcCareMap);
+    tcCareMarkersLayer = L.layerGroup().addTo(tcCareMap);
+  } else {
+    tcCareMarkersLayer.clearLayers();
+  }
+
+  // Build a lookup: treeId → {lat, lng, address, species}
+  const treeById = tcBuildTreeIndex();
+
+  // Collect all cared-for treeIds and their events from scraped areas
+  const caredForMap = {}; // treeId → { area, lat, lng }
+  _tcScrapedAreas.forEach(area => {
+    if (!area._fromScraper || !area.careEvents || !area.careEvents.length) return;
+    const tid = String(area._treeId || '');
+    if (!tid) return;
+    const tree = treeById[tid];
+    const lat = tree ? parseFloat(tree.latitude || tree.lat) : NaN;
+    const lng = tree ? parseFloat(tree.longitude || tree.lng || tree.lon) : NaN;
+    if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
+      caredForMap[tid] = { lat, lng, area, tree };
+    }
+  });
+
+  const caredCount = Object.keys(caredForMap).length;
+  const emptyEl  = document.getElementById('tc-care-map-empty');
+  const legendEl = document.getElementById('tc-care-map-legend');
+
+  if (caredCount === 0) {
+    if (emptyEl)  emptyEl.style.display  = 'flex';
+    if (legendEl) legendEl.style.display = 'none';
+  } else {
+    if (emptyEl)  emptyEl.style.display  = 'none';
+    if (legendEl) legendEl.style.display = 'block';
+  }
+
+  // Plot grey dots for all census trees in viewport area (background context)
+  allTrees.forEach(tree => {
+    const lat = parseFloat(tree.latitude || tree.lat);
+    const lng = parseFloat(tree.longitude || tree.lng || tree.lon);
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+    const tid = String(tree.tree_id || '');
+    if (caredForMap[tid]) return; // skip — will render as green
+
+    const icon = L.divIcon({
+      className: '',
+      iconSize: [8, 8],
+      iconAnchor: [4, 4],
+      html: '<div style="width:8px;height:8px;border-radius:50%;background:#ccc;opacity:0.5"></div>'
+    });
+    L.marker([lat, lng], { icon, interactive: false }).addTo(tcCareMarkersLayer);
+  });
+
+  // Plot green markers for cared-for trees
+  Object.values(caredForMap).forEach(({ lat, lng, area, tree }) => {
+    const icon = L.divIcon({
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:#2e8b57;border:3px solid #fff;box-shadow:0 0 0 2px #2e8b57,0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:900;cursor:pointer">✓</div>'
+    });
+
+    // Build popup content
+    const latestEvent = area.careEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1)[0];
+    const latestDate  = latestEvent ? latestEvent.date.slice(0, 10) : '';
+    const address     = area.name || (tree && tree.address) || '';
+    const species     = (tree && tree.spc_common) || area.addressNote || '';
+    const eventCount  = area.careEvents.length;
+
+    const popup = `
+      <div style="font-family:'Nunito',sans-serif;min-width:160px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a3a1a">${address}</div>
+        ${species ? `<div style="font-size:11px;color:#555;margin-bottom:6px">${species}</div>` : ''}
+        <div style="font-size:11px;color:#2e8b57;font-weight:600">✓ ${eventCount} care event${eventCount !== 1 ? 's' : ''}</div>
+        ${latestDate ? `<div style="font-size:11px;color:#777;margin-top:2px">Last: ${latestDate}</div>` : ''}
+      </div>`;
+
+    L.marker([lat, lng], { icon }).bindPopup(popup).addTo(tcCareMarkersLayer);
+  });
+
+  // Fit map to cared-for markers if any exist
+  if (caredCount > 0) {
+    const latlngs = Object.values(caredForMap).map(({ lat, lng }) => [lat, lng]);
+    tcCareMap.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+  }
+
+  setTimeout(() => tcCareMap.invalidateSize(), 50);
+}
 
 // Maps NYC Tree Map stewardship activity labels (lowercase) → app activity ids.
 // The scraper pulls these from stewardshipActivities[] in the NYC Tree Map Apollo cache.
@@ -4041,6 +4156,7 @@ window.addEventListener('load', () => {
       tcRenderBlocksMap();
       updateMap(); // highlight cared-for trees on the main map
       updateStats();
+      tcRenderCareMap(); // populate care map in Tree Care tab
       tcShowSyncStatus('✓ Loaded ' + _tcScrapedAreas.length + ' area' + (_tcScrapedAreas.length > 1 ? 's' : '') + ' from NYC Tree Map');
     }
   });
