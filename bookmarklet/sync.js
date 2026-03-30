@@ -17,7 +17,7 @@
     return;
   }
 
-  // ── Status bubble ────────────────────────────────────────────────────────
+  // ── Status bubble ─────────────────────────────────────────────────────────
   var bubble = document.getElementById('_treeSync');
   if (!bubble) {
     bubble = document.createElement('div');
@@ -25,7 +25,8 @@
     bubble.style.cssText = [
       'position:fixed', 'top:20px', 'right:20px', 'z-index:2147483647',
       'padding:14px 20px', 'border-radius:10px', 'font:bold 14px/1.5 sans-serif',
-      'color:#fff', 'box-shadow:0 4px 16px rgba(0,0,0,0.3)', 'max-width:320px'
+      'color:#fff', 'box-shadow:0 4px 16px rgba(0,0,0,0.3)', 'max-width:360px',
+      'white-space:pre-line'
     ].join(';');
     document.body.appendChild(bubble);
   }
@@ -33,18 +34,18 @@
   function status(msg, color, persist) {
     bubble.textContent = msg;
     bubble.style.background = color || '#2e7d32';
-    if (!persist) setTimeout(function () { bubble.remove(); }, 5000);
+    if (!persist) setTimeout(function () { bubble.remove(); }, 8000);
   }
 
   status('⏳ Syncing…', '#1565c0', true);
 
-  // ── GitHub token ─────────────────────────────────────────────────────────
+  // ── GitHub token ──────────────────────────────────────────────────────────
   var token = localStorage.getItem('_treeSync_token');
   if (!token) {
     token = prompt(
       'One-time setup: enter your GitHub personal access token.\n\n' +
       'To create one:\n' +
-      '1. Go to github.com → profile photo → Settings\n' +
+      '1. github.com → profile photo → Settings\n' +
       '2. Developer settings → Personal access tokens → Tokens (classic)\n' +
       '3. Generate new token → check "repo" → Generate\n\n' +
       'Token (starts with ghp_):'
@@ -60,34 +61,65 @@
     'User-Agent': 'nyc-tree-bookmarklet'
   };
 
-  // ── Read activities already loaded in the page (Apollo cache) ───────────────
+  // ── Read activities from Apollo InMemoryCache ─────────────────────────────
   function readFromApolloCache() {
-    try {
-      var client = window.__APOLLO_CLIENT__;
-      if (!client) return null;
-      var cache = client.cache.extract();
-      if (!cache) return null;
+    var debug = [];
 
-      // Collect all Activity-shaped objects from the cache
-      var activities = [];
-      Object.keys(cache).forEach(function (key) {
-        var obj = cache[key];
-        // Activity records have id, date, treeId, stewardshipActivities
-        if (obj && obj.id && obj.date && obj.stewardshipActivities) {
-          activities.push(obj);
-        }
-      });
-
-      if (activities.length === 0) return null;
-      console.log('[TreeSync] Apollo cache: found ' + activities.length + ' activities');
-      return activities;
-    } catch (e) {
-      console.warn('[TreeSync] Apollo cache read failed:', e.message);
-      return null;
+    // Try several common Apollo client variable names
+    var client = window.__APOLLO_CLIENT__ || window.apolloClient || window.apollo;
+    if (!client) {
+      debug.push('No Apollo client found on window');
+      return { activities: null, debug: debug };
     }
+    debug.push('Apollo client found');
+
+    var cache;
+    try { cache = client.cache.extract(); } catch(e) {
+      debug.push('cache.extract() failed: ' + e.message);
+      return { activities: null, debug: debug };
+    }
+
+    var keys = Object.keys(cache);
+    debug.push('Cache keys: ' + keys.length);
+
+    // Collect unique __typename values to help diagnose structure
+    var types = {};
+    keys.forEach(function(k) {
+      var t = (cache[k] || {}).__typename;
+      if (t) types[t] = (types[t] || 0) + 1;
+    });
+    debug.push('Types: ' + JSON.stringify(types));
+
+    // Find activity records — try multiple typename patterns
+    var activities = [];
+    keys.forEach(function(key) {
+      var obj = cache[key];
+      if (!obj || !obj.id) return;
+      var type = (obj.__typename || '').toLowerCase();
+      var looksLikeActivity = (
+        type.includes('activity') ||
+        type.includes('stewardship') ||
+        type.includes('report') ||
+        (obj.stewardshipActivities !== undefined && obj.treeId !== undefined) ||
+        (obj.stewardshipActivities !== undefined && obj.date !== undefined)
+      );
+      if (!looksLikeActivity) return;
+
+      // Dereference tree and species __ref links
+      var tree = obj.tree;
+      if (tree && tree.__ref) tree = cache[tree.__ref] || tree;
+      var species = tree && tree.species;
+      if (species && species.__ref) species = cache[species.__ref] || species;
+      if (tree) tree = Object.assign({}, tree, { species: species || {} });
+
+      activities.push(Object.assign({}, obj, { tree: tree || {} }));
+    });
+
+    debug.push('Activities found in cache: ' + activities.length);
+    return { activities: activities.length > 0 ? activities : null, debug: debug };
   }
 
-  // ── GraphQL queries (fallback when cache is unavailable) ─────────────────────
+  // ── GraphQL API fallback ──────────────────────────────────────────────────
   var PAGINATED_QUERY = [
     'query GroupActivityReports($groupId:Int!,$limit:Int!,$offset:Int!){',
     '  activityReports(groupId:$groupId,limit:$limit,offset:$offset){',
@@ -113,38 +145,24 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: query, variables: variables })
-    }).then(function (r) { return r.json(); });
+    }).then(function(r) { return r.json(); });
   }
 
-  // ── Fetch all activities (API fallback) ───────────────────────────────────
-  function fetchActivities() {
-    var PAGE = 200;
-    var allRows = [];
-    var page = 0;
-
-    function nextPage() {
-      return gql(PAGINATED_QUERY, { groupId: GROUP_ID, limit: PAGE, offset: page * PAGE })
-        .then(function (resp) {
-          var rows = (resp.data || {}).activityReports || [];
-          if (resp.errors && !resp.data) throw new Error('paginated_unavailable');
-          allRows = allRows.concat(rows);
-          if (rows.length === PAGE && page < 499) {
-            page++;
-            return nextPage();
-          }
-          return allRows;
+  function fetchFromAPI() {
+    return gql(PAGINATED_QUERY, { groupId: GROUP_ID, limit: 200, offset: 0 })
+      .then(function(resp) {
+        var rows = (resp.data || {}).activityReports;
+        if (rows && rows.length > 0) return rows;
+        throw new Error('paginated unavailable');
+      })
+      .catch(function() {
+        return gql(HIGH_LIMIT_QUERY, { id: GROUP_ID }).then(function(resp) {
+          return ((resp.data || {}).treeGroupById || {}).recentActivities || [];
         });
-    }
-
-    return nextPage().catch(function () {
-      // Fall back to high-limit single query
-      return gql(HIGH_LIMIT_QUERY, { id: GROUP_ID }).then(function (resp) {
-        return ((resp.data || {}).treeGroupById || {}).recentActivities || [];
       });
-    });
   }
 
-  // ── Format one activity as a CSV row ─────────────────────────────────────
+  // ── Format one activity as a CSV row ──────────────────────────────────────
   var TODAY = new Date().toISOString().slice(0, 10);
 
   function toRow(r) {
@@ -152,74 +170,75 @@
     var date = '';
     if (r.date) {
       try { date = new Date(+r.date).toISOString().slice(0, 10); }
-      catch (e) { date = String(r.date).slice(0, 10); }
+      catch(e) { date = String(r.date).slice(0, 10); }
     }
     var tree    = r.tree || {};
     var species = (tree.species || {}).commonName || '';
     var address = tree.closestAddress || '';
-    var acts    = (r.stewardshipActivities || []).join('; ');
-    var fields  = [r.id, date, r.treeId || '', species, address, acts, r.duration || '', TODAY];
-    return fields.map(function (f) {
+    // stewardshipActivities may be an array or a JSON string in the cache
+    var acts = r.stewardshipActivities || [];
+    if (typeof acts === 'string') { try { acts = JSON.parse(acts); } catch(e) { acts = [acts]; } }
+    var actsStr = Array.isArray(acts) ? acts.join('; ') : String(acts);
+    var fields = [r.id, date, r.treeId || '', species, address, actsStr, r.duration || '', TODAY];
+    return fields.map(function(f) {
       f = String(f == null ? '' : f);
       return /[,"\n]/.test(f) ? '"' + f.replace(/"/g, '""') + '"' : f;
     }).join(',');
   }
 
-  // ── Main sync flow ────────────────────────────────────────────────────────
-  // Try Apollo cache first (fastest, most complete), then fall back to API
-  var cachedRows = readFromApolloCache();
-  var activitiesPromise = cachedRows
-    ? Promise.resolve(cachedRows)
-    : fetchActivities();
+  // ── Main ──────────────────────────────────────────────────────────────────
+  var cacheResult = readFromApolloCache();
+  var debugLines  = cacheResult.debug;
+
+  var activitiesPromise = cacheResult.activities
+    ? Promise.resolve(cacheResult.activities)
+    : fetchFromAPI().then(function(rows) {
+        debugLines.push('API returned: ' + rows.length);
+        return rows;
+      });
 
   Promise.all([
-    // Load current CSV from GitHub
     fetch('https://api.github.com/repos/' + REPO + '/contents/' + CSV_PATH, { headers: ghHeaders })
-      .then(function (r) { return r.json(); })
-      .catch(function () { return null; }),
-    // Activities from cache or API
+      .then(function(r) { return r.json(); }).catch(function() { return null; }),
     activitiesPromise
-  ]).then(function (results) {
-    var ghFile    = results[0];
-    var rawRows   = results[1];
+  ]).then(function(results) {
+    var ghFile  = results[0];
+    var rawRows = results[1];
 
-    status('⏳ Got ' + rawRows.length + ' activities — updating CSV…', '#1565c0', true);
+    debugLines.push('Total fetched: ' + rawRows.length);
 
     // Decode existing CSV
-    var existing = '';
-    var sha      = null;
+    var existing = 'id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt\n';
+    var sha = null;
     if (ghFile && ghFile.content) {
       existing = atob(ghFile.content.replace(/\s/g, ''));
       sha = ghFile.sha;
-    } else {
-      existing = 'id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt\n';
     }
 
-    // Collect existing IDs
     var seenIds = {};
-    existing.split('\n').slice(1).forEach(function (line) {
+    existing.split('\n').slice(1).forEach(function(line) {
       var id = line.split(',')[0].trim();
       if (id) seenIds[id] = true;
     });
+    debugLines.push('Already in CSV: ' + Object.keys(seenIds).length);
 
-    // Build new rows
     var newLines = [];
-    rawRows.forEach(function (r) {
+    rawRows.forEach(function(r) {
       var id = String(r && r.id || '');
       if (!id || seenIds[id]) return;
       var row = toRow(r);
       if (row) { newLines.push(row); seenIds[id] = true; }
     });
+    debugLines.push('New to add: ' + newLines.length);
 
     if (newLines.length === 0) {
-      status('✓ Already up to date — nothing new.', '#2e7d32');
+      status('ℹ️ Nothing new.\n\n' + debugLines.join('\n'), '#555', true);
       return;
     }
 
-    // Append and push
     var updated = existing.trimEnd() + '\n' + newLines.join('\n') + '\n';
-    var body    = {
-      message: 'Sync ' + TODAY + ' (+' + newLines.length + ' activities)',
+    var body = {
+      message: 'Sync ' + TODAY + ' (+' + newLines.length + ')',
       content: btoa(unescape(encodeURIComponent(updated)))
     };
     if (sha) body.sha = sha;
@@ -228,17 +247,16 @@
       method: 'PUT',
       headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
       body: JSON.stringify(body)
-    }).then(function (r) {
+    }).then(function(r) {
       if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status);
-      status('✅ ' + newLines.length + ' new activities synced to GitHub!', '#2e7d32');
+      status('✅ ' + newLines.length + ' activities synced!', '#2e7d32');
     });
 
-  }).catch(function (err) {
-    // Token might be wrong — clear it so they can re-enter
+  }).catch(function(err) {
     if (String(err).includes('401') || String(err).includes('403')) {
       localStorage.removeItem('_treeSync_token');
     }
-    status('❌ Error: ' + err.message, '#c62828', true);
+    status('❌ ' + err.message + '\n\n' + debugLines.join('\n'), '#c62828', true);
   });
 
 })();
