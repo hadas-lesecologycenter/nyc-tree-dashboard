@@ -4167,7 +4167,7 @@ function switchViewById(view) {
     var tok=localStorage.getItem('_ts_tok')||localStorage.getItem('_treeSync_token');
     if(!tok){tok=prompt('Enter your GitHub personal access token (ghp_...):');if(!tok){b.remove();return;}tok=tok.trim();localStorage.setItem('_ts_tok',tok);}
     var gh={'Authorization':'token '+tok,'Accept':'application/vnd.github.v3+json','User-Agent':'nyc-tree-bm'};
-    function gql(q){return fetch('/api-treemap/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
+    function gql(q){return fetch('https://www.nycgovparks.org/api-treemap/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
     function readCache(){
       var cl=window.__APOLLO_CLIENT__||window.apolloClient;
       if(!cl)return{acts:null,trees:{}};
