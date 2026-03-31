@@ -1773,7 +1773,7 @@ function updateStats() {
     totalPriority += t._priority || 0;
   });
 
-  const tcAreas = (function() { try { return JSON.parse(localStorage.getItem('tc_areas') || '[]'); } catch(e) { return []; } })();
+  const tcAreas = tcLoad(); // includes scraped NYC Tree Map activities
   const careEventsTotal = tcAreas.reduce((s, a) => s + (a.careEvents ? a.careEvents.length : 0), 0);
 
   document.getElementById('s-total').textContent = total.toLocaleString();
@@ -3845,7 +3845,7 @@ function renderClaimedBlocksSidebar() {
               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + area.name + '</div>' +
           '</div>' +
           '<div style="font-size:10px;color:var(--text3)">' + area.treeCount + ' trees' +
-            (cared ? ' · ' + area.careEvents.length + ' care event' + (area.careEvents.length > 1 ? 's' : '') : ' · watching') +
+            (cared ? '' : ' · watching') +
           '</div>' +
         '</div>' +
         '<button onclick="event.stopPropagation();tcConfirmRemove(\'' + area.id + '\')" ' +
