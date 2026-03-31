@@ -2796,7 +2796,7 @@ function tcRenderCareMap() {
       const evList = events.slice().sort((a, b) => b.date > a.date ? 1 : -1);
       const popupRows = evList.map(ev => {
         const d = (ev.date || '').slice(0, 10);
-        const acts = (ev.activities || []).join(', ') || '(activity logged)';
+        const acts = (ev.activities || []).map(aid => { const a = TC_ACTIVITIES.find(x => x.id === aid); return a ? a.emoji + ' ' + a.label : aid; }).join(', ') || '(activity logged)';
         return `<div style="margin-bottom:3px"><span style="color:#888">${d}</span> ${acts}</div>`;
       }).join('');
 
@@ -2839,21 +2839,29 @@ function tcRenderCareMap() {
 // The scraper pulls these from stewardshipActivities[] in the NYC Tree Map Apollo cache.
 // Known NYC Tree Map labels as of 2025 — update if new ones appear in activitiesDone.
 const TC_ACTIVITY_TYPE_MAP = {
-  'litter':              'litter',
-  'litter removal':      'litter',
-  'weeding':             'weeding',
-  'weed':                'weeding',
-  'aeration':            'aeration',
-  'soil aeration':       'aeration',
-  'compost':             'compost',
-  'mulch':               'compost',
-  'mulching':            'compost',
-  'watering':            'watering',
-  'water':               'watering',
-  'planting':            'planting',
-  'pruning':             'pruning',
-  'prune':               'pruning',
-  'snapped':             'pruning',
+  // NYC Tree Map exact strings (lowercased)
+  'cleared litter/waste':          'litter',
+  'managed soil':                  'aeration',
+  'weeded':                        'weeding',
+  'mulched':                       'compost',
+  'pruning':                       'pruning',
+  'watered':                       'watering',
+  'landscaped/planted flowers':    'planting',
+  // Legacy / variant strings
+  'litter':                        'litter',
+  'litter removal':                'litter',
+  'weeding':                       'weeding',
+  'weed':                          'weeding',
+  'aeration':                      'aeration',
+  'soil aeration':                 'aeration',
+  'compost':                       'compost',
+  'mulch':                         'compost',
+  'mulching':                      'compost',
+  'watering':                      'watering',
+  'water':                         'watering',
+  'planting':                      'planting',
+  'prune':                         'pruning',
+  'snapped':                       'pruning',
 };
 
 // Parses a CSV line correctly, handling quoted fields that may contain commas.
@@ -3878,12 +3886,12 @@ async function tcConfirmRemove(id) {
 
 // ── Care events ───────────────────────────────────────────────
 const TC_ACTIVITIES = [
-  { id: 'litter',   emoji: '🗑',  label: 'Clearing litter' },
-  { id: 'weeding',  emoji: '🌿',  label: 'Weeding' },
-  { id: 'aeration', emoji: '⛏',  label: 'Soil aeration' },
-  { id: 'compost',  emoji: '🪣',  label: 'Compost / mulch' },
-  { id: 'watering', emoji: '💧',  label: 'Watering' },
-  { id: 'planting', emoji: '🌱',  label: 'Planting' },
+  { id: 'litter',   emoji: '🗑',  label: 'Cleared Litter/Waste' },
+  { id: 'weeding',  emoji: '🌿',  label: 'Weeded' },
+  { id: 'aeration', emoji: '⛏',  label: 'Managed Soil' },
+  { id: 'compost',  emoji: '🪣',  label: 'Mulched' },
+  { id: 'watering', emoji: '💧',  label: 'Watered' },
+  { id: 'planting', emoji: '🌱',  label: 'Landscaped/Planted Flowers' },
   { id: 'pruning',  emoji: '✂️',  label: 'Pruning' },
 ];
 
