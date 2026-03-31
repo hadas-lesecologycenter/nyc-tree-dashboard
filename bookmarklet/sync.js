@@ -34,7 +34,7 @@
   status('⏳ Syncing…', '#1565c0', true);
 
   // ── GitHub token ──────────────────────────────────────────────
-  var token = localStorage.getItem('_treeSync_token');
+  var token = localStorage.getItem('_treeSync_token') || localStorage.getItem('_ts_tok');
   if (!token) {
     token = prompt(
       'One-time setup: enter your GitHub personal access token.\n\n' +
