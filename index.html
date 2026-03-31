@@ -1049,7 +1049,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
         <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em">🎯 Progress Toward Goal</span>
-        <span id="s-goal-text" style="font-size:13px;font-weight:700;color:var(--text)">0 / 1,000 trees cared for</span>
+        <span id="s-goal-text" style="font-size:13px;font-weight:700;color:var(--text)">0 / 1,000 trees cared for in 2026</span>
       </div>
       <div style="height:10px;background:var(--bg4);border-radius:6px;overflow:hidden">
         <div id="s-goal-fill" style="height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width 0.6s ease"></div>
@@ -1119,7 +1119,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div style="height:6px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:4px">
             <div id="tc-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.5s"></div>
           </div>
-          <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for</div>
+          <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for in 2026</div>
         </div>
         <div id="myblock-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--text3)">
           <div style="font-size:36px;margin-bottom:12px">🌿</div>
@@ -1782,10 +1782,11 @@ function updateStats() {
   document.getElementById('s-poor').textContent = (byHealth.Poor||0).toLocaleString();
   document.getElementById('s-avg').textContent = total ? Math.round(totalPriority/total) : 0;
 
-  // Goal progress — use max event tree count per area (same logic as tcUpdateProgress)
+  // Goal progress — 2026 only, same logic as tcUpdateProgress
   const goalTotal = tcAreas.reduce((s, a) => {
-    if (!a.careEvents || !a.careEvents.length) return s;
-    const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
+    const events2026 = (a.careEvents || []).filter(ev => (ev.date || '').startsWith('2026'));
+    if (!events2026.length) return s;
+    const maxCount = events2026.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
     return s + maxCount;
   }, 0);
   const goalPct = Math.min(100, Math.round((goalTotal / 1000) * 100));
@@ -1793,10 +1794,10 @@ function updateStats() {
   const textEl = document.getElementById('s-goal-text');
   const subEl  = document.getElementById('s-goal-sub');
   if (fillEl) fillEl.style.width = goalPct + '%';
-  if (textEl) textEl.textContent = goalTotal.toLocaleString() + ' / 1,000 trees cared for (' + goalPct + '%)';
+  if (textEl) textEl.textContent = goalTotal.toLocaleString() + ' / 1,000 trees cared for in 2026 (' + goalPct + '%)';
+  const areas2026 = tcAreas.filter(a => (a.careEvents || []).some(ev => (ev.date || '').startsWith('2026')));
   if (subEl)  subEl.textContent = goalTotal > 0
-    ? tcAreas.filter(a => a.careEvents && a.careEvents.length).length + ' area' +
-      (tcAreas.filter(a => a.careEvents && a.careEvents.length).length !== 1 ? 's' : '') + ' with care logged'
+    ? areas2026.length + ' area' + (areas2026.length !== 1 ? 's' : '') + ' with care logged in 2026'
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
 
   // ── Build unified data structure for all charts ───────────────
@@ -3320,18 +3321,18 @@ function tcRenderBlocksMap() {
 // ── Progress (only counts areas with care events) ─────────────
 function tcUpdateProgress() {
   const areas = tcLoad();
-  // Use the max tree count seen across all events for each area
-  // (an area's contribution = highest treeCountOverride seen, or area default)
+  // Count only 2026 events — the goal is 1,000 trees cared for in 2026
   const total = areas.reduce((s, a) => {
-    if (!a.careEvents || !a.careEvents.length) return s;
-    const maxCount = a.careEvents.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
+    const events2026 = (a.careEvents || []).filter(ev => (ev.date || '').startsWith('2026'));
+    if (!events2026.length) return s;
+    const maxCount = events2026.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
     return s + maxCount;
   }, 0);
   const pct = Math.min(100, Math.round((total / 1000) * 100));
   const fillEl = document.getElementById('tc-progress-fill');
   const textEl = document.getElementById('tc-progress-text');
   if (fillEl) fillEl.style.width = pct + '%';
-  if (textEl) textEl.textContent = total + ' / 1,000 trees cared for';
+  if (textEl) textEl.textContent = total + ' / 1,000 trees cared for in 2026';
 }
 
 // ── Draw mode on myblock-view right panel ─────────────────────
