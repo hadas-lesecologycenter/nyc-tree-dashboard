@@ -2822,11 +2822,6 @@ function tcRenderCareMap() {
     });
   });
 
-  // Fit to all markers
-  if (allLatLngs.length) {
-    tcCareMap.fitBounds(L.latLngBounds(allLatLngs).pad(0.12));
-  }
-
   // Build legend with year toggles
   const legendRows = years.slice().reverse().map(year => {
     const color = tcYearColor(year);
@@ -2843,7 +2838,15 @@ function tcRenderCareMap() {
     legendEl.style.display = 'block';
   }
 
-  setTimeout(() => tcCareMap.invalidateSize(), 50);
+  // invalidateSize first so Leaflet knows the container dimensions,
+  // then fitBounds so the zoom is calculated correctly.
+  const _fitLatLngs = allLatLngs.slice();
+  setTimeout(() => {
+    tcCareMap.invalidateSize();
+    if (_fitLatLngs.length) {
+      tcCareMap.fitBounds(L.latLngBounds(_fitLatLngs).pad(0.12));
+    }
+  }, 80);
 }
 
 // Maps NYC Tree Map stewardship activity labels (lowercase) → app activity ids.
