@@ -61,23 +61,64 @@
     }).then(function (r) { return r.json(); });
   }
 
-  // ── Read activities from Apollo cache ─────────────────────────
-  function readActivitiesFromCache() {
+  // ── Read activities AND tree coords from Apollo cache ────────
+  function readFromCache() {
     var client = window.__APOLLO_CLIENT__ || window.apolloClient;
-    if (!client) return null;
+    if (!client) return { activities: null, trees: {} };
     var cache;
-    try { cache = client.cache.extract(); } catch (e) { return null; }
+    try { cache = client.cache.extract(); } catch (e) { return { activities: null, trees: {} }; }
+
     var activities = [];
+    var trees = {};
+
     Object.keys(cache).forEach(function (key) {
       var obj = cache[key];
       if (!obj || !obj.id) return;
       var type = (obj.__typename || '').toLowerCase();
+
+      // Collect tree coordinate data — try several possible field name patterns
+      if (type === 'tree' || type === 'streettree' || type === 'nyctree') {
+        var sp = obj.species;
+        if (sp && sp.__ref) sp = cache[sp.__ref] || {};
+        var lat = obj.latitude || obj.lat || (obj.location && obj.location.lat) || '';
+        var lng = obj.longitude || obj.lng || obj.lon || (obj.location && obj.location.lng) || '';
+        if (lat && lng) {
+          trees[String(obj.id)] = {
+            lat:     lat,
+            lng:     lng,
+            address: (obj.closestAddress || obj.address || '').replace(/,/g, ' '),
+            species: ((sp && sp.commonName) || '').replace(/,/g, ' ')
+          };
+        }
+      }
+
+      // Collect activities
       var isActivity = type.includes('activity') || type.includes('stewardship') || type.includes('report') ||
         (obj.stewardshipActivities !== undefined && obj.treeId !== undefined);
       if (!isActivity) return;
+
+      // Dereference tree __ref and extract coords if not already found
+      var tree = obj.tree;
+      if (tree && tree.__ref) tree = cache[tree.__ref] || tree;
+      if (tree && tree.id && !trees[String(tree.id)]) {
+        var sp2 = tree.species;
+        if (sp2 && sp2.__ref) sp2 = cache[sp2.__ref] || {};
+        var lat2 = tree.latitude || tree.lat || '';
+        var lng2 = tree.longitude || tree.lng || tree.lon || '';
+        if (lat2 && lng2) {
+          trees[String(tree.id)] = {
+            lat:     lat2,
+            lng:     lng2,
+            address: (tree.closestAddress || tree.address || '').replace(/,/g, ' '),
+            species: ((sp2 && sp2.commonName) || '').replace(/,/g, ' ')
+          };
+        }
+      }
+
       activities.push(obj);
     });
-    return activities.length ? activities : null;
+
+    return { activities: activities.length ? activities : null, trees: trees };
   }
 
   // ── Fetch activities from API (no tree{} to avoid null propagation) ──
@@ -89,7 +130,7 @@
     });
   }
 
-  // ── Batch-fetch tree coordinates by ID ────────────────────────
+  // ── Batch-fetch tree coordinates — try treeById then tree ────
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
     var results = {};
@@ -99,26 +140,40 @@
     }
     var total = batches.length;
     var done  = 0;
-    return batches.reduce(function (p, batch) {
-      return p.then(function () {
-        done++;
-        status('⏳ Fetching tree locations… (' + done + '/' + total + ')', '#1565c0', true);
-        var fields = batch.map(function (id, j) {
-          return 't' + j + ':treeById(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
-        }).join(' ');
-        return gql('{' + fields + '}').then(function (resp) {
-          Object.values(resp.data || {}).forEach(function (t) {
-            if (!t || !t.id) return;
-            results[String(t.id)] = {
-              lat:     t.latitude  || '',
-              lng:     t.longitude || '',
-              address: (t.closestAddress || '').replace(/,/g, ' '),
-              species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
-            };
-          });
-        }).catch(function () {});
-      });
-    }, Promise.resolve()).then(function () { return results; });
+
+    // Try a single tree first to detect correct field name
+    function makeFields(batch, fieldName) {
+      return batch.map(function (id, j) {
+        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
+      }).join(' ');
+    }
+
+    // Probe with first id to find working field name
+    var fieldName = 'treeById';
+    var probeP = gql('{probe:treeById(id:' + ids[0] + '){id latitude longitude}}')
+      .then(function (r) {
+        if (r.errors && !r.data) fieldName = 'tree'; // treeById failed, try 'tree'
+      }).catch(function () { fieldName = 'tree'; });
+
+    return probeP.then(function () {
+      return batches.reduce(function (p, batch) {
+        return p.then(function () {
+          done++;
+          status('⏳ Fetching tree locations… (' + done + '/' + total + ')', '#1565c0', true);
+          return gql('{' + makeFields(batch, fieldName) + '}').then(function (resp) {
+            Object.values(resp.data || {}).forEach(function (t) {
+              if (!t || !t.id) return;
+              results[String(t.id)] = {
+                lat:     t.latitude  || '',
+                lng:     t.longitude || '',
+                address: (t.closestAddress || '').replace(/,/g, ' '),
+                species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
+              };
+            });
+          }).catch(function () {});
+        });
+      }, Promise.resolve());
+    }).then(function () { return results; });
   }
 
   // ── Format activity as CSV row ────────────────────────────────
@@ -152,8 +207,8 @@
   }
 
   // ── Main ──────────────────────────────────────────────────────
-  var cached      = readActivitiesFromCache();
-  var activitiesP = cached ? Promise.resolve(cached) : fetchActivitiesFromAPI();
+  var cacheData   = readFromCache();
+  var activitiesP = cacheData.activities ? Promise.resolve(cacheData.activities) : fetchActivitiesFromAPI();
 
   Promise.all([ghRead(ACT_PATH), ghRead(TREES_PATH), activitiesP])
     .then(function (res) {
@@ -195,9 +250,24 @@
       });
       var missingIds = Object.keys(allTreeIds).filter(function (id) { return !knownTreeIds[id]; });
 
-      return fetchTreeCoords(missingIds).then(function (fetched) {
-        var newTreeLines = [];
-        missingIds.forEach(function (id) {
+      // Merge coords from Apollo cache first
+      var cacheCoords = cacheData.trees || {};
+      var newTreeLines = [];
+      var stillMissing = [];
+      missingIds.forEach(function (id) {
+        if (cacheCoords[id] && cacheCoords[id].lat && cacheCoords[id].lng) {
+          var t = cacheCoords[id];
+          newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          knownTreeIds[id] = true;
+        } else {
+          stillMissing.push(id);
+        }
+      });
+
+      status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
+
+      return fetchTreeCoords(stillMissing).then(function (fetched) {
+        stillMissing.forEach(function (id) {
           var t = fetched[id];
           if (!t || !t.lat || !t.lng) return;
           newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
@@ -209,23 +279,21 @@
           writes.push(ghWrite(ACT_PATH, updAct, actSha,
             'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)'));
         }
-        if (newTreeLines.length > 0) {
-          var updTrees = treesCSV.trimEnd() + '\n' + newTreeLines.join('\n') + '\n';
-          writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
-            'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
-        }
+        // Always write trees.csv so we can confirm what was found
+        var updTrees = treesCSV.trimEnd() + (newTreeLines.length ? '\n' + newTreeLines.join('\n') : '') + '\n';
+        writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
+          'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
 
         return Promise.all(writes).then(function () {
           var parts = [];
-          if (newActLines.length)  parts.push(newActLines.length  + ' new activities');
-          if (newTreeLines.length) parts.push(newTreeLines.length + ' tree locations saved');
-          if (!parts.length) parts.push('nothing new to sync');
+          if (newActLines.length)  parts.push(newActLines.length + ' new activities');
+          parts.push(newTreeLines.length + ' of ' + missingIds.length + ' tree locations found');
           status('✅ ' + parts.join(' · '), '#2e7d32');
         });
       });
     })
     .catch(function (err) {
-      if (/401|403/.test(String(err))) localStorage.removeItem('_treeSync_token');
+      if (/401|403/.test(String(err))) localStorage.removeItem('_ts_tok');
       status('❌ ' + err.message, '#c62828', true);
     });
 })();
