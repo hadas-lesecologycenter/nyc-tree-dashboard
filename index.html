@@ -3845,9 +3845,7 @@ function renderClaimedBlocksSidebar() {
   if (!listEl) return;
 
   const navBtn = document.getElementById('myblock-nav-btn');
-  if (navBtn) navBtn.innerHTML = areas.length
-    ? '🌿 Tree Care <span class="badge">' + areas.length + '</span>'
-    : '🌿 Tree Care';
+  if (navBtn) navBtn.innerHTML = '🌿 Tree Care';
 
   if (!areas.length) {
     if (emptyEl) emptyEl.style.display = 'flex';
