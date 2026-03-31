@@ -1057,7 +1057,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
     </div>
     <div class="charts-grid">
-      <div class="chart-card full"><div class="chart-title">Care Activities by Type (trees reached, all time)</div><div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div></div>
+      <div class="chart-card full">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <div class="chart-title" style="margin-bottom:0">Care Activities by Type (trees reached)</div>
+          <div id="act-year-toggles" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div>
+      </div>
       <div class="chart-card" style="flex:1.6;min-width:260px">
         <div class="chart-title">Trees Cared For — by Month</div>
         <div class="chart-wrap" style="height:200px"><canvas id="monthly-trees-chart"></canvas></div>
@@ -1757,6 +1763,72 @@ function togglePrioritySidebar() {
 let activitiesChart = null;
 let monthlyTreesChart = null;
 let monthlyActivitiesChart = null;
+let _actChartByYear = {};          // { year: { actId: treeCount } }
+let _actChartYears  = [];          // all years with data, sorted desc
+let _actSelectedYears = ['2026'];  // default: 2026 only
+
+function renderActivitiesChart() {
+  const actCtx = document.getElementById('activities-chart');
+  if (!actCtx) return;
+  if (activitiesChart) { activitiesChart.destroy(); activitiesChart = null; }
+
+  const sel = _actSelectedYears.filter(y => _actChartByYear[y]);
+  const labels = TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label);
+  const hasData = sel.some(y => TC_ACTIVITIES.some(a => (_actChartByYear[y]||{})[a.id] > 0));
+
+  if (!hasData) {
+    const ctx = actCtx.getContext('2d');
+    ctx.clearRect(0, 0, actCtx.width, actCtx.height);
+    ctx.fillStyle = '#9c9080'; ctx.font = '13px Nunito,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('No care activities logged yet.', actCtx.offsetWidth / 2, 60);
+    return;
+  }
+
+  const yearPalette = { '2026':'#2e8b57','2025':'#e67e22','2024':'#2980b9','2023':'#8B4513','2022':'#9b59b6','2021':'#16a085','2020':'#c0392b' };
+  const fallback = ['#6b7280','#4a5568','#718096','#a0aec0'];
+  const datasets = sel.map((year, i) => {
+    const color = yearPalette[year] || fallback[i % fallback.length];
+    return {
+      label: year,
+      data: TC_ACTIVITIES.map(a => (_actChartByYear[year]||{})[a.id] || 0),
+      backgroundColor: color + 'cc', borderColor: color, borderWidth: 2, borderRadius: 3
+    };
+  });
+
+  activitiesChart = new Chart(actCtx.getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: sel.length > 1, position: 'top', labels: { font: { size: 10 }, boxWidth: 12, padding: 8 } },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.x.toLocaleString() + ' trees' } }
+      },
+      scales: {
+        x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' }, beginAtZero: true, precision: 0 },
+        y: { ticks: { color: '#2c2a24', font: { size: 11, family: 'Nunito' } }, grid: { display: false } }
+      },
+      maintainAspectRatio: false
+    }
+  });
+
+  // Update toggle button styles
+  document.querySelectorAll('#act-year-toggles button').forEach(btn => {
+    const on = _actSelectedYears.includes(btn.dataset.year);
+    btn.style.background = on ? '#2e8b57' : 'var(--bg)';
+    btn.style.color      = on ? '#fff'    : 'var(--text2)';
+    btn.style.borderColor = on ? '#2e8b57' : 'var(--border)';
+  });
+}
+
+function toggleActivityYear(year) {
+  if (_actSelectedYears.includes(year)) {
+    if (_actSelectedYears.length > 1) _actSelectedYears = _actSelectedYears.filter(y => y !== year);
+  } else {
+    _actSelectedYears.push(year);
+  }
+  renderActivitiesChart();
+}
 
 function updateStats() {
   const trees = filteredTrees;
@@ -1805,92 +1877,52 @@ function updateStats() {
   // Each activity is counted once per area per month (deduped by taking the max
   // tree count seen for that activity in that month for that area).
   const byMonth  = {};  // { 'YYYY-MM': { actId: trees } }
-  const allTime  = {};  // { actId: trees }
-  const allTimeLocations = {}; // { actId: [{name, trees}] }
-  TC_ACTIVITIES.forEach(a => { allTime[a.id] = 0; allTimeLocations[a.id] = []; });
+  const byYear   = {};  // { 'YYYY':    { actId: trees } }
 
   tcAreas.forEach(area => {
-    // Per-month: track max tree count seen per actId for this area
     const maxPerMonthAct = {}; // { 'YYYY-MM|actId': maxCount }
-    const maxAllTimeAct  = {}; // { actId: maxCount }
 
     (area.careEvents || []).forEach(ev => {
-      const month      = (ev.date || '').slice(0, 7);
+      const month = (ev.date || '').slice(0, 7);
       if (!month) return;
       const evCount = tcEventTreeCount(area, ev);
-
       (ev.activities || []).forEach(aid => {
-        // Per-month max
         const mKey = month + '|' + aid;
         maxPerMonthAct[mKey] = Math.max(maxPerMonthAct[mKey] || 0, evCount);
-        // All-time max
-        maxAllTimeAct[aid] = Math.max(maxAllTimeAct[aid] || 0, evCount);
       });
     });
 
-    // Commit per-month maxes to byMonth
     Object.entries(maxPerMonthAct).forEach(([mKey, count]) => {
       const [month, aid] = mKey.split('|');
       if (!byMonth[month]) byMonth[month] = {};
       byMonth[month][aid] = (byMonth[month][aid] || 0) + count;
-    });
-
-    // Commit all-time maxes
-    Object.entries(maxAllTimeAct).forEach(([aid, count]) => {
-      if (allTime[aid] !== undefined) {
-        allTime[aid] += count;
-        allTimeLocations[aid].push({ name: area.name, trees: count });
-      }
+      const year = month.slice(0, 4);
+      if (!byYear[year]) byYear[year] = {};
+      byYear[year][aid] = (byYear[year][aid] || 0) + count;
     });
   });
 
-  // ── All-time activities bar chart ─────────────────────────────
-  const actCtx = document.getElementById('activities-chart');
-  if (actCtx) {
-    if (activitiesChart) activitiesChart.destroy();
-    const labels  = TC_ACTIVITIES.map(a => a.emoji + ' ' + a.label);
-    const data    = TC_ACTIVITIES.map(a => allTime[a.id]);
-    const hasData = data.some(v => v > 0);
-
-    if (!hasData) {
-      const ctx = actCtx.getContext('2d');
-      ctx.clearRect(0, 0, actCtx.width, actCtx.height);
-      ctx.fillStyle = '#9c9080';
-      ctx.font = '13px Nunito, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No care activities logged yet — log events in the Tree Care tab.', actCtx.offsetWidth / 2, 60);
-    } else {
-      const palette = ['#e67e22','#2e8b57','#8B4513','#4a7c59','#2980b9','#1a5c38','#c47d1a'];
-      activitiesChart = new Chart(actCtx.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{ data, backgroundColor: palette.map(c => c + 'cc'),
-            borderColor: palette, borderWidth: 2, borderRadius: 4 }]
-        },
-        options: {
-          indexAxis: 'y',
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: ctx => ' ' + ctx.parsed.x.toLocaleString() + ' trees',
-                afterLabel: ctx => {
-                  const locs = allTimeLocations[TC_ACTIVITIES[ctx.dataIndex].id];
-                  return locs.length ? locs.map(l => '  ' + l.name + ' (' + l.trees + ')').join('\n') : '';
-                }
-              }
-            }
-          },
-          scales: {
-            x: { ticks: { color: '#6b6456', font: { size: 10 } }, grid: { color: '#e8e4d9' }, beginAtZero: true, precision: 0 },
-            y: { ticks: { color: '#2c2a24', font: { size: 11, family: 'Nunito' } }, grid: { display: false } }
-          },
-          maintainAspectRatio: false
-        }
-      });
-    }
+  // Populate year-toggle chart (default 2026)
+  _actChartByYear = byYear;
+  _actChartYears  = Object.keys(byYear).sort().reverse();
+  // Ensure 2026 stays selected if it has data; otherwise pick the most recent year
+  if (!_actChartByYear['2026'] && _actChartYears.length) {
+    _actSelectedYears = [_actChartYears[0]];
+  } else if (!_actSelectedYears.length) {
+    _actSelectedYears = ['2026'];
   }
+
+  // Rebuild year toggle buttons
+  const togglesEl = document.getElementById('act-year-toggles');
+  if (togglesEl) {
+    togglesEl.innerHTML = _actChartYears.map(y =>
+      `<button data-year="${y}" onclick="toggleActivityYear('${y}')"
+        style="font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid var(--border);
+               cursor:pointer;font-family:inherit;transition:all 0.15s">${y}</button>`
+    ).join('');
+  }
+
+  renderActivitiesChart();
 
   // ── Monthly trees bar chart ───────────────────────────────────
   // Per month per area: use the max tree count seen across all events that month.
