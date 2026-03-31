@@ -4186,7 +4186,7 @@ function switchViewById(view) {
         var tr=o.tree;if(tr&&tr.__ref)tr=cache[tr.__ref]||tr;
         if(tr&&tr.id&&!trees[String(tr.id)]){
           var la2=tr.latitude||tr.lat||'',ln2=tr.longitude||tr.lng||tr.lon||'';
-          if(la2&&ln2){var sp2=tr.species;if(sp2&&sp2.__ref)sp2=cache[sp2.__ref]||{};trees[String(tr.id)]={lat:la2,lng:ln2,address:(tr.closestAddress||tr.address||'').replace(/,/g,' '),species:((sp2&&sp2.commonName)||'').replace(/,/g,' ');};}
+          if(la2&&ln2){var sp2=tr.species;if(sp2&&sp2.__ref)sp2=cache[sp2.__ref]||{};trees[String(tr.id)]={lat:la2,lng:ln2,address:(tr.closestAddress||tr.address||'').replace(/,/g,' '),species:((sp2&&sp2.commonName)||'').replace(/,/g,' ')};}
         }
         acts.push(o);
       });
