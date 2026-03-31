@@ -34,7 +34,7 @@
   status('⏳ Syncing…', '#1565c0', true);
 
   // ── GitHub token ──────────────────────────────────────────────
-  var token = localStorage.getItem('_treeSync_token') || localStorage.getItem('_ts_tok');
+  var token = localStorage.getItem('_ts_tok') || localStorage.getItem('_treeSync_token');
   if (!token) {
     token = prompt(
       'One-time setup: enter your GitHub personal access token.\n\n' +
@@ -44,7 +44,7 @@
     );
     if (!token) { bubble.remove(); return; }
     token = token.trim();
-    localStorage.setItem('_treeSync_token', token);
+    localStorage.setItem('_ts_tok', token);
   }
   var ghHeaders = {
     'Authorization': 'token ' + token,
