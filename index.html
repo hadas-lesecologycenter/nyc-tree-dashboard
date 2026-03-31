@@ -2732,9 +2732,20 @@ function tcRenderCareMap() {
   const container = document.getElementById('tc-care-map');
   if (!container) return;
 
-  // Init map once
+  // Init map once — fit to CB3 census bounding box so the target area is visible immediately
   if (!tcCareMap) {
-    tcCareMap = L.map('tc-care-map', { center: [40.7195, -73.9845], zoom: 15 });
+    const cb3Bounds = (() => {
+      if (typeof allTrees !== 'undefined' && allTrees.length) {
+        const lats = allTrees.map(t => +t.latitude).filter(Boolean);
+        const lngs = allTrees.map(t => +t.longitude).filter(Boolean);
+        return L.latLngBounds(
+          [Math.min(...lats), Math.min(...lngs)],
+          [Math.max(...lats), Math.max(...lngs)]
+        ).pad(0.05);
+      }
+      return L.latLngBounds([40.710, -74.010], [40.730, -73.968]);
+    })();
+    tcCareMap = L.map('tc-care-map').fitBounds(cb3Bounds);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
