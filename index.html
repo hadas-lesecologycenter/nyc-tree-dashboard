@@ -4204,9 +4204,12 @@ function switchViewById(view) {
           done++;st('Fetching locations... ('+done+'/'+tot+')','#1565c0',true);
           var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress species{commonName}}';}).join(' ');
           return gql('{'+f+'}').then(function(r){
-            Object.values(r.data||{}).forEach(function(t){
-              if(!t||!t.id)return;
-              res[String(t.id)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:((t.species||{}).commonName||'').replace(/,/g,' ')};
+            Object.entries(r.data||{}).forEach(function(pair){
+              var alias=pair[0],t=pair[1];
+              if(!t)return;
+              var origId=batch[parseInt(alias.slice(1))];
+              if(!origId)return;
+              res[String(origId)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:((t.species||{}).commonName||'').replace(/,/g,' ')};
             });
           }).catch(function(){});
         });},Promise.resolve());
