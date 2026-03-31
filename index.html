@@ -4167,12 +4167,7 @@ function switchViewById(view) {
     var tok=localStorage.getItem('_ts_tok')||localStorage.getItem('_treeSync_token');
     if(!tok){tok=prompt('Enter your GitHub personal access token (ghp_...):');if(!tok){b.remove();return;}tok=tok.trim();localStorage.setItem('_ts_tok',tok);}
     var gh={'Authorization':'token '+tok,'Accept':'application/vnd.github.v3+json','User-Agent':'nyc-tree-bm'};
-    function gql(q){
-      var url='https://'+location.hostname+'/api-treemap/graphql';
-      return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})})
-        .then(function(r){return r.text();})
-        .then(function(txt){if(!txt||txt.trimStart()[0]==='<')throw new Error('API returned HTML — wrong page?');return JSON.parse(txt);});
-    }
+    function gql(q){return fetch('https://www.nycgovparks.org/api-treemap/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
     function readCache(){
       var cl=window.__APOLLO_CLIENT__||window.apolloClient;
       if(!cl)return{acts:null,trees:{}};
@@ -4197,7 +4192,7 @@ function switchViewById(view) {
       });
       return{acts:acts.length?acts:null,trees:trees};
     }
-    function fetchActs(){return gql('query{treeGroupById(id:'+GID+'){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}').then(function(r){return((r.data||{}).treeGroupById||{}).recentActivities||[];}).catch(function(e){st('API failed: '+e.message+'. Using cache only.','#e65100',true);return[];});}
+    function fetchActs(){return gql('query{treeGroupById(id:'+GID+'){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}').then(function(r){return((r.data||{}).treeGroupById||{}).recentActivities||[];});}
     function fetchCoords(ids){
       if(!ids.length)return Promise.resolve({});
       var res={},batches=[];
@@ -4235,9 +4230,7 @@ function switchViewById(view) {
       if(sha)body.sha=sha;
       return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},gh),body:JSON.stringify(body)}).then(function(r){if(!r.ok)throw new Error('GitHub HTTP '+r.status);});
     }
-    var cd=readCache();
-    st('Cache: '+(cd.acts?cd.acts.length:0)+' activities, '+(Object.keys(cd.trees||{}).length)+' tree coords','#1565c0',true);
-    var actsP=cd.acts?Promise.resolve(cd.acts):fetchActs();
+    var cd=readCache(),actsP=cd.acts?Promise.resolve(cd.acts):fetchActs();
     Promise.all([ghR(ACT),ghR(TREES),actsP]).then(function(res){
       var gA=res[0],gT=res[1],rows=res[2];
       var aC='id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt\n',aSha=null;
