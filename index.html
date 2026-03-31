@@ -2654,8 +2654,8 @@ function renderPlantingsLayer() {
     }
     const icon = L.divIcon({
       className: '',
-      html: `<div style="width:9px;height:9px;border-radius:50%;background:${dotColor};outline:2px solid rgba(255,255,255,0.6);cursor:pointer"></div>`,
-      iconSize: [9, 9], iconAnchor: [4.5, 4.5]
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${dotColor};border:2.5px solid #fff;box-shadow:0 0 0 1.5px ${dotColor},0 1px 4px rgba(0,0,0,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1">🌱</div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7]
     });
     const m = L.marker([p.lat, p.lng], { icon });
     m.bindPopup(`
