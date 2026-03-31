@@ -1,262 +1,231 @@
 /**
  * NYC Tree Map → GitHub Sync Bookmarklet
- * =======================================
- * Loaded by the bookmarklet when clicked on the NYC Tree Map page.
- * Fetches all group activities and pushes them to data/activities.csv on GitHub.
+ * Fetches group activities + tree coordinates and pushes to GitHub.
  */
 (function () {
   'use strict';
 
-  var REPO     = 'hadas-lesecologycenter/nyc-tree-dashboard';
-  var CSV_PATH = 'data/activities.csv';
-  var GROUP_ID = 14;
+  var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
+  var ACT_PATH   = 'data/activities.csv';
+  var TREES_PATH = 'data/trees.csv';
+  var GROUP_ID   = 14;
+  var BATCH_SIZE = 25;
 
-  // ── Guard: must be on the NYC Tree Map site ──────────────────────────────
   if (!location.hostname.includes('nycgovparks.org')) {
-    alert('Please open this page first, then click the bookmark:\nhttps://tree-map.nycgovparks.org/tree-map/group/' + GROUP_ID);
+    alert('Please open this page first:\nhttps://tree-map.nycgovparks.org/tree-map/group/' + GROUP_ID);
     return;
   }
 
-  // ── Status bubble ─────────────────────────────────────────────────────────
+  // ── Status bubble ─────────────────────────────────────────────
   var bubble = document.getElementById('_treeSync');
   if (!bubble) {
     bubble = document.createElement('div');
     bubble.id = '_treeSync';
-    bubble.style.cssText = [
-      'position:fixed', 'top:20px', 'right:20px', 'z-index:2147483647',
-      'padding:14px 20px', 'border-radius:10px', 'font:bold 14px/1.5 sans-serif',
-      'color:#fff', 'box-shadow:0 4px 16px rgba(0,0,0,0.3)', 'max-width:360px',
-      'white-space:pre-line'
-    ].join(';');
+    bubble.style.cssText = 'position:fixed;top:20px;right:20px;z-index:2147483647;' +
+      'padding:14px 20px;border-radius:10px;font:bold 14px/1.5 sans-serif;' +
+      'color:#fff;box-shadow:0 4px 16px rgba(0,0,0,0.3);max-width:380px;white-space:pre-line';
     document.body.appendChild(bubble);
   }
-
   function status(msg, color, persist) {
     bubble.textContent = msg;
     bubble.style.background = color || '#2e7d32';
-    if (!persist) setTimeout(function () { bubble.remove(); }, 8000);
+    if (!persist) setTimeout(function () { bubble.remove(); }, 9000);
   }
-
   status('⏳ Syncing…', '#1565c0', true);
 
-  // ── GitHub token ──────────────────────────────────────────────────────────
+  // ── GitHub token ──────────────────────────────────────────────
   var token = localStorage.getItem('_treeSync_token');
   if (!token) {
     token = prompt(
       'One-time setup: enter your GitHub personal access token.\n\n' +
-      'To create one:\n' +
       '1. github.com → profile photo → Settings\n' +
       '2. Developer settings → Personal access tokens → Tokens (classic)\n' +
-      '3. Generate new token → check "repo" → Generate\n\n' +
-      'Token (starts with ghp_):'
+      '3. Generate new token → check "repo" → Generate\n\nToken (starts with ghp_):'
     );
     if (!token) { bubble.remove(); return; }
     token = token.trim();
     localStorage.setItem('_treeSync_token', token);
   }
-
   var ghHeaders = {
     'Authorization': 'token ' + token,
     'Accept': 'application/vnd.github.v3+json',
     'User-Agent': 'nyc-tree-bookmarklet'
   };
 
-  // ── Read activities from Apollo InMemoryCache ─────────────────────────────
-  function readFromApolloCache() {
-    var debug = [];
+  // ── GraphQL helper ────────────────────────────────────────────
+  function gql(query) {
+    return fetch('/api-treemap/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query })
+    }).then(function (r) { return r.json(); });
+  }
 
-    // Try several common Apollo client variable names
-    var client = window.__APOLLO_CLIENT__ || window.apolloClient || window.apollo;
-    if (!client) {
-      debug.push('No Apollo client found on window');
-      return { activities: null, debug: debug };
-    }
-    debug.push('Apollo client found');
-
+  // ── Read activities from Apollo cache ─────────────────────────
+  function readActivitiesFromCache() {
+    var client = window.__APOLLO_CLIENT__ || window.apolloClient;
+    if (!client) return null;
     var cache;
-    try { cache = client.cache.extract(); } catch(e) {
-      debug.push('cache.extract() failed: ' + e.message);
-      return { activities: null, debug: debug };
-    }
-
-    var keys = Object.keys(cache);
-    debug.push('Cache keys: ' + keys.length);
-
-    // Collect unique __typename values to help diagnose structure
-    var types = {};
-    keys.forEach(function(k) {
-      var t = (cache[k] || {}).__typename;
-      if (t) types[t] = (types[t] || 0) + 1;
-    });
-    debug.push('Types: ' + JSON.stringify(types));
-
-    // Find activity records — try multiple typename patterns
+    try { cache = client.cache.extract(); } catch (e) { return null; }
     var activities = [];
-    keys.forEach(function(key) {
+    Object.keys(cache).forEach(function (key) {
       var obj = cache[key];
       if (!obj || !obj.id) return;
       var type = (obj.__typename || '').toLowerCase();
-      var looksLikeActivity = (
-        type.includes('activity') ||
-        type.includes('stewardship') ||
-        type.includes('report') ||
-        (obj.stewardshipActivities !== undefined && obj.treeId !== undefined) ||
-        (obj.stewardshipActivities !== undefined && obj.date !== undefined)
-      );
-      if (!looksLikeActivity) return;
-
-      // Dereference tree and species __ref links
-      var tree = obj.tree;
-      if (tree && tree.__ref) tree = cache[tree.__ref] || tree;
-      var species = tree && tree.species;
-      if (species && species.__ref) species = cache[species.__ref] || species;
-      if (tree) tree = Object.assign({}, tree, { species: species || {} });
-
-      activities.push(Object.assign({}, obj, { tree: tree || {} }));
+      var isActivity = type.includes('activity') || type.includes('stewardship') || type.includes('report') ||
+        (obj.stewardshipActivities !== undefined && obj.treeId !== undefined);
+      if (!isActivity) return;
+      activities.push(obj);
     });
-
-    debug.push('Activities found in cache: ' + activities.length);
-    return { activities: activities.length > 0 ? activities : null, debug: debug };
+    return activities.length ? activities : null;
   }
 
-  // ── GraphQL API fallback ──────────────────────────────────────────────────
-  var PAGINATED_QUERY = [
-    'query GroupActivityReports($groupId:Int!,$limit:Int!,$offset:Int!){',
-    '  activityReports(groupId:$groupId,limit:$limit,offset:$offset){',
-    '    id date treeId duration stewardshipActivities',
-    '    tree{closestAddress species{commonName}}',
-    '  }',
-    '}'
-  ].join('');
-
-  var HIGH_LIMIT_QUERY = [
-    'query activitiesAndUser($id:Int!){',
-    '  treeGroupById(id:$id){',
-    '    recentActivities(limit:100000){',
-    '      id date treeId duration stewardshipActivities',
-    '      tree{closestAddress species{commonName}}',
-    '    }',
-    '  }',
-    '}'
-  ].join('');
-
-  function gql(query, variables) {
-    return fetch('https://www.nycgovparks.org/api-treemap/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query, variables: variables })
-    }).then(function(r) { return r.json(); });
+  // ── Fetch activities from API (no tree{} to avoid null propagation) ──
+  function fetchActivitiesFromAPI() {
+    return gql(
+      'query{treeGroupById(id:' + GROUP_ID + '){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}'
+    ).then(function (resp) {
+      return ((resp.data || {}).treeGroupById || {}).recentActivities || [];
+    });
   }
 
-  function fetchFromAPI() {
-    return gql(PAGINATED_QUERY, { groupId: GROUP_ID, limit: 200, offset: 0 })
-      .then(function(resp) {
-        var rows = (resp.data || {}).activityReports;
-        if (rows && rows.length > 0) return rows;
-        throw new Error('paginated unavailable');
-      })
-      .catch(function() {
-        return gql(HIGH_LIMIT_QUERY, { id: GROUP_ID }).then(function(resp) {
-          return ((resp.data || {}).treeGroupById || {}).recentActivities || [];
-        });
-      });
-  }
-
-  // ── Format one activity as a CSV row ──────────────────────────────────────
-  var TODAY = new Date().toISOString().slice(0, 10);
-
-  function toRow(r) {
-    if (!r) return null;
-    var date = '';
-    if (r.date) {
-      try { date = new Date(+r.date).toISOString().slice(0, 10); }
-      catch(e) { date = String(r.date).slice(0, 10); }
+  // ── Batch-fetch tree coordinates by ID ────────────────────────
+  function fetchTreeCoords(ids) {
+    if (!ids.length) return Promise.resolve({});
+    var results = {};
+    var batches = [];
+    for (var i = 0; i < ids.length; i += BATCH_SIZE) {
+      batches.push(ids.slice(i, i + BATCH_SIZE));
     }
-    var tree    = r.tree || {};
-    var species = (tree.species || {}).commonName || '';
-    var address = tree.closestAddress || '';
-    // stewardshipActivities may be an array or a JSON string in the cache
+    var total = batches.length;
+    var done  = 0;
+    return batches.reduce(function (p, batch) {
+      return p.then(function () {
+        done++;
+        status('⏳ Fetching tree locations… (' + done + '/' + total + ')', '#1565c0', true);
+        var fields = batch.map(function (id, j) {
+          return 't' + j + ':treeById(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
+        }).join(' ');
+        return gql('{' + fields + '}').then(function (resp) {
+          Object.values(resp.data || {}).forEach(function (t) {
+            if (!t || !t.id) return;
+            results[String(t.id)] = {
+              lat:     t.latitude  || '',
+              lng:     t.longitude || '',
+              address: (t.closestAddress || '').replace(/,/g, ' '),
+              species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
+            };
+          });
+        }).catch(function () {});
+      });
+    }, Promise.resolve()).then(function () { return results; });
+  }
+
+  // ── Format activity as CSV row ────────────────────────────────
+  var TODAY = new Date().toISOString().slice(0, 10);
+  function actRow(r) {
+    var date = '';
+    try { date = r.date ? new Date(+r.date).toISOString().slice(0, 10) : ''; } catch (e) {}
+    if (!date && r.date) date = String(r.date).slice(0, 10);
     var acts = r.stewardshipActivities || [];
-    if (typeof acts === 'string') { try { acts = JSON.parse(acts); } catch(e) { acts = [acts]; } }
+    if (typeof acts === 'string') { try { acts = JSON.parse(acts); } catch (e) { acts = [acts]; } }
     var actsStr = Array.isArray(acts) ? acts.join('; ') : String(acts);
-    var fields = [r.id, date, r.treeId || '', species, address, actsStr, r.duration || '', TODAY];
-    return fields.map(function(f) {
+    return [r.id, date, r.treeId || '', '', '', actsStr, r.duration || '', TODAY].map(function (f) {
       f = String(f == null ? '' : f);
       return /[,"\n]/.test(f) ? '"' + f.replace(/"/g, '""') + '"' : f;
     }).join(',');
   }
 
-  // ── Main ──────────────────────────────────────────────────────────────────
-  var cacheResult = readFromApolloCache();
-  var debugLines  = cacheResult.debug;
-
-  var activitiesPromise = cacheResult.activities
-    ? Promise.resolve(cacheResult.activities)
-    : fetchFromAPI().then(function(rows) {
-        debugLines.push('API returned: ' + rows.length);
-        return rows;
-      });
-
-  Promise.all([
-    fetch('https://api.github.com/repos/' + REPO + '/contents/' + CSV_PATH, { headers: ghHeaders })
-      .then(function(r) { return r.json(); }).catch(function() { return null; }),
-    activitiesPromise
-  ]).then(function(results) {
-    var ghFile  = results[0];
-    var rawRows = results[1];
-
-    debugLines.push('Total fetched: ' + rawRows.length);
-
-    // Decode existing CSV
-    var existing = 'id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt\n';
-    var sha = null;
-    if (ghFile && ghFile.content) {
-      existing = atob(ghFile.content.replace(/\s/g, ''));
-      sha = ghFile.sha;
-    }
-
-    var seenIds = {};
-    existing.split('\n').slice(1).forEach(function(line) {
-      var id = line.split(',')[0].trim();
-      if (id) seenIds[id] = true;
-    });
-    debugLines.push('Already in CSV: ' + Object.keys(seenIds).length);
-
-    var newLines = [];
-    rawRows.forEach(function(r) {
-      var id = String(r && r.id || '');
-      if (!id || seenIds[id]) return;
-      var row = toRow(r);
-      if (row) { newLines.push(row); seenIds[id] = true; }
-    });
-    debugLines.push('New to add: ' + newLines.length);
-
-    if (newLines.length === 0) {
-      status('ℹ️ Nothing new.\n\n' + debugLines.join('\n'), '#555', true);
-      return;
-    }
-
-    var updated = existing.trimEnd() + '\n' + newLines.join('\n') + '\n';
-    var body = {
-      message: 'Sync ' + TODAY + ' (+' + newLines.length + ')',
-      content: btoa(unescape(encodeURIComponent(updated)))
-    };
+  // ── GitHub read / write ───────────────────────────────────────
+  function ghRead(path) {
+    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, { headers: ghHeaders })
+      .then(function (r) { return r.json(); }).catch(function () { return null; });
+  }
+  function ghWrite(path, content, sha, msg) {
+    var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
     if (sha) body.sha = sha;
-
-    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + CSV_PATH, {
+    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
       method: 'PUT',
       headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
       body: JSON.stringify(body)
-    }).then(function(r) {
-      if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status);
-      status('✅ ' + newLines.length + ' activities synced!', '#2e7d32');
+    }).then(function (r) { if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status); });
+  }
+
+  // ── Main ──────────────────────────────────────────────────────
+  var cached      = readActivitiesFromCache();
+  var activitiesP = cached ? Promise.resolve(cached) : fetchActivitiesFromAPI();
+
+  Promise.all([ghRead(ACT_PATH), ghRead(TREES_PATH), activitiesP])
+    .then(function (res) {
+      var ghActFile   = res[0];
+      var ghTreesFile = res[1];
+      var rawRows     = res[2];
+
+      // ── activities.csv ──────────────────────────────────────
+      var actCSV = 'id,date,treeId,species,address,activitiesDone,durationMinutes,scrapedAt\n';
+      var actSha = null;
+      if (ghActFile && ghActFile.content) {
+        actCSV = atob(ghActFile.content.replace(/\s/g, ''));
+        actSha = ghActFile.sha;
+      }
+      var seenActIds = {};
+      actCSV.split('\n').slice(1).forEach(function (l) {
+        var id = l.split(',')[0].trim(); if (id) seenActIds[id] = true;
+      });
+      var newActLines = [];
+      var allTreeIds  = {};
+      rawRows.forEach(function (r) {
+        var id = String(r.id || '');
+        if (r.treeId) allTreeIds[String(r.treeId)] = true;
+        if (!id || seenActIds[id]) return;
+        newActLines.push(actRow(r));
+        seenActIds[id] = true;
+      });
+
+      // ── trees.csv ───────────────────────────────────────────
+      var treesCSV = 'treeId,latitude,longitude,address,species\n';
+      var treesSha = null;
+      if (ghTreesFile && ghTreesFile.content) {
+        treesCSV = atob(ghTreesFile.content.replace(/\s/g, ''));
+        treesSha = ghTreesFile.sha;
+      }
+      var knownTreeIds = {};
+      treesCSV.split('\n').slice(1).forEach(function (l) {
+        var id = l.split(',')[0].trim(); if (id) knownTreeIds[id] = true;
+      });
+      var missingIds = Object.keys(allTreeIds).filter(function (id) { return !knownTreeIds[id]; });
+
+      return fetchTreeCoords(missingIds).then(function (fetched) {
+        var newTreeLines = [];
+        missingIds.forEach(function (id) {
+          var t = fetched[id];
+          if (!t || !t.lat || !t.lng) return;
+          newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+        });
+
+        var writes = [];
+        if (newActLines.length > 0) {
+          var updAct = actCSV.trimEnd() + '\n' + newActLines.join('\n') + '\n';
+          writes.push(ghWrite(ACT_PATH, updAct, actSha,
+            'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)'));
+        }
+        if (newTreeLines.length > 0) {
+          var updTrees = treesCSV.trimEnd() + '\n' + newTreeLines.join('\n') + '\n';
+          writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
+            'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
+        }
+
+        return Promise.all(writes).then(function () {
+          var parts = [];
+          if (newActLines.length)  parts.push(newActLines.length  + ' new activities');
+          if (newTreeLines.length) parts.push(newTreeLines.length + ' tree locations saved');
+          if (!parts.length) parts.push('nothing new to sync');
+          status('✅ ' + parts.join(' · '), '#2e7d32');
+        });
+      });
+    })
+    .catch(function (err) {
+      if (/401|403/.test(String(err))) localStorage.removeItem('_treeSync_token');
+      status('❌ ' + err.message, '#c62828', true);
     });
-
-  }).catch(function(err) {
-    if (String(err).includes('401') || String(err).includes('403')) {
-      localStorage.removeItem('_treeSync_token');
-    }
-    status('❌ ' + err.message + '\n\n' + debugLines.join('\n'), '#c62828', true);
-  });
-
 })();

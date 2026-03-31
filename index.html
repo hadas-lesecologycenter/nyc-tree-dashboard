@@ -1134,11 +1134,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="tc-list-panel" style="flex:1;overflow:hidden;position:relative">
           <div id="myblock-no-selection" style="position:absolute;inset:0;overflow:hidden">
             <div id="tc-care-map" style="position:absolute;inset:0"></div>
-            <div id="tc-care-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-size:11px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:none">
-              <div style="font-weight:700;margin-bottom:6px;color:var(--text)">Care Activity Map</div>
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2e8b57;border:2px solid #fff;box-shadow:0 0 0 1.5px #2e8b57"></span> Tree cared for</div>
-              <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#bbb"></span> Other trees</div>
-            </div>
+            <div id="tc-care-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;max-height:60vh;overflow-y:auto"></div>
             <div id="tc-care-map-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;pointer-events:none">
               <div style="font-size:48px;margin-bottom:16px">🌿</div>
               <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No care activities yet</div>
@@ -2683,111 +2679,156 @@ const TC_TREEMAP_PROXY_URL = ''; // disabled — bookmarklet writes directly to 
 // Fetches the activities CSV from GitHub (updates within ~5 minutes of a bookmarklet sync).
 const TC_SCRAPED_SHEET_CSV_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/activities.csv';
 
+// Tree coordinates CSV written by the bookmarklet (treeId → lat/lng/address/species).
+const TC_TREES_CSV_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/trees.csv';
+
 // In-memory store for scraped events — never written to localStorage.
 // Shape is identical to manually-created areas so all existing UI works unchanged.
 let _tcScrapedAreas = [];
 
+// Tree coordinates loaded from data/trees.csv — treeId (string) → {lat, lng, address, species}
+let _tcTreeCoords = {};
+
+async function tcLoadTreeCoords() {
+  if (!TC_TREES_CSV_URL) return;
+  try {
+    const res = await fetch(TC_TREES_CSV_URL);
+    if (!res.ok) return;
+    const lines = (await res.text()).trim().split('\n');
+    lines.slice(1).forEach(line => {
+      if (!line.trim()) return;
+      const [tid, lat, lng, addr, sp] = tcParseCSVLine(line);
+      if (tid && lat && lng) {
+        _tcTreeCoords[tid] = { lat: parseFloat(lat), lng: parseFloat(lng), address: addr || '', species: sp || '' };
+      }
+    });
+    console.log('TC: loaded', Object.keys(_tcTreeCoords).length, 'tree coords');
+  } catch (e) { console.warn('TC: tree coords load failed', e); }
+}
+
 // ── Care Map (Tree Care tab) ──────────────────────────────────────────────────
-let tcCareMap = null;
-let tcCareMarkersLayer = null;
+// Colors per year: older = muted, recent = vivid green, current = amber
+const TC_CARE_YEAR_COLORS = {
+  '2010':'#bbb','2011':'#bbb','2012':'#bbb','2013':'#bbb','2014':'#bbb','2015':'#bbb',
+  '2016':'#a5d6a7','2017':'#81c784','2018':'#66bb6a','2019':'#4caf50',
+  '2020':'#43a047','2021':'#388e3c','2022':'#2e7d32','2023':'#1b5e20',
+  '2024':'#ff8f00','2025':'#e65100','2026':'#c62828'
+};
+function tcYearColor(year) {
+  return TC_CARE_YEAR_COLORS[year] || '#2e7d32';
+}
+
+let tcCareMap        = null;
+let tcCareYearLayers = {}; // year → L.LayerGroup
+
+function tcToggleCareYear(year, visible) {
+  if (!tcCareMap || !tcCareYearLayers[year]) return;
+  if (visible) tcCareMap.addLayer(tcCareYearLayers[year]);
+  else         tcCareMap.removeLayer(tcCareYearLayers[year]);
+}
 
 function tcRenderCareMap() {
   const container = document.getElementById('tc-care-map');
   if (!container) return;
 
-  // Initialize map once
+  // Init map once
   if (!tcCareMap) {
-    tcCareMap = L.map('tc-care-map', {
-      center: [40.7195, -73.9845],
-      zoom: 15,
-      zoomControl: true
-    });
+    tcCareMap = L.map('tc-care-map', { center: [40.7195, -73.9845], zoom: 15 });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap contributors © CARTO',
-      maxZoom: 19
+      attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
-    tcCareMarkersLayer = L.layerGroup().addTo(tcCareMap);
-  } else {
-    tcCareMarkersLayer.clearLayers();
   }
 
-  // Build a lookup: treeId → {lat, lng, address, species}
-  const treeById = tcBuildTreeIndex();
+  // Clear old year layers
+  Object.values(tcCareYearLayers).forEach(ly => {
+    ly.clearLayers();
+    tcCareMap.removeLayer(ly);
+  });
+  tcCareYearLayers = {};
 
-  // Collect all cared-for treeIds and their events from scraped areas
-  const caredForMap = {}; // treeId → { area, lat, lng }
+  // Group events: year → treeId → [events]
+  const byYearTree = {};
   _tcScrapedAreas.forEach(area => {
-    if (!area._fromScraper || !area.careEvents || !area.careEvents.length) return;
-    const tid = String(area._treeId || '');
-    if (!tid) return;
-    const tree = treeById[tid];
-    const lat = tree ? parseFloat(tree.latitude || tree.lat) : NaN;
-    const lng = tree ? parseFloat(tree.longitude || tree.lng || tree.lon) : NaN;
-    if (!isNaN(lat) && !isNaN(lng) && lat && lng) {
-      caredForMap[tid] = { lat, lng, area, tree };
-    }
+    if (!area._fromScraper || !area._treeId) return;
+    const tid = String(area._treeId);
+    (area.careEvents || []).forEach(ev => {
+      const year = (ev.date || '').slice(0, 4);
+      if (!year) return;
+      if (!byYearTree[year]) byYearTree[year] = {};
+      if (!byYearTree[year][tid]) byYearTree[year][tid] = { events: [], area };
+      byYearTree[year][tid].events.push(ev);
+    });
   });
 
-  const caredCount = Object.keys(caredForMap).length;
+  const years = Object.keys(byYearTree).sort();
   const emptyEl  = document.getElementById('tc-care-map-empty');
   const legendEl = document.getElementById('tc-care-map-legend');
 
-  if (caredCount === 0) {
-    if (emptyEl)  emptyEl.style.display  = 'flex';
+  if (years.length === 0) {
+    if (emptyEl)  emptyEl.style.display = 'flex';
     if (legendEl) legendEl.style.display = 'none';
-  } else {
-    if (emptyEl)  emptyEl.style.display  = 'none';
-    if (legendEl) legendEl.style.display = 'block';
+    setTimeout(() => tcCareMap.invalidateSize(), 50);
+    return;
   }
+  if (emptyEl)  emptyEl.style.display  = 'none';
 
-  // Plot grey dots for all census trees in viewport area (background context)
-  allTrees.forEach(tree => {
-    const lat = parseFloat(tree.latitude || tree.lat);
-    const lng = parseFloat(tree.longitude || tree.lng || tree.lon);
-    if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
-    const tid = String(tree.tree_id || '');
-    if (caredForMap[tid]) return; // skip — will render as green
+  const allLatLngs = [];
 
-    const icon = L.divIcon({
-      className: '',
-      iconSize: [8, 8],
-      iconAnchor: [4, 4],
-      html: '<div style="width:8px;height:8px;border-radius:50%;background:#ccc;opacity:0.5"></div>'
-    });
-    L.marker([lat, lng], { icon, interactive: false }).addTo(tcCareMarkersLayer);
-  });
+  years.forEach(year => {
+    const layer = L.layerGroup();
+    tcCareYearLayers[year] = layer;
+    layer.addTo(tcCareMap);
+    const color = tcYearColor(year);
 
-  // Plot green markers for cared-for trees
-  Object.values(caredForMap).forEach(({ lat, lng, area, tree }) => {
-    const icon = L.divIcon({
-      className: '',
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-      html: '<div style="width:18px;height:18px;border-radius:50%;background:#2e8b57;border:3px solid #fff;box-shadow:0 0 0 2px #2e8b57,0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:900;cursor:pointer">✓</div>'
-    });
+    Object.entries(byYearTree[year]).forEach(([tid, { events, area }]) => {
+      const coords = _tcTreeCoords[tid];
+      if (!coords || !coords.lat || !coords.lng) return;
+      const { lat, lng, address, species } = coords;
+      allLatLngs.push([lat, lng]);
 
-    // Build popup content
-    const latestEvent = area.careEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1)[0];
-    const latestDate  = latestEvent ? latestEvent.date.slice(0, 10) : '';
-    const address     = area.name || (tree && tree.address) || '';
-    const species     = (tree && tree.spc_common) || area.addressNote || '';
-    const eventCount  = area.careEvents.length;
+      const icon = L.divIcon({
+        className: '',
+        iconSize: [14, 14], iconAnchor: [7, 7],
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1.5px ${color},0 1px 4px rgba(0,0,0,0.25);cursor:pointer"></div>`
+      });
 
-    const popup = `
-      <div style="font-family:'Nunito',sans-serif;min-width:160px">
-        <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a3a1a">${address}</div>
-        ${species ? `<div style="font-size:11px;color:#555;margin-bottom:6px">${species}</div>` : ''}
-        <div style="font-size:11px;color:#2e8b57;font-weight:600">✓ ${eventCount} care event${eventCount !== 1 ? 's' : ''}</div>
-        ${latestDate ? `<div style="font-size:11px;color:#777;margin-top:2px">Last: ${latestDate}</div>` : ''}
+      const evList = events.slice().sort((a, b) => b.date > a.date ? 1 : -1);
+      const popupRows = evList.map(ev => {
+        const d = (ev.date || '').slice(0, 10);
+        const acts = (ev.activities || []).join(', ') || '(activity logged)';
+        return `<div style="margin-bottom:3px"><span style="color:#888">${d}</span> ${acts}</div>`;
+      }).join('');
+
+      const popup = `<div style="font-family:'Nunito',sans-serif;min-width:180px;max-height:200px;overflow-y:auto">
+        <div style="font-weight:700;font-size:12px;margin-bottom:2px">${address || 'Tree #' + tid}</div>
+        ${species ? `<div style="font-size:10px;color:#666;margin-bottom:6px">${species}</div>` : ''}
+        <div style="font-size:10px;font-weight:600;color:${color};margin-bottom:4px">${year} · ${events.length} event${events.length !== 1 ? 's' : ''}</div>
+        <div style="font-size:10px;line-height:1.6">${popupRows}</div>
       </div>`;
 
-    L.marker([lat, lng], { icon }).bindPopup(popup).addTo(tcCareMarkersLayer);
+      L.marker([lat, lng], { icon }).bindPopup(popup).addTo(layer);
+    });
   });
 
-  // Fit map to cared-for markers if any exist
-  if (caredCount > 0) {
-    const latlngs = Object.values(caredForMap).map(({ lat, lng }) => [lat, lng]);
-    tcCareMap.fitBounds(L.latLngBounds(latlngs).pad(0.15));
+  // Fit to all markers
+  if (allLatLngs.length) {
+    tcCareMap.fitBounds(L.latLngBounds(allLatLngs).pad(0.12));
+  }
+
+  // Build legend with year toggles
+  const legendRows = years.slice().reverse().map(year => {
+    const color = tcYearColor(year);
+    const count = Object.keys(byYearTree[year]).length;
+    return `<label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:3px;font-size:11px">
+      <input type="checkbox" checked onchange="tcToggleCareYear('${year}',this.checked)" style="margin:0;cursor:pointer">
+      <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></span>
+      <span>${year} <span style="color:#999">(${count})</span></span>
+    </label>`;
+  }).join('');
+
+  if (legendEl) {
+    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}`;
+    legendEl.style.display = 'block';
   }
 
   setTimeout(() => tcCareMap.invalidateSize(), 50);
@@ -4147,8 +4188,8 @@ window.addEventListener('load', () => {
 
   // Pull scraped NYC Tree Map activities from the published Google Sheet CSV.
   // Runs after tcInitSync so manual areas are already loaded when we merge.
-  // Safe to call even if TC_SCRAPED_SHEET_CSV_URL is not yet configured.
-  tcSyncScrapedActivities().then(() => {
+  // Load tree coordinates and activities in parallel, then render.
+  Promise.all([tcLoadTreeCoords(), tcSyncScrapedActivities()]).then(() => {
     if (_tcScrapedAreas.length) {
       renderClaimedBlocksSidebar();
       tcUpdateProgress();
