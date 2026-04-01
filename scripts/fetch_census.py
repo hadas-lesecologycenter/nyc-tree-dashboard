@@ -69,10 +69,21 @@ HEALTH_MAP = {
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def build_url(dataset_id, params):
+    """Build a Socrata query URL.
+    Keys starting with $ are SoQL params ($where, $limit, etc.) — keep $ literal.
+    Values are fully URL-encoded (spaces → %20, etc.).
+    Plain keys (no $) become simple equality filters (e.g. borocd=103).
+    """
+    parts = []
+    for k, v in params.items():
+        encoded_v = urllib.parse.quote(str(v), safe='')
+        parts.append(f'{k}={encoded_v}')
+    return BASE_URL.format(id=dataset_id) + '?' + '&'.join(parts)
+
+
 def fetch(dataset_id, params):
-    # Build query string manually — keep $ and = unencoded for Socrata SoQL
-    qs = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="=,() ")}' for k, v in params.items())
-    url = BASE_URL.format(id=dataset_id) + '?' + qs
+    url = build_url(dataset_id, params)
     print(f'  GET {url[:120]}…')
     headers = {'Accept': 'application/json', 'User-Agent': 'nyc-tree-dashboard/1.0'}
     if APP_TOKEN:
@@ -90,22 +101,22 @@ def fetch(dataset_id, params):
 
 
 def borocd_filter(dataset_id):
-    """Return True if borocd=103 filter works for this dataset."""
+    """Return True if direct borocd=103 filter works for this dataset."""
     try:
-        rows = fetch(dataset_id, {'$where': f'borocd={BOROCD}', '$limit': 1, '$select': 'count(*)'})
-        return True
+        # Use Socrata simple filter syntax (no $where needed for equality)
+        rows = fetch(dataset_id, {'borocd': BOROCD, '$limit': 1})
+        return isinstance(rows, list)
     except Exception:
         return False
 
 
 def bbox_params():
-    return {
-        '$where': (
-            f'latitude >= {CB3_LAT[0]} AND latitude <= {CB3_LAT[1]} '
-            f'AND longitude >= {CB3_LNG[0]} AND longitude <= {CB3_LNG[1]}'
-        ),
-        '$limit': LIMIT,
-    }
+    # $where value is a SoQL expression — build as a plain string; build_url encodes it
+    where = (
+        f'latitude >= {CB3_LAT[0]} AND latitude <= {CB3_LAT[1]} '
+        f'AND longitude >= {CB3_LNG[0]} AND longitude <= {CB3_LNG[1]}'
+    )
+    return {'$where': where, '$limit': LIMIT}
 
 
 def normalise_forestry(row):
@@ -130,7 +141,7 @@ def fetch_forestry():
     print('Trying Forestry Tree Points (live operational DB)…')
     params = {'$limit': LIMIT}
     if borocd_filter(FORESTRY_ID):
-        params['$where'] = f'borocd={BOROCD}'
+        params['borocd'] = BOROCD   # simple Socrata equality filter
         print(f'  Using borocd={BOROCD} filter')
     else:
         params.update(bbox_params())
@@ -156,7 +167,8 @@ def fetch_forestry():
 
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
-    params = {'$where': f'borocd={BOROCD}', '$limit': LIMIT}
+    # Simple equality filter — no $where needed
+    params = {'borocd': BOROCD, '$limit': LIMIT}
     return fetch(CENSUS_ID, params)
 
 
