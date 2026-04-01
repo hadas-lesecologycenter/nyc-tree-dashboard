@@ -20,6 +20,8 @@ jobs:
           python-version: '3.12'
 
       - name: Fetch CB3 tree data
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
         run: python3 scripts/fetch_census.py
 
       - name: Commit if data changed

@@ -9,7 +9,7 @@ required fields.
 Run manually or via the update-census GitHub Action.
 """
 
-import json, sys, urllib.request, urllib.parse, os
+import json, sys, urllib.request, urllib.parse, os, time
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +24,8 @@ FORESTRY_ID  = 'k5ta-2trh'   # Forestry Tree Points — live operational DB
 CENSUS_ID    = 'uvpi-gqnh'   # 2015 Street Tree Census
 BASE_URL     = 'https://data.cityofnewyork.us/resource/{id}.json'
 
-OUT_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'census.json')
+OUT_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'census.json')
+APP_TOKEN  = os.environ.get('SOCRATA_APP_TOKEN', '')  # optional but avoids rate limits
 
 # Required fields the app depends on (in 2015-census naming)
 REQUIRED = {'latitude', 'longitude', 'spc_common'}
@@ -69,11 +70,23 @@ HEALTH_MAP = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def fetch(dataset_id, params):
-    url = BASE_URL.format(id=dataset_id) + '?' + urllib.parse.urlencode(params)
+    # Build query string manually — keep $ and = unencoded for Socrata SoQL
+    qs = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="=,() ")}' for k, v in params.items())
+    url = BASE_URL.format(id=dataset_id) + '?' + qs
     print(f'  GET {url[:120]}…')
-    req = urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'nyc-tree-dashboard/1.0'})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.loads(r.read())
+    headers = {'Accept': 'application/json', 'User-Agent': 'nyc-tree-dashboard/1.0'}
+    if APP_TOKEN:
+        headers['X-App-Token'] = APP_TOKEN
+    req = urllib.request.Request(url, headers=headers)
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.loads(r.read())
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f'  Retry {attempt+1}/3 after error: {e}')
+            time.sleep(5 * (attempt + 1))
 
 
 def borocd_filter(dataset_id):
