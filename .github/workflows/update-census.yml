@@ -1,0 +1,36 @@
+name: Update Tree Census Data
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Every Monday at 6am UTC
+  workflow_dispatch:       # Also runnable manually from the Actions tab
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch CB3 tree data
+        run: python3 scripts/fetch_census.py
+
+      - name: Commit if data changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/census.json
+          if git diff --staged --quiet; then
+            echo "No changes to census data."
+          else
+            COUNT=$(python3 -c "import json; d=json.load(open('data/census.json')); print(len(d))")
+            git commit -m "Update tree census data $(date +%Y-%m-%d) ($COUNT trees)"
+            git push
+          fi
