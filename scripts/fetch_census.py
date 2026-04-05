@@ -29,17 +29,26 @@ APP_TOKEN  = os.environ.get('SOCRATA_APP_TOKEN', '')  # optional but avoids rate
 # Required fields the app depends on (in 2015-census naming)
 REQUIRED = {'latitude', 'longitude', 'spc_common'}
 
+# CB3 NTA names — confirmed from existing census data (most precise filter)
+CB3_NTA_NAMES = ('Lower East Side', 'East Village', 'Chinatown')
+
 # CB3 filter strategies to try in order (Socrata SoQL $where expressions).
-# The 2015 census uses 'community_board' (CB number) + 'borocode' (borough).
-# The Forestry dataset may share these columns or only support geo filtering.
+# nta_name is the most precise: it's a real output column whose values we know.
+# community_board/borocode columns exist in the dataset but their exact API
+# field name and value type are uncertain, so try several variants.
 CB3_WHERE_VARIANTS = [
-    "community_board='3' AND borocode='1'",   # string values (most datasets)
-    "community_board=3 AND borocode=1",        # numeric values
+    # Most precise: filter by the three NTA names that make up CB3
+    "nta_name IN ('Lower East Side', 'East Village', 'Chinatown')",
+    # Community board variants (column may be string or numeric)
+    "community_board='3' AND borocode='1'",
+    "community_board=3 AND borocode=1",
     "community_board='3' AND boroname='Manhattan'",
-    # Geo bbox using confirmed lat/lon column names (2015 census)
-    (f'latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} '
-     f'AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]}'),
-    # Socrata built-in geo function (works when geometry column exists)
+    # Geo bbox — lat/lon columns confirmed present in 2015 census output.
+    # Combined with boroname to exclude Brooklyn trees across the East River.
+    (f"latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} "
+     f"AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]} "
+     f"AND boroname='Manhattan'"),
+    # Socrata built-in geo function (for datasets with geometry column)
     f'within_box(the_geom, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
 ]
 
@@ -125,6 +134,20 @@ def try_cb3_filters(dataset_id):
     return None
 
 
+def filter_to_cb3(rows):
+    """Post-fetch safety filter: keep only Manhattan CB3 trees by NTA name.
+    Applied when a broad filter (e.g. bbox) may have returned neighbouring CBs.
+    Falls through unchanged if nta_name is absent (e.g. Forestry dataset).
+    """
+    if not rows or 'nta_name' not in rows[0]:
+        return rows
+    before = len(rows)
+    kept = [r for r in rows if r.get('nta_name') in CB3_NTA_NAMES]
+    if len(kept) != before:
+        print(f'  Post-filter: {before} → {len(kept)} trees (kept CB3 NTAs only)')
+    return kept
+
+
 def normalise_forestry(row):
     """Normalise a Forestry Tree Points row to 2015-census field names."""
     out = {}
@@ -153,6 +176,7 @@ def fetch_forestry():
     print(f'  Fields in dataset: {sorted(rows[0].keys())}')
 
     normalised = [normalise_forestry(r) for r in rows]
+    normalised = filter_to_cb3(normalised)
 
     # Validate required fields
     sample = normalised[0]
@@ -165,12 +189,10 @@ def fetch_forestry():
 
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
-    # The 2015 census uses 'community_board' + 'borocode', not a composite 'borocd'.
-    # try_cb3_filters tries multiple strategies; lat/lon bbox is confirmed to work.
     rows = try_cb3_filters(CENSUS_ID)
     if not rows:
         raise ValueError('No rows returned from any filter strategy')
-    return rows
+    return filter_to_cb3(rows)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
