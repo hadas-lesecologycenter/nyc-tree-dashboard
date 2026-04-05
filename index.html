@@ -1658,16 +1658,11 @@ function getMarkerSize(tree) {
 // Returns a Set of tree_ids that have at least one scraped care event.
 function getCaredForTreeIds() {
   const ids = new Set();
-  if (!_tcScrapedAreas || !_tcScrapedAreas.length) return ids;
-  _tcScrapedAreas.forEach(area => {
-    // Each scraped area has a treeId embedded in its id or name
-    // The CSV treeId column maps directly to census tree_id
-    if (area._fromScraper && area.careEvents && area.careEvents.length) {
-      // Extract treeId from the area id: 'tc_scraped_' prefix was built from address,
-      // but the raw treeId is stored in the original rows — look it up via name match
-      // against allTrees, or read directly from the area's addressNote treeId hint.
-      // Most reliably: scan the CSV rows cached in _tcScrapedAreas for treeId.
-      if (area._treeId) ids.add(String(area._treeId));
+  const thisYear = String(new Date().getFullYear());
+  // Only show white ring for trees cared for in the current year
+  tcLoadTreeLogs().forEach(log => {
+    if (log.treeId && (log.date || '').startsWith(thisYear)) {
+      ids.add(String(log.treeId));
     }
   });
   return ids;
@@ -3134,9 +3129,10 @@ async function tcPopupLogSubmit(treeKey, species, address, treeId) {
   if (TC_SHEETS_URL) {
     tcSheetsPost({ action: 'logTreeCare', log }).catch(() => {});
   }
-  // Update stats
+  // Update stats and map ring
   tcUpdateProgress();
   updateStats();
+  updateMap();
   // Show confirmation in popup
   container.innerHTML =
     '<div style="text-align:center;padding:8px 0;color:#2e8b57;font-size:12px;font-weight:700">✅ Care logged!</div>' +
