@@ -33,18 +33,16 @@ REQUIRED = {'latitude', 'longitude', 'spc_common'}
 CB3_NTA_NAMES = ('Lower East Side', 'East Village', 'Chinatown')
 
 # CB3 filter strategies to try in order (Socrata SoQL $where expressions).
-# nta_name is the most precise: it's a real output column whose values we know.
-# community_board/borocode columns exist in the dataset but their exact API
-# field name and value type are uncertain, so try several variants.
+# The real community board column is 'cb_num' (confirmed from API output).
+# nta_name filter is a reliable fallback using confirmed output column values.
 CB3_WHERE_VARIANTS = [
-    # Most precise: filter by the three NTA names that make up CB3
+    # Best: actual community board column (cb_num=3, Manhattan borocode=1)
+    "cb_num='3' AND borocode='1'",
+    "cb_num=3 AND borocode=1",
+    "cb_num='3' AND boroname='Manhattan'",
+    # NTA names confirmed from existing census data
     "nta_name IN ('Lower East Side', 'East Village', 'Chinatown')",
-    # Community board variants (column may be string or numeric)
-    "community_board='3' AND borocode='1'",
-    "community_board=3 AND borocode=1",
-    "community_board='3' AND boroname='Manhattan'",
-    # Geo bbox — lat/lon columns confirmed present in 2015 census output.
-    # Combined with boroname to exclude Brooklyn trees across the East River.
+    # Geo bbox — lat/lon columns confirmed present; boroname excludes Brooklyn
     (f"latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} "
      f"AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]} "
      f"AND boroname='Manhattan'"),
