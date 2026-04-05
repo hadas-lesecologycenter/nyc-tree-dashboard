@@ -3364,9 +3364,6 @@ function tcOpenDashboard(id) {
         '<div style="font-size:11px;color:var(--text3)">Added ' +
           new Date(area.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) +
           ' · ' + area.treeCount + ' trees' +
-          (area.isAddressBased
-            ? ' · <a href="#" onclick="tcEditAddressCount(\'' + area.id + '\');return false;" style="color:var(--accent);text-decoration:none;font-weight:600">edit count</a>'
-            : '') +
         '</div>' +
         (area.isAddressBased && area.addressNote
           ? '<div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic">📝 ' + area.addressNote + '</div>'
