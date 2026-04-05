@@ -13,10 +13,9 @@ import json, sys, urllib.request, urllib.parse, os, time
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-# Manhattan Community Board 3 bounding box (fallback if borocd filter unsupported)
+# Manhattan Community Board 3 bounding box
 CB3_LAT = (40.706, 40.732)
 CB3_LNG = (-74.012, -73.965)
-BOROCD  = 103          # Manhattan CB3 composite code
 LIMIT   = 50_000       # more than enough for CB3
 
 # NYC Open Data Socrata endpoints
@@ -29,6 +28,20 @@ APP_TOKEN  = os.environ.get('SOCRATA_APP_TOKEN', '')  # optional but avoids rate
 
 # Required fields the app depends on (in 2015-census naming)
 REQUIRED = {'latitude', 'longitude', 'spc_common'}
+
+# CB3 filter strategies to try in order (Socrata SoQL $where expressions).
+# The 2015 census uses 'community_board' (CB number) + 'borocode' (borough).
+# The Forestry dataset may share these columns or only support geo filtering.
+CB3_WHERE_VARIANTS = [
+    "community_board='3' AND borocode='1'",   # string values (most datasets)
+    "community_board=3 AND borocode=1",        # numeric values
+    "community_board='3' AND boroname='Manhattan'",
+    # Geo bbox using confirmed lat/lon column names (2015 census)
+    (f'latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} '
+     f'AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]}'),
+    # Socrata built-in geo function (works when geometry column exists)
+    f'within_box(the_geom, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
+]
 
 # ── Field normalisation maps ──────────────────────────────────────────────────
 # Maps Forestry Tree Points field names → 2015 census field names.
@@ -73,7 +86,6 @@ def build_url(dataset_id, params):
     """Build a Socrata query URL.
     Keys starting with $ are SoQL params ($where, $limit, etc.) — keep $ literal.
     Values are fully URL-encoded (spaces → %20, etc.).
-    Plain keys (no $) become simple equality filters (e.g. borocd=103).
     """
     parts = []
     for k, v in params.items():
@@ -100,22 +112,17 @@ def fetch(dataset_id, params):
             time.sleep(5 * (attempt + 1))
 
 
-def borocd_filter(dataset_id):
-    """Return True if direct borocd=103 filter works for this dataset."""
-    try:
-        rows = fetch(dataset_id, {'$where': f'borocd={BOROCD}', '$limit': 1})
-        return isinstance(rows, list)
-    except Exception:
-        return False
-
-
-def bbox_params():
-    # $where value is a SoQL expression — build as a plain string; build_url encodes it
-    where = (
-        f'latitude >= {CB3_LAT[0]} AND latitude <= {CB3_LAT[1]} '
-        f'AND longitude >= {CB3_LNG[0]} AND longitude <= {CB3_LNG[1]}'
-    )
-    return {'$where': where, '$limit': LIMIT}
+def try_cb3_filters(dataset_id):
+    """Try each CB3 filter strategy in turn; return rows from the first that works."""
+    for where in CB3_WHERE_VARIANTS:
+        try:
+            rows = fetch(dataset_id, {'$where': where, '$limit': LIMIT})
+            if isinstance(rows, list) and rows:
+                print(f'  Filter worked: {where[:60]}')
+                return rows
+        except Exception as e:
+            print(f'  Filter failed ({where[:50]}): {e}')
+    return None
 
 
 def normalise_forestry(row):
@@ -138,17 +145,9 @@ def normalise_forestry(row):
 
 def fetch_forestry():
     print('Trying Forestry Tree Points (live operational DB)…')
-    params = {'$limit': LIMIT}
-    if borocd_filter(FORESTRY_ID):
-        params['borocd'] = BOROCD   # simple Socrata equality filter
-        print(f'  Using borocd={BOROCD} filter')
-    else:
-        params.update(bbox_params())
-        print('  borocd filter unavailable — using lat/lng bounding box')
-
-    rows = fetch(FORESTRY_ID, params)
+    rows = try_cb3_filters(FORESTRY_ID)
     if not rows:
-        raise ValueError('No rows returned')
+        raise ValueError('No rows returned from any filter strategy')
 
     # Print discovered fields from first row
     print(f'  Fields in dataset: {sorted(rows[0].keys())}')
@@ -166,8 +165,12 @@ def fetch_forestry():
 
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
-    params = {'$where': f'borocd={BOROCD}', '$limit': LIMIT}
-    return fetch(CENSUS_ID, params)
+    # The 2015 census uses 'community_board' + 'borocode', not a composite 'borocd'.
+    # try_cb3_filters tries multiple strategies; lat/lon bbox is confirmed to work.
+    rows = try_cb3_filters(CENSUS_ID)
+    if not rows:
+        raise ValueError('No rows returned from any filter strategy')
+    return rows
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
