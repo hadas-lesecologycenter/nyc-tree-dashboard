@@ -43,33 +43,41 @@ CB3_WHERE_VARIANTS = [
     (f"latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} "
      f"AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]} "
      f"AND boroname='Manhattan'"),
-    f'within_box(the_geom, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
+    # Forestry dataset uses 'geometry' as the geo column (confirmed from probe)
+    f'within_box(geometry, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
 ]
 
 # ── Field normalisation maps ──────────────────────────────────────────────────
 # Maps Forestry Tree Points field names → 2015 census field names.
 # Fields not listed are passed through as-is.
 FORESTRY_MAP = {
-    'objectid':       'tree_id',
-    'spc_latin':      'spc_latin',
-    'spc_common':     'spc_common',
-    'condition':      'health',        # ForMS uses 'condition' not 'health'
-    'status':         'status',
-    'dbh':            'tree_dbh',
-    'address':        'address',
-    'zipcode':        'zipcode',
-    'zip_city':       'zip_city',
-    'boroname':       'boroname',
-    'nta_name':       'nta_name',
-    'nta':            'nta_name',
-    'sidewalk':       'sidewalk',
-    'guards':         'guards',
-    'latitude':       'latitude',
-    'longitude':      'longitude',
-    'borocode':       'borocode',
-    'boro_ct':        'boro_ct',
-    'block_id':       'block_id',
-    'census_tract':   'boro_ct',
+    # Confirmed column names from hn5i-inap probe (2024):
+    # createddate, dbh, genusspecies, geometry, globalid, location,
+    # objectid, plantingspaceglobalid, tpcondition, tpstructure, updateddate
+    'objectid':           'tree_id',
+    'dbh':                'tree_dbh',
+    'genusspecies':       'spc_common',   # combined genus+species
+    'tpcondition':        'health',
+    'tpstructure':        'status',
+    # Legacy / 2015-census field names (kept in case dataset schema changes)
+    'spc_latin':          'spc_latin',
+    'spc_common':         'spc_common',
+    'condition':          'health',
+    'status':             'status',
+    'address':            'address',
+    'zipcode':            'zipcode',
+    'zip_city':           'zip_city',
+    'boroname':           'boroname',
+    'nta_name':           'nta_name',
+    'nta':                'nta_name',
+    'sidewalk':           'sidewalk',
+    'guards':             'guards',
+    'latitude':           'latitude',
+    'longitude':          'longitude',
+    'borocode':           'borocode',
+    'boro_ct':            'boro_ct',
+    'block_id':           'block_id',
+    'census_tract':       'boro_ct',
 }
 
 # Condition/health value normalisation (Forestry uses different strings)
@@ -163,32 +171,45 @@ def download_csv_and_filter(dataset_id, is_cb3_fn):
 
 
 def is_cb3_forestry(row):
-    """Return True if a Forestry CSV row belongs to Manhattan CB3."""
-    # Try cb_num + borocode first (confirmed column names from 2015 census;
-    # forestry may use the same names or different ones)
-    cb = row.get('cb_num', row.get('community_board', row.get('communityboard', '')))
-    boro = row.get('borocode', row.get('borough_code', ''))
-    boroname = row.get('boroname', row.get('borough', '')).lower()
+    """Return True if a Forestry CSV row belongs to Manhattan CB3.
 
-    if cb == '3' and (boro == '1' or 'manhattan' in boroname):
-        return True
+    The forestry dataset has no cb_num/borocode/nta_name columns — location
+    is only in a 'geometry' WKT column (POINT lng lat). Filter by CB3 bbox.
+    """
+    # Primary: parse WKT geometry column (confirmed present in hn5i-inap)
+    geom = row.get('geometry', '')
+    if geom:
+        lat, lng = parse_wkt_point(geom)
+        if lat is not None:
+            return (CB3_LAT[0] < lat < CB3_LAT[1] and
+                    CB3_LNG[0] < lng < CB3_LNG[1])
 
-    # NTA fallback
-    nta = row.get('nta_name', row.get('nta', '')).lower()
-    if nta in ('lower east side', 'east village', 'chinatown'):
-        return True
-
-    # Geo bbox fallback
+    # Fallback: separate latitude/longitude columns (2015-census style)
     try:
-        lat = float(row.get('latitude', 0))
-        lng = float(row.get('longitude', 0))
-        if (CB3_LAT[0] < lat < CB3_LAT[1] and CB3_LNG[0] < lng < CB3_LNG[1]
-                and 'manhattan' in boroname):
-            return True
+        lat = float(row.get('latitude', '') or 0)
+        lng = float(row.get('longitude', '') or 0)
+        if lat and lng:
+            return (CB3_LAT[0] < lat < CB3_LAT[1] and
+                    CB3_LNG[0] < lng < CB3_LNG[1])
     except (ValueError, TypeError):
         pass
 
     return False
+
+
+def parse_wkt_point(wkt):
+    """Parse a WKT POINT string → (lat, lng) floats, or (None, None)."""
+    # WKT format: "POINT (lng lat)" — longitude first
+    try:
+        inner = wkt.strip()
+        for prefix in ('POINT (', 'POINT('):
+            if inner.startswith(prefix):
+                inner = inner[len(prefix):].rstrip(')')
+                break
+        parts = inner.split()
+        return float(parts[1]), float(parts[0])   # lat, lng
+    except Exception:
+        return None, None
 
 
 def normalise_forestry(row):
@@ -197,10 +218,22 @@ def normalise_forestry(row):
     for k, v in row.items():
         mapped = FORESTRY_MAP.get(k, k)
         out[mapped] = v
+
+    # Extract lat/lng from WKT geometry if not already present as separate fields.
+    # The forestry dataset stores location only in a 'geometry' column.
+    if 'latitude' not in out or not out['latitude']:
+        geom = row.get('geometry', '')
+        if geom:
+            lat, lng = parse_wkt_point(geom)
+            if lat is not None:
+                out['latitude']  = str(lat)
+                out['longitude'] = str(lng)
+
     # Normalise health/condition values
     h = (out.get('health') or '').lower()
     if h in HEALTH_MAP:
         out['health'] = HEALTH_MAP[h]
+
     # Ensure tree_id is a string
     if 'tree_id' not in out and 'objectid' in row:
         out['tree_id'] = str(row['objectid'])
