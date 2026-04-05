@@ -942,11 +942,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
   <nav>
-    <button class="nav-btn active" onclick="switchView('map')">🗺 Map</button>
-    <button class="nav-btn" onclick="switchView('stats')">📊 Stats</button>
-    <button class="nav-btn" onclick="switchView('blocks')">🏙 Top Blocks</button>
-    <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock')">🌿 Tree Care</button>
-    <button class="nav-btn" onclick="switchView('about')">ℹ️ About</button>
+    <button class="nav-btn active" onclick="switchView('map',event)">🗺 Map</button>
+    <button class="nav-btn" onclick="switchView('stats',event)">📊 Stats</button>
+    <button class="nav-btn" onclick="switchView('blocks',event)">🏙 Top Blocks</button>
+    <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
+    <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
 
 </header>
@@ -1360,7 +1360,6 @@ let priorityMode = true;
 let emptyBedsVisible = false;
 let emptyBedsLayer = null;
 let emptyBeds = [];
-let selectedPriorityTree = null;
 let healthChart = null, boroughChart = null, speciesChart = null;
 
 // ========== PRIORITY FORMULA ==========
@@ -1492,7 +1491,6 @@ function applyFilters(reload = false) {
   document.getElementById('tree-count').textContent = `${filteredTrees.length.toLocaleString()} trees`;
   updateMap();
   updateStats();
-  updatePriorityList();
 }
 
 // ========== MAP ==========
@@ -1968,81 +1966,7 @@ function updateStats() {
   });
 }
 
-// ========== PRIORITY LIST ==========
-function updatePriorityList() {
-  const minScore = parseInt(document.getElementById('min-score')?.value || 4);
-  const minScoreVal = document.getElementById('min-score-val');
-  if (minScoreVal) minScoreVal.textContent = minScore;
-
-  const matched = [...filteredTrees].filter(t => (t._priority||0) >= minScore);
-  const countEl = document.getElementById('priority-match-count');
-  if (countEl) countEl.textContent = matched.length ? '(' + matched.length + ' trees)' : '(none)';
-
-  const sorted = matched
-    .sort((a,b) => (b._priority||0) - (a._priority||0))
-    .slice(0, 200);
-
-  const list = document.getElementById('priority-list');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!sorted.length) { list.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--text3);text-align:center">No trees at this urgency level.<br><span style=\"font-size:11px\">Try sliding left to lower the threshold.</span></div>'; return; }
-
-  sorted.forEach((tree, i) => {
-    const pm = getPriorityMeta(tree._priority||0);
-    const id = tree.tree_id || tree.id || i;
-    const row = document.createElement('div');
-    row.className = 'priority-row';
-    row.dataset.id = id;
-    row.innerHTML = `
-      <span class="p-rank">#${i+1}</span>
-      <div class="p-badge" style="background:${pm.bg};color:${pm.color}">
-        ${tree._priority}<small>${pm.label}</small>
-      </div>
-      <div class="p-info">
-        <div class="p-species">${tree.spc_common||'Unknown'}</div>
-        <div class="p-addr">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-        <div class="p-tags">
-          ${tree.health ? `<span class="tag ${(tree.health||'').toLowerCase()}">${tree.health}</span>` : ''}
-          ${tree.tree_dbh ? `<span class="tag">DBH ${tree.tree_dbh}"</span>` : ''}
-        </div>
-      </div>
-    `;
-    row.onclick = () => {
-      document.querySelectorAll('.priority-row').forEach(r => r.classList.remove('selected'));
-      row.classList.add('selected');
-      showPriorityDetail(tree);
-    };
-    list.appendChild(row);
-  });
-}
-
-function showPriorityDetail(tree) {
-  selectedPriorityTree = tree;
-  const pd = document.getElementById('priority-detail');
-  pd.className = 'priority-detail has-tree';
-  const pm = getPriorityMeta(tree._priority||0);
-  pd.innerHTML = `
-    <div class="detail-top" style="position:static">
-      <div class="detail-top-row">
-        <div>
-          <div class="detail-species">${tree.spc_common||'Unknown Species'}</div>
-          <div class="detail-addr">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-        </div>
-      </div>
-      <div class="detail-priority-row">
-        <div class="detail-score" style="background:${pm.bg};color:${pm.color}">${pm.label} / 4</div>
-      </div>
-    </div>
-    <div class="detail-body">
-      <div class="detail-section">
-        <div class="detail-section-title">Tree Info</div>
-        <div class="detail-fields">
-          ${[['Species',tree.spc_common],['Health',tree.health],['DBH',tree.tree_dbh?tree.tree_dbh+'"':null],['Neighborhood',tree.nta_name],['Status',tree.status],['Sidewalk',tree.sidewalk],['Guards',tree.guards],['Tree ID',tree.tree_id]].filter(([,v])=>v).map(([k,v])=>`<div class="df"><span class="df-key">${k}</span><span class="df-val">${v}</span></div>`).join('')}
-        </div>
-      </div>
-    </div>
-  `;
-}
+// (Priority list/detail panels removed — priority sidebar now shows static tier info only)
 
 
 
@@ -2050,24 +1974,22 @@ function showPriorityDetail(tree) {
 
 
 // ========== VIEW SWITCHING ==========
-function switchView(view) {
+function switchView(view, evt) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`${view}-view`).classList.add('active');
-  event.currentTarget.classList.add('active');
+  const target = evt ? evt.currentTarget : (typeof event !== 'undefined' && event ? event.currentTarget : null);
+  if (target) target.classList.add('active');
   if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
   if (view === 'stats') updateStats();
   if (view === 'blocks') {
     updateBlocksView();
+    setTimeout(tcRenderBlocksMap, 200);
   }
   if (view === 'myblock') {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
     setTimeout(tcRenderCareMap, 100);
-  }
-  if (view === 'blocks') {
-    // also render claimed areas on blocks map
-    setTimeout(tcRenderBlocksMap, 200);
   }
 }
 
@@ -3197,23 +3119,6 @@ function tcShowNoSelection() {
   if (content) content.style.display = 'none';
 }
 
-async function tcEditAddressCount(id) {
-  const area = tcGet(id);
-  if (!area) return;
-  const newCount = prompt('Update tree count for "' + area.name + '":', area.treeCount);
-  if (newCount === null) return; // cancelled
-  const n = parseInt(newCount);
-  if (!n || n < 1) { alert('Please enter a number greater than 0.'); return; }
-  area.treeCount = n;
-  tcSave(tcLoad().map(a => a.id === area.id ? area : a)); // write synchronously first
-  const openForm = document.getElementById('tc-inline-log');
-  if (openForm) openForm.remove();
-  await tcUpsert(area);
-  renderClaimedBlocksSidebar();
-  tcOpenDashboard(id);
-  tcUpdateProgress();
-  updateStats();
-}
 
 function tcSelectArea(id) {
   tcSelectedId = id;
@@ -3319,11 +3224,13 @@ function tcOpenDashboard(id) {
       ? '<span style="font-size:10px;background:#fdf3e3;border:1px solid #f0c070;border-radius:10px;' +
         'padding:1px 7px;color:#7a5a20;font-weight:600;margin-left:6px">🌳 ' + ev.treeCountOverride + ' trees this visit</span>'
       : '';
+    const isScraped = ev._fromScraper;
     return '<div style="padding:10px 0;border-bottom:1px solid var(--border)">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:4px">' + d + overrideTag + '</div>' +
-        '<button onclick="tcDeleteCareEvent(\'' + area.id + '\',' + i + ')" ' +
-          'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px">🗑</button>' +
+        (isScraped ? '' :
+          '<button onclick="tcDeleteCareEvent(\'' + area.id + '\',' + i + ')" ' +
+            'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px">🗑</button>') +
       '</div>' +
       (badges ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px">' + badges + '</div>' : '') +
       (ev.note ? '<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">📝 ' + ev.note + '</div>' : '') +
