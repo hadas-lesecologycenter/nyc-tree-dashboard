@@ -996,23 +996,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🌱 Priority Mode</h2>
           <button onclick="togglePrioritySidebar()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
         </div>
-        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">Trees ranked into 6 tiers by two factors: whether they are young or ESCR-planted, and how visible their location is.</p>
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">Trees ranked into 6 tiers by two factors: whether they are young (recently planted or small DBH), and how visible their location is.</p>
 
         <div id="priority-tier-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
           <!-- populated by updatePriorityTierCounts() -->
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#c0392b;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 6 — Young/ESCR · commercial corridor</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 6 — Young · commercial corridor</span>
             <span id="tier-count-6" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#e67e22;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 5 — Young/ESCR · high-traffic area</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 5 — Young · high-traffic area</span>
             <span id="tier-count-5" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <div style="width:10px;height:10px;border-radius:50%;background:#f1c40f;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young/ESCR · residential</span>
+            <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young · residential</span>
             <span id="tier-count-4" style="font-size:10px;font-weight:700;color:#b8940d;min-width:28px;text-align:right"></span>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -1031,7 +1031,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <span id="tier-count-1" style="font-size:10px;font-weight:700;color:#1a5c38;min-width:28px;text-align:right"></span>
           </div>
         </div>
-        <p style="font-size:10px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">Trees ranked into 6 tiers by age/ESCR status and street visibility. Counts reflect current map filters.</p>
+        <p style="font-size:10px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">Trees ranked into 6 tiers by age and street visibility. Counts reflect current map filters.</p>
       </div>
     </div>
   </div>
@@ -1089,7 +1089,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🏙 Top 100 Blocks</h2>
           <div id="counts-explanation" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.7">
-            <strong>Note on tree counts:</strong> Due to dataset limitations, multiple ESCR plantings along a block are sometimes assigned to the same address and appear as a single dot on the map. The number in the list is the correct total count.
           </div>
           <div id="blocks-summary" style="margin-top:10px;font-size:11px;color:var(--text3);font-family:'Nunito',sans-serif"></div>
           <div style="display:flex;gap:8px;margin-top:10px">
@@ -1276,12 +1275,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">What is this?</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8">This tool helps the LES Ecology Center's tree stewardship program prioritize which street trees need care. It covers the Community Board 3 area — the best geographic proxy for where LES Ecology Center works — mapping all 4,939 street trees in the neighborhood, overlaid with LES Ecology Center's ESCR planting records (2019–2024), and ranks every tree by care urgency using a simple two-factor system.</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8">This tool helps the LES Ecology Center's tree stewardship program prioritize which street trees need care. It covers the Community Board 3 area — the best geographic proxy for where LES Ecology Center works — mapping all ~11,000 active street trees in the CB3 area from the NYC Forestry live dataset, and ranks every tree by care urgency using a simple two-factor system.</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Who is it for?</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8">LES Ecology Center street tree care staff — to plan watering and care walks, identify where new ESCR plantings are concentrated, and focus effort where it matters most.</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8">LES Ecology Center street tree care staff — to plan watering and care walks, identify where young trees are concentrated, and focus effort where it matters most.</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
@@ -1291,7 +1290,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🗺</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Map tab</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">View all street trees in the CB3 area. By default, dots are colored by priority tier (red = highest need, green = lowest). Toggle to Species View to see tree diversity. Filter by health or species using the dropdowns. Click 🌱 Show New Plantings to overlay LES Ecology Center ESCR plantings.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">View all active street trees in the CB3 area. Dots are colored by priority tier (red = highest need, green = lowest). Toggle to Species View to see tree diversity. Filter by health or species using the dropdowns. Toggle empty beds to see planting opportunities.</div>
             </div>
           </div>
           <div style="display:flex;gap:14px">
@@ -1315,24 +1314,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Priority tiers explained</h2>
         <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px">Each tree is assigned one of 6 tiers based on two yes/no questions:</p>
         <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#c0392b;flex-shrink:0"></div><span><strong>Tier 6</strong> — Young/ESCR-planted · on a commercial corridor</span></div>
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#e67e22;flex-shrink:0"></div><span><strong>Tier 5</strong> — Young/ESCR-planted · high foot-traffic area</span></div>
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#f1c40f;flex-shrink:0"></div><span><strong>Tier 4</strong> — Young/ESCR-planted · residential street</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#c0392b;flex-shrink:0"></div><span><strong>Tier 6</strong> — Young · commercial corridor</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#e67e22;flex-shrink:0"></div><span><strong>Tier 5</strong> — Young · high foot-traffic area</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#f1c40f;flex-shrink:0"></div><span><strong>Tier 4</strong> — Young · residential street</span></div>
           <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#7fb069;flex-shrink:0"></div><span><strong>Tier 3</strong> — Mature tree · commercial corridor</span></div>
           <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div><span><strong>Tier 2</strong> — Mature tree · high foot-traffic area</span></div>
           <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#1a5c38;flex-shrink:0"></div><span><strong>Tier 1</strong> — Mature tree · residential street</span></div>
         </div>
-        <p style="font-size:12px;color:var(--text3);margin-top:12px">A tree is "young" if its trunk diameter is under 6 inches, or if it appears in LES Ecology Center's ESCR planting records. Young trees need the most attention in their first years to establish healthy root systems.</p>
+        <p style="font-size:12px;color:var(--text3);margin-top:12px">A tree is "young" if its trunk diameter is under 6 inches, or if it was planted within the last 5 years. Young trees need the most attention in their first years to establish healthy root systems.</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Data sources</h2>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text2);line-height:1.7">
-          <div><strong>NYC 2015 Street Tree Census</strong> — NYC Parks & Recreation / NYC Open Data. The most recent citywide street tree census, providing species, health, trunk diameter, and location for all 4,939 trees in the CB3 area.</div>
-          <div><strong>LES Ecology Center ESCR Planting Records (2019–2024)</strong> — LES Ecology Center. Records of street trees planted through LES Ecology Center's Enhanced Street Tree programs, including species, address, and planting season.</div>
-          <div><strong>NYC Planning Geosearch API</strong> — NYC Department of City Planning. Used to geocode ESCR planting addresses to map coordinates.</div>
+          <div><strong>NYC Forestry Tree Points (live)</strong> — NYC Parks &amp; Recreation / NYC Open Data. The operational forestry database, updated continuously, providing species, health, trunk diameter, planting date, and location for all active street trees in the CB3 area.</div>
         </div>
-        <p style="font-size:11px;color:var(--text3);margin-top:12px">Note: Census data is from 2015. Tree conditions and counts may have changed. This map is a planning aid, not a definitive record.</p>
+        <p style="font-size:11px;color:var(--text3);margin-top:12px">Note: Forestry data is updated weekly. Tree conditions may differ from what you find on the ground. This map is a planning aid, not a definitive record.</p>
       </div>
 
       <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:8px;font-size:12px;color:var(--text3);line-height:1.8">
@@ -1371,7 +1368,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span style="background:var(--accent);color:white;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;flex-shrink:0">70%</span>
         <div>
           <div style="font-size:13px;font-weight:600;margin-bottom:2px">🌱 Young or newly planted tree</div>
-          <div style="font-size:12px;color:var(--text3)">A tree qualifies if its trunk diameter (DBH) is under 6 inches, or if it appears in LES Ecology Center's ESCR planting records. Young trees need the most care in their first years to establish healthy root systems.</div>
+          <div style="font-size:12px;color:var(--text3)">A tree qualifies if its trunk diameter (DBH) is under 6 inches, or if it was planted within the last 5 years. Young trees need the most care in their first years to establish healthy root systems.</div>
         </div>
       </div>
       <div style="display:flex;gap:12px">
@@ -1382,13 +1379,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Simple 1–6 tier ranking: Young/ESCR status × visibility level.</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Simple 1–6 tier ranking: young status × visibility level.</p>
 
     <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">How Each Tree Is Ranked</h3>
     <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px">Every tree gets a tier from 1 (lowest) to 6 (highest), based on two yes/no questions:</p>
     <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:12px">
-      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:6px"><strong>🌱 Is it young or ESCR-planted?</strong><br>
-        Yes if trunk diameter (DBH) is under 6", or if it appears in LES Ecology Center's ESCR planting records.</p>
+      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:6px"><strong>🌱 Is it young?</strong><br>
+        Yes if trunk diameter (DBH) is under 6", or if it was planted within the last 5 years.</p>
       <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:0"><strong>👁 How visible is it?</strong><br>
         Full visibility: on a named commercial corridor (Delancey, Houston, Bowery, Orchard, Grand, Essex, Rivington, Avenue A, Allen, Forsyth, etc.).<br>
         Partial: in a high foot-traffic neighborhood (East Village, Lower East Side, Chinatown) but not on a named corridor.<br>
@@ -1397,7 +1394,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px">
       <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:var(--text)">The 6 tiers</div>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
-        <tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">Tier</th><th style="text-align:left;padding:3px 0">Young/ESCR</th><th style="text-align:left;padding:3px 0">Visibility</th></tr>
+        <tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">Tier</th><th style="text-align:left;padding:3px 0">Young</th><th style="text-align:left;padding:3px 0">Visibility</th></tr>
         <tr><td style="padding:3px 0"><span style="color:#c0392b;font-weight:700">6</span></td><td>✅ Yes</td><td>Commercial corridor</td></tr>
         <tr><td style="padding:3px 0"><span style="color:#e67e22;font-weight:700">5</span></td><td>✅ Yes</td><td>High-traffic neighborhood</td></tr>
         <tr><td style="padding:3px 0"><span style="color:#f1c40f;font-weight:700">4</span></td><td>✅ Yes</td><td>Residential</td></tr>
@@ -1408,7 +1405,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
 
     <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">How Blocks Are Selected</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Census tree data is grouped by NYC block face ID — the official street segment identifier used in the 2015 Street Tree Census. ESCR plantings are matched to the nearest census block within 150 meters.</p>
+    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Trees are grouped into street block segments using coordinates. Blocks with 5 or more active trees are ranked by stewardship priority.</p>
     <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Only blocks with 5 or more trees are considered. Park and playground trees are excluded — the focus is on street-side trees where volunteer stewardship has the most impact.</p>
 
     <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">Block Ranking Score</h3>
@@ -1679,7 +1676,7 @@ function updateMap() {
     const m = L.circleMarker([lat, lng], {
       renderer,
       radius: size / 2,
-      fillColor: wasCaredFor ? '#2e8b57' : color,
+      fillColor: color,
       color: wasCaredFor ? '#ffffff' : 'rgba(0,0,0,0.2)',
       weight: wasCaredFor ? 2.5 : 1,
       fillOpacity: 0.88
