@@ -13,9 +13,10 @@ import csv, io, json, sys, urllib.request, urllib.parse, os, time
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-# Manhattan Community Board 3 bounding box
-CB3_LAT = (40.706, 40.732)
-CB3_LNG = (-74.012, -73.965)
+# Manhattan Community Board 3 bounding box — derived from the exact extent
+# of the 4,992 known CB3 street trees in the 2015 census, plus 200m buffer.
+CB3_LAT = (40.7073, 40.7360)
+CB3_LNG = (-74.0043, -73.9706)
 LIMIT   = 50_000       # more than enough for CB3
 
 # NYC Open Data Socrata endpoints
