@@ -2597,49 +2597,44 @@ function tcRenderCareMap() {
   });
   tcCareYearLayers = {};
 
-  // Group events: year → treeId → [events], CB3 only
-  const byYearTree = {};
+  // Group events into 3 buckets: 2026, 2025, earlier
+  // treeId → { events, area, latestYear }
+  const by2026 = {}, by2025 = {}, byEarlier = {};
+
   _tcScrapedAreas.forEach(area => {
     if (!area._fromScraper || !area._treeId) return;
     const tid = String(area._treeId);
-    // Filter to CB3 bounding box — scraper may include trees from other areas
-    const coords = _tcTreeCoords[tid];
-    if (coords) {
-      const lat = +coords.lat, lng = +coords.lng;
-      if (lat < 40.7073 || lat > 40.7360 || lng > -73.9706) return;
-      const westLimit = lat > 40.728 ? -73.993 : -74.003;
-      if (lng < westLimit) return;
-    }
     (area.careEvents || []).forEach(ev => {
       const year = (ev.date || '').slice(0, 4);
       if (!year) return;
-      if (!byYearTree[year]) byYearTree[year] = {};
-      if (!byYearTree[year][tid]) byYearTree[year][tid] = { events: [], area };
-      byYearTree[year][tid].events.push(ev);
+      const bucket = year === '2026' ? by2026 : year === '2025' ? by2025 : byEarlier;
+      if (!bucket[tid]) bucket[tid] = { events: [], area, latestYear: year };
+      bucket[tid].events.push(ev);
+      if (year > bucket[tid].latestYear) bucket[tid].latestYear = year;
     });
   });
 
-  const years = Object.keys(byYearTree).sort();
   const emptyEl  = document.getElementById('tc-care-map-empty');
   const legendEl = document.getElementById('tc-care-map-legend');
+  const totalTrees = Object.keys(by2026).length + Object.keys(by2025).length + Object.keys(byEarlier).length;
 
-  if (years.length === 0) {
+  if (totalTrees === 0) {
     if (emptyEl)  emptyEl.style.display = 'flex';
     if (legendEl) legendEl.style.display = 'none';
     setTimeout(() => tcCareMap.invalidateSize(), 50);
     return;
   }
-  if (emptyEl)  emptyEl.style.display  = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
 
   const allLatLngs = [];
 
-  years.forEach(year => {
+  function addBucketLayer(key, bucket, color, label) {
+    if (!Object.keys(bucket).length) return;
     const layer = L.layerGroup();
-    tcCareYearLayers[year] = layer;
+    tcCareYearLayers[key] = layer;
     layer.addTo(tcCareMap);
-    const color = tcYearColor(year);
 
-    Object.entries(byYearTree[year]).forEach(([tid, { events, area }]) => {
+    Object.entries(bucket).forEach(([tid, { events, area, latestYear }]) => {
       const coords = _tcTreeCoords[tid];
       if (!coords || !coords.lat || !coords.lng) return;
       const { lat, lng, address, species } = coords;
@@ -2652,33 +2647,39 @@ function tcRenderCareMap() {
       });
 
       const evList = events.slice().sort((a, b) => b.date > a.date ? 1 : -1);
-      const popupRows = evList.map(ev => {
+      const popupRows = evList.slice(0, 8).map(ev => {
         const d = (ev.date || '').slice(0, 10);
         const acts = (ev.activities || []).map(aid => { const a = TC_ACTIVITIES.find(x => x.id === aid); return a ? a.emoji + ' ' + a.label : aid; }).join(', ') || '(activity logged)';
         return `<div style="margin-bottom:3px"><span style="color:#888">${d}</span> ${acts}</div>`;
-      }).join('');
+      }).join('') + (evList.length > 8 ? `<div style="color:#aaa;font-size:10px">+${evList.length - 8} more</div>` : '');
 
-      const popup = `<div style="font-family:'Nunito',sans-serif;min-width:180px;max-height:200px;overflow-y:auto">
+      const popup = `<div style="font-family:'Nunito',sans-serif;min-width:180px;max-height:220px;overflow-y:auto">
         <div style="font-weight:700;font-size:12px;margin-bottom:2px">${address || 'Tree #' + tid}</div>
         ${species ? `<div style="font-size:10px;color:#666;margin-bottom:6px">${species}</div>` : ''}
-        <div style="font-size:10px;font-weight:600;color:${color};margin-bottom:4px">${year} · ${events.length} event${events.length !== 1 ? 's' : ''}</div>
+        <div style="font-size:10px;font-weight:600;color:${color};margin-bottom:4px">${label} · ${events.length} event${events.length !== 1 ? 's' : ''}</div>
         <div style="font-size:10px;line-height:1.6">${popupRows}</div>
       </div>`;
 
       L.marker([lat, lng], { icon }).bindPopup(popup).addTo(layer);
     });
-  });
+  }
 
-  // Build legend with year toggles
-  const legendRows = years.slice().reverse().map(year => {
-    const color = tcYearColor(year);
-    const count = Object.keys(byYearTree[year]).length;
-    return `<label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:3px;font-size:11px">
-      <input type="checkbox" checked onchange="tcToggleCareYear('${year}',this.checked)" style="margin:0;cursor:pointer">
+  addBucketLayer('2026',    by2026,    '#c62828', '2026');
+  addBucketLayer('2025',    by2025,    '#e65100', '2025');
+  addBucketLayer('earlier', byEarlier, '#78909c', 'Earlier');
+
+  // Build legend — 3 rows only
+  const legendRows = [
+    { key: '2026',    color: '#c62828', label: '2026',   count: Object.keys(by2026).length },
+    { key: '2025',    color: '#e65100', label: '2025',   count: Object.keys(by2025).length },
+    { key: 'earlier', color: '#78909c', label: 'Earlier', count: Object.keys(byEarlier).length },
+  ].filter(r => r.count > 0).map(({ key, color, label, count }) =>
+    `<label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:3px;font-size:11px">
+      <input type="checkbox" checked onchange="tcToggleCareYear('${key}',this.checked)" style="margin:0;cursor:pointer">
       <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></span>
-      <span>${year} <span style="color:#999">(${count})</span></span>
-    </label>`;
-  }).join('');
+      <span>${label} <span style="color:#999">(${count})</span></span>
+    </label>`
+  ).join('');
 
   if (legendEl) {
     legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}`;
