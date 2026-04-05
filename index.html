@@ -1514,9 +1514,19 @@ function isHighVisibility(tree) {
   const highTrafficNTA = ['chinatown', 'lower east side', 'east village'];
   if (highTrafficNTA.some(n => nta.includes(n))) return 'partial';
 
-  // Forestry dataset trees have no address or nta_name, but are guaranteed
-  // to be within CB3 (all high-foot-traffic). Default to 'partial'.
-  if (!tree.address && !tree.nta_name) return 'partial';
+  // Forestry trees have no address/nta — use coordinates to detect major
+  // commercial corridors (enabling tier 6) or default to partial within CB3.
+  const lat = parseFloat(tree.latitude || 0);
+  const lng = parseFloat(tree.longitude || 0);
+  if (lat && lng) {
+    // Major E-W commercial streets (±0.0003° ≈ 33 m band)
+    const ewStreets = [40.7178, 40.7264, 40.7152, 40.7142]; // Delancey, Houston, Grand, Canal
+    if (ewStreets.some(s => Math.abs(lat - s) < 0.0003)) return 'full';
+    // Major N-S commercial corridors (±0.0003° ≈ 25 m band)
+    const nsCorridors = [-73.9912, -73.9883, -73.9812, -73.9847, -74.0000]; // Bowery, Allen/Orchard, Ave A, 1st Ave, Broadway
+    if (nsCorridors.some(c => Math.abs(lng - c) < 0.0003)) return 'full';
+    return 'partial';
+  }
 
   return false;
 }
@@ -2537,17 +2547,21 @@ function openMapTreeDetail(tree) {
       '<div><div style="font-size:11px;font-weight:600;color:' + visColor + '">👁 Visibility</div>' +
       '<div style="font-size:10px;color:var(--text3)">' + bd.visReason + '</div></div>' +
     '</div>';
+  const isForestryTree = !tree.block_id;
+  const plantedRaw = tree.tree_cen_date || tree.planteddate;
+  const plantedLabel = plantedRaw ? (parseInt(plantedRaw) || plantedRaw) : null;
   const rows = [
-    ['Type', '📋 2015 Census Tree'],
-    tree.address   ? ['Address',       tree.address]                    : null,
-    tree.health    ? ['Health',         tree.health]                    : null,
-    tree.tree_dbh  ? ['Trunk DBH',      tree.tree_dbh + '"']            : null,
-    tree.status    ? ['Status',         tree.status]                    : null,
-    tree.nta_name  ? ['Neighborhood',   tree.nta_name]                  : null,
-    tree.sidewalk  ? ['Sidewalk',       tree.sidewalk]                  : null,
-    tree.guards    ? ['Guards',         tree.guards]                    : null,
-    tree.tree_id   ? ['Tree ID',        tree.tree_id]                   : null,
-    tree.spc_latin ? ['Scientific name','<em>' + tree.spc_latin + '</em>'] : null,
+    ['Type', isForestryTree ? '🌳 Forestry Live Tree' : '📋 2015 Census Tree'],
+    plantedLabel               ? ['Planted',         plantedLabel]                              : null,
+    tree.address               ? ['Address',         tree.address]                              : null,
+    tree.health                ? ['Health',          tree.health]                               : null,
+    tree.tree_dbh              ? ['Trunk DBH',       tree.tree_dbh + '"']                       : null,
+    tree.status                ? ['Status',          tree.status]                               : null,
+    tree.nta_name              ? ['Neighborhood',    tree.nta_name]                             : null,
+    tree.sidewalk              ? ['Sidewalk',        tree.sidewalk]                             : null,
+    tree.guards                ? ['Guards',          tree.guards]                               : null,
+    tree.tree_id               ? ['Tree ID',         tree.tree_id]                              : null,
+    tree.spc_latin             ? ['Scientific name', '<em>' + tree.spc_latin + '</em>']         : null,
   ].filter(Boolean);
   document.getElementById('mtp-fields').innerHTML = rows.map(function(r) {
     return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">' +
