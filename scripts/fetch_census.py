@@ -166,12 +166,23 @@ def normalise_forestry(row):
 
 def fetch_forestry():
     print('Trying Forestry Tree Points (live operational DB)…')
+
+    # Probe: fetch 1 row with no filter to confirm access and discover columns.
+    # This is essential because the forestry dataset may use different column
+    # names than the 2015 census (e.g. no 'latitude'/'longitude' columns).
+    try:
+        probe = fetch(FORESTRY_ID, {'$limit': 1})
+        if not probe:
+            raise ValueError('Empty response on probe')
+        print(f'  Dataset columns: {sorted(probe[0].keys())}')
+    except Exception as e:
+        raise ValueError(f'Forestry dataset not accessible: {e}')
+
     rows = try_cb3_filters(FORESTRY_ID)
     if not rows:
         raise ValueError('No rows returned from any filter strategy')
 
-    # Print discovered fields from first row
-    print(f'  Fields in dataset: {sorted(rows[0].keys())}')
+    print(f'  Fetched {len(rows)} rows')
 
     normalised = [normalise_forestry(r) for r in rows]
     normalised = filter_to_cb3(normalised)
