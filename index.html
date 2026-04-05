@@ -2597,11 +2597,19 @@ function tcRenderCareMap() {
   });
   tcCareYearLayers = {};
 
-  // Group events: year → treeId → [events]
+  // Group events: year → treeId → [events], CB3 only
   const byYearTree = {};
   _tcScrapedAreas.forEach(area => {
     if (!area._fromScraper || !area._treeId) return;
     const tid = String(area._treeId);
+    // Filter to CB3 bounding box — scraper may include trees from other areas
+    const coords = _tcTreeCoords[tid];
+    if (coords) {
+      const lat = +coords.lat, lng = +coords.lng;
+      if (lat < 40.7073 || lat > 40.7360 || lng > -73.9706) return;
+      const westLimit = lat > 40.728 ? -73.993 : -74.003;
+      if (lng < westLimit) return;
+    }
     (area.careEvents || []).forEach(ev => {
       const year = (ev.date || '').slice(0, 4);
       if (!year) return;
