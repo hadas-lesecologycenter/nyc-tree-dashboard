@@ -1659,11 +1659,11 @@ function getMarkerSize(tree) {
 function getCaredForTreeIds() {
   const ids = new Set();
   const thisYear = String(new Date().getFullYear());
-  // Only show white ring for trees cared for in the current year
-  tcLoadTreeLogs().forEach(log => {
-    if (log.treeId && (log.date || '').startsWith(thisYear)) {
-      ids.add(String(log.treeId));
-    }
+  if (!_tcScrapedAreas || !_tcScrapedAreas.length) return ids;
+  _tcScrapedAreas.forEach(area => {
+    if (!area._fromScraper || !area._treeId) return;
+    const hasThisYear = (area.careEvents || []).some(ev => (ev.date || '').startsWith(thisYear));
+    if (hasThisYear) ids.add(String(area._treeId));
   });
   return ids;
 }
@@ -1707,12 +1707,6 @@ function updateMap() {
           <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
             <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
             <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 6</span>
-          </div>
-          <div id="popup-log-${treeKey}">
-            <button onclick="tcPopupLogCare('${treeKey}','${(tree.spc_common||'Unknown').replace(/'/g,"\\'")}','${(tree.address||'').replace(/'/g,"\\'")}','${tree.tree_id||''}')"
-              style="width:100%;padding:7px;background:var(--accent,#2e8b57);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
-              🌱 Log Care
-            </button>
           </div>
         </div>
       `;
@@ -3069,77 +3063,6 @@ function tcSave(areas) {
   localStorage.setItem('tc_areas', JSON.stringify(localOnly));
 }
 function tcGet(id) { return tcLoad().find(a => a.id === id) || null; }
-
-// ── Quick tree care log (from map popup, no named area) ────────
-function tcLoadTreeLogs() {
-  try { return JSON.parse(localStorage.getItem('tc_tree_logs') || '[]'); } catch(e) { return []; }
-}
-function tcSaveTreeLogs(logs) { localStorage.setItem('tc_tree_logs', JSON.stringify(logs)); }
-
-function tcPopupLogCare(treeKey, species, address, treeId) {
-  const container = document.getElementById('popup-log-' + treeKey);
-  if (!container) return;
-  const checks = TC_ACTIVITIES.map(a =>
-    `<label style="display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;background:#fff;user-select:none">
-      <input type="checkbox" data-act="${a.id}" style="accent-color:#2e8b57;width:13px;height:13px">
-      <span>${a.emoji} ${a.label}</span>
-    </label>`
-  ).join('');
-  container.innerHTML =
-    '<div style="font-size:10px;font-weight:700;color:#2e8b57;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Log Care Activities</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">' + checks + '</div>' +
-    '<textarea id="popup-note-' + treeKey + '" rows="2" placeholder="Optional note…" ' +
-      'style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;font-family:Nunito,sans-serif;resize:none;margin-bottom:8px"></textarea>' +
-    '<div style="display:flex;gap:6px">' +
-      '<button onclick="tcPopupLogSubmit(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
-        'style="flex:1;padding:7px;background:#2e8b57;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">✅ Save</button>' +
-      '<button onclick="tcPopupLogCancel(\'' + treeKey + '\')" ' +
-        'style="padding:7px 12px;background:#f5f0e8;color:#6b6456;border:1px solid #ddd;border-radius:6px;font-size:11px;cursor:pointer">Cancel</button>' +
-    '</div>';
-}
-
-function tcPopupLogCancel(treeKey) {
-  const container = document.getElementById('popup-log-' + treeKey);
-  if (!container) return;
-  container.innerHTML =
-    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'\',\'\',\'\')" ' +
-      'style="width:100%;padding:7px;background:#2e8b57;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:Nunito,sans-serif">' +
-      '🌱 Log Care</button>';
-}
-
-async function tcPopupLogSubmit(treeKey, species, address, treeId) {
-  const container = document.getElementById('popup-log-' + treeKey);
-  if (!container) return;
-  const selected = Array.from(container.querySelectorAll('input[data-act]:checked')).map(el => el.dataset.act);
-  if (!selected.length) { alert('Please select at least one activity.'); return; }
-  const noteEl = document.getElementById('popup-note-' + treeKey);
-  const note = noteEl ? noteEl.value.trim() : '';
-  const log = {
-    id: 'tlog_' + Date.now(),
-    treeKey, treeId, species, address,
-    date: new Date().toISOString(),
-    activities: selected,
-    note,
-  };
-  // Save locally
-  const logs = tcLoadTreeLogs();
-  logs.push(log);
-  tcSaveTreeLogs(logs);
-  // Sync to Sheets if connected
-  if (TC_SHEETS_URL) {
-    tcSheetsPost({ action: 'logTreeCare', log }).catch(() => {});
-  }
-  // Update stats and map ring
-  tcUpdateProgress();
-  updateStats();
-  updateMap();
-  // Show confirmation in popup
-  container.innerHTML =
-    '<div style="text-align:center;padding:8px 0;color:#2e8b57;font-size:12px;font-weight:700">✅ Care logged!</div>' +
-    '<button onclick="tcPopupLogCare(\'' + treeKey + '\',\'' + species.replace(/'/g,"\\'") + '\',\'' + address.replace(/'/g,"\\'") + '\',\'' + treeId + '\')" ' +
-      'style="width:100%;padding:6px;background:#f5f0e8;color:#2e8b57;border:1px solid #2e8b57;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">' +
-      '+ Log another visit</button>';
-}
 
 // Returns the effective tree count for a care event:
 // uses event-level override if set, otherwise falls back to area default.
