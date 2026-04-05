@@ -236,6 +236,14 @@ def normalise_forestry(row):
                 out['latitude']  = str(lat)
                 out['longitude'] = str(lng)
 
+    # Split ForMS "Genus species - Common name" into separate fields.
+    # e.g. "Platanus x acerifolia - London planetree"
+    sc = out.get('spc_common', '')
+    if sc and ' - ' in sc:
+        latin, common = sc.split(' - ', 1)
+        out['spc_latin'] = latin.strip()
+        out['spc_common'] = common.strip()
+
     # Normalise health/condition values
     h = (out.get('health') or '').lower()
     if h in HEALTH_MAP:

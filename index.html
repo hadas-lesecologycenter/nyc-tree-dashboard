@@ -1516,6 +1516,10 @@ function isHighVisibility(tree) {
   const highTrafficNTA = ['chinatown', 'lower east side', 'east village'];
   if (highTrafficNTA.some(n => nta.includes(n))) return 'partial';
 
+  // Forestry dataset trees have no address or nta_name, but are guaranteed
+  // to be within CB3 (all high-foot-traffic). Default to 'partial'.
+  if (!tree.address && !tree.nta_name) return 'partial';
+
   return false;
 }
 
@@ -1670,6 +1674,9 @@ function updateMap() {
   markersLayer.clearLayers();
 
   const caredFor = getCaredForTreeIds();
+  // Canvas renderer draws all markers as a single canvas element instead of
+  // individual DOM nodes — handles 15k+ markers without lag.
+  const renderer = L.canvas({ padding: 0.5 });
 
   filteredTrees.forEach(tree => {
     const lat = parseFloat(tree.latitude || tree.lat);
@@ -1678,37 +1685,39 @@ function updateMap() {
 
     const color = getMarkerColor(tree);
     const size = getMarkerSize(tree);
-    const pm = getPriorityMeta(tree._priority || 0);
-    const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health||'').toLowerCase()] || '#9c9080';
     const wasCaredFor = caredFor.has(String(tree.tree_id));
 
-    const icon = L.divIcon({
-      className: '',
-      html: wasCaredFor
-        ? `<div style="width:${size+4}px;height:${size+4}px;border-radius:50%;background:#2e8b57;border:3px solid #fff;box-shadow:0 0 0 2px #2e8b57,0 2px 6px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;font-weight:900">✓</div>`
-        : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.2);cursor:pointer;transition:all 0.2s"></div>`,
-      iconSize: wasCaredFor ? [size+4, size+4] : [size, size],
-      iconAnchor: wasCaredFor ? [(size+4)/2, (size+4)/2] : [size/2, size/2]
+    const m = L.circleMarker([lat, lng], {
+      renderer,
+      radius: size / 2,
+      fillColor: wasCaredFor ? '#2e8b57' : color,
+      color: wasCaredFor ? '#ffffff' : 'rgba(0,0,0,0.2)',
+      weight: wasCaredFor ? 2.5 : 1,
+      fillOpacity: 0.88
     });
 
-    const m = L.marker([lat, lng], { icon });
     const treeKey = 'tree_' + (tree.tree_id || (lat + '_' + lng));
-    m.bindPopup(`
-      <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
-        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
-        <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-          <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-          <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 6</span>
+    // Lazy popup: build HTML only when the popup is actually opened, not for all 15k trees upfront.
+    m.bindPopup(() => {
+      const pm = getPriorityMeta(tree._priority || 0);
+      const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health||'').toLowerCase()] || '#9c9080';
+      return `
+        <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
+          <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
+          <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+            <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
+            <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 6</span>
+          </div>
+          <div id="popup-log-${treeKey}">
+            <button onclick="tcPopupLogCare('${treeKey}','${(tree.spc_common||'Unknown').replace(/'/g,"\\'")}','${(tree.address||'').replace(/'/g,"\\'")}','${tree.tree_id||''}')"
+              style="width:100%;padding:7px;background:var(--accent,#2e8b57);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+              🌱 Log Care
+            </button>
+          </div>
         </div>
-        <div id="popup-log-${treeKey}">
-          <button onclick="tcPopupLogCare('${treeKey}','${(tree.spc_common||'Unknown').replace(/'/g,"\\'")}','${(tree.address||'').replace(/'/g,"\\'")}','${tree.tree_id||''}')"
-            style="width:100%;padding:7px;background:var(--accent,#2e8b57);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
-            🌱 Log Care
-          </button>
-        </div>
-      </div>
-    `);
+      `;
+    });
     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
     m.addTo(markersLayer);
   });
