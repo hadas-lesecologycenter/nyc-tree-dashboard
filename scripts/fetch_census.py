@@ -175,27 +175,33 @@ def is_cb3_forestry(row):
     """Return True if a Forestry CSV row belongs to Manhattan CB3.
 
     The forestry dataset has no cb_num/borocode/nta_name columns — location
-    is only in a 'geometry' WKT column (POINT lng lat). Filter by CB3 bbox.
+    is only in a 'geometry' WKT column (POINT lng lat). Filter by CB3 bbox
+    with per-band western limits derived from the 2015 census street tree
+    extent (which is the ground truth for CB3 boundaries):
+
+      lat > 40.728 (East Village / 14th St area):  lng > -73.993  (≈3rd Ave)
+      lat ≤ 40.728 (LES / Chinatown):              lng > -74.003  (≈Broadway)
     """
-    # Primary: parse WKT geometry column (confirmed present in hn5i-inap)
     geom = row.get('geometry', '')
     if geom:
         lat, lng = parse_wkt_point(geom)
-        if lat is not None:
-            return (CB3_LAT[0] < lat < CB3_LAT[1] and
-                    CB3_LNG[0] < lng < CB3_LNG[1])
+    else:
+        try:
+            lat = float(row.get('latitude', '') or 0)
+            lng = float(row.get('longitude', '') or 0)
+        except (ValueError, TypeError):
+            return False
 
-    # Fallback: separate latitude/longitude columns (2015-census style)
-    try:
-        lat = float(row.get('latitude', '') or 0)
-        lng = float(row.get('longitude', '') or 0)
-        if lat and lng:
-            return (CB3_LAT[0] < lat < CB3_LAT[1] and
-                    CB3_LNG[0] < lng < CB3_LNG[1])
-    except (ValueError, TypeError):
-        pass
+    if lat is None or lat == 0:
+        return False
 
-    return False
+    # Eastern / northern / southern limits are the same for all bands
+    if not (CB3_LAT[0] < lat < CB3_LAT[1] and lng < CB3_LNG[1]):
+        return False
+
+    # Per-band western limit follows the actual CB3 boundary shape
+    west_limit = -73.993 if lat > 40.728 else -74.003
+    return lng > west_limit
 
 
 def parse_wkt_point(wkt):
