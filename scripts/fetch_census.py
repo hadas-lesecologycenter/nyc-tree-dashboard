@@ -9,7 +9,7 @@ required fields.
 Run manually or via the update-census GitHub Action.
 """
 
-import json, sys, urllib.request, urllib.parse, os, time
+import csv, io, json, sys, urllib.request, urllib.parse, os, time
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +22,7 @@ LIMIT   = 50_000       # more than enough for CB3
 FORESTRY_ID  = 'hn5i-inap'   # Forestry Tree Points — live operational DB
 CENSUS_ID    = 'uvpi-gqnh'   # 2015 Street Tree Census
 BASE_URL     = 'https://data.cityofnewyork.us/resource/{id}.json'
+CSV_URL      = 'https://data.cityofnewyork.us/api/views/{id}/rows.csv?accessType=DOWNLOAD'
 
 OUT_PATH   = os.path.join(os.path.dirname(__file__), '..', 'data', 'census.json')
 APP_TOKEN  = os.environ.get('SOCRATA_APP_TOKEN', '')  # optional but avoids rate limits
@@ -34,19 +35,14 @@ CB3_NTA_NAMES = ('Lower East Side', 'East Village', 'Chinatown')
 
 # CB3 filter strategies to try in order (Socrata SoQL $where expressions).
 # The real community board column is 'cb_num' (confirmed from API output).
-# nta_name filter is a reliable fallback using confirmed output column values.
 CB3_WHERE_VARIANTS = [
-    # Best: actual community board column (cb_num=3, Manhattan borocode=1)
     "cb_num='3' AND borocode='1'",
     "cb_num=3 AND borocode=1",
     "cb_num='3' AND boroname='Manhattan'",
-    # NTA names confirmed from existing census data
     "nta_name IN ('Lower East Side', 'East Village', 'Chinatown')",
-    # Geo bbox — lat/lon columns confirmed present; boroname excludes Brooklyn
     (f"latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} "
      f"AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]} "
      f"AND boroname='Manhattan'"),
-    # Socrata built-in geo function (for datasets with geometry column)
     f'within_box(the_geom, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
 ]
 
@@ -90,10 +86,7 @@ HEALTH_MAP = {
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def build_url(dataset_id, params):
-    """Build a Socrata query URL.
-    Keys starting with $ are SoQL params ($where, $limit, etc.) — keep $ literal.
-    Values are fully URL-encoded (spaces → %20, etc.).
-    """
+    """Build a Socrata query URL."""
     parts = []
     for k, v in params.items():
         encoded_v = urllib.parse.quote(str(v), safe='')
@@ -134,8 +127,7 @@ def try_cb3_filters(dataset_id):
 
 def filter_to_cb3(rows):
     """Post-fetch safety filter: keep only Manhattan CB3 trees by NTA name.
-    Applied when a broad filter (e.g. bbox) may have returned neighbouring CBs.
-    Falls through unchanged if nta_name is absent (e.g. Forestry dataset).
+    Falls through unchanged if nta_name is absent.
     """
     if not rows or 'nta_name' not in rows[0]:
         return rows
@@ -144,6 +136,59 @@ def filter_to_cb3(rows):
     if len(kept) != before:
         print(f'  Post-filter: {before} → {len(kept)} trees (kept CB3 NTAs only)')
     return kept
+
+
+def download_csv_and_filter(dataset_id, is_cb3_fn):
+    """Bulk-download the full CSV export and filter rows in Python.
+    This works even when the SODA $where API returns 400.
+    """
+    url = CSV_URL.format(id=dataset_id)
+    print(f'  Downloading full CSV from {url[:80]}…')
+    headers = {'User-Agent': 'nyc-tree-dashboard/1.0'}
+    if APP_TOKEN:
+        headers['X-App-Token'] = APP_TOKEN
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=300) as r:
+        raw = r.read().decode('utf-8-sig')  # BOM-safe
+    print(f'  Downloaded {len(raw) / 1024 / 1024:.1f} MB')
+
+    reader = csv.DictReader(io.StringIO(raw))
+    # Normalise header names to lowercase with underscores (Socrata CSV headers
+    # may use mixed case or spaces)
+    reader.fieldnames = [h.lower().strip().replace(' ', '_') for h in reader.fieldnames]
+
+    rows = [row for row in reader if is_cb3_fn(row)]
+    print(f'  Filtered to {len(rows)} CB3 rows')
+    return rows
+
+
+def is_cb3_forestry(row):
+    """Return True if a Forestry CSV row belongs to Manhattan CB3."""
+    # Try cb_num + borocode first (confirmed column names from 2015 census;
+    # forestry may use the same names or different ones)
+    cb = row.get('cb_num', row.get('community_board', row.get('communityboard', '')))
+    boro = row.get('borocode', row.get('borough_code', ''))
+    boroname = row.get('boroname', row.get('borough', '')).lower()
+
+    if cb == '3' and (boro == '1' or 'manhattan' in boroname):
+        return True
+
+    # NTA fallback
+    nta = row.get('nta_name', row.get('nta', '')).lower()
+    if nta in ('lower east side', 'east village', 'chinatown'):
+        return True
+
+    # Geo bbox fallback
+    try:
+        lat = float(row.get('latitude', 0))
+        lng = float(row.get('longitude', 0))
+        if (CB3_LAT[0] < lat < CB3_LAT[1] and CB3_LNG[0] < lng < CB3_LNG[1]
+                and 'manhattan' in boroname):
+            return True
+    except (ValueError, TypeError):
+        pass
+
+    return False
 
 
 def normalise_forestry(row):
@@ -165,27 +210,39 @@ def normalise_forestry(row):
 
 
 def fetch_forestry():
+    """Fetch CB3 trees from the Forestry Tree Points live dataset.
+    Tries SODA API first, then bulk CSV download as fallback.
+    """
     print('Trying Forestry Tree Points (live operational DB)…')
 
-    # Probe: fetch 1 row with no filter to confirm access and discover columns.
-    # This is essential because the forestry dataset may use different column
-    # names than the 2015 census (e.g. no 'latitude'/'longitude' columns).
+    # ── Attempt 1: SODA $where queries ──
+    # Probe: fetch 1 row to confirm SODA access and discover columns.
+    soda_works = False
     try:
         probe = fetch(FORESTRY_ID, {'$limit': 1})
-        if not probe:
-            raise ValueError('Empty response on probe')
-        print(f'  Dataset columns: {sorted(probe[0].keys())}')
+        if probe:
+            print(f'  Dataset columns: {sorted(probe[0].keys())}')
+            soda_works = True
     except Exception as e:
-        raise ValueError(f'Forestry dataset not accessible: {e}')
+        print(f'  SODA API not available: {e}')
 
-    rows = try_cb3_filters(FORESTRY_ID)
+    if soda_works:
+        rows = try_cb3_filters(FORESTRY_ID)
+        if rows:
+            print(f'  SODA query returned {len(rows)} rows')
+            normalised = [normalise_forestry(r) for r in rows]
+            normalised = filter_to_cb3(normalised)
+            if normalised and not (REQUIRED - set(normalised[0].keys())):
+                return normalised
+
+    # ── Attempt 2: Bulk CSV download + Python filter ──
+    print('  SODA queries failed — trying bulk CSV download…')
+    rows = download_csv_and_filter(FORESTRY_ID, is_cb3_forestry)
     if not rows:
-        raise ValueError('No rows returned from any filter strategy')
+        raise ValueError('No CB3 rows found in CSV download')
 
-    print(f'  Fetched {len(rows)} rows')
-
+    print(f'  CSV columns: {list(rows[0].keys())[:15]}…')
     normalised = [normalise_forestry(r) for r in rows]
-    normalised = filter_to_cb3(normalised)
 
     # Validate required fields
     sample = normalised[0]
