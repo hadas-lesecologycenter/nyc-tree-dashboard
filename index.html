@@ -1240,16 +1240,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- claim wizard replaced by inline draw panel -->
 
-  <!-- LOG CARE MODAL -->
-  <div id="log-care-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
-    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700">Log Care Activity</h2>
-        <button onclick="closeLogCare()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
-      </div>
-      <div id="log-care-body"></div>
-    </div>
-  </div>
 
   <!-- ADD GOAL MODAL -->
   <div id="add-goal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
@@ -3741,98 +3731,6 @@ const TC_ACTIVITIES = [
   { id: 'pruning',  emoji: '✂️',  label: 'Pruning' },
 ];
 
-function tcLogCare(id) {
-  const area = tcGet(id);
-  if (!area) return;
-  const content = document.getElementById('myblock-dashboard-content');
-  if (!content) return;
-  const existing = document.getElementById('tc-inline-log');
-  if (existing) { existing.querySelector('input') && existing.querySelector('input').focus(); return; }
-
-  // Hide the Log Care Event button while form is open
-  const logBtn = document.getElementById('tc-log-care-btn');
-  if (logBtn) logBtn.style.display = 'none';
-
-  const checkboxes = TC_ACTIVITIES.map(a =>
-    `<label style="display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:12px;background:var(--bg);user-select:none">
-      <input type="checkbox" id="tc-act-${a.id}" value="${a.id}" style="accent-color:var(--accent);width:14px;height:14px">
-      <span>${a.emoji} ${a.label}</span>
-    </label>`
-  ).join('');
-
-  const form = document.createElement('div');
-  form.id = 'tc-inline-log';
-  form.style.cssText = 'background:var(--bg3);border:1px solid var(--accent);border-radius:10px;padding:16px;margin-bottom:16px';
-  form.innerHTML =
-    '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Log Care Activities</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">' + checkboxes + '</div>' +
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">' +
-      '<div style="flex:1">' +
-        '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px">Trees cared for this visit</div>' +
-        '<div style="font-size:10px;color:var(--text3)">Override the area default (' + (area.treeCount || 0) + ') for this event only</div>' +
-      '</div>' +
-      '<input type="number" id="tc-log-tree-count" min="1" value="' + (area.treeCount || 0) + '" ' +
-        'style="width:70px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center;background:var(--bg2);color:var(--text);font-family:\'Nunito\',sans-serif">' +
-    '</div>' +
-    '<div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600">Note (optional)</div>' +
-    '<textarea id="tc-log-note" rows="2" placeholder="e.g. watered all except 3 trees near corner (dry soil), litter heavy on south end" ' +
-      'style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg);color:var(--text);font-family:\'Nunito\',sans-serif;resize:vertical;outline:none"></textarea>' +
-    '<div style="display:flex;gap:8px;margin-top:10px">' +
-      '<button onclick="tcLogCareSubmit(\'' + id + '\')" ' +
-        'style="flex:1;padding:9px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">✅ Save Care Event</button>' +
-      '<button onclick="document.getElementById(\'tc-inline-log\').remove();var b=document.getElementById(\'tc-log-care-btn\');if(b)b.style.display=\'\'" ' +
-        'style="padding:9px 14px;background:var(--bg4);color:var(--text2);border:1px solid var(--border);border-radius:7px;font-size:12px;cursor:pointer">Cancel</button>' +
-    '</div>';
-
-  content.insertBefore(form, content.firstChild);
-}
-
-async function tcLogCareSubmit(id) {
-  const note = (document.getElementById('tc-log-note') || {}).value?.trim() || '';
-  const selected = TC_ACTIVITIES.map(a => a.id).filter(actId => {
-    const el = document.getElementById('tc-act-' + actId);
-    return el && el.checked;
-  });
-  const area = tcGet(id);
-  if (!area) return;
-
-  // Capture tree count override — only store if it differs from the area default
-  const countEl = document.getElementById('tc-log-tree-count');
-  const enteredCount = countEl ? parseInt(countEl.value) || 0 : 0;
-  const defaultCount = area.treeCount || 0;
-  const treeCountOverride = enteredCount !== defaultCount ? enteredCount : undefined;
-
-  const event = {
-    date: new Date().toISOString(),
-    activities: selected,
-    note,
-    ...(treeCountOverride !== undefined && { treeCountOverride }),
-  };
-
-  if (TC_SHEETS_URL) {
-    const result = await tcSheetsPost({ action: 'addCareEvent', areaId: id, event });
-    if (result && result.area) {
-      tcMergeServerData(tcLoad().map(a => a.id === result.area.id ? result.area : a));
-    } else {
-      if (!area.careEvents) area.careEvents = [];
-      area.careEvents.push(event);
-      await tcUpsert(area);
-    }
-  } else {
-    if (!area.careEvents) area.careEvents = [];
-    area.careEvents.push(event);
-    await tcUpsert(area);
-  }
-
-  const form = document.getElementById('tc-inline-log');
-  if (form) form.remove();
-  renderClaimedBlocksSidebar();
-  tcOpenDashboard(id);
-  tcRenderMain();
-  tcRenderBlocksMap();
-  tcUpdateProgress();
-  updateStats();
-}
 
 async function tcDeleteCareEvent(areaId, eventIdx) {
   const area = tcGet(areaId);
@@ -3967,11 +3865,6 @@ function tcOpenDashboard(id) {
         '<div style="display:flex;flex-wrap:wrap;gap:5px">' + actSummary + '</div></div>'
       : '') +
 
-    // Log care button
-    '<button id="tc-log-care-btn" onclick="tcLogCare(\'' + area.id + '\')" ' +
-      'style="width:100%;padding:11px;background:var(--accent);color:white;border:none;border-radius:8px;' +
-      'font-size:13px;font-weight:700;cursor:pointer;font-family:\'Nunito\',sans-serif;margin-bottom:16px">' +
-      '🌱 Log Care Event</button>' +
 
     // Care log
     (cared
@@ -3987,10 +3880,6 @@ function openClaimWizard() {
 }
 function closeClaimWizard() {
   tcHideDrawMode();
-}
-function closeLogCare() {
-  const modal = document.getElementById('log-care-modal');
-  if (modal) modal.style.display = 'none';
 }
 
 function switchViewById(view) {
