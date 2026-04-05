@@ -20,7 +20,7 @@ BOROCD  = 103          # Manhattan CB3 composite code
 LIMIT   = 50_000       # more than enough for CB3
 
 # NYC Open Data Socrata endpoints
-FORESTRY_ID  = 'k5ta-2trh'   # Forestry Tree Points — live operational DB
+FORESTRY_ID  = 'hn5i-inap'   # Forestry Tree Points — live operational DB
 CENSUS_ID    = 'uvpi-gqnh'   # 2015 Street Tree Census
 BASE_URL     = 'https://data.cityofnewyork.us/resource/{id}.json'
 
@@ -103,8 +103,7 @@ def fetch(dataset_id, params):
 def borocd_filter(dataset_id):
     """Return True if direct borocd=103 filter works for this dataset."""
     try:
-        # Use Socrata simple filter syntax (no $where needed for equality)
-        rows = fetch(dataset_id, {'borocd': BOROCD, '$limit': 1})
+        rows = fetch(dataset_id, {'$where': f'borocd={BOROCD}', '$limit': 1})
         return isinstance(rows, list)
     except Exception:
         return False
@@ -167,8 +166,7 @@ def fetch_forestry():
 
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
-    # Simple equality filter — no $where needed
-    params = {'borocd': BOROCD, '$limit': LIMIT}
+    params = {'$where': f'borocd={BOROCD}', '$limit': LIMIT}
     return fetch(CENSUS_ID, params)
 
 
