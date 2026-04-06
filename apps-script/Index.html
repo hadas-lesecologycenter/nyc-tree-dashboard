@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<base target="_top">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4f0;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+header{background:linear-gradient(135deg,#2d6a4f,#40916c);color:white;padding:20px 24px;border-radius:12px;margin-bottom:20px}
+header h1{font-size:20px;margin-bottom:2px}
+header p{opacity:0.85;font-size:12px}
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:10px 18px;border:none;background:#d8e2dc;color:#2d6a4f;font-weight:600;font-size:13px;cursor:pointer;border-radius:8px 8px 0 0}
+.tab-btn.active{background:white;color:#1b4332}
+.tab-content{display:none}.tab-content.active{display:block}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.card h2{color:#1b4332;font-size:16px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #d8e2dc}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-weight:600;color:#344e41;margin-bottom:4px;font-size:12px}
+.req{color:#bc4749}
+input,select,textarea{width:100%;padding:8px 10px;border:2px solid #d8e2dc;border-radius:6px;font-size:13px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#40916c}
+textarea{resize:vertical;min-height:60px}
+.checkbox-grid{display:flex;flex-wrap:wrap;gap:8px}
+.checkbox-grid label{display:flex;align-items:center;gap:4px;font-weight:400;font-size:12px;cursor:pointer}
+.checkbox-grid input[type="checkbox"]{width:auto;accent-color:#40916c}
+.btn{padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.btn-primary{background:#2d6a4f;color:white}
+.btn-primary:hover{background:#1b4332}
+.btn-copy{background:#52796f;color:white;padding:6px 14px;font-size:12px}
+.btn-copy:hover{background:#2d6a4f}
+.btn-reset{background:#d8e2dc;color:#344e41}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-danger{background:#bc4749;color:white}
+.btn-row{display:flex;gap:12px;margin-top:16px}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase}
+.status-draft{background:#e9ecef;color:#495057}
+.status-hold{background:#fff3cd;color:#856404}
+.status-confirmed{background:#d4edda;color:#155724}
+.status-completed{background:#cce5ff;color:#004085}
+/* Calendar */
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-header h2{border:none;padding:0;margin:0}
+.cal-nav button{background:#d8e2dc;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;color:#2d6a4f;margin-left:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-day-header{text-align:center;font-weight:700;font-size:11px;color:#52796f;padding:6px 0}
+.cal-day{min-height:80px;background:#f8faf8;border:1px solid #e9ede9;border-radius:4px;padding:3px;cursor:pointer}
+.cal-day:hover{background:#e0ebe0}
+.cal-day.today{border:2px solid #40916c}
+.cal-day.other-month{opacity:0.3}
+.cal-day-num{font-size:11px;font-weight:600;color:#344e41;margin-bottom:1px}
+.cal-event{font-size:9px;padding:1px 3px;border-radius:2px;margin-bottom:1px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cal-event.status-draft{background:#e9ecef;color:#495057}
+.cal-event.status-hold{background:#fff3cd;color:#856404}
+.cal-event.status-confirmed{background:#d4edda;color:#155724}
+.cal-event.status-completed{background:#cce5ff;color:#004085}
+/* Outputs */
+.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.output-header h3{margin:0;color:#1b4332;font-size:14px}
+.output-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:14px;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:350px;overflow-y:auto}
+.highlight{background:#fff3cd;padding:1px 3px;border-radius:3px;font-weight:600}
+.spreadsheet-preview{overflow-x:auto;margin-bottom:10px}
+.spreadsheet-preview table{border-collapse:collapse;font-size:10px;white-space:nowrap}
+.spreadsheet-preview th{background:#2d6a4f;color:white;padding:4px 6px}
+.spreadsheet-preview td{padding:4px 6px;border:1px solid #d8e2dc}
+/* Events list */
+.event-card{padding:12px;background:#f8faf8;border-radius:8px;margin-bottom:6px;border-left:4px solid #d8e2dc;cursor:pointer}
+.event-card:hover{background:#e9ede9}
+.event-card.draft{border-left-color:#adb5bd}
+.event-card.hold{border-left-color:#ffc107}
+.event-card.confirmed{border-left-color:#28a745}
+.event-card.completed{border-left-color:#007bff}
+.event-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.event-card-name{font-weight:600;color:#1b4332;font-size:13px}
+.event-card-meta{font-size:11px;color:#52796f;margin-top:2px}
+.tracker-checks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tracker-checks label{font-size:10px;display:flex;align-items:center;gap:2px;color:#52796f}
+.tracker-checks input{width:auto;accent-color:#40916c}
+.filter-bar{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border:2px solid #d8e2dc;background:white;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;color:#52796f}
+.filter-btn.active{border-color:#2d6a4f;background:#d8f3dc;color:#1b4332}
+.status-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.status-item{background:white;padding:12px;border-radius:8px;flex:1;min-width:100px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.status-num{font-size:24px;font-weight:700;color:#2d6a4f}
+.status-label{font-size:10px;color:#52796f;font-weight:600}
+.toast{position:fixed;bottom:20px;right:20px;background:#1b4332;color:white;padding:12px 24px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1}
+.google-result{margin-top:10px;padding:10px;background:#d4edda;border-radius:6px;font-size:12px}
+.google-result a{color:#155724;font-weight:600}
+.google-result.error{background:#f8d7da;color:#721c24}
+details summary{cursor:pointer;font-weight:600;color:#2d6a4f;margin:8px 0;font-size:13px}
+@media(max-width:768px){.form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}.cal-day{min-height:50px}.status-bar{gap:6px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<div><h1>LES Ecology Center - Event Workflow Dashboard</h1><p>Street Tree Care Program &middot; Fill once, generate everything</p></div>
+</header>
+
+<div class="status-bar">
+<div class="status-item"><div class="status-num" id="stat-total">0</div><div class="status-label">Total</div></div>
+<div class="status-item"><div class="status-num" id="stat-draft">0</div><div class="status-label">Drafts</div></div>
+<div class="status-item"><div class="status-num" id="stat-hold">0</div><div class="status-label">Hold</div></div>
+<div class="status-item"><div class="status-num" id="stat-confirmed">0</div><div class="status-label">Confirmed</div></div>
+<div class="status-item"><div class="status-num" id="stat-completed">0</div><div class="status-label">Done</div></div>
+</div>
+
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('calendar',this)">Calendar</button>
+<button class="tab-btn" onclick="switchTab('form',this)">New Event</button>
+<button class="tab-btn" onclick="switchTab('outputs',this)">Outputs</button>
+<button class="tab-btn" onclick="switchTab('events',this)">All Events</button>
+</div>
+
+<!-- CALENDAR TAB -->
+<div class="tab-content active" id="tab-calendar">
+<div class="card">
+<div class="cal-header">
+<h2 id="cal-title"></h2>
+<div class="cal-nav"><button onclick="calNav(-1)">&larr;</button><button onclick="calNav(0)">Today</button><button onclick="calNav(1)">&rarr;</button></div>
+</div>
+<div class="cal-grid" id="cal-grid"></div>
+</div>
+</div>
+
+<!-- FORM TAB -->
+<div class="tab-content" id="tab-form">
+<div class="card">
+<h2 id="form-title">New Event</h2>
+<form id="eventForm">
+<input type="hidden" id="f-edit-id" value="">
+<div class="form-row four">
+<div class="form-group"><label>Status <span class="req">*</span></label><select id="f-status"><option value="draft">Draft</option><option value="hold">Hold</option><option value="confirmed">Confirmed</option></select></div>
+<div class="form-group"><label>Event Name <span class="req">*</span></label><input id="f-name" required></div>
+<div class="form-group"><label>Owner <span class="req">*</span></label><select id="f-owner" required><option value="">...</option><option>Maddy</option><option>Hadas</option><option>Gretel</option></select></div>
+<div class="form-group"><label>Event Type <span class="req">*</span></label><select id="f-type" required><option value="">...</option><option>Public Volunteer STC Event</option><option>Private volunteer STC event</option><option>School STC Event</option><option>Volunteer STC Event</option><option>Virtual Workshop</option><option>Workshop</option><option>Walk</option><option>Tabling</option><option>CBLES</option></select></div>
+</div>
+<div class="form-row three">
+<div class="form-group"><label>Date <span class="req">*</span></label><input type="date" id="f-date" required></div>
+<div class="form-group"><label>Time</label><input id="f-time" placeholder="e.g., 2-4PM"></div>
+<div class="form-group"><label>Location</label><input id="f-location"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Category</label><div class="checkbox-grid"><label><input type="checkbox" value="Stewardship" class="f-category"> Stewardship</label><label><input type="checkbox" value="Education" class="f-category"> Education</label><label><input type="checkbox" value="Outreach" class="f-category"> Outreach</label></div></div>
+<div class="form-group"><label>Collaboration</label><div class="form-row" style="margin:0"><select id="f-collab"><option value="">None</option><option>Other Organization</option><option>Master Composter</option></select><input id="f-collab-notes" placeholder="Partner name"></div></div>
+</div>
+<details><summary>Event Brief Details</summary>
+<div class="form-row"><div class="form-group"><label>On-Site Support</label><input id="f-support"></div><div class="form-group"><label>Expected Attendance</label><input id="f-attendance"></div></div>
+<div class="form-group"><label>Audience</label><div class="checkbox-grid"><label><input type="checkbox" value="General public" class="f-audience"> General public</label><label><input type="checkbox" value="Volunteers" class="f-audience"> Volunteers</label><label><input type="checkbox" value="Families" class="f-audience"> Families</label><label><input type="checkbox" value="Students" class="f-audience"> Students</label><label><input type="checkbox" value="CB participants" class="f-audience"> CB participants</label></div></div>
+<div class="form-group"><label>Goals</label><textarea id="f-goals" rows="2"></textarea></div>
+<div class="form-group"><label>Success Metrics</label><textarea id="f-metrics" rows="2"></textarea></div>
+<div class="form-row"><div class="form-group"><label>External Name</label><input id="f-extname"></div><div class="form-group"><label>Eventbrite Link</label><input id="f-eventbrite"></div></div>
+<div class="form-group"><label>Description (comms)</label><textarea id="f-description" rows="2"></textarea></div>
+<div class="form-group"><label>Marketing</label><div class="checkbox-grid"><label><input type="checkbox" value="Org email" class="f-marketing"> Org email</label><label><input type="checkbox" value="Volunteer email" class="f-marketing"> Vol email</label><label><input type="checkbox" value="Instagram" class="f-marketing"> IG</label><label><input type="checkbox" value="TikTok" class="f-marketing"> TikTok</label><label><input type="checkbox" value="Facebook" class="f-marketing"> FB</label><label><input type="checkbox" value="Flyering" class="f-marketing"> Flyers</label></div></div>
+</details>
+<details><summary>Logistics</summary>
+<div class="form-group"><label>Meeting Place (for emails)</label><input id="f-meeting"></div>
+<div class="form-group"><label>Stewardship Location (if different)</label><input id="f-stew-location"></div>
+<div class="form-row"><div class="form-group"><label>Facilities</label><textarea id="f-facilities" rows="2"></textarea></div><div class="form-group"><label>Supplies</label><textarea id="f-supplies" rows="2"></textarea></div></div>
+<div class="form-row"><div class="form-group"><label>Equipment</label><textarea id="f-equipment" rows="2"></textarea></div><div class="form-group"><label>Vendors</label><textarea id="f-vendors" rows="2"></textarea></div></div>
+<div class="form-row"><div class="form-group"><label>Compost</label><textarea id="f-compost" rows="2"></textarea></div><div class="form-group"><label>Mulch</label><textarea id="f-mulch" rows="2"></textarea></div></div>
+<div class="form-group"><label>Expenses</label><input id="f-expenses"></div>
+<div class="form-group"><label>Run of Show</label><textarea id="f-ros" rows="2"></textarea></div>
+<div class="form-group"><label>Access Notes</label><textarea id="f-access" rows="2"></textarea></div>
+</details>
+<details><summary>Post-Event Data</summary>
+<div class="form-row three"><div class="form-group"><label>Trees Stewarded</label><input type="number" id="f-trees"></div><div class="form-group"><label>Lbs Compost</label><input type="number" id="f-compost-applied"></div><div class="form-group"><label>Yards Mulch</label><input type="number" id="f-mulch-applied"></div></div>
+</details>
+<div class="btn-row">
+<button type="submit" class="btn btn-primary" id="form-submit-btn">Create Event</button>
+<button type="button" class="btn btn-reset" onclick="resetForm()">Clear</button>
+</div>
+<div id="google-result"></div>
+</form>
+</div>
+</div>
+
+<!-- OUTPUTS TAB -->
+<div class="tab-content" id="tab-outputs">
+<div id="no-outputs" class="card"><p style="color:#52796f;text-align:center;padding:20px">Create or select an event to see outputs.</p></div>
+<div id="outputs-content" style="display:none">
+<div id="output-event-name" style="margin-bottom:12px;font-size:16px;font-weight:700;color:#1b4332"></div>
+<div class="card"><div class="output-header"><h3>Spreadsheet Row</h3><button class="btn btn-copy" onclick="copyEl('spreadsheet-tsv')">Copy</button></div><div class="spreadsheet-preview" id="spreadsheet-table"></div><textarea id="spreadsheet-tsv" style="width:100%;height:40px;font-family:monospace;font-size:10px;background:#f8faf8;border:1px solid #d8e2dc;border-radius:4px;padding:6px" readonly></textarea></div>
+<div class="card"><div class="output-header"><h3>Reminder Email</h3><button class="btn btn-copy" onclick="copyEl('email-reminder')">Copy</button></div><div class="output-box" id="email-reminder"></div></div>
+<div class="card"><div class="output-header"><h3>Thank You Email</h3><button class="btn btn-copy" onclick="copyEl('email-thankyou')">Copy</button></div><div class="output-box" id="email-thankyou"></div></div>
+<div class="card"><div class="output-header"><h3>Event Brief</h3><button class="btn btn-copy" onclick="copyEl('event-brief')">Copy</button></div><div class="output-box" id="event-brief"></div></div>
+</div>
+</div>
+
+<!-- ALL EVENTS TAB -->
+<div class="tab-content" id="tab-events">
+<div class="card">
+<h2>All Events</h2>
+<div class="filter-bar"><button class="filter-btn active" onclick="setFilter('all',this)">All</button><button class="filter-btn" onclick="setFilter('draft',this)">Draft</button><button class="filter-btn" onclick="setFilter('hold',this)">Hold</button><button class="filter-btn" onclick="setFilter('confirmed',this)">Confirmed</button><button class="filter-btn" onclick="setFilter('completed',this)">Done</button></div>
+<div id="events-list"></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+<script>
+let events=JSON.parse(localStorage.getItem('les_ev4')||'[]'),lastEv=null,curFilter='all';
+const now=new Date();let cY=now.getFullYear(),cM=now.getMonth();
+
+function switchTab(t,b){document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');if(b)b.classList.add('active');if(t==='calendar')renderCal();}
+
+// === CALENDAR ===
+function renderCal(){
+  const ms=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=ms[cM]+' '+cY;
+  const fd=new Date(cY,cM,1).getDay(),dim=new Date(cY,cM+1,0).getDate(),dip=new Date(cY,cM,0).getDate();
+  const tds=cY+'-'+String(cM+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  let h='';['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>h+='<div class="cal-day-header">'+d+'</div>');
+  for(let i=fd-1;i>=0;i--)h+='<div class="cal-day other-month"><div class="cal-day-num">'+(dip-i)+'</div></div>';
+  for(let d=1;d<=dim;d++){
+    const ds=cY+'-'+String(cM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const de=events.filter(e=>e.date===ds);
+    let ev=de.map(e=>'<span class="cal-event status-'+(e.status||'confirmed')+'" onclick="event.stopPropagation();showOutputs('+e.id+')" title="'+e.name+'">'+e.name+'</span>').join('');
+    h+='<div class="cal-day'+(ds===tds?' today':'')+'" onclick="addOnDate(\''+ds+'\')"><div class="cal-day-num">'+d+'</div>'+ev+'</div>';
+  }
+  const tc=fd+dim,rm=tc%7===0?0:7-(tc%7);
+  for(let d=1;d<=rm;d++)h+='<div class="cal-day other-month"><div class="cal-day-num">'+d+'</div></div>';
+  document.getElementById('cal-grid').innerHTML=h;
+}
+function calNav(dir){if(dir===0){cY=now.getFullYear();cM=now.getMonth();}else{cM+=dir;if(cM>11){cM=0;cY++;}if(cM<0){cM=11;cY--;}}renderCal();}
+function addOnDate(ds){switchTab('form',document.querySelectorAll('.tab-btn')[1]);document.getElementById('f-date').value=ds;document.getElementById('f-name').focus();}
+
+// === FORM ===
+document.getElementById('eventForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  const ev=collectForm(),eid=document.getElementById('f-edit-id').value;
+  if(eid){const i=events.findIndex(x=>x.id===parseInt(eid));if(i>=0){ev.id=parseInt(eid);ev.tracker=events[i].tracker||defT();events[i]=ev;}}
+  else{ev.id=Date.now();ev.tracker=defT();events.push(ev);}
+  save();lastEv=ev;genOutputs(ev);renderList();renderCal();stats();resetForm();
+  switchTab('outputs',document.querySelectorAll('.tab-btn')[2]);
+  toast(eid?'Updated!':'Created!');
+  // Push to Google
+  if(ev.status==='confirmed'){
+    document.getElementById('google-result').innerHTML='<div class="google-result">Sending to Google Sheets &amp; creating Event Brief doc...</div>';
+    google.script.run.withSuccessHandler(function(r){
+      let msg='';if(r&&r.url)msg+='<a href="'+r.url+'" target="_blank">View in Spreadsheet</a>';
+      document.getElementById('google-result').innerHTML=msg?'<div class="google-result">Spreadsheet updated! '+msg+'</div>':'';
+    }).withFailureHandler(function(err){
+      document.getElementById('google-result').innerHTML='<div class="google-result error">Sheets error: '+err.message+'</div>';
+    }).addTrackerRow(ev);
+    google.script.run.withSuccessHandler(function(r){
+      if(r&&r.success&&r.url){
+        document.getElementById('google-result').innerHTML+='<div class="google-result">Event Brief created! <a href="'+r.url+'" target="_blank">Open Doc</a></div>';
+      }else if(r&&r.error){
+        document.getElementById('google-result').innerHTML+='<div class="google-result error">Doc error: '+r.error+'</div>';
+      }
+    }).withFailureHandler(function(err){
+      document.getElementById('google-result').innerHTML+='<div class="google-result error">Doc error: '+err.message+'</div>';
+    }).createEventBrief(ev);
+  }
+});
+
+function defT(){return{briefCreated:false,eventbriteCreated:false,calendarCreated:false,commsSubmitted:false,compostOrdered:false,compostOps:false,reminderSent:false,activityReport:false,treeMapDone:false,thankYouSent:false};}
+function collectForm(){
+  return{status:g('f-status'),name:g('f-name'),owner:g('f-owner'),date:g('f-date'),time:g('f-time'),location:g('f-location'),
+  categories:[...document.querySelectorAll('.f-category:checked')].map(c=>c.value),type:g('f-type'),collab:g('f-collab'),collabNotes:g('f-collab-notes'),
+  support:g('f-support'),attendance:g('f-attendance'),audiences:[...document.querySelectorAll('.f-audience:checked')].map(c=>c.value),
+  goals:g('f-goals'),metrics:g('f-metrics'),extName:g('f-extname'),eventbrite:g('f-eventbrite'),description:g('f-description'),
+  marketing:[...document.querySelectorAll('.f-marketing:checked')].map(c=>c.value),meeting:g('f-meeting'),stewLocation:g('f-stew-location'),
+  facilities:g('f-facilities'),supplies:g('f-supplies'),equipment:g('f-equipment'),vendors:g('f-vendors'),
+  compost:g('f-compost'),mulch:g('f-mulch'),expenses:g('f-expenses'),ros:g('f-ros'),access:g('f-access'),
+  trees:g('f-trees'),compostApplied:g('f-compost-applied'),mulchApplied:g('f-mulch-applied')};
+}
+function g(id){return document.getElementById(id).value;}
+function resetForm(){document.getElementById('eventForm').reset();document.getElementById('f-edit-id').value='';document.getElementById('form-title').textContent='New Event';document.getElementById('form-submit-btn').textContent='Create Event';document.getElementById('google-result').innerHTML='';document.querySelectorAll('.f-category,.f-audience,.f-marketing').forEach(c=>c.checked=false);}
+
+function editEvent(id){
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  switchTab('form',document.querySelectorAll('.tab-btn')[1]);
+  document.getElementById('f-edit-id').value=ev.id;
+  document.getElementById('form-title').textContent='Edit: '+ev.name;
+  document.getElementById('form-submit-btn').textContent='Update Event';
+  ['status','name','owner','date','time','location','type','collab','collab-notes','support','attendance','goals','metrics','extname','eventbrite','description','meeting','stew-location','facilities','supplies','equipment','vendors','compost','mulch','expenses','ros','access','trees','compost-applied','mulch-applied'].forEach(f=>{
+    const key=f.replace(/-([a-z])/g,(_,c)=>c.toUpperCase());
+    const el=document.getElementById('f-'+f);
+    if(el)el.value=ev[key]||ev[f]||'';
+  });
+  // Fix specific fields
+  document.getElementById('f-status').value=ev.status||'confirmed';
+  document.getElementById('f-collab-notes').value=ev.collabNotes||'';
+  document.getElementById('f-stew-location').value=ev.stewLocation||'';
+  document.getElementById('f-extname').value=ev.extName||'';
+  document.getElementById('f-compost-applied').value=ev.compostApplied||'';
+  document.getElementById('f-mulch-applied').value=ev.mulchApplied||'';
+  (ev.categories||[]).forEach(v=>{const c=document.querySelector('.f-category[value="'+v+'"]');if(c)c.checked=true;});
+  (ev.audiences||[]).forEach(v=>{const c=document.querySelector('.f-audience[value="'+v+'"]');if(c)c.checked=true;});
+  (ev.marketing||[]).forEach(v=>{const c=document.querySelector('.f-marketing[value="'+v+'"]');if(c)c.checked=true;});
+}
+function deleteEvent(id){if(!confirm('Delete?'))return;events=events.filter(e=>e.id!==id);save();renderList();renderCal();stats();toast('Deleted.');}
+
+// === OUTPUTS ===
+function genOutputs(ev){
+  document.getElementById('no-outputs').style.display='none';
+  document.getElementById('outputs-content').style.display='block';
+  document.getElementById('output-event-name').innerHTML=ev.name+' <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span>';
+  genRow(ev);genReminder(ev);genThankYou(ev);genBrief(ev);
+}
+function showOutputs(id){const ev=events.find(e=>e.id===id);if(ev){lastEv=ev;genOutputs(ev);switchTab('outputs',document.querySelectorAll('.tab-btn')[2]);}}
+
+function genRow(ev){
+  const ip=ev.type.includes('Public');
+  const c=[ev.name,ev.owner,fmtD(ev.date),ev.time,ev.location,(ev.categories||[]).join(', '),ev.type,ev.collab,ev.collabNotes,ip?'':'N/A (not a public event)',ip?'':'N/A','',ip?'':'N/A','FALSE','FALSE','','FALSE','FALSE','FALSE','',''];
+  const h=['Name','Owner','Date','Time','Location','Category','Type','Collab','Notes','Brief','EB','Cal','Comms','Compost','Ops','Mulch','Reminder','Report','TreeMap','ThxYou','Notes'];
+  let t='<table><tr>';h.forEach(x=>t+='<th>'+x+'</th>');t+='</tr><tr>';c.forEach(x=>t+='<td>'+(x||'')+'</td>');t+='</tr></table>';
+  document.getElementById('spreadsheet-table').innerHTML=t;
+  document.getElementById('spreadsheet-tsv').value=c.join('\t');
+}
+
+function genReminder(ev){
+  const el=document.getElementById('email-reminder');
+  if(ev.type.includes('Virtual')){el.innerHTML='<em style="color:#52796f">Reminder template is for in-person events.</em>';return;}
+  const s=ev.owner,mp=ev.meeting||'<span class="highlight">[meeting place + address]</span>',sl=ev.stewLocation||'<span class="highlight">[stewardship location]</span>';
+  el.innerHTML='<strong>Subject: Upcoming '+(ev.extName||ev.name)+' - LES Ecology Center</strong>\n\nDear Volunteers,\n\nThank you for registering for our '+ev.name+'! The event is <strong>'+(ev.extName||ev.name)+'</strong>. We will be meeting at the '+mp+' rain or shine.\n\nIf you will be more than 15 minutes late, please walk to '+sl+'. We will be wearing high visibility vests.\n\nWhen you arrive, please sign in with '+s+'.\n\nPlease dress for the weather, bring layers, and wear clothes you don\'t mind getting dirty and closed toed shoes. You may consider bringing rain gear. We will provide tools, gloves, and other PPE.\n\nPlease bring a water bottle and any snacks you may need.\n\nYou can expect to remove litter and weeds, aerate the soil, apply finished compost to tree beds, and water, all of which may include bending, squatting, kneeling, and lifting as physical activities.\n\nFor day-of communication or if you have issues finding us, please respond to this email.\n\nPlease reach out if you have any questions or need accommodations!\n\nBest,\n'+s;
+}
+
+function genThankYou(ev){
+  const el=document.getElementById('email-thankyou'),s=ev.owner,d=fmtD(ev.date);
+  const mo=ev.date?new Date(ev.date+'T12:00:00').toLocaleString('en-US',{month:'long'}):'[month]';
+  const tr=ev.trees||'<span class="highlight">[#]</span>',cl=ev.compostApplied||'<span class="highlight">[#]</span>',ml=ev.mulchApplied||'<span class="highlight">[#]</span>';
+  const ft='\n\n<strong>Follow us on Social Media + Join our newsletter!</strong>\nLower East Side Ecology Center:\nInstagram - @lesecologyctr\nTik Tok - @lesecologyctr\nLinkedin - The Lower East Side Ecology Center\nNewsletter - visit lesecologycenter.org to sign up\n\nIf you have any additional questions, please don\'t hesitate to ask.\n\nWith gratitude,\n'+s;
+  if(ev.type.includes('Virtual')){
+    el.innerHTML='<strong>Subject: Thank You - '+(ev.extName||ev.name)+'</strong>\n\nDear Volunteers,\n\nThank you for joining the L.E.S. Ecology Center on '+d+' for our virtual '+(ev.extName||ev.name)+'.\n\nSee below on how you can continue staying involved with the Ecology Center. We hope to see you at a future event!\n\n<strong>Attend a '+mo+' event w/ LES Ecology Center!</strong>\n\n<strong>Become a Master Composter</strong>\nThe Master Composter program is a free certificate program that educates and empowers New Yorkers to get involved in community composting efforts!\n\n<strong>Coolest Block in the LES Contest!</strong>\nBringing neighbors together to care for street trees in the East Village, LES, and Chinatown.'+ft;
+  }else{
+    el.innerHTML='<strong>Subject: Thank You - '+(ev.extName||ev.name)+'</strong>\n\nDear Volunteers,\n\nThank you for joining the L.E.S. Ecology Center on '+d+' to steward trees in the Lower East Side! Together we stewarded '+tr+' trees and applied '+cl+' lbs of compost, '+ml+' cubic yards of mulch! All stewardship activities have been added to the NYC Street Tree Map.\n\nSee below on how you can continue staying involved with the Ecology Center. We hope to see you at a future event!\n\n<strong>Attend a '+mo+' Event w/ LES Ecology Center!</strong>\n\n<strong>Become a member of our Tool Lending Library!</strong>\nLend stewardship tools free of charge from the L.E.S. Tool Lending Library.\n\n<strong>Become a Master Composter</strong>\nFree certificate program for community composting!\n\n<strong>Coolest Block in the LES Contest!</strong>\nBringing neighbors together to care for street trees.'+ft;
+  }
+}
+
+function genBrief(ev){
+  const fmt=ev.type.includes('Virtual')?'Virtual':'In-person';
+  const partner=ev.collab==='Other Organization'?ev.collabNotes:'N/A';
+  const client=(ev.type.includes('Private')||ev.type.includes('School'))?ev.collabNotes:'N/A';
+  let b=S('EVENT OVERVIEW')+F('Event Name',ev.name)+F('Lead',ev.owner)+F('Support',ev.support)+F('Category',(ev.categories||[]).join(', '))+F('Format',fmt)+F('Date',fmtD(ev.date))+F('Time',ev.time)+F('Location',ev.location)+F('Partner/s',partner)+F('Client/s',client)+F('Audience',(ev.audiences||[]).join(', '));
+  b+=S('IMPACT')+F('Goals',ev.goals)+F('Attendance',ev.attendance)+F('Metrics',ev.metrics);
+  b+=S('COMMS')+F('External Name',ev.extName||ev.name)+F('Description',ev.description)+F('Marketing',(ev.marketing||[]).join(', '))+F('Eventbrite',ev.eventbrite);
+  b+=S('LOGISTICS')+F('Vendors',ev.vendors)+F('Facilities',ev.facilities)+F('Supplies',ev.supplies)+F('Equipment',ev.equipment)+F('Compost',ev.compost)+F('Mulch',ev.mulch)+F('Expenses',ev.expenses||'NO')+F('Run of Show',ev.ros)+F('Access',ev.access);
+  document.getElementById('event-brief').innerHTML=b;
+}
+function S(t){return'\n<strong style="color:#2d6a4f;font-size:12px;display:block;margin:12px 0 4px;border-bottom:2px solid #d8e2dc;padding-bottom:2px">'+t+'</strong>\n';}
+function F(l,v){const val=v||'TBD';return'<span style="font-weight:600;color:#344e41;font-size:11px">'+l+':</span> <span'+(val==='TBD'||val==='N/A'?' class="highlight"':'')+'>'+val+'</span>\n';}
+
+// === EVENTS LIST ===
+function renderList(){
+  const c=document.getElementById('events-list');
+  let f=curFilter==='all'?events:events.filter(e=>(e.status||'confirmed')===curFilter);
+  f.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  if(!f.length){c.innerHTML='<p style="color:#52796f;text-align:center;padding:20px">No events.</p>';return;}
+  c.innerHTML=f.map(ev=>{
+    const t=ev.tracker||{};
+    const flds=[['briefCreated','Brief'],['eventbriteCreated','EB'],['calendarCreated','Cal'],['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Remind'],['activityReport','Report'],['treeMapDone','Map'],['thankYouSent','ThxYou']];
+    const chk=flds.map(([k,l])=>'<label><input type="checkbox" '+(t[k]?'checked':'')+' onchange="event.stopPropagation();togT('+ev.id+',\''+k+'\')"> '+l+'</label>').join('');
+    return'<div class="event-card '+(ev.status||'confirmed')+'" onclick="showOutputs('+ev.id+')"><div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div><div><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div><div class="event-card-meta">'+fmtD(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+'</div><div class="tracker-checks">'+chk+'</div></div>';
+  }).join('');
+}
+function setFilter(s,b){curFilter=s;document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderList();}
+function togT(id,k){const ev=events.find(e=>e.id===id);if(!ev)return;if(!ev.tracker)ev.tracker=defT();ev.tracker[k]=!ev.tracker[k];save();stats();}
+
+// === UTILS ===
+function fmtD(d){if(!d)return'';return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'});}
+function save(){localStorage.setItem('les_ev4',JSON.stringify(events));}
+function stats(){
+  document.getElementById('stat-total').textContent=events.length;
+  document.getElementById('stat-draft').textContent=events.filter(e=>e.status==='draft').length;
+  document.getElementById('stat-hold').textContent=events.filter(e=>e.status==='hold').length;
+  document.getElementById('stat-confirmed').textContent=events.filter(e=>e.status==='confirmed').length;
+  document.getElementById('stat-completed').textContent=events.filter(e=>e.status==='completed'||(e.tracker&&Object.values(e.tracker).every(v=>v))).length;
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function copyEl(id){
+  const el=document.getElementById(id);let txt;
+  if(el.tagName==='TEXTAREA'||el.tagName==='INPUT'){txt=el.value;}
+  else{const cl=el.cloneNode(true);cl.querySelectorAll('strong').forEach(s=>s.replaceWith(s.textContent));cl.querySelectorAll('.highlight').forEach(s=>s.replaceWith(s.textContent));txt=cl.innerText||cl.textContent;}
+  navigator.clipboard.writeText(txt).then(()=>toast('Copied!')).catch(()=>{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('Copied!');});
+}
+
+// INIT
+renderCal();renderList();stats();
+</script>
+</body>
+</html>
