@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LES Ecology - Event Workflow Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .header-subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 2px;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #bdc3c7;
+        }
+
+        /* Event Type Selection */
+        .event-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .event-type-btn {
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .event-type-btn:hover {
+            border-color: #3498db;
+            background: #ebf5fb;
+        }
+
+        .event-type-btn.active {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+
+        /* Workflow Timeline */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timeline-phase {
+            border-left: 4px solid #ecf0f1;
+            padding-left: 20px;
+            transition: all 0.3s;
+        }
+
+        .timeline-phase.active {
+            border-left-color: #27ae60;
+        }
+
+        .timeline-phase.upcoming {
+            border-left-color: #f39c12;
+        }
+
+        .timeline-phase.completed {
+            border-left-color: #27ae60;
+            opacity: 0.7;
+        }
+
+        .phase-header {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .phase-badge.upcoming {
+            background: #fef5e7;
+            color: #d68910;
+        }
+
+        .phase-badge.active {
+            background: #eafaf1;
+            color: #186a3b;
+        }
+
+        .phase-badge.completed {
+            background: #d5f4e6;
+            color: #0b5345;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .task-item:hover {
+            background: #ecf0f1;
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            background: #ecf0f1;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #27ae60;
+        }
+
+        .task-content {
+            flex: 1;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .task-item.completed .task-content {
+            text-decoration: line-through;
+            color: #95a5a6;
+        }
+
+        /* Events List */
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .event-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .event-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(4px);
+        }
+
+        .event-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .event-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 15px;
+        }
+
+        .event-type-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #dfe6e9;
+            color: #2c3e50;
+        }
+
+        .event-type-tag.field-trip { background: #d4efdf; color: #1e5631; }
+        .event-type-tag.private { background: #fdeaa8; color: #b7950b; }
+        .event-type-tag.public { background: #d6eaf8; color: #1b4965; }
+        .event-type-tag.program { background: #f4ecf7; color: #663399; }
+
+        .event-info {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .event-info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .progress-bar {
+            background: #ecf0f1;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            background: #27ae60;
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .email-template {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #2c3e50;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .event-type-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .success-message {
+            background: #eafaf1;
+            color: #186a3b;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌳 LES Ecology Center - Event Workflow Dashboard</h1>
+            <p class="header-subtitle">Streamlined planning & execution for Street Tree Care events</p>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="stat-total">0</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-upcoming">0</div>
+                <div class="stat-label">Upcoming</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-in-progress">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-completed">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Left: Create Event Form -->
+            <div class="card">
+                <h2>Create New Event</h2>
+                <div class="success-message" id="successMsg">✓ Event created successfully!</div>
+
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        <div class="event-type-grid">
+                            <button type="button" class="event-type-btn" data-type="field-trip">🏫 Field Trip</button>
+                            <button type="button" class="event-type-btn" data-type="private">🤝 Private Volunteer</button>
+                            <button type="button" class="event-type-btn" data-type="public">📣 Public Volunteer</button>
+                            <button type="button" class="event-type-btn" data-type="program">📋 Public Program</button>
+                        </div>
+                        <input type="hidden" id="eventType" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" id="eventName" placeholder="e.g., Upper West Side Tree Care" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target Block / Location</label>
+                        <input type="text" id="eventLocation" placeholder="e.g., 8th Ave between 75th & 76th">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Coordinator</label>
+                        <input type="text" id="eventCoordinator" placeholder="Name of coordinator">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Expected Group Size</label>
+                        <input type="number" id="eventSize" placeholder="Number of participants" min="1">
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Create Event</button>
+                        <button type="reset" class="btn-secondary">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Events & Workflow -->
+            <div>
+                <!-- Active Event Workflow -->
+                <div class="card" id="workflowCard" style="display: none; margin-bottom: 30px;">
+                    <h2>Active Event Timeline</h2>
+                    <div class="timeline" id="timeline"></div>
+                </div>
+
+                <!-- Events List -->
+                <div class="card">
+                    <h2>All Events</h2>
+                    <div class="events-list" id="eventsList">
+                        <p style="color: #95a5a6; text-align: center; padding: 40px 20px;">No events yet. Create one to get started!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Templates -->
+        <div class="card">
+            <h2>Email Templates Library</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div>
+                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Group Confirmation Email</h3>
+                    <div class="email-template">Subject: Upcoming Tree Care Event - [EVENT_NAME]
+
+Hi [GROUP_NAME],
+
+Thank you for registering! We're excited to have you join us.
+
+📍 Location: [LOCATION]
+📅 Date & Time: [DATE] at [TIME]
+👥 Group Size: [SIZE] participants
+
+**What to expect:**
+- Professional tree care training
+- Hands-on stewardship activity
+- Community impact
+
+Please bring water, sunscreen, and wear comfortable shoes.
+
+See you soon!
+Best,
+LES Ecology Center</div>
+                </div>
+
+                <div>
+                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Thank You Email</h3>
+                    <div class="email-template">Subject: Thank You - [EVENT_NAME]
+
+Hi [GROUP_NAME],
+
+Thank you for your amazing participation in our event! Your efforts will directly impact tree health and community greenery.
+
+📊 Event Summary:
+- Trees stewarded: [COUNT]
+- Volunteer hours: [HOURS]
+
+Your contribution makes a real difference. We'd love to see you at future events!
+
+Best regards,
+LES Ecology Center</div>
+                </div>
+
+                <div>
+                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Event Reminder</h3>
+                    <div class="email-template">Subject: Reminder - Tree Care Event This [DAY]
+
+Hi [GROUP_NAME],
+
+This is a friendly reminder about our upcoming event:
+
+📍 [LOCATION]
+📅 [DATE] at [TIME]
+⏰ See you soon!
+
+Questions? Reply to this email.
+
+Cheers,
+LES Ecology Center</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Detail Modal -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DATA & STATE =====
+        const workflows = {
+            'field-trip': [
+                {
+                    phase: 'Immediate',
+                    badge: 'active',
+                    tasks: [
+                        'Create event in STC 2026 All-Events Tracker',
+                        'Confirm date, time, group size & meeting location with coordinator',
+                        'Add to planning calendar (HOLD if unconfirmed)',
+                        'Add to LES events Google calendar'
+                    ]
+                },
+                {
+                    phase: '1 Month Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Reserve equipment (wagon, trike, other) on org\'s equipment calendar'
+                    ]
+                },
+                {
+                    phase: '2 Weeks Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Order compost from Compost and Tool Tracking',
+                        'Identify target block'
+                    ]
+                },
+                {
+                    phase: '1 Week Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Email confirmation to group (inc. waivers)',
+                        'Scouting / Google Maps view — confirm trees to be stewarded',
+                        'Block prep+break up time and travel time on your personal calendar'
+                    ]
+                },
+                {
+                    phase: 'Day Before/Of',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Prep tools using Street Tree Care Events Packing List',
+                        'Complete event reporting form after event',
+                        'Print out target block from tree map + use it to track care activities'
+                    ]
+                },
+                {
+                    phase: 'Day After',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Clean and return tools',
+                        'Send thank-you email',
+                        'Report trees stewarded in NYC tree map',
+                        'Upload photos to STC album'
+                    ]
+                }
+            ],
+            'private': [
+                {
+                    phase: 'Immediate',
+                    badge: 'active',
+                    tasks: [
+                        'Create event in STC 2026 All-Events Tracker',
+                        'Confirm date, time, group size & meeting location with coordinator',
+                        'Add to planning calendar (HOLD if unconfirmed)',
+                        'Add to LES events calendar',
+                        'Add to volunteer stewardship spreadsheet'
+                    ]
+                },
+                {
+                    phase: '2 Weeks Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Order compost',
+                        'Identify target block'
+                    ]
+                },
+                {
+                    phase: '1 Week Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Email confirmation to group',
+                        'Block walk / Google Maps view — confirm trees to be stewarded',
+                        'Reserve equipment (wagon, trike, other)'
+                    ]
+                },
+                {
+                    phase: 'Day Of',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Prep tools',
+                        'Complete event reporting form'
+                    ]
+                },
+                {
+                    phase: 'Day After',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Clean and return tools',
+                        'Send thank-you email',
+                        'Report trees stewarded in NYC tree map',
+                        'Upload photos to STC album'
+                    ]
+                }
+            ],
+            'public': [
+                {
+                    phase: 'Immediate',
+                    badge: 'active',
+                    tasks: [
+                        'Create event in STC 2026 All-Events Tracker',
+                        'Confirm date, time, group size & meeting location with coordinator',
+                        'Add to planning calendar (HOLD if unconfirmed)',
+                        'Add to LES events calendar',
+                        'Add to volunteer stewardship spreadsheet'
+                    ]
+                },
+                {
+                    phase: '1 Month Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Create event brief',
+                        'Create Eventbrite page',
+                        'Submit comms request (social, newsletter, website page)'
+                    ]
+                },
+                {
+                    phase: '2 Weeks Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Order compost'
+                    ]
+                },
+                {
+                    phase: '1 Week Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Identify target block — confirm with Hadas, add to calendar event',
+                        'Email confirmation / reminder to registrants',
+                        'Block walk / Google Maps view — confirm trees to be stewarded',
+                        'Reserve equipment (wagon, trike, other)'
+                    ]
+                },
+                {
+                    phase: 'Day Of',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Prep tools',
+                        'Complete event reporting (org communications Google Form)'
+                    ]
+                },
+                {
+                    phase: 'Day After',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Clean and return tools',
+                        'Send thank-you email',
+                        'Report trees stewarded in NYC tree map',
+                        'Upload photos to STC album'
+                    ]
+                }
+            ],
+            'program': [
+                {
+                    phase: 'Immediate',
+                    badge: 'active',
+                    tasks: [
+                        'Create event in STC 2026 All-Events Tracker',
+                        'Add to planning calendar',
+                        'Add to LES events calendar'
+                    ]
+                },
+                {
+                    phase: '1 Month Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Create event brief & Eventbrite page',
+                        'Submit comms request (social, newsletter, website page)'
+                    ]
+                },
+                {
+                    phase: '2 Weeks Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Complete content creation (lesson plan, talking points, tour notes)',
+                        'Ensure all vendors & orders confirmed (facilitators, materials)'
+                    ]
+                },
+                {
+                    phase: '1 Week Before',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Email confirmation to registrants'
+                    ]
+                },
+                {
+                    phase: 'Day Of',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Complete event reporting / record participation numbers'
+                    ]
+                },
+                {
+                    phase: 'Day After',
+                    badge: 'upcoming',
+                    tasks: [
+                        'Send thank-you email'
+                    ]
+                }
+            ]
+        };
+
+        let events = [];
+        let selectedEventType = null;
+        let activeEventId = null;
+
+        // ===== INITIALIZATION =====
+        function init() {
+            loadEventsFromStorage();
+            setupEventListeners();
+            renderStats();
+            renderEventsList();
+        }
+
+        function setupEventListeners() {
+            // Event type selection
+            document.querySelectorAll('.event-type-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedEventType = btn.dataset.type;
+                    document.getElementById('eventType').value = selectedEventType;
+                });
+            });
+
+            // Form submission
+            document.getElementById('eventForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                createEvent();
+            });
+        }
+
+        // ===== EVENT MANAGEMENT =====
+        function createEvent() {
+            if (!selectedEventType) {
+                alert('Please select an event type');
+                return;
+            }
+
+            const event = {
+                id: Date.now(),
+                type: selectedEventType,
+                name: document.getElementById('eventName').value,
+                date: document.getElementById('eventDate').value,
+                location: document.getElementById('eventLocation').value,
+                coordinator: document.getElementById('eventCoordinator').value,
+                size: document.getElementById('eventSize').value,
+                createdAt: new Date().toISOString(),
+                taskProgress: {}
+            };
+
+            // Initialize task progress
+            workflows[event.type].forEach((phase, phaseIdx) => {
+                phase.tasks.forEach((task, taskIdx) => {
+                    event.taskProgress[`${phaseIdx}-${taskIdx}`] = false;
+                });
+            });
+
+            events.push(event);
+            saveEventsToStorage();
+            activeEventId = event.id;
+
+            // Reset form
+            document.getElementById('eventForm').reset();
+            document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
+            selectedEventType = null;
+
+            // Show success message
+            const successMsg = document.getElementById('successMsg');
+            successMsg.classList.add('show');
+            setTimeout(() => successMsg.classList.remove('show'), 3000);
+
+            renderEventsList();
+            renderStats();
+            renderWorkflow();
+        }
+
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event?')) {
+                events = events.filter(e => e.id !== eventId);
+                saveEventsToStorage();
+                if (activeEventId === eventId) {
+                    activeEventId = null;
+                    document.getElementById('workflowCard').style.display = 'none';
+                }
+                renderEventsList();
+                renderStats();
+            }
+        }
+
+        function toggleTask(eventId, taskId) {
+            const event = events.find(e => e.id === eventId);
+            if (event) {
+                event.taskProgress[taskId] = !event.taskProgress[taskId];
+                saveEventsToStorage();
+                renderWorkflow();
+                renderEventsList();
+            }
+        }
+
+        // ===== RENDERING =====
+        function renderEventsList() {
+            const listContainer = document.getElementById('eventsList');
+
+            if (events.length === 0) {
+                listContainer.innerHTML = '<p style="color: #95a5a6; text-align: center; padding: 40px 20px;">No events yet. Create one to get started!</p>';
+                return;
+            }
+
+            listContainer.innerHTML = events.map(event => {
+                const completedTasks = Object.values(event.taskProgress).filter(v => v).length;
+                const totalTasks = Object.keys(event.taskProgress).length;
+                const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+                return `
+                    <div class="event-card" onclick="selectEvent(${event.id})">
+                        <div class="event-card-header">
+                            <div>
+                                <div class="event-title">${event.name}</div>
+                                <div class="event-type-tag ${event.type}">${formatEventType(event.type)}</div>
+                            </div>
+                        </div>
+                        <div class="event-info">
+                            <span>📅 ${new Date(event.date).toLocaleDateString()}</span>
+                            <span>📍 ${event.location || 'TBD'}</span>
+                            <span>👤 ${completedTasks}/${totalTasks} tasks</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderWorkflow() {
+            const workflowCard = document.getElementById('workflowCard');
+            if (!activeEventId) {
+                workflowCard.style.display = 'none';
+                return;
+            }
+
+            const event = events.find(e => e.id === activeEventId);
+            if (!event) return;
+
+            workflowCard.style.display = 'block';
+            const timeline = document.getElementById('timeline');
+            const workflow = workflows[event.type];
+
+            timeline.innerHTML = workflow.map((phase, phaseIdx) => `
+                <div class="timeline-phase ${phase.badge}">
+                    <div class="phase-header">
+                        ${phase.phase}
+                        <span class="phase-badge ${phase.badge}">${phase.badge.toUpperCase()}</span>
+                    </div>
+                    <ul class="task-list">
+                        ${phase.tasks.map((task, taskIdx) => {
+                            const taskId = `${phaseIdx}-${taskIdx}`;
+                            const isCompleted = event.taskProgress[taskId];
+                            return `
+                                <li class="task-item ${isCompleted ? 'completed' : ''}">
+                                    <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}
+                                           onchange="toggleTask(${activeEventId}, '${taskId}')">
+                                    <span class="task-content">${task}</span>
+                                </li>
+                            `;
+                        }).join('')}
+                    </ul>
+                </div>
+            `).join('');
+        }
+
+        function renderStats() {
+            const total = events.length;
+            const today = new Date().toISOString().split('T')[0];
+            const upcoming = events.filter(e => e.date >= today).length;
+            const inProgress = events.filter(e => e.date < today).length;
+            const completed = events.filter(e => {
+                const progress = Object.values(e.taskProgress);
+                return progress.length > 0 && progress.every(v => v);
+            }).length;
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-upcoming').textContent = upcoming;
+            document.getElementById('stat-in-progress').textContent = inProgress;
+            document.getElementById('stat-completed').textContent = completed;
+        }
+
+        // ===== UTILITIES =====
+        function formatEventType(type) {
+            const map = {
+                'field-trip': '🏫 Field Trip',
+                'private': '🤝 Private Volunteer',
+                'public': '📣 Public Volunteer',
+                'program': '📋 Public Program'
+            };
+            return map[type] || type;
+        }
+
+        function selectEvent(eventId) {
+            activeEventId = eventId;
+            renderWorkflow();
+        }
+
+        function closeModal() {
+            document.getElementById('eventModal').classList.remove('active');
+        }
+
+        // ===== STORAGE =====
+        function saveEventsToStorage() {
+            localStorage.setItem('les_events', JSON.stringify(events));
+        }
+
+        function loadEventsFromStorage() {
+            const stored = localStorage.getItem('les_events');
+            events = stored ? JSON.parse(stored) : [];
+        }
+
+        // Initialize app
+        init();
+    </script>
+</body>
+</html>
