@@ -959,6 +959,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <option>Good</option><option>Fair</option><option>Poor</option>
   </select>
   <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
+  <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
   <div class="filter-sep"></div>
   <span class="tree-count" id="tree-count">Loading...</span>
 </div>
@@ -1469,6 +1470,22 @@ function setLoadingBar(p) {
 
 // Species filter populated from embedded data via populateSpeciesFilter()
 
+function populatePlantingYearFilter() {
+  const sel = document.getElementById('f-age');
+  // Remove any previously added year options (keep first two: All Ages + Small trunk)
+  while (sel.options.length > 2) sel.remove(2);
+  const years = new Set();
+  allTrees.forEach(t => {
+    const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
+    if (yr > 1900) years.add(yr);
+  });
+  [...years].sort((a, b) => b - a).forEach(yr => {
+    const o = document.createElement('option');
+    o.value = o.textContent = yr;
+    sel.appendChild(o);
+  });
+}
+
 function populateSpeciesFilter() {
   const sel = document.getElementById('f-species');
   const current = sel.value;
@@ -1482,10 +1499,21 @@ function populateSpeciesFilter() {
 function applyFilters(reload = false) {
   const health = document.getElementById('f-health').value;
   const species = document.getElementById('f-species').value;
+  const age = document.getElementById('f-age').value;
 
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (species) base = base.filter(t => (t.spc_common||'').toLowerCase() === species.toLowerCase());
+  if (age === 'small-dbh') {
+    base = base.filter(t => {
+      const hasYear = parseInt(t.tree_cen_date || t.planteddate || 0) > 1900;
+      const dbh = parseFloat(t.tree_dbh || 0);
+      return !hasYear && dbh > 0 && dbh < 5;
+    });
+  } else if (age) {
+    const yr = parseInt(age);
+    base = base.filter(t => parseInt(t.tree_cen_date || t.planteddate || 0) === yr);
+  }
   filteredTrees = base;
 
   document.getElementById('tree-count').textContent = `${filteredTrees.length.toLocaleString()} trees`;
@@ -3471,6 +3499,7 @@ window.addEventListener('load', async () => {
   allTrees = CENSUS_DATA.filter(t => !emptyStatuses.has(t.status))
                         .map(t => ({ ...t, _priority: calcPriority(t) }));
   populateSpeciesFilter();
+  populatePlantingYearFilter();
   applyFilters(false);
   if (countEl) countEl.textContent = allTrees.length.toLocaleString() + ' trees';
 
