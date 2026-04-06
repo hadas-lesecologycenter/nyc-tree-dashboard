@@ -114,11 +114,28 @@ textarea{resize:vertical;min-height:70px}
 
 .apps-script-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre;line-height:1.4}
 
+/* Reporting */
+.report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.report-card{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;text-align:center}
+.report-card .num{font-size:28px;font-weight:700;color:#2d6a4f}
+.report-card .label{font-size:12px;color:#52796f;margin-top:4px}
+.partner-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.partner-table th{background:#2d6a4f;color:white;padding:8px 10px;text-align:left;font-weight:600;font-size:12px}
+.partner-table td{padding:8px 10px;border-bottom:1px solid #d8e2dc}
+.partner-table tr:nth-child(even){background:#f0f4f0}
+.partner-table tr:hover{background:#e0ebe0}
+.season-section{margin-bottom:20px}
+.season-section h3{color:#2d6a4f;font-size:15px;margin-bottom:10px;padding:6px 12px;background:#d8f3dc;border-radius:6px;display:inline-block}
+.import-area{width:100%;min-height:120px;font-family:monospace;font-size:11px;padding:10px;border:2px dashed #d8e2dc;border-radius:8px;resize:vertical}
+.import-area:focus{border-color:#40916c}
+.data-warning{background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;font-size:12px;color:#856404;margin:10px 0}
+
 @media(max-width:768px){
   .form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}
   .status-bar{gap:8px}
   .cal-day{min-height:60px}
   .cal-event{font-size:9px}
+  .report-grid{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -137,6 +154,8 @@ textarea{resize:vertical;min-height:70px}
 <div class="status-item"><div class="status-num" id="stat-hold">0</div><div class="status-label">On Hold</div></div>
 <div class="status-item"><div class="status-num" id="stat-confirmed">0</div><div class="status-label">Confirmed</div></div>
 <div class="status-item"><div class="status-num" id="stat-completed">0</div><div class="status-label">Completed</div></div>
+<div class="status-item"><div class="status-num" id="stat-volunteers">0</div><div class="status-label">Volunteers</div></div>
+<div class="status-item"><div class="status-num" id="stat-hours">0</div><div class="status-label">Total Hours</div></div>
 </div>
 
 <div class="tabs">
@@ -144,6 +163,8 @@ textarea{resize:vertical;min-height:70px}
 <button class="tab-btn" onclick="switchTab('form',this)">New Event</button>
 <button class="tab-btn" onclick="switchTab('outputs',this)">Generated Outputs</button>
 <button class="tab-btn" onclick="switchTab('events',this)">All Events</button>
+<button class="tab-btn" onclick="switchTab('reports',this)">Reports</button>
+<button class="tab-btn" onclick="switchTab('import',this)">Import</button>
 <button class="tab-btn" onclick="switchTab('setup',this)">Setup</button>
 </div>
 
@@ -194,7 +215,15 @@ textarea{resize:vertical;min-height:70px}
 <div class="form-row three">
 <div class="form-group"><label>Date <span class="req">*</span></label><input type="date" id="f-date" required></div>
 <div class="form-group"><label>Time</label><input id="f-time" placeholder="e.g., 2-4PM"></div>
-<div class="form-group"><label>Location / Venue</label><input id="f-location" placeholder="e.g., Seward Park"></div>
+<div class="form-group"><label>Location / Venue</label><select id="f-location" onchange="if(this.value==='__custom__'){this.style.display='none';document.getElementById('f-location-custom').style.display='block';document.getElementById('f-location-custom').focus();}">
+<option value="">Select...</option>
+<option>Pier 42</option>
+<option>Tompkins Square Park</option>
+<option>East River Park</option>
+<option>Seward Park</option>
+<option>Street Tree Care</option>
+<option value="__custom__">Other (type in)...</option>
+</select><input id="f-location-custom" style="display:none;margin-top:4px" placeholder="Type custom location" onblur="if(!this.value){this.style.display='none';document.getElementById('f-location').style.display='block';}"></div>
 </div>
 
 <div class="form-row">
@@ -210,6 +239,43 @@ textarea{resize:vertical;min-height:70px}
 <input id="f-collab-notes" placeholder="Partner name">
 </div></div>
 </div>
+
+<details open>
+<summary style="cursor:pointer;font-weight:600;color:#2d6a4f;margin:10px 0">Corporate / Group Volunteer Details</summary>
+
+<div class="form-row three">
+<div class="form-group"><label>Expected # of Volunteers</label><input type="number" id="f-vol-expected" placeholder="e.g., 15"></div>
+<div class="form-group"><label>Actual # of Volunteers</label><input type="number" id="f-vol-actual" placeholder="Fill after event"></div>
+<div class="form-group"><label>Paid Event?</label><select id="f-paid"><option value="">Select...</option><option value="Yes">Yes</option><option value="No">No</option></select></div>
+</div>
+
+<div class="form-row three">
+<div class="form-group"><label>Company / Group Name</label><input id="f-company" placeholder="e.g., Bloomberg"></div>
+<div class="form-group"><label>Point of Contact</label><input id="f-contact-name" placeholder="e.g., Jane Smith (she/her)"></div>
+<div class="form-group"><label>Contact Email</label><input type="email" id="f-contact-email" placeholder="e.g., jane@company.com"></div>
+</div>
+
+<div class="form-row three">
+<div class="form-group"><label>Check-in Email Sent?</label><select id="f-checkin-email"><option value="">Not yet</option><option value="Yes">Yes</option></select></div>
+<div class="form-group"><label>One-Pager Sent?</label><select id="f-onepager"><option value="">Not yet</option><option value="Yes">Yes</option></select></div>
+<div class="form-group"><label>Social Media Post?</label><select id="f-social-media"><option value="">Not yet</option><option value="Yes">Yes</option></select></div>
+</div>
+
+<div class="form-row three">
+<div class="form-group"><label>Park Section to Work On</label><input id="f-park-section" placeholder="e.g., Bioswale, Playground Path"></div>
+<div class="form-group"><label>What We Need from Parks</label><textarea id="f-parks-needs" rows="2" placeholder="e.g., Gate access, water hookup"></textarea></div>
+<div class="form-group"><label>Payment Notes</label><input id="f-payment-notes" placeholder="e.g., $50 per person"></div>
+</div>
+</details>
+
+<details>
+<summary style="cursor:pointer;font-weight:600;color:#2d6a4f;margin:10px 0">Staff Assignment</summary>
+<div class="form-row three">
+<div class="form-group"><label>LES Staff 1</label><select id="f-staff1"><option value="">Select...</option><option>Maddy</option><option>Hadas</option><option>Gretel</option><option>Antonio</option><option>Terese</option></select></div>
+<div class="form-group"><label>LES Staff 2</label><select id="f-staff2"><option value="">Select...</option><option>Maddy</option><option>Hadas</option><option>Gretel</option><option>Antonio</option><option>Terese</option></select></div>
+<div class="form-group"><label>LES Staff 3</label><select id="f-staff3"><option value="">Select...</option><option>Maddy</option><option>Hadas</option><option>Gretel</option><option>Antonio</option><option>Terese</option></select></div>
+</div>
+</details>
 
 <details>
 <summary style="cursor:pointer;font-weight:600;color:#2d6a4f;margin:10px 0">Event Brief Details (expand to fill)</summary>
@@ -335,6 +401,39 @@ textarea{resize:vertical;min-height:70px}
 </div>
 </div>
 
+<!-- TAB: REPORTS -->
+<div class="tab-content" id="tab-reports">
+<div class="card">
+<h2>Seasonal Summary & Partner Report</h2>
+<div class="report-grid" id="report-summary"></div>
+</div>
+<div class="card">
+<h2>Events by Season</h2>
+<div id="report-seasonal"></div>
+</div>
+<div class="card">
+<h2>Corporate Partner Summary</h2>
+<p style="font-size:12px;color:#52796f;margin-bottom:12px">Aggregated stats per partner organization across all events.</p>
+<div style="overflow-x:auto" id="report-partners"></div>
+</div>
+</div>
+
+<!-- TAB: IMPORT -->
+<div class="tab-content" id="tab-import">
+<div class="card">
+<h2>Import Events from Spreadsheet</h2>
+<p style="color:#52796f;margin-bottom:12px">Paste rows from your STC 2026 All-Events Tracker spreadsheet below. Copy the data rows (not the header), tab-separated. The importer expects columns in this order:</p>
+<p style="font-size:12px;color:#344e41;margin-bottom:12px;font-weight:600">Complete (TRUE/FALSE) | Date | Place | Activity | Park Section | Time | # Volunteers | Company Name | Social Media | Point of Contact | Email | Check-in Email Sent | Actual # Volunteers | One-Pager Sent | Parks Needs | Staff 1 | Staff 2 | Staff 3 | Paid</p>
+<div class="data-warning">Imported events will be added to your existing events. Duplicates (same date + company) will be skipped.</div>
+<textarea class="import-area" id="import-data" placeholder="Paste tab-separated rows here..."></textarea>
+<div class="btn-row">
+<button class="btn btn-primary" onclick="previewImport()">Preview Import</button>
+<button class="btn btn-reset" onclick="document.getElementById('import-data').value='';document.getElementById('import-preview').innerHTML=''">Clear</button>
+</div>
+<div id="import-preview" style="margin-top:16px"></div>
+</div>
+</div>
+
 <!-- TAB: SETUP -->
 <div class="tab-content" id="tab-setup">
 <div class="card">
@@ -401,6 +500,7 @@ function switchTab(tab, btn) {
   document.getElementById('tab-' + tab).classList.add('active');
   if (btn) btn.classList.add('active');
   if (tab === 'calendar') renderCalendar();
+  if (tab === 'reports') renderReports();
 }
 
 // ===== CALENDAR =====
@@ -496,15 +596,28 @@ document.getElementById('eventForm').addEventListener('submit', function(e) {
 });
 
 function defaultTracker() {
-  return {briefCreated:false,eventbriteCreated:false,calendarCreated:false,commsSubmitted:false,compostOrdered:false,compostOps:false,reminderSent:false,activityReport:false,treeMapDone:false,thankYouSent:false};
+  return {briefCreated:false,eventbriteCreated:false,calendarCreated:false,commsSubmitted:false,compostOrdered:false,compostOps:false,reminderSent:false,activityReport:false,treeMapDone:false,thankYouSent:false,checkinEmailSent:false,onePagerSent:false};
 }
 
 function collectForm() {
+  // Handle custom location
+  const locSelect = g('f-location');
+  const locCustom = g('f-location-custom');
+  const location = (locSelect === '__custom__' || locSelect === '') ? (locCustom || '') : locSelect;
+
   return {
     status: g('f-status'), name: g('f-name'), owner: g('f-owner'), date: g('f-date'),
-    time: g('f-time'), location: g('f-location'),
+    time: g('f-time'), location: location,
     categories: [...document.querySelectorAll('.f-category:checked')].map(c => c.value),
     type: g('f-type'), collab: g('f-collab'), collabNotes: g('f-collab-notes'),
+    // Corporate / group volunteer fields
+    volExpected: g('f-vol-expected'), volActual: g('f-vol-actual'), paid: g('f-paid'),
+    company: g('f-company'), contactName: g('f-contact-name'), contactEmail: g('f-contact-email'),
+    checkinEmail: g('f-checkin-email'), onePager: g('f-onepager'), socialMedia: g('f-social-media'),
+    parkSection: g('f-park-section'), parksNeeds: g('f-parks-needs'), paymentNotes: g('f-payment-notes'),
+    // Staff assignment
+    staff1: g('f-staff1'), staff2: g('f-staff2'), staff3: g('f-staff3'),
+    // Existing fields
     support: g('f-support'), attendance: g('f-attendance'),
     audiences: [...document.querySelectorAll('.f-audience:checked')].map(c => c.value),
     goals: g('f-goals'), metrics: g('f-metrics'), extName: g('f-extname'),
@@ -526,6 +639,10 @@ function resetForm() {
   document.getElementById('form-title').textContent = 'New Event';
   document.getElementById('form-submit-btn').textContent = 'Create Event & Generate Outputs';
   document.querySelectorAll('.f-category,.f-audience,.f-marketing').forEach(c => c.checked = false);
+  // Reset custom location
+  document.getElementById('f-location').style.display = 'block';
+  document.getElementById('f-location-custom').style.display = 'none';
+  document.getElementById('f-location-custom').value = '';
 }
 
 function editEvent(id) {
@@ -541,10 +658,46 @@ function editEvent(id) {
   document.getElementById('f-owner').value = ev.owner;
   document.getElementById('f-date').value = ev.date;
   document.getElementById('f-time').value = ev.time || '';
-  document.getElementById('f-location').value = ev.location || '';
+
+  // Location: check if it matches a dropdown option
+  const locSelect = document.getElementById('f-location');
+  const locCustom = document.getElementById('f-location-custom');
+  const locVal = ev.location || '';
+  const locOptions = [...locSelect.options].map(o => o.value);
+  if (locOptions.includes(locVal)) {
+    locSelect.value = locVal;
+    locSelect.style.display = 'block';
+    locCustom.style.display = 'none';
+  } else if (locVal) {
+    locSelect.value = '__custom__';
+    locSelect.style.display = 'none';
+    locCustom.style.display = 'block';
+    locCustom.value = locVal;
+  }
+
   document.getElementById('f-type').value = ev.type;
   document.getElementById('f-collab').value = ev.collab || '';
   document.getElementById('f-collab-notes').value = ev.collabNotes || '';
+
+  // Corporate / group volunteer fields
+  document.getElementById('f-vol-expected').value = ev.volExpected || '';
+  document.getElementById('f-vol-actual').value = ev.volActual || '';
+  document.getElementById('f-paid').value = ev.paid || '';
+  document.getElementById('f-company').value = ev.company || '';
+  document.getElementById('f-contact-name').value = ev.contactName || '';
+  document.getElementById('f-contact-email').value = ev.contactEmail || '';
+  document.getElementById('f-checkin-email').value = ev.checkinEmail || '';
+  document.getElementById('f-onepager').value = ev.onePager || '';
+  document.getElementById('f-social-media').value = ev.socialMedia || '';
+  document.getElementById('f-park-section').value = ev.parkSection || '';
+  document.getElementById('f-parks-needs').value = ev.parksNeeds || '';
+  document.getElementById('f-payment-notes').value = ev.paymentNotes || '';
+
+  // Staff assignment
+  document.getElementById('f-staff1').value = ev.staff1 || '';
+  document.getElementById('f-staff2').value = ev.staff2 || '';
+  document.getElementById('f-staff3').value = ev.staff3 || '';
+
   document.getElementById('f-support').value = ev.support || '';
   document.getElementById('f-attendance').value = ev.attendance || '';
   document.getElementById('f-goals').value = ev.goals || '';
@@ -600,13 +753,21 @@ function loadEventOutputs(id) {
 }
 
 function genSpreadsheetRow(ev) {
-  const isPublic = ev.type.includes('Public');
-  const isPrivate = ev.type.includes('Private') || ev.type.includes('School');
-  const cols = [ev.name, ev.owner, fmtDate(ev.date), ev.time, ev.location,
-    (ev.categories||[]).join(', '), ev.type, ev.collab, ev.collabNotes,
-    isPublic ? '' : 'N/A (not a public event)', isPublic ? '' : 'N/A', '', isPublic ? '' : 'N/A',
-    'FALSE','FALSE','','FALSE','FALSE','FALSE','',''];
-  const headers = ['Event Name','Owner','Date','Time','Location','Category','Type','Collaboration','Notes','Brief','Eventbrite','Calendar','Comms','Compost','Compost Ops','Mulch','Reminder','Activity Rpt','Tree Map','Thank You','Notes'];
+  const completed = ev.status === 'completed' || (ev.tracker && Object.values(ev.tracker).every(v=>v));
+  const vols = ev.volActual || ev.volExpected || '';
+  const hours = calcHours(ev.time, parseInt(ev.volActual||ev.volExpected||0));
+  const cols = [
+    completed ? 'TRUE' : 'FALSE', fmtDate(ev.date), ev.location,
+    ev.name, ev.parkSection || '', ev.time, hours ? hours.toFixed(1) : '',
+    vols, ev.company || '', ev.socialMedia || '',
+    ev.contactName || '', ev.contactEmail || '',
+    ev.checkinEmail || '', ev.volActual || '', ev.onePager || '',
+    ev.parksNeeds || '', ev.staff1 || '', ev.staff2 || '', ev.staff3 || '', ev.paid || ''
+  ];
+  const headers = ['Complete','Date','Place','Activity','Park Section','Time','Hours',
+    '# Volunteers','Company','Social Media','Point of Contact','Email',
+    'Check-in Email','Actual # Showed','One-Pager','Parks Needs',
+    'Staff 1','Staff 2','Staff 3','Paid'];
   let html = '<table><tr>'; headers.forEach(h => html += '<th>'+h+'</th>'); html += '</tr><tr>';
   cols.forEach(c => html += '<td>'+(c||'')+'</td>'); html += '</tr></table>';
   document.getElementById('spreadsheet-table').innerHTML = html;
@@ -654,11 +815,20 @@ function genEventBrief(ev) {
   b += F('Date', fmtDate(ev.date));
   b += F('Time', ev.time);
   b += F('Location/Venue', ev.location);
+  b += F('Park Section', ev.parkSection);
   b += F('Partner/s', partner);
   b += F('Client/s', client);
+  b += F('Company', ev.company);
+  b += F('Contact', ev.contactName + (ev.contactEmail ? ' (' + ev.contactEmail + ')' : ''));
   b += F('Primary Audience', (ev.audiences||[]).join(', '));
+  b += S('STAFFING');
+  b += F('Staff 1', ev.staff1);
+  b += F('Staff 2', ev.staff2);
+  b += F('Staff 3', ev.staff3);
   b += S('IMPACT');
   b += F('Goals', ev.goals);
+  b += F('Expected Volunteers', ev.volExpected);
+  b += F('Actual Volunteers', ev.volActual);
   b += F('Expected Attendance', ev.attendance);
   b += F('Success Metrics', ev.metrics);
   b += S('COMMS');
@@ -673,7 +843,10 @@ function genEventBrief(ev) {
   b += F('Equipment', ev.equipment);
   b += F('Compost', ev.compost);
   b += F('Mulch', ev.mulch);
+  b += F('Parks Needs', ev.parksNeeds);
   b += F('Expenses', ev.expenses || 'NO');
+  b += F('Paid Event', ev.paid);
+  b += F('Payment Notes', ev.paymentNotes);
   b += F('Run of Show', ev.ros);
   b += F('Access Notes', ev.access);
   document.getElementById('event-brief').innerHTML = b;
@@ -691,12 +864,12 @@ function renderEvents() {
 
   container.innerHTML = filtered.map(ev => {
     const t = ev.tracker || {};
-    const fields = [['briefCreated','Brief'],['eventbriteCreated','Eventbrite'],['calendarCreated','Calendar'],['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Reminder'],['activityReport','Report'],['treeMapDone','Tree Map'],['thankYouSent','Thank You']];
+    const fields = [['briefCreated','Brief'],['eventbriteCreated','Eventbrite'],['calendarCreated','Calendar'],['commsSubmitted','Comms'],['checkinEmailSent','Check-in Email'],['onePagerSent','One-Pager'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Reminder'],['activityReport','Report'],['treeMapDone','Tree Map'],['thankYouSent','Thank You']];
     const checks = fields.map(([k,l]) => '<label><input type="checkbox" '+(t[k]?'checked':'')+' onchange="event.stopPropagation();toggleTracker('+ev.id+',\''+k+'\')"> '+l+'</label>').join('');
     return '<div class="event-card '+(ev.status||'confirmed')+'" onclick="loadEventOutputs('+ev.id+')">' +
       '<div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div>' +
       '<div><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div>' +
-      '<div class="event-card-meta">'+fmtDate(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+' &middot; '+ev.type+'</div>' +
+      '<div class="event-card-meta">'+fmtDate(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+(ev.company?' &middot; '+ev.company:'')+(ev.volActual?' &middot; '+ev.volActual+' volunteers':(ev.volExpected?' &middot; ~'+ev.volExpected+' expected':''))+' &middot; '+ev.owner+'</div>' +
       '<div class="tracker-checks">'+checks+'</div></div>';
   }).join('');
 }
@@ -763,8 +936,226 @@ function updateStats() {
   document.getElementById('stat-hold').textContent = events.filter(e => e.status==='hold').length;
   document.getElementById('stat-confirmed').textContent = events.filter(e => e.status==='confirmed').length;
   document.getElementById('stat-completed').textContent = events.filter(e => e.status==='completed' || (e.tracker && Object.values(e.tracker).every(v=>v))).length;
+
+  // Volunteer count (actual if available, else expected)
+  let totalVols = 0;
+  let totalHours = 0;
+  events.forEach(e => {
+    const vols = parseInt(e.volActual) || parseInt(e.volExpected) || 0;
+    totalVols += vols;
+    totalHours += calcHours(e.time, vols);
+  });
+  document.getElementById('stat-volunteers').textContent = totalVols;
+  document.getElementById('stat-hours').textContent = totalHours.toFixed(0);
+}
+
+function calcHours(timeStr, vols) {
+  if (!timeStr || !vols) return 0;
+  // Parse time ranges like "9:30am-12pm", "2:00pm-4:00pm", "10am-1pm"
+  const match = timeStr.match(/(\d{1,2}):?(\d{2})?\s*(am|pm)?\s*[-–]\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/i);
+  if (!match) return 0;
+  let [, h1, m1, p1, h2, m2, p2] = match;
+  h1 = parseInt(h1); m1 = parseInt(m1||'0');
+  h2 = parseInt(h2); m2 = parseInt(m2||'0');
+  p1 = (p1||p2||'am').toLowerCase(); p2 = (p2||'pm').toLowerCase();
+  if (p1==='pm' && h1!==12) h1+=12;
+  if (p1==='am' && h1===12) h1=0;
+  if (p2==='pm' && h2!==12) h2+=12;
+  if (p2==='am' && h2===12) h2=0;
+  const duration = (h2*60+m2 - h1*60-m1) / 60;
+  return duration > 0 ? duration * vols : 0;
 }
 function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ===== REPORTS =====
+function renderReports() {
+  // Summary stats
+  const completed = events.filter(e => e.status==='completed' || (e.tracker && Object.values(e.tracker).every(v=>v)));
+  let totalVols = 0, totalHours = 0, totalTrees = 0, totalCompost = 0;
+  events.forEach(e => {
+    const v = parseInt(e.volActual) || parseInt(e.volExpected) || 0;
+    totalVols += v;
+    totalHours += calcHours(e.time, v);
+    totalTrees += parseInt(e.trees) || 0;
+    totalCompost += parseInt(e.compostApplied) || 0;
+  });
+
+  const uniquePartners = new Set(events.filter(e=>e.company).map(e=>e.company.trim())).size;
+
+  document.getElementById('report-summary').innerHTML =
+    rc('Total Events', events.length) + rc('Completed', completed.length) +
+    rc('Total Volunteers', totalVols) + rc('Total Hours', totalHours.toFixed(0)) +
+    rc('Trees Stewarded', totalTrees) + rc('Lbs Compost', totalCompost) +
+    rc('Corporate Partners', uniquePartners) +
+    rc('Avg Volunteers/Event', events.length ? (totalVols/events.length).toFixed(1) : 0);
+
+  // Seasonal breakdown
+  const seasons = {Spring:[], Summer:[], Fall:[], Winter:[]};
+  events.forEach(e => {
+    if (!e.date) return;
+    const m = parseInt(e.date.split('-')[1]);
+    if (m>=3 && m<=5) seasons.Spring.push(e);
+    else if (m>=6 && m<=8) seasons.Summer.push(e);
+    else if (m>=9 && m<=11) seasons.Fall.push(e);
+    else seasons.Winter.push(e);
+  });
+
+  let seasonHtml = '';
+  for (const [season, sevents] of Object.entries(seasons)) {
+    if (!sevents.length) continue;
+    let sVols = 0, sHours = 0;
+    sevents.forEach(e => {
+      const v = parseInt(e.volActual) || parseInt(e.volExpected) || 0;
+      sVols += v; sHours += calcHours(e.time, v);
+    });
+    seasonHtml += '<div class="season-section"><h3>' + season + ' (' + sevents.length + ' events, ' + sVols + ' volunteers, ' + sHours.toFixed(0) + ' hours)</h3>';
+    seasonHtml += '<table class="partner-table"><tr><th>Date</th><th>Location</th><th>Activity</th><th>Company</th><th>Volunteers</th><th>Status</th></tr>';
+    sevents.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    sevents.forEach(e => {
+      const v = e.volActual || e.volExpected || '-';
+      const st = e.status || 'confirmed';
+      seasonHtml += '<tr><td>'+fmtDate(e.date)+'</td><td>'+(e.location||'-')+'</td><td>'+(e.name||'-')+'</td><td>'+(e.company||'-')+'</td><td>'+v+'</td><td><span class="status-badge status-'+st+'">'+st+'</span></td></tr>';
+    });
+    seasonHtml += '</table></div>';
+  }
+  document.getElementById('report-seasonal').innerHTML = seasonHtml || '<p style="color:#52796f">No events yet.</p>';
+
+  // Partner summary
+  const partners = {};
+  events.forEach(e => {
+    const c = (e.company||'').trim();
+    if (!c) return;
+    if (!partners[c]) partners[c] = {events:0, totalVols:0, totalHours:0, contact:'', email:'', paid:0};
+    partners[c].events++;
+    const v = parseInt(e.volActual) || parseInt(e.volExpected) || 0;
+    partners[c].totalVols += v;
+    partners[c].totalHours += calcHours(e.time, v);
+    if (e.contactName) partners[c].contact = e.contactName;
+    if (e.contactEmail) partners[c].email = e.contactEmail;
+    if (e.paid === 'Yes') partners[c].paid++;
+  });
+
+  const sortedPartners = Object.entries(partners).sort((a,b) => b[1].events - a[1].events);
+  let pHtml = '<table class="partner-table"><tr><th>Partner</th><th>Events</th><th>Total Volunteers</th><th>Total Hours</th><th>Contact</th><th>Email</th><th>Paid Events</th></tr>';
+  sortedPartners.forEach(([name, p]) => {
+    pHtml += '<tr><td><strong>'+name+'</strong></td><td>'+p.events+'</td><td>'+p.totalVols+'</td><td>'+p.totalHours.toFixed(0)+'</td><td>'+p.contact+'</td><td>'+p.email+'</td><td>'+p.paid+'</td></tr>';
+  });
+  pHtml += '</table>';
+  document.getElementById('report-partners').innerHTML = sortedPartners.length ? pHtml : '<p style="color:#52796f">No corporate partners yet.</p>';
+}
+function rc(label, num) { return '<div class="report-card"><div class="num">'+num+'</div><div class="label">'+label+'</div></div>'; }
+
+// ===== IMPORT =====
+function previewImport() {
+  const raw = document.getElementById('import-data').value.trim();
+  if (!raw) { document.getElementById('import-preview').innerHTML = '<p style="color:#bc4749">Paste spreadsheet data first.</p>'; return; }
+
+  const lines = raw.split('\n').filter(l => l.trim());
+  const parsed = [];
+  const skipped = [];
+
+  lines.forEach((line, idx) => {
+    const cols = line.split('\t');
+    if (cols.length < 2) { skipped.push('Row '+(idx+1)+': too few columns'); return; }
+
+    const completed = (cols[0]||'').trim().toUpperCase() === 'TRUE';
+    const dateRaw = (cols[1]||'').trim();
+    const location = normalizeLocation((cols[2]||'').trim());
+    const activity = (cols[3]||'').trim();
+    const parkSection = (cols[4]||'').trim();
+    const time = (cols[5]||'').trim();
+    const volExpected = (cols[6]||'').trim().replace(/[^0-9]/g,'');
+    const company = (cols[7]||'').trim();
+    const socialMedia = (cols[8]||'').trim();
+    const contactName = (cols[9]||'').trim();
+    const contactEmail = (cols[10]||'').trim();
+    const checkinEmail = (cols[11]||'').trim();
+    const volActual = (cols[12]||'').trim().replace(/[^0-9]/g,'');
+    const onePager = (cols[13]||'').trim();
+    const parksNeeds = (cols[14]||'').trim();
+    const staff1 = (cols[15]||'').trim();
+    const staff2 = (cols[16]||'').trim();
+    const staff3 = (cols[17]||'').trim();
+    const paid = (cols[18]||'').trim();
+
+    // Parse date
+    const date = parseFlexDate(dateRaw);
+    if (!date) { skipped.push('Row '+(idx+1)+': could not parse date "'+dateRaw+'"'); return; }
+
+    // Check for duplicate
+    const isDupe = events.some(e => e.date === date && e.company === company && company);
+    if (isDupe) { skipped.push('Row '+(idx+1)+': duplicate ('+date+' + '+company+')'); return; }
+
+    const name = activity || (location + ' - ' + (company || 'Event'));
+
+    parsed.push({
+      status: completed ? 'completed' : 'confirmed',
+      name, date, time, location, company, contactName, contactEmail,
+      volExpected, volActual, checkinEmail: checkinEmail === 'Yes' ? 'Yes' : '',
+      onePager: onePager === 'Yes' ? 'Yes' : '', socialMedia,
+      parkSection, parksNeeds, staff1, staff2, staff3,
+      paid: paid && paid.toLowerCase().includes('yes') ? 'Yes' : (paid && paid.toLowerCase().includes('no') ? 'No' : ''),
+      paymentNotes: '', owner: staff1 || 'Maddy',
+      type: company ? 'Private volunteer STC event' : 'Public Volunteer STC Event',
+      categories: ['Stewardship'], collab: company ? 'Other Organization' : '',
+      collabNotes: company || ''
+    });
+  });
+
+  let html = '<h3 style="color:#1b4332">Preview: '+parsed.length+' events to import</h3>';
+  if (skipped.length) html += '<p style="color:#856404;font-size:12px;margin:8px 0"><strong>Skipped:</strong> '+skipped.join('; ')+'</p>';
+  if (parsed.length) {
+    html += '<table class="partner-table"><tr><th>Date</th><th>Name</th><th>Location</th><th>Company</th><th>Volunteers</th><th>Status</th></tr>';
+    parsed.forEach(e => {
+      html += '<tr><td>'+fmtDate(e.date)+'</td><td>'+e.name+'</td><td>'+e.location+'</td><td>'+(e.company||'-')+'</td><td>'+(e.volActual||e.volExpected||'-')+'</td><td><span class="status-badge status-'+e.status+'">'+e.status+'</span></td></tr>';
+    });
+    html += '</table>';
+    html += '<button class="btn btn-primary" style="margin-top:12px" onclick="executeImport()">Import '+parsed.length+' Events</button>';
+  }
+  document.getElementById('import-preview').innerHTML = html;
+  window._pendingImport = parsed;
+}
+
+function executeImport() {
+  if (!window._pendingImport || !window._pendingImport.length) return;
+  window._pendingImport.forEach(ev => {
+    ev.id = Date.now() + Math.floor(Math.random()*1000);
+    ev.tracker = defaultTracker();
+    if (ev.checkinEmail === 'Yes') ev.tracker.checkinEmailSent = true;
+    if (ev.onePager === 'Yes') ev.tracker.onePagerSent = true;
+    events.push(ev);
+  });
+  saveEvents();
+  renderEvents(); renderCalendar(); updateStats();
+  toast(window._pendingImport.length + ' events imported!');
+  document.getElementById('import-data').value = '';
+  document.getElementById('import-preview').innerHTML = '<p style="color:#155724;font-weight:600">Import complete!</p>';
+  window._pendingImport = null;
+}
+
+function normalizeLocation(loc) {
+  const lower = loc.toLowerCase().replace(/\s+/g,' ').trim();
+  if (lower.includes('pier 42')) return 'Pier 42';
+  if (lower.includes('tompkins')) return 'Tompkins Square Park';
+  if (lower.includes('east river')) return 'East River Park';
+  if (lower.includes('seward')) return 'Seward Park';
+  if (lower.includes('street tree')) return 'Street Tree Care';
+  return loc;
+}
+
+function parseFlexDate(str) {
+  if (!str) return null;
+  // Try ISO format first
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  // Fix common typos
+  str = str.replace(/Staurday/i,'Saturday').replace(/Wendesday/i,'Wednesday');
+  // Try parsing "Day, Month DD, YYYY" or "Month DD, YYYY"
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  return null;
+}
 
 // ===== APPS SCRIPT CODE =====
 function renderAppsScript() {
