@@ -1472,18 +1472,61 @@ function setLoadingBar(p) {
 
 function populatePlantingYearFilter() {
   const sel = document.getElementById('f-age');
-  // Remove any previously added year options (keep first two: All Ages + Small trunk)
-  while (sel.options.length > 2) sel.remove(2);
+  while (sel.options.length > 1) sel.remove(1);
+
+  const thisYear = new Date().getFullYear();
+
+  // Collect available years from data
   const years = new Set();
   allTrees.forEach(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
     if (yr > 1900) years.add(yr);
   });
-  [...years].sort((a, b) => b - a).forEach(yr => {
+  const sortedYears = [...years].sort((a, b) => b - a);
+  const minYear = sortedYears[sortedYears.length - 1] || 1990;
+
+  // Helper to add an optgroup
+  function addGroup(label, options) {
+    const g = document.createElement('optgroup');
+    g.label = label;
+    options.forEach(([val, text]) => {
+      const o = document.createElement('option');
+      o.value = val; o.textContent = text;
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  }
+
+  // Special options
+  addGroup('Special', [
+    ['small-dbh', 'No year recorded (DBH < 5")'],
+    ['no-year',   'No planting year recorded'],
+  ]);
+
+  // Recent ranges
+  addGroup('Recent', [
+    ['last3',  'Last 3 years (' + (thisYear - 2) + '–' + thisYear + ')'],
+    ['last5',  'Last 5 years (' + (thisYear - 4) + '–' + thisYear + ')'],
+    ['last10', 'Last 10 years (' + (thisYear - 9) + '–' + thisYear + ')'],
+  ]);
+
+  // Decade groups derived from available data
+  const decades = new Set(sortedYears.map(y => Math.floor(y / 10) * 10));
+  const decadeOptions = [...decades].sort((a, b) => b - a).map(d => {
+    const end = Math.min(d + 9, thisYear);
+    return [String(d) + 's', d + 's (' + d + '–' + end + ')'];
+  });
+  if (decadeOptions.length) addGroup('By Decade', decadeOptions);
+
+  // Individual years
+  const yearGroup = document.createElement('optgroup');
+  yearGroup.label = 'Individual Year';
+  sortedYears.forEach(yr => {
     const o = document.createElement('option');
     o.value = o.textContent = yr;
-    sel.appendChild(o);
+    yearGroup.appendChild(o);
   });
+  sel.appendChild(yearGroup);
 }
 
 function populateSpeciesFilter() {
@@ -1504,15 +1547,26 @@ function applyFilters(reload = false) {
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (species) base = base.filter(t => (t.spc_common||'').toLowerCase() === species.toLowerCase());
-  if (age === 'small-dbh') {
-    base = base.filter(t => {
-      const hasYear = parseInt(t.tree_cen_date || t.planteddate || 0) > 1900;
-      const dbh = parseFloat(t.tree_dbh || 0);
-      return !hasYear && dbh > 0 && dbh < 5;
-    });
-  } else if (age) {
-    const yr = parseInt(age);
-    base = base.filter(t => parseInt(t.tree_cen_date || t.planteddate || 0) === yr);
+  if (age) {
+    const thisYear = new Date().getFullYear();
+    const treeYear = t => parseInt(t.tree_cen_date || t.planteddate || 0);
+    if (age === 'small-dbh') {
+      base = base.filter(t => treeYear(t) <= 1900 && parseFloat(t.tree_dbh || 0) > 0 && parseFloat(t.tree_dbh || 0) < 5);
+    } else if (age === 'no-year') {
+      base = base.filter(t => treeYear(t) <= 1900);
+    } else if (age === 'last3') {
+      base = base.filter(t => treeYear(t) >= thisYear - 2);
+    } else if (age === 'last5') {
+      base = base.filter(t => treeYear(t) >= thisYear - 4);
+    } else if (age === 'last10') {
+      base = base.filter(t => treeYear(t) >= thisYear - 9);
+    } else if (age.endsWith('s') && !isNaN(parseInt(age))) {
+      const decade = parseInt(age);
+      base = base.filter(t => { const y = treeYear(t); return y >= decade && y < decade + 10; });
+    } else {
+      const yr = parseInt(age);
+      if (yr > 1900) base = base.filter(t => treeYear(t) === yr);
+    }
   }
   filteredTrees = base;
 
