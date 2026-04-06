@@ -1,1073 +1,574 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LES Ecology - Event Workflow Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        header {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .header-subtitle {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .card h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card h2::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 20px;
-            background: #3498db;
-            border-radius: 2px;
-        }
-
-        /* Form Styles */
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="date"],
-        input[type="time"],
-        input[type="number"],
-        input[type="email"],
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ecf0f1;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-        }
-
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #3498db;
-            color: white;
-            flex: 1;
-        }
-
-        .btn-primary:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn-secondary {
-            background: #ecf0f1;
-            color: #2c3e50;
-        }
-
-        .btn-secondary:hover {
-            background: #bdc3c7;
-        }
-
-        /* Event Type Selection */
-        .event-type-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .event-type-btn {
-            padding: 15px;
-            border: 2px solid #ecf0f1;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .event-type-btn:hover {
-            border-color: #3498db;
-            background: #ebf5fb;
-        }
-
-        .event-type-btn.active {
-            border-color: #3498db;
-            background: #3498db;
-            color: white;
-        }
-
-        /* Workflow Timeline */
-        .timeline {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .timeline-phase {
-            border-left: 4px solid #ecf0f1;
-            padding-left: 20px;
-            transition: all 0.3s;
-        }
-
-        .timeline-phase.active {
-            border-left-color: #27ae60;
-        }
-
-        .timeline-phase.upcoming {
-            border-left-color: #f39c12;
-        }
-
-        .timeline-phase.completed {
-            border-left-color: #27ae60;
-            opacity: 0.7;
-        }
-
-        .phase-header {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 15px;
-        }
-
-        .phase-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .phase-badge.upcoming {
-            background: #fef5e7;
-            color: #d68910;
-        }
-
-        .phase-badge.active {
-            background: #eafaf1;
-            color: #186a3b;
-        }
-
-        .phase-badge.completed {
-            background: #d5f4e6;
-            color: #0b5345;
-        }
-
-        .task-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-left: 0;
-            list-style: none;
-        }
-
-        .task-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            transition: all 0.3s;
-        }
-
-        .task-item:hover {
-            background: #ecf0f1;
-        }
-
-        .task-item.completed {
-            opacity: 0.6;
-            background: #ecf0f1;
-        }
-
-        .task-checkbox {
-            width: 20px;
-            height: 20px;
-            min-width: 20px;
-            margin-top: 2px;
-            cursor: pointer;
-            accent-color: #27ae60;
-        }
-
-        .task-content {
-            flex: 1;
-            font-size: 14px;
-            color: #2c3e50;
-        }
-
-        .task-item.completed .task-content {
-            text-decoration: line-through;
-            color: #95a5a6;
-        }
-
-        /* Events List */
-        .events-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .event-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .event-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateX(4px);
-        }
-
-        .event-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 8px;
-        }
-
-        .event-title {
-            font-weight: 600;
-            color: #2c3e50;
-            font-size: 15px;
-        }
-
-        .event-type-tag {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            background: #dfe6e9;
-            color: #2c3e50;
-        }
-
-        .event-type-tag.field-trip { background: #d4efdf; color: #1e5631; }
-        .event-type-tag.private { background: #fdeaa8; color: #b7950b; }
-        .event-type-tag.public { background: #d6eaf8; color: #1b4965; }
-        .event-type-tag.program { background: #f4ecf7; color: #663399; }
-
-        .event-info {
-            display: flex;
-            gap: 15px;
-            font-size: 13px;
-            color: #7f8c8d;
-        }
-
-        .event-info span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .progress-bar {
-            background: #ecf0f1;
-            height: 6px;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-fill {
-            background: #27ae60;
-            height: 100%;
-            transition: width 0.3s;
-        }
-
-        /* Stats */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 32px;
-            font-weight: 700;
-            color: #3498db;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #7f8c8d;
-            font-weight: 600;
-        }
-
-        .email-template {
-            background: #ecf0f1;
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            color: #2c3e50;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            padding: 30px;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 28px;
-            cursor: pointer;
-            color: #7f8c8d;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .event-type-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .success-message {
-            background: #eafaf1;
-            color: #186a3b;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .success-message.show {
-            display: block;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LES Ecology - Event Workflow Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4f0;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+header{background:linear-gradient(135deg,#2d6a4f,#40916c);color:white;padding:24px 30px;border-radius:12px;margin-bottom:24px}
+header h1{font-size:24px;margin-bottom:4px}
+header p{opacity:0.85;font-size:14px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:24px}
+.tab-btn{padding:12px 24px;border:none;background:#d8e2dc;color:#2d6a4f;font-weight:600;font-size:14px;cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s}
+.tab-btn.active{background:white;color:#1b4332;box-shadow:0 -2px 8px rgba(0,0,0,0.08)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Cards */
+.card{background:white;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.card h2{color:#1b4332;font-size:18px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #d8e2dc}
+.card h3{color:#2d6a4f;font-size:15px;margin:16px 0 10px}
+
+/* Form */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-weight:600;color:#344e41;margin-bottom:6px;font-size:13px}
+.form-group label .req{color:#bc4749}
+input,select,textarea{width:100%;padding:10px 12px;border:2px solid #d8e2dc;border-radius:6px;font-size:14px;font-family:inherit;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,0.1)}
+textarea{resize:vertical;min-height:80px}
+select[multiple]{min-height:80px}
+
+/* Checkboxes */
+.checkbox-grid{display:flex;flex-wrap:wrap;gap:10px}
+.checkbox-grid label{display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;cursor:pointer}
+.checkbox-grid input[type="checkbox"]{width:auto;margin:0;accent-color:#40916c}
+
+/* Buttons */
+.btn{padding:12px 24px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:#2d6a4f;color:white}
+.btn-primary:hover{background:#1b4332;transform:translateY(-1px)}
+.btn-copy{background:#52796f;color:white;padding:8px 16px;font-size:13px}
+.btn-copy:hover{background:#2d6a4f}
+.btn-copy.copied{background:#40916c}
+.btn-reset{background:#d8e2dc;color:#344e41}
+.btn-reset:hover{background:#b7b7a4}
+.btn-row{display:flex;gap:12px;margin-top:20px}
+
+/* Outputs */
+.output-section{margin-bottom:24px}
+.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.output-header h3{margin:0;color:#1b4332;font-size:16px}
+.output-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;font-size:13px;line-height:1.6;white-space:pre-wrap;font-family:inherit;max-height:400px;overflow-y:auto}
+.output-box .highlight{background:#fff3cd;padding:1px 4px;border-radius:3px;font-weight:600}
+.spreadsheet-preview{overflow-x:auto;margin-bottom:12px}
+.spreadsheet-preview table{border-collapse:collapse;font-size:12px;white-space:nowrap}
+.spreadsheet-preview th{background:#2d6a4f;color:white;padding:6px 10px;text-align:left;font-weight:600}
+.spreadsheet-preview td{padding:6px 10px;border:1px solid #d8e2dc}
+.spreadsheet-preview tr:nth-child(even){background:#f0f4f0}
+
+/* Events list */
+.event-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:12px 16px;background:#f8faf8;border-radius:8px;margin-bottom:8px;font-size:13px}
+.event-row:hover{background:#e9ede9}
+.event-name{font-weight:600;color:#1b4332}
+.event-type-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-stew{background:#d8f3dc;color:#1b4332}
+.badge-edu{background:#d4e8ff;color:#1a3a5c}
+.badge-out{background:#fde8cd;color:#7c4a00}
+.tracker-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tracker-checks label{font-size:11px;display:flex;align-items:center;gap:3px;color:#52796f}
+.tracker-checks input{width:auto;accent-color:#40916c}
+
+/* Event Brief Output */
+.brief-section{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee}
+.brief-label{font-weight:600;color:#344e41;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+.brief-value{color:#1b4332;margin-top:2px}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:#1b4332;color:white;padding:12px 24px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Status bar */
+.status-bar{display:flex;gap:16px;margin-bottom:24px}
+.status-item{background:white;padding:16px 20px;border-radius:8px;flex:1;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.status-num{font-size:28px;font-weight:700;color:#2d6a4f}
+.status-label{font-size:12px;color:#52796f;font-weight:600;margin-top:2px}
+
+@media(max-width:768px){
+  .form-row,.form-row.three{grid-template-columns:1fr}
+  .event-row{grid-template-columns:1fr;gap:4px}
+  .status-bar{flex-wrap:wrap}
+  .status-item{min-width:45%}
+  .tabs{flex-wrap:wrap}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🌳 LES Ecology Center - Event Workflow Dashboard</h1>
-            <p class="header-subtitle">Streamlined planning & execution for Street Tree Care events</p>
-        </header>
+<div class="container">
+<header>
+<h1>LES Ecology Center - Event Workflow Dashboard</h1>
+<p>Street Tree Care Program &middot; Fill in once, generate everything</p>
+</header>
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="stat-total">0</div>
-                <div class="stat-label">Total Events</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="stat-upcoming">0</div>
-                <div class="stat-label">Upcoming</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="stat-in-progress">0</div>
-                <div class="stat-label">In Progress</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="stat-completed">0</div>
-                <div class="stat-label">Completed</div>
-            </div>
-        </div>
+<div class="status-bar">
+<div class="status-item"><div class="status-num" id="stat-total">0</div><div class="status-label">Total Events</div></div>
+<div class="status-item"><div class="status-num" id="stat-upcoming">0</div><div class="status-label">Upcoming</div></div>
+<div class="status-item"><div class="status-num" id="stat-complete">0</div><div class="status-label">All Tasks Done</div></div>
+</div>
 
-        <div class="main-grid">
-            <!-- Left: Create Event Form -->
-            <div class="card">
-                <h2>Create New Event</h2>
-                <div class="success-message" id="successMsg">✓ Event created successfully!</div>
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('form')">New Event</button>
+<button class="tab-btn" onclick="switchTab('outputs')">Generated Outputs</button>
+<button class="tab-btn" onclick="switchTab('events')">All Events</button>
+</div>
 
-                <form id="eventForm">
-                    <div class="form-group">
-                        <label>Event Type</label>
-                        <div class="event-type-grid">
-                            <button type="button" class="event-type-btn" data-type="field-trip">🏫 Field Trip</button>
-                            <button type="button" class="event-type-btn" data-type="private">🤝 Private Volunteer</button>
-                            <button type="button" class="event-type-btn" data-type="public">📣 Public Volunteer</button>
-                            <button type="button" class="event-type-btn" data-type="program">📋 Public Program</button>
-                        </div>
-                        <input type="hidden" id="eventType" required>
-                    </div>
+<!-- TAB 1: EVENT FORM -->
+<div class="tab-content active" id="tab-form">
+<div class="card">
+<h2>Event Details</h2>
+<form id="eventForm">
 
-                    <div class="form-group">
-                        <label>Event Name</label>
-                        <input type="text" id="eventName" placeholder="e.g., Upper West Side Tree Care" required>
-                    </div>
+<div class="form-row">
+<div class="form-group"><label>Event Name <span class="req">*</span></label><input id="f-name" required placeholder="e.g., STC with Girl Scouts"></div>
+<div class="form-group"><label>Owner <span class="req">*</span></label><select id="f-owner" required><option value="">Select...</option><option>Maddy</option><option>Hadas</option><option>Gretel</option></select></div>
+</div>
 
-                    <div class="form-group">
-                        <label>Date</label>
-                        <input type="date" id="eventDate" required>
-                    </div>
+<div class="form-row three">
+<div class="form-group"><label>Date <span class="req">*</span></label><input type="date" id="f-date" required></div>
+<div class="form-group"><label>Time</label><input id="f-time" placeholder="e.g., 2-4PM or 10:00 AM"></div>
+<div class="form-group"><label>Location / Venue</label><input id="f-location" placeholder="e.g., Seward Park"></div>
+</div>
 
-                    <div class="form-group">
-                        <label>Target Block / Location</label>
-                        <input type="text" id="eventLocation" placeholder="e.g., 8th Ave between 75th & 76th">
-                    </div>
+<div class="form-row">
+<div class="form-group"><label>Event Category</label>
+<div class="checkbox-grid">
+<label><input type="checkbox" value="Stewardship" class="f-category"> Stewardship</label>
+<label><input type="checkbox" value="Education" class="f-category"> Education</label>
+<label><input type="checkbox" value="Outreach" class="f-category"> Outreach</label>
+</div></div>
+<div class="form-group"><label>Event Type <span class="req">*</span></label><select id="f-type" required>
+<option value="">Select...</option>
+<option>Public Volunteer STC Event</option>
+<option>Private volunteer STC event</option>
+<option>School STC Event</option>
+<option>Volunteer STC Event</option>
+<option>Virtual Workshop</option>
+<option>Workshop</option>
+<option>Walk</option>
+<option>Tabling</option>
+<option>CBLES</option>
+</select></div>
+</div>
 
-                    <div class="form-group">
-                        <label>Coordinator</label>
-                        <input type="text" id="eventCoordinator" placeholder="Name of coordinator">
-                    </div>
+<div class="form-row">
+<div class="form-group"><label>Collaboration</label><select id="f-collab"><option value="">None</option><option>Other Organization</option><option>Master Composter</option></select></div>
+<div class="form-group"><label>Collaboration Notes / Partner Name</label><input id="f-collab-notes" placeholder="e.g., Girl Scout Leadership Institute"></div>
+</div>
 
-                    <div class="form-group">
-                        <label>Expected Group Size</label>
-                        <input type="number" id="eventSize" placeholder="Number of participants" min="1">
-                    </div>
+<h3>Event Brief Details</h3>
 
-                    <div class="button-group">
-                        <button type="submit" class="btn-primary">Create Event</button>
-                        <button type="reset" class="btn-secondary">Clear</button>
-                    </div>
-                </form>
-            </div>
+<div class="form-row">
+<div class="form-group"><label>On-Site Support</label><input id="f-support" placeholder="e.g., Gretel"></div>
+<div class="form-group"><label>Expected Attendance</label><input id="f-attendance" placeholder="e.g., 10 students and 4 staff"></div>
+</div>
 
-            <!-- Right: Events & Workflow -->
-            <div>
-                <!-- Active Event Workflow -->
-                <div class="card" id="workflowCard" style="display: none; margin-bottom: 30px;">
-                    <h2>Active Event Timeline</h2>
-                    <div class="timeline" id="timeline"></div>
-                </div>
+<div class="form-group"><label>Primary Audience</label>
+<div class="checkbox-grid">
+<label><input type="checkbox" value="General public" class="f-audience"> General public</label>
+<label><input type="checkbox" value="Volunteers" class="f-audience"> Volunteers</label>
+<label><input type="checkbox" value="Families" class="f-audience"> Families</label>
+<label><input type="checkbox" value="Students" class="f-audience"> Students</label>
+<label><input type="checkbox" value="CB participants" class="f-audience"> CB participants</label>
+<label><input type="checkbox" value="Citizen pruners" class="f-audience"> Citizen pruners</label>
+</div></div>
 
-                <!-- Events List -->
-                <div class="card">
-                    <h2>All Events</h2>
-                    <div class="events-list" id="eventsList">
-                        <p style="color: #95a5a6; text-align: center; padding: 40px 20px;">No events yet. Create one to get started!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="form-group"><label>Goals</label><textarea id="f-goals" placeholder="e.g., Demonstrate proper STC and engage local community members."></textarea></div>
+<div class="form-group"><label>Success Metrics</label><textarea id="f-metrics" placeholder="e.g., Engage 10+ volunteers in STC, Steward 10+ trees"></textarea></div>
 
-        <!-- Email Templates -->
-        <div class="card">
-            <h2>Email Templates Library</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                <div>
-                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Group Confirmation Email</h3>
-                    <div class="email-template">Subject: Upcoming Tree Care Event - [EVENT_NAME]
+<div class="form-row">
+<div class="form-group"><label>Event Name (External / Public-facing)</label><input id="f-extname" placeholder="e.g., Spring into Tree Care!"></div>
+<div class="form-group"><label>Eventbrite Link</label><input id="f-eventbrite" placeholder="https://..."></div>
+</div>
 
-Hi [GROUP_NAME],
+<div class="form-group"><label>Event Description (50-150 words, for comms)</label><textarea id="f-description" placeholder="Join the Lower East Side Ecology Center..."></textarea></div>
 
-Thank you for registering! We're excited to have you join us.
+<div class="form-group"><label>Marketing Channels</label>
+<div class="checkbox-grid">
+<label><input type="checkbox" value="Org email" class="f-marketing"> Org email</label>
+<label><input type="checkbox" value="Volunteer email" class="f-marketing"> Volunteer email</label>
+<label><input type="checkbox" value="Instagram" class="f-marketing"> Instagram</label>
+<label><input type="checkbox" value="TikTok" class="f-marketing"> TikTok</label>
+<label><input type="checkbox" value="Facebook" class="f-marketing"> Facebook</label>
+<label><input type="checkbox" value="Partner cross-promo" class="f-marketing"> Partner cross-promo</label>
+<label><input type="checkbox" value="Flyering" class="f-marketing"> Flyering</label>
+</div></div>
 
-📍 Location: [LOCATION]
-📅 Date & Time: [DATE] at [TIME]
-👥 Group Size: [SIZE] participants
+<h3>Logistics</h3>
 
-**What to expect:**
-- Professional tree care training
-- Hands-on stewardship activity
-- Community impact
+<div class="form-group"><label>Meeting Place (address for emails)</label><input id="f-meeting" placeholder="Full address for volunteer emails"></div>
+<div class="form-group"><label>Stewardship Location (if different from meeting place)</label><input id="f-stew-location" placeholder="Leave blank if same as meeting place"></div>
 
-Please bring water, sunscreen, and wear comfortable shoes.
+<div class="form-row">
+<div class="form-group"><label>Facilities</label><textarea id="f-facilities" rows="2" placeholder="e.g., Public bathroom at Seward Park"></textarea></div>
+<div class="form-group"><label>Supplies</label><textarea id="f-supplies" rows="2" placeholder="e.g., Water (x1 cooler), Sunscreen (x2 tubes)"></textarea></div>
+</div>
 
-See you soon!
-Best,
-LES Ecology Center</div>
-                </div>
+<div class="form-row">
+<div class="form-group"><label>Equipment</label><textarea id="f-equipment" rows="2" placeholder="e.g., Trowels (x20)"></textarea></div>
+<div class="form-group"><label>Vendors</label><textarea id="f-vendors" rows="2" placeholder="Names and contacts"></textarea></div>
+</div>
 
-                <div>
-                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Thank You Email</h3>
-                    <div class="email-template">Subject: Thank You - [EVENT_NAME]
+<div class="form-row">
+<div class="form-group"><label>Compost (qty + process)</label><textarea id="f-compost" rows="2" placeholder="e.g., 500 lbs, delivered day-of"></textarea></div>
+<div class="form-group"><label>Mulch (qty + process)</label><textarea id="f-mulch" rows="2" placeholder="e.g., 2 cubic yards from parks dept"></textarea></div>
+</div>
 
-Hi [GROUP_NAME],
+<div class="form-group"><label>Expenses</label><input id="f-expenses" placeholder="e.g., $200 for food from Ayat - Budget: STC meals"></div>
+<div class="form-group"><label>Run of Show</label><textarea id="f-ros" rows="3" placeholder="Timeline of activities..."></textarea></div>
+<div class="form-group"><label>Access Notes</label><textarea id="f-access" rows="2" placeholder="Accessibility info..."></textarea></div>
 
-Thank you for your amazing participation in our event! Your efforts will directly impact tree health and community greenery.
+<h3>Post-Event (fill in after)</h3>
+<div class="form-row three">
+<div class="form-group"><label>Trees Stewarded</label><input type="number" id="f-trees" placeholder="#"></div>
+<div class="form-group"><label>Lbs of Compost Applied</label><input type="number" id="f-compost-applied" placeholder="#"></div>
+<div class="form-group"><label>Cubic Yards of Mulch Applied</label><input type="number" id="f-mulch-applied" placeholder="#"></div>
+</div>
 
-📊 Event Summary:
-- Trees stewarded: [COUNT]
-- Volunteer hours: [HOURS]
+<div class="btn-row">
+<button type="submit" class="btn btn-primary">Create Event &amp; Generate Outputs</button>
+<button type="reset" class="btn btn-reset">Clear Form</button>
+</div>
+</form>
+</div>
+</div>
 
-Your contribution makes a real difference. We'd love to see you at future events!
+<!-- TAB 2: GENERATED OUTPUTS -->
+<div class="tab-content" id="tab-outputs">
+<div id="no-outputs" class="card"><p style="color:#52796f;text-align:center;padding:30px">Create an event first to see generated outputs here.</p></div>
+<div id="outputs-content" style="display:none">
 
-Best regards,
-LES Ecology Center</div>
-                </div>
+<div class="output-section card">
+<div class="output-header"><h2>Spreadsheet Row (for STC Tracker)</h2><button class="btn btn-copy" onclick="copyOutput('spreadsheet-tsv')">Copy Row</button></div>
+<div class="spreadsheet-preview" id="spreadsheet-table"></div>
+<textarea id="spreadsheet-tsv" style="width:100%;height:60px;font-family:monospace;font-size:11px;background:#f8faf8;border:1px solid #d8e2dc;border-radius:4px;padding:8px" readonly></textarea>
+</div>
 
-                <div>
-                    <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 14px;">Event Reminder</h3>
-                    <div class="email-template">Subject: Reminder - Tree Care Event This [DAY]
+<div class="output-section card">
+<div class="output-header"><h2>Reminder Email</h2><button class="btn btn-copy" onclick="copyOutput('email-reminder')">Copy Email</button></div>
+<div class="output-box" id="email-reminder"></div>
+</div>
 
-Hi [GROUP_NAME],
+<div class="output-section card">
+<div class="output-header"><h2>Thank You Email</h2><button class="btn btn-copy" onclick="copyOutput('email-thankyou')">Copy Email</button></div>
+<div class="output-box" id="email-thankyou"></div>
+</div>
 
-This is a friendly reminder about our upcoming event:
+<div class="output-section card">
+<div class="output-header"><h2>Event Brief</h2><button class="btn btn-copy" onclick="copyOutput('event-brief')">Copy Brief</button></div>
+<div class="output-box" id="event-brief"></div>
+</div>
 
-📍 [LOCATION]
-📅 [DATE] at [TIME]
-⏰ See you soon!
+</div>
+</div>
 
-Questions? Reply to this email.
+<!-- TAB 3: ALL EVENTS -->
+<div class="tab-content" id="tab-events">
+<div class="card">
+<h2>All Events</h2>
+<div id="events-list"><p style="color:#52796f;text-align:center;padding:30px">No events yet.</p></div>
+</div>
+</div>
 
-Cheers,
-LES Ecology Center</div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="toast" id="toast"></div>
+</div>
+<script>
+// ===== STATE =====
+let events = JSON.parse(localStorage.getItem('les_events_v2') || '[]');
+let lastEvent = null;
 
-    <!-- Event Detail Modal -->
-    <div class="modal" id="eventModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal()">×</button>
-            <div id="modalContent"></div>
-        </div>
-    </div>
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
 
-    <script>
-        // ===== DATA & STATE =====
-        const workflows = {
-            'field-trip': [
-                {
-                    phase: 'Immediate',
-                    badge: 'active',
-                    tasks: [
-                        'Create event in STC 2026 All-Events Tracker',
-                        'Confirm date, time, group size & meeting location with coordinator',
-                        'Add to planning calendar (HOLD if unconfirmed)',
-                        'Add to LES events Google calendar'
-                    ]
-                },
-                {
-                    phase: '1 Month Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Reserve equipment (wagon, trike, other) on org\'s equipment calendar'
-                    ]
-                },
-                {
-                    phase: '2 Weeks Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Order compost from Compost and Tool Tracking',
-                        'Identify target block'
-                    ]
-                },
-                {
-                    phase: '1 Week Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Email confirmation to group (inc. waivers)',
-                        'Scouting / Google Maps view — confirm trees to be stewarded',
-                        'Block prep+break up time and travel time on your personal calendar'
-                    ]
-                },
-                {
-                    phase: 'Day Before/Of',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Prep tools using Street Tree Care Events Packing List',
-                        'Complete event reporting form after event',
-                        'Print out target block from tree map + use it to track care activities'
-                    ]
-                },
-                {
-                    phase: 'Day After',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Clean and return tools',
-                        'Send thank-you email',
-                        'Report trees stewarded in NYC tree map',
-                        'Upload photos to STC album'
-                    ]
-                }
-            ],
-            'private': [
-                {
-                    phase: 'Immediate',
-                    badge: 'active',
-                    tasks: [
-                        'Create event in STC 2026 All-Events Tracker',
-                        'Confirm date, time, group size & meeting location with coordinator',
-                        'Add to planning calendar (HOLD if unconfirmed)',
-                        'Add to LES events calendar',
-                        'Add to volunteer stewardship spreadsheet'
-                    ]
-                },
-                {
-                    phase: '2 Weeks Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Order compost',
-                        'Identify target block'
-                    ]
-                },
-                {
-                    phase: '1 Week Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Email confirmation to group',
-                        'Block walk / Google Maps view — confirm trees to be stewarded',
-                        'Reserve equipment (wagon, trike, other)'
-                    ]
-                },
-                {
-                    phase: 'Day Of',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Prep tools',
-                        'Complete event reporting form'
-                    ]
-                },
-                {
-                    phase: 'Day After',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Clean and return tools',
-                        'Send thank-you email',
-                        'Report trees stewarded in NYC tree map',
-                        'Upload photos to STC album'
-                    ]
-                }
-            ],
-            'public': [
-                {
-                    phase: 'Immediate',
-                    badge: 'active',
-                    tasks: [
-                        'Create event in STC 2026 All-Events Tracker',
-                        'Confirm date, time, group size & meeting location with coordinator',
-                        'Add to planning calendar (HOLD if unconfirmed)',
-                        'Add to LES events calendar',
-                        'Add to volunteer stewardship spreadsheet'
-                    ]
-                },
-                {
-                    phase: '1 Month Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Create event brief',
-                        'Create Eventbrite page',
-                        'Submit comms request (social, newsletter, website page)'
-                    ]
-                },
-                {
-                    phase: '2 Weeks Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Order compost'
-                    ]
-                },
-                {
-                    phase: '1 Week Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Identify target block — confirm with Hadas, add to calendar event',
-                        'Email confirmation / reminder to registrants',
-                        'Block walk / Google Maps view — confirm trees to be stewarded',
-                        'Reserve equipment (wagon, trike, other)'
-                    ]
-                },
-                {
-                    phase: 'Day Of',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Prep tools',
-                        'Complete event reporting (org communications Google Form)'
-                    ]
-                },
-                {
-                    phase: 'Day After',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Clean and return tools',
-                        'Send thank-you email',
-                        'Report trees stewarded in NYC tree map',
-                        'Upload photos to STC album'
-                    ]
-                }
-            ],
-            'program': [
-                {
-                    phase: 'Immediate',
-                    badge: 'active',
-                    tasks: [
-                        'Create event in STC 2026 All-Events Tracker',
-                        'Add to planning calendar',
-                        'Add to LES events calendar'
-                    ]
-                },
-                {
-                    phase: '1 Month Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Create event brief & Eventbrite page',
-                        'Submit comms request (social, newsletter, website page)'
-                    ]
-                },
-                {
-                    phase: '2 Weeks Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Complete content creation (lesson plan, talking points, tour notes)',
-                        'Ensure all vendors & orders confirmed (facilitators, materials)'
-                    ]
-                },
-                {
-                    phase: '1 Week Before',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Email confirmation to registrants'
-                    ]
-                },
-                {
-                    phase: 'Day Of',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Complete event reporting / record participation numbers'
-                    ]
-                },
-                {
-                    phase: 'Day After',
-                    badge: 'upcoming',
-                    tasks: [
-                        'Send thank-you email'
-                    ]
-                }
-            ]
-        };
+// ===== FORM SUBMIT =====
+document.getElementById('eventForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const ev = collectForm();
+  ev.id = Date.now();
+  ev.tracker = {briefCreated:false,eventbriteCreated:false,calendarCreated:false,commsSubmitted:false,compostOrdered:false,compostOps:false,reminderSent:false,activityReport:false,treeMapDone:false,thankYouSent:false};
+  events.push(ev);
+  saveEvents();
+  lastEvent = ev;
+  generateOutputs(ev);
+  renderEvents();
+  updateStats();
+  // Switch to outputs tab
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-outputs').classList.add('active');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  toast('Event created! Outputs generated below.');
+});
 
-        let events = [];
-        let selectedEventType = null;
-        let activeEventId = null;
+function collectForm() {
+  const cats = [...document.querySelectorAll('.f-category:checked')].map(c => c.value);
+  const audiences = [...document.querySelectorAll('.f-audience:checked')].map(c => c.value);
+  const marketing = [...document.querySelectorAll('.f-marketing:checked')].map(c => c.value);
+  return {
+    name: g('f-name'), owner: g('f-owner'), date: g('f-date'), time: g('f-time'),
+    location: g('f-location'), categories: cats, type: g('f-type'),
+    collab: g('f-collab'), collabNotes: g('f-collab-notes'),
+    support: g('f-support'), attendance: g('f-attendance'), audiences: audiences,
+    goals: g('f-goals'), metrics: g('f-metrics'), extName: g('f-extname'),
+    eventbrite: g('f-eventbrite'), description: g('f-description'), marketing: marketing,
+    meeting: g('f-meeting'), stewLocation: g('f-stew-location'),
+    facilities: g('f-facilities'), supplies: g('f-supplies'),
+    equipment: g('f-equipment'), vendors: g('f-vendors'),
+    compost: g('f-compost'), mulch: g('f-mulch'),
+    expenses: g('f-expenses'), ros: g('f-ros'), access: g('f-access'),
+    trees: g('f-trees'), compostApplied: g('f-compost-applied'), mulchApplied: g('f-mulch-applied')
+  };
+}
+function g(id) { return document.getElementById(id).value; }
 
-        // ===== INITIALIZATION =====
-        function init() {
-            loadEventsFromStorage();
-            setupEventListeners();
-            renderStats();
-            renderEventsList();
-        }
+// ===== GENERATE OUTPUTS =====
+function generateOutputs(ev) {
+  document.getElementById('no-outputs').style.display = 'none';
+  document.getElementById('outputs-content').style.display = 'block';
+  genSpreadsheetRow(ev);
+  genReminderEmail(ev);
+  genThankYouEmail(ev);
+  genEventBrief(ev);
+}
 
-        function setupEventListeners() {
-            // Event type selection
-            document.querySelectorAll('.event-type-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedEventType = btn.dataset.type;
-                    document.getElementById('eventType').value = selectedEventType;
-                });
-            });
+function genSpreadsheetRow(ev) {
+  const isPublic = ev.type.includes('Public');
+  const isPrivate = ev.type.includes('Private') || ev.type.includes('School');
+  const cols = [
+    ev.name,
+    ev.owner,
+    formatDate(ev.date),
+    ev.time,
+    ev.location,
+    ev.categories.join(', '),
+    ev.type,
+    ev.collab,
+    ev.collabNotes,
+    isPublic ? '' : 'N/A (not a public event)',  // Event Brief
+    isPublic ? '' : 'N/A',  // Eventbrite
+    '',  // LES Calendar
+    isPublic ? '' : 'N/A',  // Comms
+    'FALSE', // Compost ordered
+    'FALSE', // Compost ops
+    '',      // Mulch
+    'FALSE', // Reminder
+    'FALSE', // Activity report
+    'FALSE', // Tree map
+    '',      // Thank you
+    ''       // Notes
+  ];
+  const headers = ['Event Name','Owner','Date','Time','Location','Event Category','Event Type','Collaboration','Collab Notes','Event Brief Created','EventBrite Created','LES Calendar Created','Comms Form Submitted','Compost Ordered','Compost Ops','Mulch','Reminder Sent','Activity Report','Tree Map Data','Thank You Sent','Notes'];
 
-            // Form submission
-            document.getElementById('eventForm').addEventListener('submit', (e) => {
-                e.preventDefault();
-                createEvent();
-            });
-        }
+  // Table preview
+  let html = '<table><tr>';
+  headers.forEach(h => html += '<th>' + h + '</th>');
+  html += '</tr><tr>';
+  cols.forEach(c => html += '<td>' + (c || '') + '</td>');
+  html += '</tr></table>';
+  document.getElementById('spreadsheet-table').innerHTML = html;
 
-        // ===== EVENT MANAGEMENT =====
-        function createEvent() {
-            if (!selectedEventType) {
-                alert('Please select an event type');
-                return;
-            }
+  // TSV for pasting
+  document.getElementById('spreadsheet-tsv').value = cols.join('\t');
+}
 
-            const event = {
-                id: Date.now(),
-                type: selectedEventType,
-                name: document.getElementById('eventName').value,
-                date: document.getElementById('eventDate').value,
-                location: document.getElementById('eventLocation').value,
-                coordinator: document.getElementById('eventCoordinator').value,
-                size: document.getElementById('eventSize').value,
-                createdAt: new Date().toISOString(),
-                taskProgress: {}
-            };
+function genReminderEmail(ev) {
+  const isVirtual = ev.type.includes('Virtual');
+  if (isVirtual) {
+    document.getElementById('email-reminder').innerHTML = '<em style="color:#52796f">Reminder email template is for in-person STC events. For virtual events, customize as needed.</em>';
+    return;
+  }
+  const staffName = ev.owner;
+  const meetingPlace = ev.meeting || '<span class="highlight">[meeting place]</span>';
+  const stewLoc = ev.stewLocation || '<span class="highlight">[stewardship location]</span>';
+  const eventName = ev.name;
 
-            // Initialize task progress
-            workflows[event.type].forEach((phase, phaseIdx) => {
-                phase.tasks.forEach((task, taskIdx) => {
-                    event.taskProgress[`${phaseIdx}-${taskIdx}`] = false;
-                });
-            });
+  let email = `<strong>Subject: Upcoming ${ev.extName || eventName} - LES Ecology Center</strong>\n\nDear Volunteers,\n\nThank you for registering for our ${eventName}! The event is <strong>${ev.extName || eventName}</strong>. We will be meeting at the ${meetingPlace} rain or shine.\n\nIf you will be more than 15 minutes late, please walk to ${stewLoc}. We will be wearing high visibility vests.\n\nWhen you arrive, please sign in with ${staffName}.\n\nPlease dress for the weather, bring layers, and wear clothes you don't mind getting dirty and closed toed shoes. You may consider bringing rain gear. We will provide tools, gloves, and other PPE.\n\nPlease bring a water bottle and any snacks you may need.\n\nYou can expect to remove litter and weeds, aerate the soil, apply finished compost to tree beds, and water, all of which may include bending, squatting, kneeling, and lifting as physical activities.\n\nFor day-of communication or if you have issues finding us, please respond to this email.\n\nPlease reach out if you have any questions or need accommodations!\n\nBest,\n${staffName}`;
+  document.getElementById('email-reminder').innerHTML = email;
+}
 
-            events.push(event);
-            saveEventsToStorage();
-            activeEventId = event.id;
+function genThankYouEmail(ev) {
+  const isVirtual = ev.type.includes('Virtual');
+  const staffName = ev.owner;
+  const dateStr = formatDate(ev.date);
+  const monthName = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleString('en-US', {month:'long'}) : '<span class="highlight">[month]</span>';
+  const trees = ev.trees || '<span class="highlight">[#]</span>';
+  const compostLbs = ev.compostApplied || '<span class="highlight">[#]</span>';
+  const mulchYds = ev.mulchApplied || '<span class="highlight">[#]</span>';
 
-            // Reset form
-            document.getElementById('eventForm').reset();
-            document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
-            selectedEventType = null;
+  let email;
+  if (isVirtual) {
+    email = `<strong>Subject: Thank You - ${ev.extName || ev.name}</strong>\n\nDear Volunteers,\n\nThank you for joining the L.E.S. Ecology Center on ${dateStr} for our virtual ${ev.extName || ev.name}.\n\nSee below on how you can continue staying involved with the Ecology Center. We hope to see you at a future event!\n\n<strong>Attend a ${monthName} event w/ LES Ecology Center!</strong>\n\n<strong>Become a Master Composter</strong>\nThe Master Composter program is a free certificate program that educates and empowers New Yorkers to get involved in community composting efforts! To learn more about the certification, visit the program website.\n\n<strong>Learn more about our Coolest Block in the Lower East Side Contest!</strong>\nThe Coolest Block in the Lower East Side contest is an initiative bringing neighbors together to care for street trees in the East Village, Lower East Side, and Chinatown neighborhoods. To learn more about our 2025 & 2026 contest visit our website.\n\n<strong>Follow us on Social Media + Join our newsletter!</strong>\nLower East Side Ecology Center:\nInstagram - @lesecologyctr\nTik Tok - @lesecologyctr\nLinkedin - The Lower East Side Ecology Center\nNewsletter - visit lesecologycenter.org to sign up\n\nIf you have any additional questions, please don't hesitate to ask.\n\nWith gratitude,\n${staffName}`;
+  } else {
+    email = `<strong>Subject: Thank You - ${ev.extName || ev.name}</strong>\n\nDear Volunteers,\n\nThank you for joining the L.E.S. Ecology Center on ${dateStr} to steward trees in the Lower East Side! Together we stewarded ${trees} trees and applied ${compostLbs} lbs of compost, ${mulchYds} cubic yards of mulch! All stewardship activities have been added to the NYC Street Tree Map.\n\nSee below on how you can continue staying involved with the Ecology Center and our group photo. We hope to see you at a future event!\n\n<strong>Attend a ${monthName} Event w/ LES Ecology Center!</strong>\n\n<strong>Become a member of our Tool Lending Library!</strong>\nWant to steward on your own time and live/work in the Lower East Side, East Village, or Chinatown neighborhoods? Lend stewardship tools free of charge from the L.E.S. Tool Lending Library. To learn more and become a member, please see our membership form.\n\n<strong>Become a Master Composter</strong>\nThe Master Composter program is a free certificate program that educates and empowers New Yorkers to get involved in community composting efforts! To learn more about the program, visit the website.\n\n<strong>Learn more about our Coolest Block in the Lower East Side Contest!</strong>\nThe Coolest Block in the Lower East Side contest is an initiative bringing neighbors together to care for street trees in the East Village, Lower East Side, and Chinatown neighborhoods. To learn more about our 2025 & 2026 contest visit our website.\n\n<strong>Follow us on Social Media + Join our newsletter!</strong>\n\nLower East Side Ecology Center:\nInstagram - @lesecologyctr\nTik Tok - @lesecologyctr\nLinkedin - The Lower East Side Ecology Center\nNewsletter - visit lesecologycenter.org to sign up\n\nIf you have any additional questions, please don't hesitate to ask.\n\nWith gratitude,\n${staffName}`;
+  }
+  document.getElementById('email-thankyou').innerHTML = email;
+}
 
-            // Show success message
-            const successMsg = document.getElementById('successMsg');
-            successMsg.classList.add('show');
-            setTimeout(() => successMsg.classList.remove('show'), 3000);
+function genEventBrief(ev) {
+  const isPublic = ev.type.includes('Public');
+  const isVirtual = ev.type.includes('Virtual');
+  const format = isVirtual ? 'Virtual' : 'In-person';
+  const audiences = ev.audiences.length ? ev.audiences.join(', ') : 'N/A';
+  const marketing = ev.marketing.length ? ev.marketing.join(', ') : 'N/A';
+  const partner = ev.collab === 'Other Organization' ? ev.collabNotes : 'N/A';
+  const client = (ev.type.includes('Private') || ev.type.includes('School')) ? ev.collabNotes : 'N/A';
 
-            renderEventsList();
-            renderStats();
-            renderWorkflow();
-        }
+  let brief = '';
+  brief += sec('EVENT OVERVIEW');
+  brief += field('Event Name (Internal)', ev.name);
+  brief += field('Event Lead', ev.owner);
+  brief += field('On-Site Support', ev.support || 'TBD');
+  brief += field('Principal Program Category', ev.categories.join(', ') || 'N/A');
+  brief += field('Format', format);
+  brief += field('Date', formatDate(ev.date));
+  brief += field('Time', ev.time || 'TBD');
+  brief += field('Location/Venue', ev.location || 'TBD');
+  brief += field('Partner/s', partner);
+  brief += field('Client/s', client);
+  brief += field('Primary Audience', audiences);
 
-        function deleteEvent(eventId) {
-            if (confirm('Are you sure you want to delete this event?')) {
-                events = events.filter(e => e.id !== eventId);
-                saveEventsToStorage();
-                if (activeEventId === eventId) {
-                    activeEventId = null;
-                    document.getElementById('workflowCard').style.display = 'none';
-                }
-                renderEventsList();
-                renderStats();
-            }
-        }
+  brief += sec('IMPACT');
+  brief += field('Goals', ev.goals || 'TBD');
+  brief += field('Expected Attendance', ev.attendance || 'TBD');
+  brief += field('Success Metrics', ev.metrics || 'TBD');
 
-        function toggleTask(eventId, taskId) {
-            const event = events.find(e => e.id === eventId);
-            if (event) {
-                event.taskProgress[taskId] = !event.taskProgress[taskId];
-                saveEventsToStorage();
-                renderWorkflow();
-                renderEventsList();
-            }
-        }
+  brief += sec('COMMS');
+  brief += field('Event Name (External)', ev.extName || ev.name);
+  brief += field('Description', ev.description || 'TBD');
+  brief += field('Marketing Channels', marketing);
+  brief += field('Eventbrite Link', ev.eventbrite || 'N/A');
 
-        // ===== RENDERING =====
-        function renderEventsList() {
-            const listContainer = document.getElementById('eventsList');
+  brief += sec('LOGISTICS');
+  brief += field('Vendors', ev.vendors || 'N/A');
+  brief += field('Facilities', ev.facilities || 'TBD');
+  brief += field('Supplies', ev.supplies || 'TBD');
+  brief += field('Equipment', ev.equipment || 'TBD');
+  brief += field('Compost', ev.compost || 'TBD');
+  brief += field('Mulch', ev.mulch || 'N/A');
+  brief += field('Expenses', ev.expenses || 'NO');
+  brief += field('Run of Show', ev.ros || 'TBD');
+  brief += field('Access Notes', ev.access || 'TBD');
 
-            if (events.length === 0) {
-                listContainer.innerHTML = '<p style="color: #95a5a6; text-align: center; padding: 40px 20px;">No events yet. Create one to get started!</p>';
-                return;
-            }
+  document.getElementById('event-brief').innerHTML = brief;
+}
 
-            listContainer.innerHTML = events.map(event => {
-                const completedTasks = Object.values(event.taskProgress).filter(v => v).length;
-                const totalTasks = Object.keys(event.taskProgress).length;
-                const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+function sec(title) {
+  return '\n<strong style="color:#2d6a4f;font-size:14px;display:block;margin:16px 0 8px;border-bottom:2px solid #d8e2dc;padding-bottom:4px">' + title + '</strong>\n';
+}
+function field(label, value) {
+  const v = value || 'TBD';
+  const isPlaceholder = v === 'TBD' || v === 'N/A';
+  const style = isPlaceholder ? ' class="highlight"' : '';
+  return '<span class="brief-label">' + label + ':</span> <span' + style + '>' + v + '</span>\n';
+}
 
-                return `
-                    <div class="event-card" onclick="selectEvent(${event.id})">
-                        <div class="event-card-header">
-                            <div>
-                                <div class="event-title">${event.name}</div>
-                                <div class="event-type-tag ${event.type}">${formatEventType(event.type)}</div>
-                            </div>
-                        </div>
-                        <div class="event-info">
-                            <span>📅 ${new Date(event.date).toLocaleDateString()}</span>
-                            <span>📍 ${event.location || 'TBD'}</span>
-                            <span>👤 ${completedTasks}/${totalTasks} tasks</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress}%"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+// ===== EVENTS LIST =====
+function renderEvents() {
+  const container = document.getElementById('events-list');
+  if (!events.length) { container.innerHTML = '<p style="color:#52796f;text-align:center;padding:30px">No events yet.</p>'; return; }
 
-        function renderWorkflow() {
-            const workflowCard = document.getElementById('workflowCard');
-            if (!activeEventId) {
-                workflowCard.style.display = 'none';
-                return;
-            }
+  container.innerHTML = events.map((ev, idx) => {
+    const catClass = ev.categories.includes('Stewardship') ? 'badge-stew' : ev.categories.includes('Education') ? 'badge-edu' : 'badge-out';
+    const t = ev.tracker || {};
+    const trackerFields = [
+      ['briefCreated','Brief'],['eventbriteCreated','Eventbrite'],['calendarCreated','Calendar'],
+      ['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Compost Ops'],
+      ['reminderSent','Reminder'],['activityReport','Activity Rpt'],['treeMapDone','Tree Map'],['thankYouSent','Thank You']
+    ];
+    const checks = trackerFields.map(([key,label]) =>
+      '<label><input type="checkbox" ' + (t[key]?'checked':'') + ' onchange="toggleTracker('+idx+',\''+key+'\')"> '+label+'</label>'
+    ).join('');
 
-            const event = events.find(e => e.id === activeEventId);
-            if (!event) return;
+    return '<div class="event-row" style="grid-template-columns:1fr;cursor:pointer" onclick="loadEvent('+idx+')">' +
+      '<div><span class="event-name">' + ev.name + '</span> <span class="event-type-badge ' + catClass + '">' + ev.type + '</span>' +
+      '<div style="font-size:12px;color:#52796f;margin-top:4px">' + formatDate(ev.date) + ' &middot; ' + (ev.time||'TBD') + ' &middot; ' + (ev.location||'TBD') + ' &middot; ' + ev.owner + '</div>' +
+      '<div class="tracker-checks" onclick="event.stopPropagation()">' + checks + '</div></div></div>';
+  }).join('');
+}
 
-            workflowCard.style.display = 'block';
-            const timeline = document.getElementById('timeline');
-            const workflow = workflows[event.type];
+function toggleTracker(idx, key) {
+  if (!events[idx].tracker) events[idx].tracker = {};
+  events[idx].tracker[key] = !events[idx].tracker[key];
+  saveEvents();
+  updateStats();
+}
 
-            timeline.innerHTML = workflow.map((phase, phaseIdx) => `
-                <div class="timeline-phase ${phase.badge}">
-                    <div class="phase-header">
-                        ${phase.phase}
-                        <span class="phase-badge ${phase.badge}">${phase.badge.toUpperCase()}</span>
-                    </div>
-                    <ul class="task-list">
-                        ${phase.tasks.map((task, taskIdx) => {
-                            const taskId = `${phaseIdx}-${taskIdx}`;
-                            const isCompleted = event.taskProgress[taskId];
-                            return `
-                                <li class="task-item ${isCompleted ? 'completed' : ''}">
-                                    <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}
-                                           onchange="toggleTask(${activeEventId}, '${taskId}')">
-                                    <span class="task-content">${task}</span>
-                                </li>
-                            `;
-                        }).join('')}
-                    </ul>
-                </div>
-            `).join('');
-        }
+function loadEvent(idx) {
+  lastEvent = events[idx];
+  generateOutputs(lastEvent);
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-outputs').classList.add('active');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  toast('Loaded outputs for: ' + lastEvent.name);
+}
 
-        function renderStats() {
-            const total = events.length;
-            const today = new Date().toISOString().split('T')[0];
-            const upcoming = events.filter(e => e.date >= today).length;
-            const inProgress = events.filter(e => e.date < today).length;
-            const completed = events.filter(e => {
-                const progress = Object.values(e.taskProgress);
-                return progress.length > 0 && progress.every(v => v);
-            }).length;
+// ===== COPY =====
+function copyOutput(id) {
+  const el = document.getElementById(id);
+  let text;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+    text = el.value;
+  } else {
+    // Get text content, stripping HTML but preserving line breaks
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('strong').forEach(s => s.replaceWith(s.textContent));
+    clone.querySelectorAll('.highlight').forEach(s => s.replaceWith(s.textContent));
+    text = clone.innerText || clone.textContent;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    toast('Copied to clipboard!');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Copied to clipboard!');
+  });
+}
 
-            document.getElementById('stat-total').textContent = total;
-            document.getElementById('stat-upcoming').textContent = upcoming;
-            document.getElementById('stat-in-progress').textContent = inProgress;
-            document.getElementById('stat-completed').textContent = completed;
-        }
+// ===== UTILITIES =====
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
+}
 
-        // ===== UTILITIES =====
-        function formatEventType(type) {
-            const map = {
-                'field-trip': '🏫 Field Trip',
-                'private': '🤝 Private Volunteer',
-                'public': '📣 Public Volunteer',
-                'program': '📋 Public Program'
-            };
-            return map[type] || type;
-        }
+function saveEvents() { localStorage.setItem('les_events_v2', JSON.stringify(events)); }
 
-        function selectEvent(eventId) {
-            activeEventId = eventId;
-            renderWorkflow();
-        }
+function updateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('stat-total').textContent = events.length;
+  document.getElementById('stat-upcoming').textContent = events.filter(e => e.date >= today).length;
+  document.getElementById('stat-complete').textContent = events.filter(e => {
+    const t = e.tracker || {};
+    return Object.values(t).length > 0 && Object.values(t).every(v => v);
+  }).length;
+}
 
-        function closeModal() {
-            document.getElementById('eventModal').classList.remove('active');
-        }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 
-        // ===== STORAGE =====
-        function saveEventsToStorage() {
-            localStorage.setItem('les_events', JSON.stringify(events));
-        }
-
-        function loadEventsFromStorage() {
-            const stored = localStorage.getItem('les_events');
-            events = stored ? JSON.parse(stored) : [];
-        }
-
-        // Initialize app
-        init();
-    </script>
+// ===== INIT =====
+renderEvents();
+updateStats();
+</script>
 </body>
 </html>
