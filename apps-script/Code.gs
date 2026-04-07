@@ -13,7 +13,7 @@
 
 var CONFIG = {
   TRACKER_SHEET_ID: '1EKZHAAlNOPPQEgxDgR7IMBKXWY5aR3VEURl4crImsrY',
-  BRIEF_FOLDER_ID: '',
+  BRIEF_FOLDER_ID: '1vAH4OPtWMIkZIBtKRcdKwfbYT4bebfnC',
   TRACKER_SHEET_NAME: 'Sheet1'
 };
 
@@ -75,6 +75,59 @@ function createEventBrief(ev) {
 
 function addSec(body,t) { body.appendParagraph(''); body.appendParagraph(t).setHeading(DocumentApp.ParagraphHeading.HEADING2).setForegroundColor('#2d6a4f'); }
 function addF(body,l,v) { var p=body.appendParagraph(''); p.appendText(l+': ').setBold(true); p.appendText(v||'TBD').setBold(false); }
+
+/**
+ * Push a list of tasks to Google Calendar as all-day events on the user's
+ * default calendar. Each task becomes one all-day event titled "[STC] <title>"
+ * with the parent event name + phase in the description.
+ */
+function pushTasksToCalendar(tasks) {
+  try {
+    var cal = CalendarApp.getDefaultCalendar();
+    var count = 0;
+    tasks.forEach(function(t) {
+      if (!t.due) return;
+      var d = new Date(t.due + 'T12:00:00');
+      var title = '[STC] ' + t.title + ' — ' + t.evName;
+      var desc = 'Event: ' + t.evName + '\nPhase: ' + t.phase + '\nAssignee: ' + (t.assignee||'') + '\nEvent date: ' + (t.evDate||'');
+      cal.createAllDayEvent(title, d, {description: desc});
+      count++;
+    });
+    return {success:true, count:count};
+  } catch(e) {
+    return {success:false, error:e.message};
+  }
+}
+
+/**
+ * Push tasks to Google Tasks (default task list).
+ * REQUIRES: Services panel -> add "Tasks API" (advanced service) before this
+ * function will work. If not enabled, the function returns an error message
+ * with setup instructions.
+ */
+function pushTasksToGoogleTasks(tasks) {
+  try {
+    if (typeof Tasks === 'undefined') {
+      return {success:false, error:'Enable Tasks API: Apps Script editor -> Services (+) -> Tasks API'};
+    }
+    var lists = Tasks.Tasklists.list();
+    var listId = lists.items && lists.items.length ? lists.items[0].id : '@default';
+    var count = 0;
+    tasks.forEach(function(t) {
+      if (!t.due) return;
+      var dueIso = new Date(t.due + 'T12:00:00').toISOString();
+      Tasks.Tasks.insert({
+        title: t.title + ' — ' + t.evName,
+        notes: 'Phase: ' + t.phase + '\nAssignee: ' + (t.assignee||'') + '\nEvent date: ' + (t.evDate||''),
+        due: dueIso
+      }, listId);
+      count++;
+    });
+    return {success:true, count:count};
+  } catch(e) {
+    return {success:false, error:e.message};
+  }
+}
 
 function testConfig() {
   try { var ss=SpreadsheetApp.openById(CONFIG.TRACKER_SHEET_ID); Logger.log('Sheet OK: '+ss.getName()); } catch(e) { Logger.log('Sheet ERROR: '+e.message); }

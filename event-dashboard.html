@@ -113,6 +113,30 @@ textarea{resize:vertical;min-height:70px}
 .toast.show{opacity:1}
 
 .apps-script-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre;line-height:1.4}
+/* Tasks */
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#f8faf8;border-left:4px solid #d8e2dc;border-radius:6px;margin-bottom:8px}
+.task-row.overdue{border-left-color:#bc4749;background:#fff5f5}
+.task-row.today{border-left-color:#f4a261;background:#fffaf0}
+.task-row.week{border-left-color:#40916c}
+.task-row.done{opacity:0.55;background:#eef2ee}
+.task-row.done .task-title{text-decoration:line-through}
+.task-cb{margin-top:3px;accent-color:#40916c;width:auto}
+.task-body{flex:1;min-width:0}
+.task-title{font-weight:600;color:#1b4332;font-size:14px}
+.task-meta{font-size:12px;color:#52796f;margin-top:3px}
+.task-event-link{color:#2d6a4f;font-weight:600;cursor:pointer;text-decoration:underline}
+.task-due{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:#d8e2dc;color:#344e41;white-space:nowrap}
+.task-due.overdue{background:#bc4749;color:white}
+.task-due.today{background:#f4a261;color:white}
+.task-due.week{background:#40916c;color:white}
+.filter-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.filter-group label{font-size:12px;font-weight:700;color:#52796f;margin-right:6px}
+.tasks-summary{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.tasks-summary div{flex:1;min-width:90px;padding:10px;background:#f8faf8;border-radius:8px;text-align:center}
+.tasks-summary .n{font-size:22px;font-weight:700;color:#2d6a4f;display:block}
+.tasks-summary .l{font-size:11px;color:#52796f;font-weight:600}
+.tasks-summary div.overdue .n{color:#bc4749}
+.tasks-summary div.today .n{color:#f4a261}
 
 @media(max-width:768px){
   .form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}
@@ -144,6 +168,7 @@ textarea{resize:vertical;min-height:70px}
 <button class="tab-btn" onclick="switchTab('form',this)">New Event</button>
 <button class="tab-btn" onclick="switchTab('outputs',this)">Generated Outputs</button>
 <button class="tab-btn" onclick="switchTab('events',this)">All Events</button>
+<button class="tab-btn" onclick="switchTab('tasks',this)">Tasks</button>
 <button class="tab-btn" onclick="switchTab('setup',this)">Setup</button>
 </div>
 
@@ -335,6 +360,44 @@ textarea{resize:vertical;min-height:70px}
 </div>
 </div>
 
+<!-- TAB: TASKS -->
+<div class="tab-content" id="tab-tasks">
+<div class="card">
+<h2>Tasks across all events</h2>
+<p style="color:#52796f;font-size:13px;margin-bottom:14px">Tasks are auto-generated from the workflow timeline for each event type. Toggle to mark complete. Push them out as a Google Calendar import file (.ics).</p>
+<div class="tasks-summary" id="tasks-summary"></div>
+<div class="filter-group"><label>When:</label>
+<button class="filter-btn active" onclick="setTaskFilter('time','all',this)">All</button>
+<button class="filter-btn" onclick="setTaskFilter('time','overdue',this)">Overdue</button>
+<button class="filter-btn" onclick="setTaskFilter('time','today',this)">Today</button>
+<button class="filter-btn" onclick="setTaskFilter('time','week',this)">This week</button>
+<button class="filter-btn" onclick="setTaskFilter('time','month',this)">This month</button>
+<button class="filter-btn" onclick="setTaskFilter('time','upcoming',this)">Upcoming</button>
+</div>
+<div class="filter-group"><label>Who:</label>
+<button class="filter-btn active" onclick="setTaskFilter('who','all',this)">All</button>
+<button class="filter-btn" onclick="setTaskFilter('who','Maddy',this)">Maddy</button>
+<button class="filter-btn" onclick="setTaskFilter('who','Hadas',this)">Hadas</button>
+<button class="filter-btn" onclick="setTaskFilter('who','Gretel',this)">Gretel</button>
+</div>
+<div class="filter-group"><label>Show:</label>
+<button class="filter-btn active" onclick="setTaskFilter('done','open',this)">Open</button>
+<button class="filter-btn" onclick="setTaskFilter('done','done',this)">Done</button>
+<button class="filter-btn" onclick="setTaskFilter('done','all',this)">All</button>
+</div>
+<div class="filter-group"><label>Event status:</label>
+<button class="filter-btn active" onclick="setTaskFilter('estatus','active',this)">Confirmed+Hold</button>
+<button class="filter-btn" onclick="setTaskFilter('estatus','confirmed',this)">Confirmed only</button>
+<button class="filter-btn" onclick="setTaskFilter('estatus','all',this)">All (incl. drafts)</button>
+</div>
+<div class="btn-row" style="margin-bottom:14px">
+<button class="btn btn-primary btn-sm" onclick="downloadTasksIcs()">Download .ics for Google Calendar</button>
+<button class="btn btn-copy btn-sm" onclick="copyTasksAsList()">Copy as text list</button>
+</div>
+<div id="tasks-list"></div>
+</div>
+</div>
+
 <!-- TAB: SETUP -->
 <div class="tab-content" id="tab-setup">
 <div class="card">
@@ -371,9 +434,116 @@ let events = JSON.parse(localStorage.getItem('les_events_v3') || '[]');
 let lastEvent = null;
 let calYear, calMonth;
 let currentFilter = 'all';
+let taskFilters = {time:'all',who:'all',done:'open',estatus:'active'};
 const today = new Date();
 calYear = today.getFullYear();
 calMonth = today.getMonth();
+
+// ===== WORKFLOW TEMPLATES =====
+// offset = days relative to event date (negative = before)
+const WORKFLOW_TEMPLATES = {
+  'School STC Event':[
+    {p:'Immediate',o:-30,t:'Add to STC tracker spreadsheet'},
+    {p:'Immediate',o:-30,t:'Confirm with school coordinator'},
+    {p:'Immediate',o:-30,t:'Set up Google Calendar event'},
+    {p:'1 Month Before',o:-30,t:'Reserve equipment'},
+    {p:'2 Weeks Before',o:-14,t:'Order compost'},
+    {p:'2 Weeks Before',o:-14,t:'Identify block / trees'},
+    {p:'1 Week Before',o:-7,t:'Send confirmation email to coordinator'},
+    {p:'1 Week Before',o:-7,t:'Scout location'},
+    {p:'1 Week Before',o:-7,t:'Block staff calendar'},
+    {p:'Day Before',o:-1,t:'Tool prep'},
+    {p:'Day Of',o:0,t:'Run event + log on tree map'},
+    {p:'Day After',o:1,t:'Cleanup + return tools'},
+    {p:'Day After',o:1,t:'Send thank you email'},
+    {p:'Day After',o:1,t:'Submit tree mapping data'},
+    {p:'Day After',o:1,t:'Upload photos'}
+  ],
+  'Private volunteer STC event':[
+    {p:'Immediate',o:-30,t:'Add to STC tracker spreadsheet'},
+    {p:'Immediate',o:-30,t:'Confirm with coordinator'},
+    {p:'Immediate',o:-30,t:'Set up volunteer tracking'},
+    {p:'2 Weeks Before',o:-14,t:'Order compost'},
+    {p:'2 Weeks Before',o:-14,t:'Identify block / trees'},
+    {p:'1 Week Before',o:-7,t:'Send confirmation email'},
+    {p:'1 Week Before',o:-7,t:'Scout location'},
+    {p:'1 Week Before',o:-7,t:'Reserve equipment'},
+    {p:'Day Of',o:0,t:'Tool prep + run event'},
+    {p:'Day Of',o:0,t:'Submit activity report'},
+    {p:'Day After',o:1,t:'Cleanup'},
+    {p:'Day After',o:1,t:'Send thank you email'},
+    {p:'Day After',o:1,t:'Submit tree mapping data'},
+    {p:'Day After',o:1,t:'Upload photos'}
+  ],
+  'Public Volunteer STC Event':[
+    {p:'Immediate',o:-30,t:'Add to STC tracker spreadsheet'},
+    {p:'Immediate',o:-30,t:'Set up volunteer tracking'},
+    {p:'1 Month Before',o:-30,t:'Create event brief'},
+    {p:'1 Month Before',o:-30,t:'Create Eventbrite listing'},
+    {p:'1 Month Before',o:-30,t:'Submit communications request'},
+    {p:'2 Weeks Before',o:-14,t:'Order compost'},
+    {p:'1 Week Before',o:-7,t:'Confirm block'},
+    {p:'1 Week Before',o:-7,t:'Send reminder email to registrants'},
+    {p:'1 Week Before',o:-7,t:'Scout location'},
+    {p:'1 Week Before',o:-7,t:'Reserve equipment'},
+    {p:'Day Of',o:0,t:'Tool prep + run event'},
+    {p:'Day Of',o:0,t:'Submit activity report'},
+    {p:'Day After',o:1,t:'Cleanup'},
+    {p:'Day After',o:1,t:'Send thank you email'},
+    {p:'Day After',o:1,t:'Submit tree mapping data'},
+    {p:'Day After',o:1,t:'Upload photos'}
+  ],
+  'Volunteer STC Event':[
+    {p:'Immediate',o:-30,t:'Add to STC tracker spreadsheet'},
+    {p:'Immediate',o:-30,t:'Confirm with coordinator'},
+    {p:'2 Weeks Before',o:-14,t:'Order compost'},
+    {p:'2 Weeks Before',o:-14,t:'Identify block / trees'},
+    {p:'1 Week Before',o:-7,t:'Send confirmation email'},
+    {p:'1 Week Before',o:-7,t:'Reserve equipment'},
+    {p:'Day Of',o:0,t:'Tool prep + run event'},
+    {p:'Day After',o:1,t:'Cleanup'},
+    {p:'Day After',o:1,t:'Send thank you email'},
+    {p:'Day After',o:1,t:'Submit tree mapping data'}
+  ],
+  'PUBLIC_PROGRAM':[
+    {p:'Immediate',o:-30,t:'Add to STC tracker spreadsheet'},
+    {p:'Immediate',o:-30,t:'Set up calendar event'},
+    {p:'1 Month Before',o:-30,t:'Create event brief'},
+    {p:'1 Month Before',o:-30,t:'Create Eventbrite listing'},
+    {p:'1 Month Before',o:-30,t:'Submit communications request'},
+    {p:'2 Weeks Before',o:-14,t:'Create content / materials'},
+    {p:'2 Weeks Before',o:-14,t:'Confirm vendors'},
+    {p:'1 Week Before',o:-7,t:'Send confirmation email to registrants'},
+    {p:'Day Of',o:0,t:'Run event + log participation'},
+    {p:'Day Of',o:0,t:'Submit activity report'},
+    {p:'Day After',o:1,t:'Send thank you email'}
+  ]
+};
+function templateFor(type) {
+  if (!type) return WORKFLOW_TEMPLATES['Volunteer STC Event'];
+  if (WORKFLOW_TEMPLATES[type]) return WORKFLOW_TEMPLATES[type];
+  if (/Workshop|Walk|Tabling|CBLES|Public/i.test(type)) return WORKFLOW_TEMPLATES['PUBLIC_PROGRAM'];
+  return WORKFLOW_TEMPLATES['Volunteer STC Event'];
+}
+function generateTasks(ev) {
+  if (!ev.date) return [];
+  const tpl = templateFor(ev.type);
+  const base = new Date(ev.date+'T12:00:00');
+  return tpl.map((row,i) => {
+    const d = new Date(base); d.setDate(d.getDate()+row.o);
+    const due = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return {id:ev.id+'-'+i, phase:row.p, title:row.t, due:due, offset:row.o, assignee:ev.owner||'', done:false};
+  });
+}
+function syncTasks(ev) {
+  const old = ev.tasks || [];
+  const fresh = generateTasks(ev);
+  fresh.forEach(t => {
+    const m = old.find(o => o.title===t.title && o.offset===t.offset);
+    if (m) { t.done = m.done; t.assignee = m.assignee || t.assignee; }
+  });
+  ev.tasks = fresh;
+}
 
 // ===== SETTINGS =====
 function loadSetup() {
@@ -401,6 +571,7 @@ function switchTab(tab, btn) {
   document.getElementById('tab-' + tab).classList.add('active');
   if (btn) btn.classList.add('active');
   if (tab === 'calendar') renderCalendar();
+  if (tab === 'tasks') renderTasks();
 }
 
 // ===== CALENDAR =====
@@ -471,18 +642,22 @@ document.getElementById('eventForm').addEventListener('submit', function(e) {
     if (idx >= 0) {
       ev.id = parseInt(editId);
       ev.tracker = events[idx].tracker || defaultTracker();
+      ev.tasks = events[idx].tasks || [];
       events[idx] = ev;
     }
   } else {
     ev.id = Date.now();
     ev.tracker = defaultTracker();
+    ev.tasks = [];
     events.push(ev);
   }
+  syncTasks(ev);
   saveEvents();
   lastEvent = ev;
   generateOutputs(ev);
   renderEvents();
   renderCalendar();
+  renderTasks();
   updateStats();
   resetForm();
   switchTab('outputs', document.querySelectorAll('.tab-btn')[2]);
@@ -881,11 +1056,133 @@ function doGet(e) {
 }`;
 }
 
+// ===== TASKS =====
+function dueBucket(due) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(due+'T12:00:00'); d.setHours(0,0,0,0);
+  const diff = Math.round((d-t)/86400000);
+  if (diff < 0) return 'overdue';
+  if (diff === 0) return 'today';
+  if (diff <= 7) return 'week';
+  if (diff <= 31) return 'month';
+  return 'upcoming';
+}
+function dueLabel(due) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(due+'T12:00:00'); d.setHours(0,0,0,0);
+  const diff = Math.round((d-t)/86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff < 0) return Math.abs(diff)+'d overdue';
+  if (diff <= 14) return 'In '+diff+'d';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function allTasks() {
+  const out = [];
+  events.forEach(ev => {
+    if (!ev.tasks || !ev.tasks.length) syncTasks(ev);
+    (ev.tasks||[]).forEach(t => out.push(Object.assign({},t,{evId:ev.id,evName:ev.name,evType:ev.type,evDate:ev.date,evStatus:ev.status||'confirmed'})));
+  });
+  return out;
+}
+function filteredTasks() {
+  let list = allTasks();
+  if (taskFilters.estatus === 'active') list = list.filter(t => t.evStatus==='confirmed' || t.evStatus==='hold');
+  else if (taskFilters.estatus === 'confirmed') list = list.filter(t => t.evStatus==='confirmed');
+  if (taskFilters.done === 'open') list = list.filter(t => !t.done);
+  else if (taskFilters.done === 'done') list = list.filter(t => t.done);
+  if (taskFilters.who !== 'all') list = list.filter(t => (t.assignee||'')===taskFilters.who);
+  if (taskFilters.time !== 'all') {
+    list = list.filter(t => {
+      const b = dueBucket(t.due);
+      if (taskFilters.time === 'overdue') return b==='overdue';
+      if (taskFilters.time === 'today') return b==='today';
+      if (taskFilters.time === 'week') return b==='overdue'||b==='today'||b==='week';
+      if (taskFilters.time === 'month') return b==='overdue'||b==='today'||b==='week'||b==='month';
+      if (taskFilters.time === 'upcoming') return b!=='overdue';
+      return true;
+    });
+  }
+  list.sort((a,b) => (a.due||'').localeCompare(b.due||''));
+  return list;
+}
+function renderTasks() {
+  const list = filteredTasks();
+  const all = allTasks().filter(t => !t.done && (t.evStatus==='confirmed'||t.evStatus==='hold'));
+  const counts = {overdue:0,today:0,week:0,total:all.length};
+  all.forEach(t => { const b=dueBucket(t.due); if(b==='overdue')counts.overdue++; if(b==='today')counts.today++; if(b==='overdue'||b==='today'||b==='week')counts.week++; });
+  document.getElementById('tasks-summary').innerHTML =
+    '<div class="overdue"><span class="n">'+counts.overdue+'</span><span class="l">Overdue</span></div>'+
+    '<div class="today"><span class="n">'+counts.today+'</span><span class="l">Today</span></div>'+
+    '<div><span class="n">'+counts.week+'</span><span class="l">This week</span></div>'+
+    '<div><span class="n">'+counts.total+'</span><span class="l">All open</span></div>';
+  const c = document.getElementById('tasks-list');
+  if (!list.length) { c.innerHTML = '<p style="color:#52796f;text-align:center;padding:20px">No tasks match these filters.</p>'; return; }
+  c.innerHTML = list.map(t => {
+    const b = dueBucket(t.due);
+    const cls = t.done ? 'done' : b;
+    return '<div class="task-row '+cls+'">'+
+      '<input type="checkbox" class="task-cb" '+(t.done?'checked':'')+' onchange="toggleTask('+t.evId+',\''+t.id+'\')">'+
+      '<div class="task-body"><div class="task-title">'+t.title+'</div>'+
+      '<div class="task-meta">'+t.phase+' &middot; '+(t.assignee||'unassigned')+' &middot; <span class="task-event-link" onclick="loadEventOutputs('+t.evId+')">'+t.evName+'</span> ('+fmtDate(t.evDate)+')</div></div>'+
+      '<span class="task-due '+b+'">'+dueLabel(t.due)+'</span>'+
+      '</div>';
+  }).join('');
+}
+function setTaskFilter(k,v,btn) {
+  taskFilters[k] = v;
+  btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+function toggleTask(evId, tid) {
+  const ev = events.find(e => e.id === evId); if (!ev || !ev.tasks) return;
+  const t = ev.tasks.find(x => x.id === tid); if (!t) return;
+  t.done = !t.done; saveEvents(); renderTasks();
+}
+function downloadTasksIcs() {
+  const list = filteredTasks().filter(t => !t.done);
+  if (!list.length) { toast('No open tasks to export.'); return; }
+  const pad = n => String(n).padStart(2,'0');
+  const stamp = (() => { const d=new Date(); return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+pad(d.getUTCSeconds())+'Z'; })();
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//LES Ecology//STC Tasks//EN\r\nCALSCALE:GREGORIAN\r\n';
+  list.forEach(t => {
+    const d = new Date(t.due+'T12:00:00');
+    const ds = d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
+    const dn = new Date(d); dn.setDate(dn.getDate()+1);
+    const dse = dn.getFullYear()+pad(dn.getMonth()+1)+pad(dn.getDate());
+    ics += 'BEGIN:VEVENT\r\n';
+    ics += 'UID:'+t.id+'@les-ecology\r\n';
+    ics += 'DTSTAMP:'+stamp+'\r\n';
+    ics += 'DTSTART;VALUE=DATE:'+ds+'\r\n';
+    ics += 'DTEND;VALUE=DATE:'+dse+'\r\n';
+    ics += 'SUMMARY:[STC] '+t.title.replace(/[,;]/g,'')+' - '+t.evName.replace(/[,;]/g,'')+'\r\n';
+    ics += 'DESCRIPTION:Phase: '+t.phase+'\\nAssignee: '+(t.assignee||'')+'\\nEvent: '+t.evName+' ('+t.evDate+')\r\n';
+    ics += 'END:VEVENT\r\n';
+  });
+  ics += 'END:VCALENDAR\r\n';
+  const blob = new Blob([ics],{type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='stc-tasks.ics'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Downloaded '+list.length+' tasks. Import in Google Calendar -> Settings -> Import.');
+}
+function copyTasksAsList() {
+  const list = filteredTasks();
+  if (!list.length) { toast('No tasks.'); return; }
+  const text = list.map(t => '['+(t.done?'x':' ')+'] '+t.due+'  '+t.title+' ('+t.evName+') -- '+(t.assignee||'')).join('\n');
+  navigator.clipboard.writeText(text).then(() => toast('Copied!'));
+}
+
 // ===== INIT =====
 loadSetup();
 renderAppsScript();
+events.forEach(ev => { if (!ev.tasks || !ev.tasks.length) syncTasks(ev); });
+saveEvents();
 renderCalendar();
 renderEvents();
+renderTasks();
 updateStats();
 </script>
 </body>
