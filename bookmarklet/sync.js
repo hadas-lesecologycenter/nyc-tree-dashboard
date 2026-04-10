@@ -197,13 +197,26 @@
       .then(function (r) { return r.json(); }).catch(function () { return null; });
   }
   function ghWrite(path, content, sha, msg) {
-    var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
-    if (sha) body.sha = sha;
-    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
-      body: JSON.stringify(body)
-    }).then(function (r) { if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status); });
+    function putFile(s) {
+      var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
+      if (s) body.sha = s;
+      return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
+        body: JSON.stringify(body)
+      });
+    }
+    return putFile(sha).then(function (r) {
+      if (r.status === 409) {
+        // SHA conflict — re-fetch current file SHA and retry
+        return ghRead(path).then(function (file) {
+          return putFile(file ? file.sha : null);
+        }).then(function (r2) {
+          if (!r2.ok) throw new Error('GitHub push failed: HTTP ' + r2.status + ' (retry after conflict)');
+        });
+      }
+      if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status);
+    });
   }
 
   // ── Main ──────────────────────────────────────────────────────
@@ -273,18 +286,22 @@
           newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
         });
 
-        var writes = [];
+        // Write files sequentially to avoid branch-tip conflicts
+        var writeP = Promise.resolve();
         if (newActLines.length > 0) {
           var updAct = actCSV.trimEnd() + '\n' + newActLines.join('\n') + '\n';
-          writes.push(ghWrite(ACT_PATH, updAct, actSha,
-            'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)'));
+          writeP = writeP.then(function () {
+            return ghWrite(ACT_PATH, updAct, actSha,
+              'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)');
+          });
         }
-        // Always write trees.csv so we can confirm what was found
         var updTrees = treesCSV.trimEnd() + (newTreeLines.length ? '\n' + newTreeLines.join('\n') : '') + '\n';
-        writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
-          'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
+        writeP = writeP.then(function () {
+          return ghWrite(TREES_PATH, updTrees, treesSha,
+            'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')');
+        });
 
-        return Promise.all(writes).then(function () {
+        return writeP.then(function () {
           var parts = [];
           if (newActLines.length)  parts.push(newActLines.length + ' new activities');
           parts.push(newTreeLines.length + ' of ' + missingIds.length + ' tree locations found');
