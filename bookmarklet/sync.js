@@ -8,6 +8,7 @@
   var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
   var ACT_PATH   = 'data/activities.csv';
   var TREES_PATH = 'data/trees.csv';
+  var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json';
   var GROUP_ID   = 14;
   var BATCH_SIZE = 25;
 
@@ -280,11 +281,31 @@
       status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
 
       return fetchTreeCoords(stillMissing).then(function (fetched) {
+        var afterAPI = [];
         stillMissing.forEach(function (id) {
           var t = fetched[id];
-          if (!t || !t.lat || !t.lng) return;
-          newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          if (t && t.lat && t.lng) {
+            newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          } else {
+            afterAPI.push(id);
+          }
         });
+
+        // Fall back to census data for trees the API couldn't locate
+        if (!afterAPI.length) return afterAPI;
+        status('⏳ Checking census data for ' + afterAPI.length + ' remaining trees…', '#1565c0', true);
+        return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (census) {
+          var byId = {};
+          census.forEach(function (t) { if (t.tree_id) byId[String(t.tree_id)] = t; });
+          afterAPI.forEach(function (id) {
+            var c = byId[id];
+            if (!c || !c.latitude || !c.longitude) return;
+            var addr = (c.address || '').replace(/,/g, ' ');
+            var sp   = (c.spc_common || '').replace(/,/g, ' ');
+            newTreeLines.push([id, c.latitude, c.longitude, addr, sp].join(','));
+          });
+        }).catch(function () {});
+      }).then(function () {
 
         // Write files sequentially to avoid branch-tip conflicts
         var writeP = Promise.resolve();
