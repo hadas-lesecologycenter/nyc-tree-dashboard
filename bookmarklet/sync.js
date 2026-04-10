@@ -131,50 +131,65 @@
     });
   }
 
-  // ── Batch-fetch tree coordinates — try treeById then tree ────
+  // ── Fetch tree coordinates ────────────────────────────────────
+  // Strategy 1: ask the group for ALL its trees in one query.
+  // Strategy 2 (fallback): individual treeById queries in batches.
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
+    var needed = {};
+    ids.forEach(function (id) { needed[id] = true; });
     var results = {};
-    var batches = [];
-    for (var i = 0; i < ids.length; i += BATCH_SIZE) {
-      batches.push(ids.slice(i, i + BATCH_SIZE));
+
+    function storeTree(t) {
+      if (!t || !t.id) return;
+      var lat = t.latitude || t.lat || '';
+      var lng = t.longitude || t.lng || '';
+      if (lat && lng) {
+        results[String(t.id)] = {
+          lat: lat, lng: lng,
+          address: (t.closestAddress || t.address || '').replace(/,/g, ' '),
+          species: ''
+        };
+      }
     }
-    var total = batches.length;
-    var done  = 0;
 
-    // Try a single tree first to detect correct field name
-    function makeFields(batch, fieldName) {
-      return batch.map(function (id, j) {
-        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress}';
-      }).join(' ');
-    }
+    // Strategy 1: group trees query
+    return gql('{treeGroupById(id:' + GROUP_ID + '){trees{id latitude longitude closestAddress}}}')
+      .then(function (resp) {
+        var trees = ((resp.data || {}).treeGroupById || {}).trees;
+        if (trees && trees.length) {
+          status('⏳ Group returned ' + trees.length + ' trees, matching…', '#1565c0', true);
+          trees.forEach(storeTree);
+        }
+      }).catch(function () {})
+      .then(function () {
+        // Strategy 2: individual queries for any still missing
+        var still = ids.filter(function (id) { return !results[id]; });
+        if (!still.length) return;
+        status('⏳ Fetching ' + still.length + ' trees individually…', '#1565c0', true);
 
-    // Probe with first id to find working field name
-    var fieldName = 'treeById';
-    var probeP = gql('{probe:treeById(id:' + ids[0] + '){id latitude longitude}}')
-      .then(function (r) {
-        if (r.errors && !r.data) fieldName = 'tree'; // treeById failed, try 'tree'
-      }).catch(function () { fieldName = 'tree'; });
-
-    return probeP.then(function () {
-      return batches.reduce(function (p, batch) {
-        return p.then(function () {
-          done++;
-          status('⏳ Fetching tree locations… (' + done + '/' + total + ')', '#1565c0', true);
-          return gql('{' + makeFields(batch, fieldName) + '}').then(function (resp) {
-            Object.values(resp.data || {}).forEach(function (t) {
-              if (!t || !t.id) return;
-              results[String(t.id)] = {
-                lat:     t.latitude  || '',
-                lng:     t.longitude || '',
-                address: (t.closestAddress || '').replace(/,/g, ' '),
-                species: ''
-              };
-            });
-          }).catch(function () {});
-        });
-      }, Promise.resolve());
-    }).then(function () { return results; });
+        var fieldName = 'treeById';
+        return gql('{probe:treeById(id:' + still[0] + '){id latitude longitude}}')
+          .then(function (r) {
+            if (r.errors && !r.data) fieldName = 'tree';
+          }).catch(function () { fieldName = 'tree'; })
+          .then(function () {
+            var batches = [];
+            for (var i = 0; i < still.length; i += BATCH_SIZE) {
+              batches.push(still.slice(i, i + BATCH_SIZE));
+            }
+            return batches.reduce(function (p, batch) {
+              return p.then(function () {
+                var fields = batch.map(function (id, j) {
+                  return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress}';
+                }).join(' ');
+                return gql('{' + fields + '}').then(function (resp) {
+                  Object.values(resp.data || {}).forEach(storeTree);
+                }).catch(function () {});
+              });
+            }, Promise.resolve());
+          });
+      }).then(function () { return results; });
   }
 
   // ── Format activity as CSV row ────────────────────────────────

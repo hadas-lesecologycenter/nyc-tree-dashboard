@@ -3462,24 +3462,23 @@ function switchViewById(view) {
     function fetchActs(){return gql('query{treeGroupById(id:'+GID+'){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}').then(function(r){return((r.data||{}).treeGroupById||{}).recentActivities||[];});}
     function fetchCoords(ids){
       if(!ids.length)return Promise.resolve({});
-      var res={},batches=[];
-      for(var i=0;i<ids.length;i+=BS)batches.push(ids.slice(i,i+BS));
-      var tot=batches.length,done=0,fn='treeById';
-      var probe=gql('{p:treeById(id:'+ids[0]+'){id latitude longitude}}').then(function(r){if(r.errors&&!r.data)fn='tree';}).catch(function(){fn='tree';});
-      return probe.then(function(){
-        return batches.reduce(function(p,batch){return p.then(function(){
-          done++;st('Fetching locations... ('+done+'/'+tot+')','#1565c0',true);
-          var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
-          return gql('{'+f+'}').then(function(r){
-            Object.entries(r.data||{}).forEach(function(pair){
-              var alias=pair[0],t=pair[1];
-              if(!t)return;
-              var origId=batch[parseInt(alias.slice(1))];
-              if(!origId)return;
-              res[String(origId)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:''};
-            });
-          }).catch(function(){});
-        });},Promise.resolve());
+      var res={};
+      function store(t){if(!t||!t.id)return;var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:(t.closestAddress||t.address||'').replace(/,/g,' '),species:''};}
+      return gql('{treeGroupById(id:'+GID+'){trees{id latitude longitude closestAddress}}}').then(function(r){
+        var trees=((r.data||{}).treeGroupById||{}).trees;
+        if(trees&&trees.length){st('Group returned '+trees.length+' trees, matching...','#1565c0',true);trees.forEach(store);}
+      }).catch(function(){}).then(function(){
+        var still=ids.filter(function(id){return!res[id];});
+        if(!still.length)return;
+        st('Fetching '+still.length+' trees individually...','#1565c0',true);
+        var fn='treeById';
+        return gql('{p:treeById(id:'+still[0]+'){id latitude longitude}}').then(function(r){if(r.errors&&!r.data)fn='tree';}).catch(function(){fn='tree';}).then(function(){
+          var batches=[];for(var i=0;i<still.length;i+=BS)batches.push(still.slice(i,i+BS));
+          return batches.reduce(function(p,batch){return p.then(function(){
+            var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
+            return gql('{'+f+'}').then(function(r){Object.values(r.data||{}).forEach(store);}).catch(function(){});
+          });},Promise.resolve());
+        });
       }).then(function(){return res;});
     }
     var TODAY=new Date().toISOString().slice(0,10);
