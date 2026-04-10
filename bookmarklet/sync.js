@@ -55,8 +55,9 @@
 
   // ── GraphQL helper ────────────────────────────────────────────
   function gql(query) {
-    return fetch('/api-treemap/graphql', {
+    return fetch('https://www.nycgovparks.org/api-treemap/graphql', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: query })
     }).then(function (r) { return r.json(); });
@@ -131,13 +132,9 @@
     });
   }
 
-  // ── Fetch tree coordinates ────────────────────────────────────
-  // Strategy 1: ask the group for ALL its trees in one query.
-  // Strategy 2 (fallback): individual treeById queries in batches.
+  // ── Fetch tree coordinates via tree(id:N) in batches ─────────
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
-    var needed = {};
-    ids.forEach(function (id) { needed[id] = true; });
     var results = {};
 
     function storeTree(t) {
@@ -153,43 +150,25 @@
       }
     }
 
-    // Strategy 1: group trees query
-    return gql('{treeGroupById(id:' + GROUP_ID + '){trees{id latitude longitude closestAddress}}}')
-      .then(function (resp) {
-        var trees = ((resp.data || {}).treeGroupById || {}).trees;
-        if (trees && trees.length) {
-          status('⏳ Group returned ' + trees.length + ' trees, matching…', '#1565c0', true);
-          trees.forEach(storeTree);
-        }
-      }).catch(function () {})
-      .then(function () {
-        // Strategy 2: individual queries for any still missing
-        var still = ids.filter(function (id) { return !results[id]; });
-        if (!still.length) return;
-        status('⏳ Fetching ' + still.length + ' trees individually…', '#1565c0', true);
+    var batches = [];
+    for (var i = 0; i < ids.length; i += BATCH_SIZE) {
+      batches.push(ids.slice(i, i + BATCH_SIZE));
+    }
+    var total = batches.length;
+    var done = 0;
 
-        var fieldName = 'treeById';
-        return gql('{probe:treeById(id:' + still[0] + '){id latitude longitude}}')
-          .then(function (r) {
-            if (r.errors && !r.data) fieldName = 'tree';
-          }).catch(function () { fieldName = 'tree'; })
-          .then(function () {
-            var batches = [];
-            for (var i = 0; i < still.length; i += BATCH_SIZE) {
-              batches.push(still.slice(i, i + BATCH_SIZE));
-            }
-            return batches.reduce(function (p, batch) {
-              return p.then(function () {
-                var fields = batch.map(function (id, j) {
-                  return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress}';
-                }).join(' ');
-                return gql('{' + fields + '}').then(function (resp) {
-                  Object.values(resp.data || {}).forEach(storeTree);
-                }).catch(function () {});
-              });
-            }, Promise.resolve());
-          });
-      }).then(function () { return results; });
+    return batches.reduce(function (p, batch) {
+      return p.then(function () {
+        done++;
+        status('⏳ Fetching tree locations (' + done + '/' + total + ')…', '#1565c0', true);
+        var fields = batch.map(function (id, j) {
+          return 't' + j + ':tree(id:' + id + '){id latitude longitude closestAddress}';
+        }).join(' ');
+        return gql('{' + fields + '}').then(function (resp) {
+          Object.values(resp.data || {}).forEach(storeTree);
+        }).catch(function () {});
+      });
+    }, Promise.resolve()).then(function () { return results; });
   }
 
   // ── Format activity as CSV row ────────────────────────────────
