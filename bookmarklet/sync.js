@@ -8,6 +8,7 @@
   var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
   var ACT_PATH   = 'data/activities.csv';
   var TREES_PATH = 'data/trees.csv';
+  var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json';
   var GROUP_ID   = 14;
   var BATCH_SIZE = 25;
 
@@ -144,7 +145,7 @@
     // Try a single tree first to detect correct field name
     function makeFields(batch, fieldName) {
       return batch.map(function (id, j) {
-        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
+        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress}';
       }).join(' ');
     }
 
@@ -167,7 +168,7 @@
                 lat:     t.latitude  || '',
                 lng:     t.longitude || '',
                 address: (t.closestAddress || '').replace(/,/g, ' '),
-                species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
+                species: ''
               };
             });
           }).catch(function () {});
@@ -197,13 +198,26 @@
       .then(function (r) { return r.json(); }).catch(function () { return null; });
   }
   function ghWrite(path, content, sha, msg) {
-    var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
-    if (sha) body.sha = sha;
-    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
-      body: JSON.stringify(body)
-    }).then(function (r) { if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status); });
+    function putFile(s) {
+      var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
+      if (s) body.sha = s;
+      return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
+        body: JSON.stringify(body)
+      });
+    }
+    return putFile(sha).then(function (r) {
+      if (r.status === 409) {
+        // SHA conflict — re-fetch current file SHA and retry
+        return ghRead(path).then(function (file) {
+          return putFile(file ? file.sha : null);
+        }).then(function (r2) {
+          if (!r2.ok) throw new Error('GitHub push failed: HTTP ' + r2.status + ' (retry after conflict)');
+        });
+      }
+      if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status);
+    });
   }
 
   // ── Main ──────────────────────────────────────────────────────
@@ -267,24 +281,61 @@
       status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
 
       return fetchTreeCoords(stillMissing).then(function (fetched) {
+        var apiFound = {};
+        var afterAPI = [];
         stillMissing.forEach(function (id) {
           var t = fetched[id];
-          if (!t || !t.lat || !t.lng) return;
-          newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          if (t && t.lat && t.lng) {
+            apiFound[id] = t;
+          } else {
+            afterAPI.push(id);
+          }
         });
 
-        var writes = [];
+        // Fetch census data for species names and coordinates of trees the API missed
+        status('⏳ Checking census data for species + ' + afterAPI.length + ' missing trees…', '#1565c0', true);
+        return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (census) {
+          var byId = {};
+          census.forEach(function (t) { if (t.tree_id) byId[String(t.tree_id)] = t; });
+          // Backfill species for API-found trees
+          Object.keys(apiFound).forEach(function (id) {
+            var c = byId[id];
+            if (c && c.spc_common) apiFound[id].species = (c.spc_common || '').replace(/,/g, ' ');
+          });
+          // Use census coords for trees the API couldn't locate
+          afterAPI.forEach(function (id) {
+            var c = byId[id];
+            if (!c || !c.latitude || !c.longitude) return;
+            apiFound[id] = {
+              lat: c.latitude, lng: c.longitude,
+              address: (c.address || '').replace(/,/g, ' '),
+              species: (c.spc_common || '').replace(/,/g, ' ')
+            };
+          });
+        }).catch(function () {}).then(function () {
+          Object.keys(apiFound).forEach(function (id) {
+            var t = apiFound[id];
+            newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          });
+        });
+      }).then(function () {
+
+        // Write files sequentially to avoid branch-tip conflicts
+        var writeP = Promise.resolve();
         if (newActLines.length > 0) {
           var updAct = actCSV.trimEnd() + '\n' + newActLines.join('\n') + '\n';
-          writes.push(ghWrite(ACT_PATH, updAct, actSha,
-            'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)'));
+          writeP = writeP.then(function () {
+            return ghWrite(ACT_PATH, updAct, actSha,
+              'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)');
+          });
         }
-        // Always write trees.csv so we can confirm what was found
         var updTrees = treesCSV.trimEnd() + (newTreeLines.length ? '\n' + newTreeLines.join('\n') : '') + '\n';
-        writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
-          'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
+        writeP = writeP.then(function () {
+          return ghWrite(TREES_PATH, updTrees, treesSha,
+            'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')');
+        });
 
-        return Promise.all(writes).then(function () {
+        return writeP.then(function () {
           var parts = [];
           if (newActLines.length)  parts.push(newActLines.length + ' new activities');
           parts.push(newTreeLines.length + ' of ' + missingIds.length + ' tree locations found');
