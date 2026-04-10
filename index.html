@@ -3437,13 +3437,21 @@ function switchViewById(view) {
     function gql(q){return fetch('/api-treemap/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
     function readCache(){
       var cl=window.__APOLLO_CLIENT__||window.apolloClient;
-      if(!cl)return{acts:null,trees:{}};
-      var cache;try{cache=cl.cache.extract();}catch(e){return{acts:null,trees:{}};}
+      if(!cl){console.log('[sync] No Apollo client found');return{acts:null,trees:{}};}
+      var cache;try{cache=cl.cache.extract();}catch(e){console.log('[sync] Cache extract failed',e);return{acts:null,trees:{}};}
       var acts=[],trees={};
+      // Diagnostic: log all typenames and find tree-like objects
+      var typeCounts={};
+      Object.keys(cache).forEach(function(k){
+        var o=cache[k];if(!o)return;
+        var tp=o.__typename||'(none)';
+        typeCounts[tp]=(typeCounts[tp]||0)+1;
+      });
+      console.log('[sync] Apollo cache typenames:',JSON.stringify(typeCounts));
       Object.keys(cache).forEach(function(k){
         var o=cache[k];if(!o||!o.id)return;
         var tp=(o.__typename||'').toLowerCase();
-        if(tp==='tree'||tp==='streettree'){
+        if(tp==='tree'||tp==='streettree'||tp.includes('tree')){
           var sp=o.species;if(sp&&sp.__ref)sp=cache[sp.__ref]||{};
           var la=o.latitude||o.lat||'',ln=o.longitude||o.lng||o.lon||'';
           if(la&&ln)trees[String(o.id)]={lat:la,lng:ln,address:(o.closestAddress||o.address||'').replace(/,/g,' '),species:((sp&&sp.commonName)||'').replace(/,/g,' ')};
@@ -3465,18 +3473,28 @@ function switchViewById(view) {
       var res={};
       function store(t){if(!t||!t.id)return;var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:(t.closestAddress||t.address||'').replace(/,/g,' '),species:''};}
       return gql('{treeGroupById(id:'+GID+'){trees{id latitude longitude closestAddress}}}').then(function(r){
+        console.log('[sync] Group trees response:',JSON.stringify(r).slice(0,500));
         var trees=((r.data||{}).treeGroupById||{}).trees;
         if(trees&&trees.length){st('Group returned '+trees.length+' trees, matching...','#1565c0',true);trees.forEach(store);}
-      }).catch(function(){}).then(function(){
+        else{console.log('[sync] Group trees query returned no trees. Full response:',JSON.stringify(r).slice(0,1000));}
+      }).catch(function(e){console.log('[sync] Group trees query failed:',e);}).then(function(){
+        console.log('[sync] After group query, found coords for',Object.keys(res).length,'of',ids.length,'trees');
         var still=ids.filter(function(id){return!res[id];});
         if(!still.length)return;
         st('Fetching '+still.length+' trees individually...','#1565c0',true);
         var fn='treeById';
-        return gql('{p:treeById(id:'+still[0]+'){id latitude longitude}}').then(function(r){if(r.errors&&!r.data)fn='tree';}).catch(function(){fn='tree';}).then(function(){
+        return gql('{p:treeById(id:'+still[0]+'){id latitude longitude}}').then(function(r){
+          console.log('[sync] treeById probe for',still[0],':',JSON.stringify(r).slice(0,300));
+          if(r.errors&&!r.data)fn='tree';
+        }).catch(function(e){console.log('[sync] treeById probe failed:',e);fn='tree';}).then(function(){
+          console.log('[sync] Using field name:',fn);
           var batches=[];for(var i=0;i<still.length;i+=BS)batches.push(still.slice(i,i+BS));
           return batches.reduce(function(p,batch){return p.then(function(){
             var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
-            return gql('{'+f+'}').then(function(r){Object.values(r.data||{}).forEach(store);}).catch(function(){});
+            return gql('{'+f+'}').then(function(r){
+              console.log('[sync] Batch response (first 500 chars):',JSON.stringify(r).slice(0,500));
+              Object.values(r.data||{}).forEach(store);
+            }).catch(function(e){console.log('[sync] Batch query failed:',e);});
           });},Promise.resolve());
         });
       }).then(function(){return res;});
