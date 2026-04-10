@@ -3469,7 +3469,7 @@ function switchViewById(view) {
       var done=0,tot=batches.length;
       return batches.reduce(function(p,batch){return p.then(function(){
         done++;st('Fetching tree locations ('+done+'/'+tot+')...','#1565c0',true);
-        var f=batch.map(function(id,j){return 't'+j+':tree(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
+        var f=batch.map(function(id,j){return 't'+j+':tree(id:'+id+'){id latitude longitude}';}).join(' ');
         var q='{'+f+'}';
         console.log('[sync] Batch '+done+'/'+tot+' query:',q);
         return gql(q).then(function(r){

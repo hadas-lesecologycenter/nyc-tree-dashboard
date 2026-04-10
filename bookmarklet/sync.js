@@ -163,7 +163,7 @@
         done++;
         status('⏳ Fetching tree locations (' + done + '/' + total + ')…', '#1565c0', true);
         var fields = batch.map(function (id, j) {
-          return 't' + j + ':tree(id:' + id + '){id latitude longitude closestAddress}';
+          return 't' + j + ':tree(id:' + id + '){id latitude longitude}';
         }).join(' ');
         var q = '{' + fields + '}';
         console.log('[sync] Batch ' + done + '/' + total + ' query:', q);
