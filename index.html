@@ -3425,7 +3425,7 @@ function switchViewById(view) {
   if (!link) return;
 
   function __bm__() {
-    var REPO='hadas-lesecologycenter/nyc-tree-dashboard',ACT='data/activities.csv',TREES='data/trees.csv',CENSUS='https://raw.githubusercontent.com/'+REPO+'/main/data/census.json',GID=14,BS=25;
+    var REPO='hadas-lesecologycenter/nyc-tree-dashboard',ACT='data/activities.csv',TREES='data/trees.csv',CENSUS='https://raw.githubusercontent.com/'+REPO+'/main/data/census-coords.json',GID=14,BS=25;
     if(!location.hostname.includes('nycgovparks.org')){alert('Please run this on the NYC Tree Map:\nhttps://tree-map.nycgovparks.org');return;}
     var b=document.getElementById('_tS');
     if(!b){b=document.createElement('div');b.id='_tS';b.style.cssText='position:fixed;top:20px;right:20px;z-index:2147483647;padding:14px 20px;border-radius:10px;font:bold 14px/1.5 sans-serif;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:380px;white-space:pre-line';document.body.appendChild(b);}
@@ -3518,11 +3518,10 @@ function switchViewById(view) {
         var apiFound={},afterAPI=[];
         still.forEach(function(id){var t=f[id];if(t&&t.lat&&t.lng){apiFound[id]=t;}else{afterAPI.push(id);}});
         st('Checking census for species + '+afterAPI.length+' missing...','#1565c0',true);
-        return fetch(CENSUS).then(function(r){return r.json();}).then(function(census){
-          var byId={};census.forEach(function(t){if(t.tree_id)byId[String(t.tree_id)]=t;});
-          Object.keys(apiFound).forEach(function(id){var c=byId[id];if(c&&c.spc_common)apiFound[id].species=(c.spc_common||'').replace(/,/g,' ');});
-          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c.latitude||!c.longitude)return;apiFound[id]={lat:c.latitude,lng:c.longitude,address:(c.address||'').replace(/,/g,' '),species:(c.spc_common||'').replace(/,/g,' ')};});
-        }).catch(function(){}).then(function(){
+        return fetch(CENSUS).then(function(r){return r.json();}).then(function(byId){
+          Object.keys(apiFound).forEach(function(id){var c=byId[id];if(c&&c[3])apiFound[id].species=c[3];});
+          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c[0]||!c[1])return;apiFound[id]={lat:c[0],lng:c[1],address:c[2]||'',species:c[3]||''};});
+        }).catch(function(e){st('Census fallback failed: '+e.message,'#e65100',true);}).then(function(){
           Object.keys(apiFound).forEach(function(id){var t=apiFound[id];newT.push([id,t.lat,t.lng,t.address,t.species].join(','));});
         });
       }).then(function(){

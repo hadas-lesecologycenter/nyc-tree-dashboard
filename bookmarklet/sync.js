@@ -8,7 +8,7 @@
   var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
   var ACT_PATH   = 'data/activities.csv';
   var TREES_PATH = 'data/trees.csv';
-  var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json';
+  var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census-coords.json';
   var GROUP_ID   = 14;
   var BATCH_SIZE = 25;
 
@@ -292,27 +292,22 @@
           }
         });
 
-        // Fetch census data for species names and coordinates of trees the API missed
+        // Fetch lightweight census coords for species + missing tree locations
         status('⏳ Checking census data for species + ' + afterAPI.length + ' missing trees…', '#1565c0', true);
-        return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (census) {
-          var byId = {};
-          census.forEach(function (t) { if (t.tree_id) byId[String(t.tree_id)] = t; });
+        return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (byId) {
+          // byId format: { "tree_id": [lat, lng, address, species] }
           // Backfill species for API-found trees
           Object.keys(apiFound).forEach(function (id) {
             var c = byId[id];
-            if (c && c.spc_common) apiFound[id].species = (c.spc_common || '').replace(/,/g, ' ');
+            if (c && c[3]) apiFound[id].species = c[3];
           });
           // Use census coords for trees the API couldn't locate
           afterAPI.forEach(function (id) {
             var c = byId[id];
-            if (!c || !c.latitude || !c.longitude) return;
-            apiFound[id] = {
-              lat: c.latitude, lng: c.longitude,
-              address: (c.address || '').replace(/,/g, ' '),
-              species: (c.spc_common || '').replace(/,/g, ' ')
-            };
+            if (!c || !c[0] || !c[1]) return;
+            apiFound[id] = { lat: c[0], lng: c[1], address: c[2] || '', species: c[3] || '' };
           });
-        }).catch(function () {}).then(function () {
+        }).catch(function (e) { status('⚠️ Census fallback failed: ' + e.message, '#e65100', true); }).then(function () {
           Object.keys(apiFound).forEach(function (id) {
             var t = apiFound[id];
             newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
