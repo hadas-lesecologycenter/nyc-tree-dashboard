@@ -3469,14 +3469,14 @@ function switchViewById(view) {
       return probe.then(function(){
         return batches.reduce(function(p,batch){return p.then(function(){
           done++;st('Fetching locations... ('+done+'/'+tot+')','#1565c0',true);
-          var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress species{commonName}}';}).join(' ');
+          var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
           return gql('{'+f+'}').then(function(r){
             Object.entries(r.data||{}).forEach(function(pair){
               var alias=pair[0],t=pair[1];
               if(!t)return;
               var origId=batch[parseInt(alias.slice(1))];
               if(!origId)return;
-              res[String(origId)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:((t.species||{}).commonName||'').replace(/,/g,' ')};
+              res[String(origId)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:''};
             });
           }).catch(function(){});
         });},Promise.resolve());
@@ -3515,14 +3515,16 @@ function switchViewById(view) {
       missing.forEach(function(id){var t=(cd.trees||{})[id];if(t&&t.lat&&t.lng){newT.push([id,t.lat,t.lng,t.address,t.species].join(','));known[id]=true;}else{still.push(id);}});
       st('Cache: '+newT.length+' coords. Fetching '+still.length+' more...','#1565c0',true);
       return fetchCoords(still).then(function(f){
-        var afterAPI=[];
-        still.forEach(function(id){var t=f[id];if(t&&t.lat&&t.lng){newT.push([id,t.lat,t.lng,t.address,t.species].join(','));}else{afterAPI.push(id);}});
-        if(!afterAPI.length)return;
-        st('Checking census for '+afterAPI.length+' trees...','#1565c0',true);
+        var apiFound={},afterAPI=[];
+        still.forEach(function(id){var t=f[id];if(t&&t.lat&&t.lng){apiFound[id]=t;}else{afterAPI.push(id);}});
+        st('Checking census for species + '+afterAPI.length+' missing...','#1565c0',true);
         return fetch(CENSUS).then(function(r){return r.json();}).then(function(census){
           var byId={};census.forEach(function(t){if(t.tree_id)byId[String(t.tree_id)]=t;});
-          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c.latitude||!c.longitude)return;newT.push([id,c.latitude,c.longitude,(c.address||'').replace(/,/g,' '),(c.spc_common||'').replace(/,/g,' ')].join(','));});
-        }).catch(function(){});
+          Object.keys(apiFound).forEach(function(id){var c=byId[id];if(c&&c.spc_common)apiFound[id].species=(c.spc_common||'').replace(/,/g,' ');});
+          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c.latitude||!c.longitude)return;apiFound[id]={lat:c.latitude,lng:c.longitude,address:(c.address||'').replace(/,/g,' '),species:(c.spc_common||'').replace(/,/g,' ')};});
+        }).catch(function(){}).then(function(){
+          Object.keys(apiFound).forEach(function(id){var t=apiFound[id];newT.push([id,t.lat,t.lng,t.address,t.species].join(','));});
+        });
       }).then(function(){
         var wp=Promise.resolve();
         if(newA.length){var uA=aC.trimEnd()+'\n'+newA.join('\n')+'\n';wp=wp.then(function(){return ghW(ACT,uA,aSha,'Sync '+TODAY+' (+'+newA.length+')');});}

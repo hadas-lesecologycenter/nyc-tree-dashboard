@@ -145,7 +145,7 @@
     // Try a single tree first to detect correct field name
     function makeFields(batch, fieldName) {
       return batch.map(function (id, j) {
-        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
+        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress}';
       }).join(' ');
     }
 
@@ -168,7 +168,7 @@
                 lat:     t.latitude  || '',
                 lng:     t.longitude || '',
                 address: (t.closestAddress || '').replace(/,/g, ' '),
-                species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
+                species: ''
               };
             });
           }).catch(function () {});
@@ -281,30 +281,43 @@
       status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
 
       return fetchTreeCoords(stillMissing).then(function (fetched) {
+        var apiFound = {};
         var afterAPI = [];
         stillMissing.forEach(function (id) {
           var t = fetched[id];
           if (t && t.lat && t.lng) {
-            newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+            apiFound[id] = t;
           } else {
             afterAPI.push(id);
           }
         });
 
-        // Fall back to census data for trees the API couldn't locate
-        if (!afterAPI.length) return afterAPI;
-        status('⏳ Checking census data for ' + afterAPI.length + ' remaining trees…', '#1565c0', true);
+        // Fetch census data for species names and coordinates of trees the API missed
+        status('⏳ Checking census data for species + ' + afterAPI.length + ' missing trees…', '#1565c0', true);
         return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (census) {
           var byId = {};
           census.forEach(function (t) { if (t.tree_id) byId[String(t.tree_id)] = t; });
+          // Backfill species for API-found trees
+          Object.keys(apiFound).forEach(function (id) {
+            var c = byId[id];
+            if (c && c.spc_common) apiFound[id].species = (c.spc_common || '').replace(/,/g, ' ');
+          });
+          // Use census coords for trees the API couldn't locate
           afterAPI.forEach(function (id) {
             var c = byId[id];
             if (!c || !c.latitude || !c.longitude) return;
-            var addr = (c.address || '').replace(/,/g, ' ');
-            var sp   = (c.spc_common || '').replace(/,/g, ' ');
-            newTreeLines.push([id, c.latitude, c.longitude, addr, sp].join(','));
+            apiFound[id] = {
+              lat: c.latitude, lng: c.longitude,
+              address: (c.address || '').replace(/,/g, ' '),
+              species: (c.spc_common || '').replace(/,/g, ' ')
+            };
           });
-        }).catch(function () {});
+        }).catch(function () {}).then(function () {
+          Object.keys(apiFound).forEach(function (id) {
+            var t = apiFound[id];
+            newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          });
+        });
       }).then(function () {
 
         // Write files sequentially to avoid branch-tip conflicts
