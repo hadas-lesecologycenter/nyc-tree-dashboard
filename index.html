@@ -3464,20 +3464,22 @@ function switchViewById(view) {
       if(!ids.length)return Promise.resolve({});
       console.log('[sync] fetchCoords called with '+ids.length+' IDs:',ids);
       var res={};
-      function store(t){if(!t||!t.id)return;var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:(t.closestAddress||t.address||'').replace(/,/g,' '),species:''};}
-      var batches=[];for(var i=0;i<ids.length;i+=BS)batches.push(ids.slice(i,i+BS));
-      var done=0,tot=batches.length;
-      return batches.reduce(function(p,batch){return p.then(function(){
-        done++;st('Fetching tree locations ('+done+'/'+tot+')...','#1565c0',true);
-        var f=batch.map(function(id,j){return 't'+j+':tree(id:'+id+'){id latitude longitude}';}).join(' ');
-        var q='{'+f+'}';
-        console.log('[sync] Batch '+done+'/'+tot+' query:',q);
-        return gql(q).then(function(r){
-          console.log('[sync] Batch '+done+'/'+tot+' response:',JSON.stringify(r).slice(0,2000));
-          if(r.errors)console.log('[sync] Batch '+done+' errors:',r.errors);
-          Object.values(r.data||{}).forEach(store);
-        }).catch(function(e){console.log('[sync] Batch '+done+' threw:',e);});
-      });},Promise.resolve()).then(function(){
+      var done=0,tot=ids.length;
+      // One query per tree, in parallel. Batched alias queries fail entirely
+      // when any single tree hits the "Read NULL value for computed column"
+      // server bug — a bad tree poisons every sibling in the batch.
+      return Promise.all(ids.map(function(id){
+        return gql('{tree(id:'+id+'){id latitude longitude}}').then(function(r){
+          done++;st('Fetching tree locations ('+done+'/'+tot+')...','#1565c0',true);
+          var t=r&&r.data&&r.data.tree;
+          if(t&&t.id){
+            var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';
+            if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:'',species:''};
+          }else if(r&&r.errors){
+            console.log('[sync] Tree '+id+' error:',JSON.stringify(r.errors).slice(0,300));
+          }
+        }).catch(function(e){console.log('[sync] Tree '+id+' threw:',e);});
+      })).then(function(){
         console.log('[sync] fetchCoords done. Found '+Object.keys(res).length+' of '+ids.length+' trees.');
         return res;
       });
