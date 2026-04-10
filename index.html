@@ -3462,6 +3462,7 @@ function switchViewById(view) {
     function fetchActs(){return gql('query{treeGroupById(id:'+GID+'){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}').then(function(r){return((r.data||{}).treeGroupById||{}).recentActivities||[];});}
     function fetchCoords(ids){
       if(!ids.length)return Promise.resolve({});
+      console.log('[sync] fetchCoords called with '+ids.length+' IDs:',ids);
       var res={};
       function store(t){if(!t||!t.id)return;var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:(t.closestAddress||t.address||'').replace(/,/g,' '),species:''};}
       var batches=[];for(var i=0;i<ids.length;i+=BS)batches.push(ids.slice(i,i+BS));
@@ -3469,8 +3470,17 @@ function switchViewById(view) {
       return batches.reduce(function(p,batch){return p.then(function(){
         done++;st('Fetching tree locations ('+done+'/'+tot+')...','#1565c0',true);
         var f=batch.map(function(id,j){return 't'+j+':tree(id:'+id+'){id latitude longitude closestAddress}';}).join(' ');
-        return gql('{'+f+'}').then(function(r){Object.values(r.data||{}).forEach(store);}).catch(function(e){console.log('[sync] Batch failed:',e);});
-      });},Promise.resolve()).then(function(){return res;});
+        var q='{'+f+'}';
+        console.log('[sync] Batch '+done+'/'+tot+' query:',q);
+        return gql(q).then(function(r){
+          console.log('[sync] Batch '+done+'/'+tot+' response:',JSON.stringify(r).slice(0,2000));
+          if(r.errors)console.log('[sync] Batch '+done+' errors:',r.errors);
+          Object.values(r.data||{}).forEach(store);
+        }).catch(function(e){console.log('[sync] Batch '+done+' threw:',e);});
+      });},Promise.resolve()).then(function(){
+        console.log('[sync] fetchCoords done. Found '+Object.keys(res).length+' of '+ids.length+' trees.');
+        return res;
+      });
     }
     var TODAY=new Date().toISOString().slice(0,10);
     function aRow(r){
@@ -3504,14 +3514,19 @@ function switchViewById(view) {
       var newT=[],still=[];
       missing.forEach(function(id){var t=(cd.trees||{})[id];if(t&&t.lat&&t.lng){newT.push([id,t.lat,t.lng,t.address,t.species].join(','));known[id]=true;}else{still.push(id);}});
       st('Cache: '+newT.length+' coords. Fetching '+still.length+' more...','#1565c0',true);
+      console.log('[sync] Missing tree IDs:',still);
       return fetchCoords(still).then(function(f){
         var apiFound={},afterAPI=[];
         still.forEach(function(id){var t=f[id];if(t&&t.lat&&t.lng){apiFound[id]=t;}else{afterAPI.push(id);}});
+        console.log('[sync] After API: '+Object.keys(apiFound).length+' found, '+afterAPI.length+' still missing.');
         st('Checking census for species + '+afterAPI.length+' missing...','#1565c0',true);
         return fetch(CENSUS).then(function(r){return r.json();}).then(function(byId){
+          console.log('[sync] Census loaded with '+Object.keys(byId).length+' entries');
+          var cenHits=0;
           Object.keys(apiFound).forEach(function(id){var c=byId[id];if(c&&c[3])apiFound[id].species=c[3];});
-          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c[0]||!c[1])return;apiFound[id]={lat:c[0],lng:c[1],address:c[2]||'',species:c[3]||''};});
-        }).catch(function(e){st('Census fallback failed: '+e.message,'#e65100',true);}).then(function(){
+          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c[0]||!c[1]){console.log('[sync] Census miss for tree '+id);return;}apiFound[id]={lat:c[0],lng:c[1],address:c[2]||'',species:c[3]||''};cenHits++;});
+          console.log('[sync] Census found '+cenHits+' of '+afterAPI.length+' still-missing trees');
+        }).catch(function(e){console.log('[sync] Census fetch error:',e);st('Census fallback failed: '+e.message,'#e65100',true);}).then(function(){
           Object.keys(apiFound).forEach(function(id){var t=apiFound[id];newT.push([id,t.lat,t.lng,t.address,t.species].join(','));});
         });
       }).then(function(){

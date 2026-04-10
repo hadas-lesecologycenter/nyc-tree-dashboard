@@ -135,6 +135,7 @@
   // ── Fetch tree coordinates via tree(id:N) in batches ─────────
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
+    console.log('[sync] fetchTreeCoords called with ' + ids.length + ' IDs:', ids);
     var results = {};
 
     function storeTree(t) {
@@ -164,11 +165,18 @@
         var fields = batch.map(function (id, j) {
           return 't' + j + ':tree(id:' + id + '){id latitude longitude closestAddress}';
         }).join(' ');
-        return gql('{' + fields + '}').then(function (resp) {
+        var q = '{' + fields + '}';
+        console.log('[sync] Batch ' + done + '/' + total + ' query:', q);
+        return gql(q).then(function (resp) {
+          console.log('[sync] Batch ' + done + '/' + total + ' response:', JSON.stringify(resp).slice(0, 2000));
+          if (resp.errors) console.log('[sync] Batch ' + done + ' errors:', resp.errors);
           Object.values(resp.data || {}).forEach(storeTree);
-        }).catch(function () {});
+        }).catch(function (e) { console.log('[sync] Batch ' + done + ' threw:', e); });
       });
-    }, Promise.resolve()).then(function () { return results; });
+    }, Promise.resolve()).then(function () {
+      console.log('[sync] fetchTreeCoords done. Found ' + Object.keys(results).length + ' of ' + ids.length + ' trees.');
+      return results;
+    });
   }
 
   // ── Format activity as CSV row ────────────────────────────────
@@ -273,6 +281,7 @@
       });
 
       status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
+      console.log('[sync] Missing tree IDs:', stillMissing);
 
       return fetchTreeCoords(stillMissing).then(function (fetched) {
         var apiFound = {};
@@ -285,11 +294,14 @@
             afterAPI.push(id);
           }
         });
+        console.log('[sync] After API: ' + Object.keys(apiFound).length + ' found, ' + afterAPI.length + ' still missing.');
 
         // Fetch lightweight census coords for species + missing tree locations
         status('⏳ Checking census data for species + ' + afterAPI.length + ' missing trees…', '#1565c0', true);
         return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (byId) {
           // byId format: { "tree_id": [lat, lng, address, species] }
+          console.log('[sync] Census loaded with ' + Object.keys(byId).length + ' entries');
+          var cenHits = 0;
           // Backfill species for API-found trees
           Object.keys(apiFound).forEach(function (id) {
             var c = byId[id];
@@ -298,10 +310,12 @@
           // Use census coords for trees the API couldn't locate
           afterAPI.forEach(function (id) {
             var c = byId[id];
-            if (!c || !c[0] || !c[1]) return;
+            if (!c || !c[0] || !c[1]) { console.log('[sync] Census miss for tree ' + id); return; }
             apiFound[id] = { lat: c[0], lng: c[1], address: c[2] || '', species: c[3] || '' };
+            cenHits++;
           });
-        }).catch(function (e) { status('⚠️ Census fallback failed: ' + e.message, '#e65100', true); }).then(function () {
+          console.log('[sync] Census found ' + cenHits + ' of ' + afterAPI.length + ' still-missing trees');
+        }).catch(function (e) { console.log('[sync] Census fetch error:', e); status('⚠️ Census fallback failed: ' + e.message, '#e65100', true); }).then(function () {
           Object.keys(apiFound).forEach(function (id) {
             var t = apiFound[id];
             newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
