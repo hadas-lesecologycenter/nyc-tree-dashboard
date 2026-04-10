@@ -132,48 +132,34 @@
     });
   }
 
-  // ── Fetch tree coordinates via tree(id:N) in batches ─────────
+  // ── Fetch tree coordinates one at a time, in parallel ────────
+  // Batched alias queries (e.g. {t0:tree(id:N)... t17:tree(id:N)...}) fail
+  // entirely when any single tree hits the "Read NULL value for ResultSet
+  // column <computed>" server bug — a bad tree poisons every sibling in the
+  // batch. So we issue one query per tree; a bad tree only kills itself.
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
     console.log('[sync] fetchTreeCoords called with ' + ids.length + ' IDs:', ids);
     var results = {};
-
-    function storeTree(t) {
-      if (!t || !t.id) return;
-      var lat = t.latitude || t.lat || '';
-      var lng = t.longitude || t.lng || '';
-      if (lat && lng) {
-        results[String(t.id)] = {
-          lat: lat, lng: lng,
-          address: (t.closestAddress || t.address || '').replace(/,/g, ' '),
-          species: ''
-        };
-      }
-    }
-
-    var batches = [];
-    for (var i = 0; i < ids.length; i += BATCH_SIZE) {
-      batches.push(ids.slice(i, i + BATCH_SIZE));
-    }
-    var total = batches.length;
+    var total = ids.length;
     var done = 0;
 
-    return batches.reduce(function (p, batch) {
-      return p.then(function () {
+    return Promise.all(ids.map(function (id) {
+      return gql('{tree(id:' + id + '){id latitude longitude}}').then(function (resp) {
         done++;
         status('⏳ Fetching tree locations (' + done + '/' + total + ')…', '#1565c0', true);
-        var fields = batch.map(function (id, j) {
-          return 't' + j + ':tree(id:' + id + '){id latitude longitude}';
-        }).join(' ');
-        var q = '{' + fields + '}';
-        console.log('[sync] Batch ' + done + '/' + total + ' query:', q);
-        return gql(q).then(function (resp) {
-          console.log('[sync] Batch ' + done + '/' + total + ' response:', JSON.stringify(resp).slice(0, 2000));
-          if (resp.errors) console.log('[sync] Batch ' + done + ' errors:', resp.errors);
-          Object.values(resp.data || {}).forEach(storeTree);
-        }).catch(function (e) { console.log('[sync] Batch ' + done + ' threw:', e); });
-      });
-    }, Promise.resolve()).then(function () {
+        var t = resp && resp.data && resp.data.tree;
+        if (t && t.id) {
+          var lat = t.latitude || t.lat || '';
+          var lng = t.longitude || t.lng || '';
+          if (lat && lng) {
+            results[String(t.id)] = { lat: lat, lng: lng, address: '', species: '' };
+          }
+        } else if (resp && resp.errors) {
+          console.log('[sync] Tree ' + id + ' error:', JSON.stringify(resp.errors).slice(0, 300));
+        }
+      }).catch(function (e) { console.log('[sync] Tree ' + id + ' threw:', e); });
+    })).then(function () {
       console.log('[sync] fetchTreeCoords done. Found ' + Object.keys(results).length + ' of ' + ids.length + ' trees.');
       return results;
     });
