@@ -3547,9 +3547,12 @@ function switchViewById(view) {
   }
 
   try {
-    var src = __bm__.toString();
-    var body = src.slice(src.indexOf('{') + 1, src.lastIndexOf('}'));
-    link.href = 'javascript:(function(){' + body + '})()';
+  try {
+    // Self-updating loader: the bookmarklet is a tiny 1-line stub that
+    // fetches the latest sync.js from GitHub and evals it. This means the
+    // user only ever has to drag this link to their bookmark bar ONCE —
+    // every future code change takes effect automatically on the next click.
+    link.href = "javascript:(function(){var u='https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/bookmarklet/sync.js?t='+Date.now();fetch(u).then(function(r){return r.text();}).then(function(c){(0,eval)(c);}).catch(function(e){alert('Sync loader failed: '+e.message);});})();";
   } catch(e) {
     console.error('Bookmarklet setup failed:', e);
   }
