@@ -14,7 +14,18 @@
 var CONFIG = {
   TRACKER_SHEET_ID: '1EKZHAAlNOPPQEgxDgR7IMBKXWY5aR3VEURl4crImsrY',
   BRIEF_FOLDER_ID: '1vAH4OPtWMIkZIBtKRcdKwfbYT4bebfnC',
-  TRACKER_SHEET_NAME: 'Sheet1'
+  TRACKER_SHEET_NAME: 'Sheet1',
+  // Google Chat integration - fill in after setting up a webhook in your
+  // Street Tree Care Crew space: Space menu -> Apps & integrations ->
+  // Manage webhooks -> Add webhook -> copy URL.
+  CHAT_WEBHOOK_URL: '',
+  // Email addresses of team members (used for Google Tasks delegation
+  // and task-mention formatting).
+  TEAM: {
+    'Maddy': '',
+    'Hadas': '',
+    'Gretel': ''
+  }
 };
 
 function doGet(e) {
@@ -129,7 +140,156 @@ function pushTasksToGoogleTasks(tasks) {
   }
 }
 
+/**
+ * ========================================================================
+ * GOOGLE CHAT SPACE INTEGRATION
+ * ========================================================================
+ * Posts tasks to the Street Tree Care Crew Google Chat space.
+ *
+ * Google does not currently expose a public API for creating tasks inside
+ * a Chat space's "Tasks" panel (the pink panel with "Add task to space").
+ * Instead, this posts formatted task messages via an incoming webhook, so
+ * the whole team sees the assignment in the space conversation.
+ *
+ * SETUP:
+ *   1. Open your "Street Tree Care Crew" space in Google Chat
+ *   2. Click the space name at the top -> Apps & integrations
+ *   3. Manage webhooks -> Add webhook -> give it a name (e.g., "STC Dashboard")
+ *   4. Copy the webhook URL
+ *   5. Paste it into CONFIG.CHAT_WEBHOOK_URL at the top of this file
+ *   6. Also fill in CONFIG.TEAM email addresses (for @mentions)
+ */
+function pushTasksToChatSpace(tasks) {
+  try {
+    if (!CONFIG.CHAT_WEBHOOK_URL) {
+      return {success:false, error:'Set CHAT_WEBHOOK_URL in Code.gs CONFIG. See setup instructions at the top of pushTasksToChatSpace.'};
+    }
+    if (!tasks || !tasks.length) return {success:false, error:'No tasks to push'};
+
+    // Group tasks by assignee so each person gets one clean message
+    var byAssignee = {};
+    tasks.forEach(function(t) {
+      var who = t.assignee || 'Unassigned';
+      if (!byAssignee[who]) byAssignee[who] = [];
+      byAssignee[who].push(t);
+    });
+
+    var count = 0;
+    Object.keys(byAssignee).forEach(function(who) {
+      var list = byAssignee[who];
+      var email = CONFIG.TEAM[who] || '';
+      // Build a rich card with one "task row" per task
+      var widgets = list.map(function(t) {
+        var dueLabel = formatDue_(t.due);
+        return {
+          decoratedText: {
+            topLabel: t.phase + ' · ' + (t.evName || 'Event'),
+            text: t.title,
+            bottomLabel: 'Due: ' + dueLabel + (t.evDate ? ' · Event: ' + t.evDate : ''),
+            startIcon: { knownIcon: 'TASK' }
+          }
+        };
+      });
+
+      var mention = email ? '<users/' + email + '>' : who;
+      var card = {
+        text: 'New tasks assigned to ' + mention + ' (' + list.length + ')',
+        cardsV2: [{
+          cardId: 'stc_tasks_' + Date.now() + '_' + who.replace(/\s/g,''),
+          card: {
+            header: {
+              title: '🌳 STC Tasks for ' + who,
+              subtitle: list.length + ' task' + (list.length>1?'s':'') + ' assigned',
+              imageType: 'CIRCLE'
+            },
+            sections: [
+              { header: 'Tasks', widgets: widgets },
+              {
+                widgets: [{
+                  textParagraph: {
+                    text: '<i>From the <b>Street Tree Care Event Dashboard</b>. Check off tasks in the dashboard when complete.</i>'
+                  }
+                }]
+              }
+            ]
+          }
+        }]
+      };
+
+      var resp = UrlFetchApp.fetch(CONFIG.CHAT_WEBHOOK_URL, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(card),
+        muteHttpExceptions: true
+      });
+      if (resp.getResponseCode() >= 200 && resp.getResponseCode() < 300) {
+        count += list.length;
+      }
+    });
+    return {success:true, count:count, assignees:Object.keys(byAssignee).length};
+  } catch(e) {
+    return {success:false, error:e.message};
+  }
+}
+
+/**
+ * Posts a single event summary to the Chat space — useful when a new
+ * event is confirmed to give the team a heads-up with key details.
+ */
+function postEventToChatSpace(ev) {
+  try {
+    if (!CONFIG.CHAT_WEBHOOK_URL) return {success:false, error:'No webhook configured'};
+    var who = ev.owner || 'Unassigned';
+    var email = CONFIG.TEAM[who] || '';
+    var mention = email ? '<users/' + email + '>' : who;
+    var card = {
+      text: 'New event assigned to ' + mention,
+      cardsV2: [{
+        cardId: 'stc_event_' + (ev.id || Date.now()),
+        card: {
+          header: {
+            title: '🌳 ' + ev.name,
+            subtitle: (ev.status || 'confirmed').toUpperCase() + ' · Owner: ' + who
+          },
+          sections: [{
+            widgets: [
+              { decoratedText: { topLabel: 'Date', text: ev.date + (ev.time ? ' · ' + ev.time : ''), startIcon: { knownIcon: 'INVITE' } } },
+              { decoratedText: { topLabel: 'Location', text: ev.location || 'TBD', startIcon: { knownIcon: 'MAP_PIN' } } },
+              { decoratedText: { topLabel: 'Type', text: ev.type || '' } },
+              { decoratedText: { topLabel: 'Expected attendance', text: ev.attendance || 'TBD' } }
+            ]
+          }]
+        }
+      }]
+    };
+    var resp = UrlFetchApp.fetch(CONFIG.CHAT_WEBHOOK_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(card),
+      muteHttpExceptions: true
+    });
+    return {success: resp.getResponseCode() < 300, code: resp.getResponseCode()};
+  } catch(e) {
+    return {success:false, error:e.message};
+  }
+}
+
+function formatDue_(dueStr) {
+  if (!dueStr) return 'TBD';
+  var d = new Date(dueStr + 'T12:00:00');
+  var t = new Date(); t.setHours(0,0,0,0);
+  var dd = new Date(d); dd.setHours(0,0,0,0);
+  var diff = Math.round((dd - t) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff < 0) return Math.abs(diff) + ' days overdue';
+  if (diff <= 14) return 'In ' + diff + ' days';
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+
 function testConfig() {
   try { var ss=SpreadsheetApp.openById(CONFIG.TRACKER_SHEET_ID); Logger.log('Sheet OK: '+ss.getName()); } catch(e) { Logger.log('Sheet ERROR: '+e.message); }
   if (CONFIG.BRIEF_FOLDER_ID) { try { var f=DriveApp.getFolderById(CONFIG.BRIEF_FOLDER_ID); Logger.log('Folder OK: '+f.getName()); } catch(e) { Logger.log('Folder ERROR: '+e.message); } }
+  Logger.log('Chat webhook: ' + (CONFIG.CHAT_WEBHOOK_URL ? 'configured' : 'NOT configured'));
 }

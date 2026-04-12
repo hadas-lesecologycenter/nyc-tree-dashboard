@@ -581,7 +581,10 @@ function syncTasks(ev) {
   const fresh = generateTasks(ev);
   fresh.forEach(t => {
     const m = old.find(o => o.title===t.title && o.offset===t.offset);
-    if (m) { t.done = m.done; t.assignee = m.assignee || t.assignee; }
+    if (m) { t.done = m.done; }
+    // Assignee always follows the current event owner (reassigning the
+    // event reassigns all its tasks, open or done).
+    t.assignee = ev.owner || '';
   });
   ev.tasks = fresh;
 }
