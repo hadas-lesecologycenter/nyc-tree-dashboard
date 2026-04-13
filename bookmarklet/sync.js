@@ -8,6 +8,7 @@
   var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
   var ACT_PATH   = 'data/activities.csv';
   var TREES_PATH = 'data/trees.csv';
+  var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census-coords.json';
   var GROUP_ID   = 14;
   var BATCH_SIZE = 25;
 
@@ -54,8 +55,9 @@
 
   // ── GraphQL helper ────────────────────────────────────────────
   function gql(query) {
-    return fetch('/api-treemap/graphql', {
+    return fetch('https://www.nycgovparks.org/api-treemap/graphql', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: query })
     }).then(function (r) { return r.json(); });
@@ -130,50 +132,37 @@
     });
   }
 
-  // ── Batch-fetch tree coordinates — try treeById then tree ────
+  // ── Fetch tree coordinates one at a time, in parallel ────────
+  // Batched alias queries (e.g. {t0:tree(id:N)... t17:tree(id:N)...}) fail
+  // entirely when any single tree hits the "Read NULL value for ResultSet
+  // column <computed>" server bug — a bad tree poisons every sibling in the
+  // batch. So we issue one query per tree; a bad tree only kills itself.
   function fetchTreeCoords(ids) {
     if (!ids.length) return Promise.resolve({});
+    console.log('[sync] fetchTreeCoords called with ' + ids.length + ' IDs:', ids);
     var results = {};
-    var batches = [];
-    for (var i = 0; i < ids.length; i += BATCH_SIZE) {
-      batches.push(ids.slice(i, i + BATCH_SIZE));
-    }
-    var total = batches.length;
-    var done  = 0;
+    var total = ids.length;
+    var done = 0;
 
-    // Try a single tree first to detect correct field name
-    function makeFields(batch, fieldName) {
-      return batch.map(function (id, j) {
-        return 't' + j + ':' + fieldName + '(id:' + id + '){id latitude longitude closestAddress species{commonName}}';
-      }).join(' ');
-    }
-
-    // Probe with first id to find working field name
-    var fieldName = 'treeById';
-    var probeP = gql('{probe:treeById(id:' + ids[0] + '){id latitude longitude}}')
-      .then(function (r) {
-        if (r.errors && !r.data) fieldName = 'tree'; // treeById failed, try 'tree'
-      }).catch(function () { fieldName = 'tree'; });
-
-    return probeP.then(function () {
-      return batches.reduce(function (p, batch) {
-        return p.then(function () {
-          done++;
-          status('⏳ Fetching tree locations… (' + done + '/' + total + ')', '#1565c0', true);
-          return gql('{' + makeFields(batch, fieldName) + '}').then(function (resp) {
-            Object.values(resp.data || {}).forEach(function (t) {
-              if (!t || !t.id) return;
-              results[String(t.id)] = {
-                lat:     t.latitude  || '',
-                lng:     t.longitude || '',
-                address: (t.closestAddress || '').replace(/,/g, ' '),
-                species: ((t.species || {}).commonName || '').replace(/,/g, ' ')
-              };
-            });
-          }).catch(function () {});
-        });
-      }, Promise.resolve());
-    }).then(function () { return results; });
+    return Promise.all(ids.map(function (id) {
+      return gql('{tree(id:' + id + '){id latitude longitude}}').then(function (resp) {
+        done++;
+        status('⏳ Fetching tree locations (' + done + '/' + total + ')…', '#1565c0', true);
+        var t = resp && resp.data && resp.data.tree;
+        if (t && t.id) {
+          var lat = t.latitude || t.lat || '';
+          var lng = t.longitude || t.lng || '';
+          if (lat && lng) {
+            results[String(t.id)] = { lat: lat, lng: lng, address: '', species: '' };
+          }
+        } else if (resp && resp.errors) {
+          console.log('[sync] Tree ' + id + ' error:', JSON.stringify(resp.errors).slice(0, 300));
+        }
+      }).catch(function (e) { console.log('[sync] Tree ' + id + ' threw:', e); });
+    })).then(function () {
+      console.log('[sync] fetchTreeCoords done. Found ' + Object.keys(results).length + ' of ' + ids.length + ' trees.');
+      return results;
+    });
   }
 
   // ── Format activity as CSV row ────────────────────────────────
@@ -197,13 +186,26 @@
       .then(function (r) { return r.json(); }).catch(function () { return null; });
   }
   function ghWrite(path, content, sha, msg) {
-    var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
-    if (sha) body.sha = sha;
-    return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
-      method: 'PUT',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
-      body: JSON.stringify(body)
-    }).then(function (r) { if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status); });
+    function putFile(s) {
+      var body = { message: msg, content: btoa(unescape(encodeURIComponent(content))) };
+      if (s) body.sha = s;
+      return fetch('https://api.github.com/repos/' + REPO + '/contents/' + path, {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders),
+        body: JSON.stringify(body)
+      });
+    }
+    return putFile(sha).then(function (r) {
+      if (r.status === 409) {
+        // SHA conflict — re-fetch current file SHA and retry
+        return ghRead(path).then(function (file) {
+          return putFile(file ? file.sha : null);
+        }).then(function (r2) {
+          if (!r2.ok) throw new Error('GitHub push failed: HTTP ' + r2.status + ' (retry after conflict)');
+        });
+      }
+      if (!r.ok) throw new Error('GitHub push failed: HTTP ' + r.status);
+    });
   }
 
   // ── Main ──────────────────────────────────────────────────────
@@ -265,26 +267,64 @@
       });
 
       status('⏳ Cache: ' + newTreeLines.length + ' coords found. Fetching ' + stillMissing.length + ' more…', '#1565c0', true);
+      console.log('[sync] Missing tree IDs:', stillMissing);
 
       return fetchTreeCoords(stillMissing).then(function (fetched) {
+        var apiFound = {};
+        var afterAPI = [];
         stillMissing.forEach(function (id) {
           var t = fetched[id];
-          if (!t || !t.lat || !t.lng) return;
-          newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          if (t && t.lat && t.lng) {
+            apiFound[id] = t;
+          } else {
+            afterAPI.push(id);
+          }
         });
+        console.log('[sync] After API: ' + Object.keys(apiFound).length + ' found, ' + afterAPI.length + ' still missing.');
 
-        var writes = [];
+        // Fetch lightweight census coords for species + missing tree locations
+        status('⏳ Checking census data for species + ' + afterAPI.length + ' missing trees…', '#1565c0', true);
+        return fetch(CENSUS_URL).then(function (r) { return r.json(); }).then(function (byId) {
+          // byId format: { "tree_id": [lat, lng, address, species] }
+          console.log('[sync] Census loaded with ' + Object.keys(byId).length + ' entries');
+          var cenHits = 0;
+          // Backfill species for API-found trees
+          Object.keys(apiFound).forEach(function (id) {
+            var c = byId[id];
+            if (c && c[3]) apiFound[id].species = c[3];
+          });
+          // Use census coords for trees the API couldn't locate
+          afterAPI.forEach(function (id) {
+            var c = byId[id];
+            if (!c || !c[0] || !c[1]) { console.log('[sync] Census miss for tree ' + id); return; }
+            apiFound[id] = { lat: c[0], lng: c[1], address: c[2] || '', species: c[3] || '' };
+            cenHits++;
+          });
+          console.log('[sync] Census found ' + cenHits + ' of ' + afterAPI.length + ' still-missing trees');
+        }).catch(function (e) { console.log('[sync] Census fetch error:', e); status('⚠️ Census fallback failed: ' + e.message, '#e65100', true); }).then(function () {
+          Object.keys(apiFound).forEach(function (id) {
+            var t = apiFound[id];
+            newTreeLines.push([id, t.lat, t.lng, t.address, t.species].join(','));
+          });
+        });
+      }).then(function () {
+
+        // Write files sequentially to avoid branch-tip conflicts
+        var writeP = Promise.resolve();
         if (newActLines.length > 0) {
           var updAct = actCSV.trimEnd() + '\n' + newActLines.join('\n') + '\n';
-          writes.push(ghWrite(ACT_PATH, updAct, actSha,
-            'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)'));
+          writeP = writeP.then(function () {
+            return ghWrite(ACT_PATH, updAct, actSha,
+              'Sync ' + TODAY + ' (+' + newActLines.length + ' activities)');
+          });
         }
-        // Always write trees.csv so we can confirm what was found
         var updTrees = treesCSV.trimEnd() + (newTreeLines.length ? '\n' + newTreeLines.join('\n') : '') + '\n';
-        writes.push(ghWrite(TREES_PATH, updTrees, treesSha,
-          'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')'));
+        writeP = writeP.then(function () {
+          return ghWrite(TREES_PATH, updTrees, treesSha,
+            'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')');
+        });
 
-        return Promise.all(writes).then(function () {
+        return writeP.then(function () {
           var parts = [];
           if (newActLines.length)  parts.push(newActLines.length + ' new activities');
           parts.push(newTreeLines.length + ' of ' + missingIds.length + ' tree locations found');

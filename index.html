@@ -928,6 +928,131 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leaflet-popup-content-wrapper { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
   .leaflet-popup-tip { background: var(--bg2); }
   .leaflet-popup-content { margin: 12px 14px; }
+
+  /* ===== MOBILE RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    /* Compact header - bottom tab bar replaces nav */
+    header { padding: 0 12px; height: 48px; gap: 8px; }
+    .brand-sub { display: none; }
+    .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+    nav { display: none; }
+
+    /* Filter bar - horizontal scroll */
+    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-sep { display: none; }
+    .tree-count { display: none; }
+
+    /* Body padding for bottom tab bar */
+    body { padding-bottom: 56px; }
+
+    /* Stats view - responsive grids */
+    #stats-view { padding: 14px; gap: 14px; }
+    .summary-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .charts-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Map overlay - keep away from bottom tab bar */
+    .map-overlay { top: auto; bottom: 68px; right: 8px; }
+
+    /* Drag handles for bottom sheets */
+    #map-tree-panel::before,
+    #priority-sidebar::before,
+    #block-tree-panel::before {
+      content: ''; display: block; width: 36px; height: 4px;
+      background: var(--border2); border-radius: 2px; margin: 10px auto 4px;
+    }
+
+    /* Map tree detail panel - bottom sheet */
+    #map-tree-panel {
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 65vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2001 !important;
+    }
+
+    /* Priority sidebar - hidden by default on mobile; shown as bottom sheet when toggled */
+    #priority-sidebar {
+      display: none;
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 55vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2000 !important;
+    }
+
+    /* Block tree panel - bottom sheet */
+    #block-tree-panel {
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 65vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2001 !important;
+    }
+
+    /* Mobile view tab bars (in Blocks and MyBlock views) */
+    .mobile-tab-bar { display: flex !important; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+    .mobile-tab {
+      flex: 1; padding: 9px 4px; text-align: center; font-size: 13px; font-weight: 600;
+      color: var(--text2); cursor: pointer; border: none; background: none;
+      font-family: 'Nunito', sans-serif; border-bottom: 2px solid transparent;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Blocks view - stacked panels toggled by tab bar */
+    #blocks-view .blocks-inner { flex-direction: column !important; }
+    #blocks-list-panel {
+      width: 100% !important; flex-shrink: 0 !important;
+      border-right: none !important; border-bottom: 1px solid var(--border);
+      flex: 1; min-height: 0;
+    }
+    #blocks-list-panel.mobile-hidden { display: none !important; }
+    #blocks-map-container { flex: 1; min-height: 0; }
+    #blocks-map-container.mobile-hidden { display: none !important; }
+
+    /* MyBlock view - stacked panels toggled by tab bar */
+    #myblock-view .myblock-inner {
+      flex-direction: column !important;
+      height: auto !important; flex: 1; min-height: 0;
+    }
+    #myblock-sidebar {
+      width: 100% !important; flex-shrink: 0 !important;
+      border-right: none !important; border-bottom: 1px solid var(--border);
+      flex: 1; min-height: 0; max-height: 45vh;
+    }
+    #myblock-sidebar.mobile-hidden { display: none !important; }
+    #myblock-dashboard.mobile-hidden { display: none !important; }
+
+    /* Bottom navigation bar */
+    #mobile-tab-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 56px;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      display: flex; align-items: stretch; z-index: 3000;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+    .mob-nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px; border: none; background: none; cursor: pointer;
+      color: var(--text3); font-family: 'Nunito', sans-serif;
+      transition: color 0.15s; padding: 4px 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mob-nav-btn .mob-icon { font-size: 18px; line-height: 1; }
+    .mob-nav-btn .mob-label { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .mob-nav-btn.active { color: var(--accent); }
+  }
+
+  @media (max-width: 480px) {
+    .summary-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -991,7 +1116,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
     <!-- Priority sidebar overlaid on map -->
-    <div id="priority-sidebar" style="display:block;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
+    <div id="priority-sidebar" style="position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
       <div style="padding:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🌱 Priority Mode</h2>
@@ -1075,9 +1200,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- BLOCKS VIEW -->
   <div id="blocks-view" class="view">
-    <div style="display:flex;flex:1;overflow:hidden">
+    <div id="blocks-mobile-tabs" class="mobile-tab-bar" style="display:none">
+      <button class="mobile-tab active" onclick="switchBlocksTab('list',this)">📋 Block List</button>
+      <button class="mobile-tab" onclick="switchBlocksTab('map',this)">🗺 Map</button>
+    </div>
+    <div class="blocks-inner" style="display:flex;flex:1;overflow:hidden">
       <!-- Left: ranked list -->
-      <div style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+      <div id="blocks-list-panel" style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🏙 Top 100 Blocks</h2>
           <div id="counts-explanation" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.7">
@@ -1101,7 +1230,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
-    <div style="display:flex;height:100%;overflow:hidden">
+    <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
+      <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
+      <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
+    </div>
+    <div class="myblock-inner" style="display:flex;height:100%;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:4px">🌿 Tree Care</h2>
@@ -1113,6 +1246,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tc-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.5s"></div>
           </div>
           <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for in 2026</div>
+        </div>
+        <div id="res-counter-widget" style="margin:0 16px 10px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0;display:none">
+          <div style="font-size:10px;font-weight:700;color:#7b3fa0;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📅 Reservations</div>
+          <div id="res-counter-text" style="font-size:10px;color:var(--text3)">0 trees reserved</div>
         </div>
         <div id="myblock-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--text3)">
           <div style="font-size:36px;margin-bottom:12px">🌿</div>
@@ -1131,7 +1268,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tc-care-map-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;pointer-events:none">
               <div style="font-size:48px;margin-bottom:16px">🌿</div>
               <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No care activities yet</div>
-              <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet (in the About tab) to sync care activities from the NYC Tree Map automatically.</div>
+              <div style="font-size:12px;color:var(--text3);line-height:1.6">Tap any tree dot on the map to reserve it for future care. Or use the bookmarklet (in the About tab) to sync care activities from the NYC Tree Map automatically.</div>
             </div>
           </div>
           <div id="myblock-dashboard-content" style="display:none;position:absolute;inset:0;padding:24px;max-width:760px;overflow-y:auto"></div>
@@ -1151,6 +1288,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button onclick="document.getElementById('add-goal-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
       </div>
       <div id="add-goal-body"></div>
+    </div>
+  </div>
+
+  <!-- RESERVE TREE MODAL -->
+  <div id="reserve-tree-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📅 Reserve Tree for Care</h2>
+        <button onclick="closeReserveModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="reserve-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Reservation Name</label>
+        <input id="reserve-name-input" type="text" placeholder="e.g., Watering walk, Spring care…"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
+        <input id="reserve-date-input" type="date"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Reserve Tree</button>
+      </div>
     </div>
   </div>
 
@@ -2593,6 +2755,8 @@ function tcRenderCareMap() {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
+  // Add background tree dots once (guarded inside function)
+  tcAddCareMapBackgroundTrees();
 
   // Clear old year layers
   Object.values(tcCareYearLayers).forEach(ly => {
@@ -2623,8 +2787,20 @@ function tcRenderCareMap() {
   const totalTrees = Object.keys(by2026).length + Object.keys(by2025).length + Object.keys(byEarlier).length;
 
   if (totalTrees === 0) {
-    if (emptyEl)  emptyEl.style.display = 'flex';
-    if (legendEl) legendEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = reservationLoad().length > 0 ? 'none' : 'flex';
+    if (legendEl) {
+      const resCount = reservationLoad().length;
+      if (resCount > 0) {
+        legendEl.innerHTML = '<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>' +
+          '<div style="display:flex;align-items:center;gap:7px;font-size:11px">' +
+          '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7b3fa0;flex-shrink:0"></span>' +
+          '<span>📅 Reserved <span style="color:#999">(' + resCount + ')</span></span></div>';
+        legendEl.style.display = 'block';
+      } else {
+        legendEl.style.display = 'none';
+      }
+    }
+    tcRenderReservationsOnCareMap();
     setTimeout(() => tcCareMap.invalidateSize(), 50);
     return;
   }
@@ -2639,7 +2815,14 @@ function tcRenderCareMap() {
     layer.addTo(tcCareMap);
 
     Object.entries(bucket).forEach(([tid, { events, area, latestYear }]) => {
-      const coords = _tcTreeCoords[tid];
+      let coords = _tcTreeCoords[tid];
+      // Fall back to census data if trees.csv doesn't have this tree
+      if ((!coords || !coords.lat || !coords.lng) && typeof allTrees !== 'undefined') {
+        const ct = allTrees.find(t => String(t.tree_id) === tid);
+        if (ct && ct.latitude && ct.longitude) {
+          coords = { lat: parseFloat(ct.latitude), lng: parseFloat(ct.longitude), address: ct.address || '', species: ct.spc_common || '' };
+        }
+      }
       if (!coords || !coords.lat || !coords.lng) return;
       const { lat, lng, address, species } = coords;
       allLatLngs.push([lat, lng]);
@@ -2688,10 +2871,18 @@ function tcRenderCareMap() {
     </label>`
   ).join('');
 
+  const resCount = reservationLoad().length;
+  const resLegendRow = resCount > 0
+    ? `<div style="display:flex;align-items:center;gap:7px;margin-top:5px;padding-top:5px;border-top:1px solid #e0dbd3;font-size:11px">
+        <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7b3fa0;flex-shrink:0"></span>
+        <span>📅 Reserved <span style="color:#999">(${resCount})</span></span>
+      </div>`
+    : '';
   if (legendEl) {
-    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}`;
+    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}${resLegendRow}`;
     legendEl.style.display = 'block';
   }
+  tcRenderReservationsOnCareMap();
 
   // invalidateSize first so Leaflet knows the container dimensions,
   // then fitBounds so the zoom is calculated correctly.
@@ -3060,6 +3251,168 @@ function tcSimplify(pts) {
   return r;
 }
 
+// ========== TREE RESERVATIONS ==========
+
+function reservationLoad() {
+  try { return JSON.parse(localStorage.getItem('tc_reservations') || '[]'); }
+  catch(e) { return []; }
+}
+function reservationSave(reservations) {
+  localStorage.setItem('tc_reservations', JSON.stringify(reservations));
+}
+function reservationRemove(id) {
+  reservationSave(reservationLoad().filter(r => r.id !== id));
+  renderReservationQueue();
+  updateReservationCounter();
+  if (tcCareMap) tcRenderReservationsOnCareMap();
+  if (mapInstance) tcRenderReservationsOnMainMap();
+}
+function getReservedTreeIds() {
+  return new Set(reservationLoad().map(r => String(r.treeId)));
+}
+
+let _pendingReserveTree = null;
+
+function openReserveModal(tree) {
+  _pendingReserveTree = tree;
+  const modal = document.getElementById('reserve-tree-modal');
+  if (!modal) return;
+  const info = document.getElementById('reserve-tree-info');
+  if (info) {
+    info.innerHTML =
+      '<strong style="font-size:13px;display:block;margin-bottom:3px">' + (tree.spc_common || 'Unknown species') + '</strong>' +
+      (tree.address ? '<span style="color:var(--text3);font-size:11px">' + tree.address + '</span>' : '') +
+      (tree.health ? '<span style="color:var(--text3);font-size:11px;margin-left:8px">· Health: ' + tree.health + '</span>' : '');
+  }
+  const dateInput = document.getElementById('reserve-date-input');
+  if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+  modal.style.display = 'flex';
+  setTimeout(() => { const ni = document.getElementById('reserve-name-input'); if (ni) ni.focus(); }, 100);
+}
+
+function closeReserveModal() {
+  const modal = document.getElementById('reserve-tree-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingReserveTree = null;
+}
+
+function confirmReserveTree() {
+  const tree = _pendingReserveTree;
+  if (!tree) return;
+  const name = (document.getElementById('reserve-name-input').value || '').trim();
+  const date = document.getElementById('reserve-date-input').value;
+  if (!name) { document.getElementById('reserve-name-input').focus(); return; }
+  if (!date) { document.getElementById('reserve-date-input').focus(); return; }
+
+  const all = reservationLoad();
+  const existingIdx = all.findIndex(r => String(r.treeId) === String(tree.tree_id));
+  if (existingIdx >= 0) {
+    if (!confirm('This tree is already reserved as "' + all[existingIdx].name + '" on ' + all[existingIdx].date + '. Replace it?')) return;
+    all.splice(existingIdx, 1);
+  }
+
+  const reservation = {
+    id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    treeId: String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude))),
+    name,
+    date,
+    lat: parseFloat(tree.latitude || tree.lat),
+    lng: parseFloat(tree.longitude || tree.lng),
+    species: tree.spc_common || '',
+    address: tree.address || '',
+    health: tree.health || '',
+    createdAt: new Date().toISOString(),
+  };
+  all.push(reservation);
+  reservationSave(all);
+
+  document.getElementById('reserve-name-input').value = '';
+  closeReserveModal();
+  renderReservationQueue();
+  updateReservationCounter();
+  if (tcCareMap) tcRenderReservationsOnCareMap();
+  if (mapInstance) tcRenderReservationsOnMainMap();
+  tcShowSyncStatus('📅 Reserved for ' + date);
+}
+
+function updateReservationCounter() {
+  const reservations = reservationLoad();
+  const widget = document.getElementById('res-counter-widget');
+  const textEl = document.getElementById('res-counter-text');
+  if (!widget || !textEl) return;
+  if (!reservations.length) { widget.style.display = 'none'; return; }
+  widget.style.display = 'block';
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = reservations.filter(r => r.date >= today).length;
+  const total = reservations.length;
+  textEl.textContent = total + ' tree' + (total !== 1 ? 's' : '') + ' reserved' +
+    (upcoming < total ? ' · ' + upcoming + ' upcoming' : '');
+}
+
+function renderReservationQueue() {
+  const reservations = reservationLoad();
+  const listEl = document.getElementById('claimed-blocks-list');
+  const emptyEl = document.getElementById('myblock-empty');
+  if (!listEl) return;
+
+  const existing = document.getElementById('res-queue-section');
+  if (existing) existing.remove();
+
+  updateReservationCounter();
+  if (!reservations.length) return;
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+
+  const section = document.createElement('div');
+  section.id = 'res-queue-section';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:#7b3fa0;' +
+    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+  header.textContent = '📅 Reservations';
+  section.appendChild(header);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const sorted = [...reservations].sort((a, b) => a.date > b.date ? 1 : -1);
+
+  sorted.forEach(res => {
+    const dateObj = new Date(res.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const isPast = res.date < today;
+    const isToday = res.date === today;
+    const dateColor = isPast ? 'var(--text3)' : isToday ? '#c62828' : '#7b3fa0';
+
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
+      'border-left:3px solid ' + (isPast ? 'var(--border)' : '#7b3fa0');
+    row.onclick = () => tcZoomToReservation(res.id);
+    row.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px">' + res.name + '</div>' +
+          (res.species || res.address
+            ? '<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">' +
+              (res.species || '') + (res.species && res.address ? ' · ' : '') + (res.address || '') + '</div>'
+            : '') +
+          '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr +
+          (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();reservationRemove(\'' + res.id + '\')" ' +
+          'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px;flex-shrink:0;line-height:1">🗑</button>' +
+      '</div>';
+    section.appendChild(row);
+  });
+
+  listEl.insertBefore(section, listEl.firstChild);
+}
+
+function tcZoomToReservation(id) {
+  const res = reservationLoad().find(r => r.id === id);
+  if (!res) return;
+  if (tcCareMap) tcCareMap.setView([res.lat, res.lng], 17);
+}
+
 // ── Map overlays ──────────────────────────────────────────────
 let tcMainLayer = null;
 
@@ -3081,6 +3434,128 @@ function tcRenderMain() {
     poly.addTo(tcMainLayer);
   });
   tcMainLayer.addTo(mapInstance);
+  tcRenderReservationsOnMainMap();
+}
+
+// ── Reservation map layers ────────────────────────────────────
+let tcReservationsMainLayer = null;
+
+function tcRenderReservationsOnMainMap() {
+  if (!mapInstance) return;
+  if (tcReservationsMainLayer) { tcReservationsMainLayer.clearLayers(); }
+  else { tcReservationsMainLayer = L.layerGroup().addTo(mapInstance); }
+
+  const reservations = reservationLoad();
+  if (!reservations.length) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const renderer = L.canvas({ padding: 0.5 });
+
+  reservations.forEach(res => {
+    if (!res.lat || !res.lng) return;
+    const isPast = res.date < today;
+    const color = isPast ? '#78909c' : '#7b3fa0';
+    const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    L.circleMarker([res.lat, res.lng], {
+      renderer,
+      radius: 6,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 0.92,
+    })
+    .bindTooltip(
+      '<strong>📅 ' + res.name + '</strong><br><span style="font-size:10px;color:' + color + '">' + dateStr + '</span>' +
+      (res.species ? '<br><span style="font-size:10px;color:#888">' + res.species + '</span>' : ''),
+      { sticky: true }
+    )
+    .addTo(tcReservationsMainLayer);
+  });
+}
+
+let tcReservationsCareLayer = null;
+
+function tcRenderReservationsOnCareMap() {
+  if (!tcCareMap) return;
+  if (tcReservationsCareLayer) { tcReservationsCareLayer.clearLayers(); }
+  else { tcReservationsCareLayer = L.layerGroup().addTo(tcCareMap); }
+
+  const reservations = reservationLoad();
+  if (!reservations.length) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  reservations.forEach(res => {
+    if (!res.lat || !res.lng) return;
+    const isPast = res.date < today;
+    const isToday = res.date === today;
+    const color = isPast ? '#78909c' : isToday ? '#c62828' : '#7b3fa0';
+    const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const icon = L.divIcon({
+      className: '',
+      iconSize: [18, 18], iconAnchor: [9, 9],
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:' + color +
+        ';border:2.5px solid #fff;box-shadow:0 0 0 2px ' + color +
+        ',0 2px 6px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1">📅</div>',
+    });
+
+    L.marker([res.lat, res.lng], { icon, zIndexOffset: 1500 })
+      .bindTooltip(
+        '<strong>' + res.name + '</strong><br><span style="font-size:10px;color:' + color + '">' + dateStr +
+        (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
+        (res.species ? '<br><span style="font-size:10px;color:#888">' + res.species + '</span>' : ''),
+        { sticky: true }
+      )
+      .bindPopup(
+        '<div style="font-family:\'Nunito\',sans-serif;min-width:160px">' +
+        '<div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 ' + res.name + '</div>' +
+        (res.species ? '<div style="font-size:11px;color:#666;margin-bottom:2px">' + res.species + '</div>' : '') +
+        (res.address ? '<div style="font-size:11px;color:#888;margin-bottom:6px">' + res.address + '</div>' : '') +
+        '<div style="font-size:11px;font-weight:600;color:' + color + ';margin-bottom:10px">' + dateStr +
+        (isToday ? ' · Today!' : isPast ? ' · Past' : '') + '</div>' +
+        '<button onclick="reservationRemove(\'' + res.id + '\');if(tcCareMap)tcCareMap.closePopup();" ' +
+        'style="width:100%;padding:6px;background:#c0392b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:\'Nunito\',sans-serif;font-weight:600">🗑 Remove reservation</button>' +
+        '</div>'
+      )
+      .addTo(tcReservationsCareLayer);
+  });
+}
+
+// Add all census trees as faint clickable background dots to the care map.
+// Called once after the map is initialized; guarded to prevent double-add.
+function tcAddCareMapBackgroundTrees() {
+  if (!tcCareMap || tcCareMap._bgTreeLayerAdded) return;
+  if (typeof allTrees === 'undefined' || !allTrees.length) return;
+  tcCareMap._bgTreeLayerAdded = true;
+
+  const renderer = L.canvas({ padding: 0.5 });
+  allTrees.forEach(tree => {
+    const lat = parseFloat(tree.latitude || tree.lat);
+    const lng = parseFloat(tree.longitude || tree.lng);
+    if (!lat || !lng) return;
+
+    const dot = L.circleMarker([lat, lng], {
+      renderer,
+      radius: 5,
+      fillColor: '#7a9e7e',
+      color: 'transparent',
+      weight: 0,
+      fillOpacity: 0.22,
+    });
+
+    dot.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      openReserveModal(tree);
+    });
+    dot.bindTooltip(
+      (tree.spc_common || 'Unknown species') +
+      (tree.address ? '<br><span style="font-size:10px;color:#aaa">' + tree.address + '</span>' : '') +
+      '<br><span style="font-size:10px;color:#7b3fa0;font-weight:600">📅 Tap to reserve for care</span>',
+      { sticky: true }
+    );
+    dot.addTo(tcCareMap);
+  });
 }
 
 function tcRenderBlocksMap() {
@@ -3139,16 +3614,27 @@ function renderClaimedBlocksSidebar() {
   entries.sort((a, b) => b.latest.date > a.latest.date ? 1 : -1);
 
   if (!entries.length) {
-    if (emptyEl) emptyEl.style.display = 'flex';
+    if (emptyEl) emptyEl.style.display = 'flex'; // default; renderReservationQueue will hide if needed
     listEl.style.display = 'none';
     listEl.innerHTML = '';
     tcShowNoSelection();
+    renderReservationQueue();
+    updateReservationCounter();
+    tcUpdateProgress();
     return;
   }
 
   if (emptyEl) emptyEl.style.display = 'none';
   listEl.style.display = 'block';
   listEl.innerHTML = '';
+
+  // Care activities section header (reservation queue will be prepended above this)
+  const careHeader = document.createElement('div');
+  careHeader.id = 'care-activities-header';
+  careHeader.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:var(--accent);' +
+    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+  careHeader.textContent = '🌿 Care Activities';
+  listEl.appendChild(careHeader);
 
   entries.forEach(({ area, latest, allEvents }) => {
     const isSelected = area.id === tcSelectedId;
@@ -3197,6 +3683,8 @@ function renderClaimedBlocksSidebar() {
   });
 
   tcUpdateProgress();
+  renderReservationQueue();
+  updateReservationCounter();
 }
 
 function tcShowNoSelection() {
@@ -3418,7 +3906,7 @@ function switchViewById(view) {
   if (!link) return;
 
   function __bm__() {
-    var REPO='hadas-lesecologycenter/nyc-tree-dashboard',ACT='data/activities.csv',TREES='data/trees.csv',GID=14,BS=25;
+    var REPO='hadas-lesecologycenter/nyc-tree-dashboard',ACT='data/activities.csv',TREES='data/trees.csv',CENSUS='https://raw.githubusercontent.com/'+REPO+'/main/data/census-coords.json',GID=14,BS=25;
     if(!location.hostname.includes('nycgovparks.org')){alert('Please run this on the NYC Tree Map:\nhttps://tree-map.nycgovparks.org');return;}
     var b=document.getElementById('_tS');
     if(!b){b=document.createElement('div');b.id='_tS';b.style.cssText='position:fixed;top:20px;right:20px;z-index:2147483647;padding:14px 20px;border-radius:10px;font:bold 14px/1.5 sans-serif;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:380px;white-space:pre-line';document.body.appendChild(b);}
@@ -3427,7 +3915,7 @@ function switchViewById(view) {
     var tok=localStorage.getItem('_ts_tok')||localStorage.getItem('_treeSync_token');
     if(!tok){tok=prompt('Enter your GitHub personal access token (ghp_...):');if(!tok){b.remove();return;}tok=tok.trim();localStorage.setItem('_ts_tok',tok);}
     var gh={'Authorization':'token '+tok,'Accept':'application/vnd.github.v3+json','User-Agent':'nyc-tree-bm'};
-    function gql(q){return fetch('https://www.nycgovparks.org/api-treemap/graphql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
+    function gql(q){return fetch('https://www.nycgovparks.org/api-treemap/graphql',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})}).then(function(r){return r.json();});}
     function readCache(){
       var cl=window.__APOLLO_CLIENT__||window.apolloClient;
       if(!cl)return{acts:null,trees:{}};
@@ -3436,7 +3924,7 @@ function switchViewById(view) {
       Object.keys(cache).forEach(function(k){
         var o=cache[k];if(!o||!o.id)return;
         var tp=(o.__typename||'').toLowerCase();
-        if(tp==='tree'||tp==='streettree'){
+        if(tp==='tree'||tp==='streettree'||tp.includes('tree')){
           var sp=o.species;if(sp&&sp.__ref)sp=cache[sp.__ref]||{};
           var la=o.latitude||o.lat||'',ln=o.longitude||o.lng||o.lon||'';
           if(la&&ln)trees[String(o.id)]={lat:la,lng:ln,address:(o.closestAddress||o.address||'').replace(/,/g,' '),species:((sp&&sp.commonName)||'').replace(/,/g,' ')};
@@ -3455,25 +3943,27 @@ function switchViewById(view) {
     function fetchActs(){return gql('query{treeGroupById(id:'+GID+'){recentActivities(limit:100000){id date treeId duration stewardshipActivities}}}').then(function(r){return((r.data||{}).treeGroupById||{}).recentActivities||[];});}
     function fetchCoords(ids){
       if(!ids.length)return Promise.resolve({});
-      var res={},batches=[];
-      for(var i=0;i<ids.length;i+=BS)batches.push(ids.slice(i,i+BS));
-      var tot=batches.length,done=0,fn='treeById';
-      var probe=gql('{p:treeById(id:'+ids[0]+'){id latitude longitude}}').then(function(r){if(r.errors&&!r.data)fn='tree';}).catch(function(){fn='tree';});
-      return probe.then(function(){
-        return batches.reduce(function(p,batch){return p.then(function(){
-          done++;st('Fetching locations... ('+done+'/'+tot+')','#1565c0',true);
-          var f=batch.map(function(id,j){return 't'+j+':'+fn+'(id:'+id+'){id latitude longitude closestAddress species{commonName}}';}).join(' ');
-          return gql('{'+f+'}').then(function(r){
-            Object.entries(r.data||{}).forEach(function(pair){
-              var alias=pair[0],t=pair[1];
-              if(!t)return;
-              var origId=batch[parseInt(alias.slice(1))];
-              if(!origId)return;
-              res[String(origId)]={lat:t.latitude||'',lng:t.longitude||'',address:(t.closestAddress||'').replace(/,/g,' '),species:((t.species||{}).commonName||'').replace(/,/g,' ')};
-            });
-          }).catch(function(){});
-        });},Promise.resolve());
-      }).then(function(){return res;});
+      console.log('[sync] fetchCoords called with '+ids.length+' IDs:',ids);
+      var res={};
+      var done=0,tot=ids.length;
+      // One query per tree, in parallel. Batched alias queries fail entirely
+      // when any single tree hits the "Read NULL value for computed column"
+      // server bug — a bad tree poisons every sibling in the batch.
+      return Promise.all(ids.map(function(id){
+        return gql('{tree(id:'+id+'){id latitude longitude}}').then(function(r){
+          done++;st('Fetching tree locations ('+done+'/'+tot+')...','#1565c0',true);
+          var t=r&&r.data&&r.data.tree;
+          if(t&&t.id){
+            var la=t.latitude||t.lat||'',ln=t.longitude||t.lng||'';
+            if(la&&ln)res[String(t.id)]={lat:la,lng:ln,address:'',species:''};
+          }else if(r&&r.errors){
+            console.log('[sync] Tree '+id+' error:',JSON.stringify(r.errors).slice(0,300));
+          }
+        }).catch(function(e){console.log('[sync] Tree '+id+' threw:',e);});
+      })).then(function(){
+        console.log('[sync] fetchCoords done. Found '+Object.keys(res).length+' of '+ids.length+' trees.');
+        return res;
+      });
     }
     var TODAY=new Date().toISOString().slice(0,10);
     function aRow(r){
@@ -3489,9 +3979,8 @@ function switchViewById(view) {
     }
     function ghR(path){return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,{headers:gh}).then(function(r){return r.json();}).catch(function(){return null;});}
     function ghW(path,content,sha,msg){
-      var body={message:msg,content:btoa(unescape(encodeURIComponent(content)))};
-      if(sha)body.sha=sha;
-      return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},gh),body:JSON.stringify(body)}).then(function(r){if(!r.ok)throw new Error('GitHub HTTP '+r.status);});
+      function put(s){var body={message:msg,content:btoa(unescape(encodeURIComponent(content)))};if(s)body.sha=s;return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,{method:'PUT',headers:Object.assign({'Content-Type':'application/json'},gh),body:JSON.stringify(body)});}
+      return put(sha).then(function(r){if(r.status===409){return ghR(path).then(function(f){return put(f?f.sha:null);}).then(function(r2){if(!r2.ok)throw new Error('GitHub HTTP '+r2.status);});}if(!r.ok)throw new Error('GitHub HTTP '+r.status);});
     }
     var cd=readCache(),actsP=cd.acts?Promise.resolve(cd.acts):fetchActs();
     Promise.all([ghR(ACT),ghR(TREES),actsP]).then(function(res){
@@ -3508,13 +3997,27 @@ function switchViewById(view) {
       var newT=[],still=[];
       missing.forEach(function(id){var t=(cd.trees||{})[id];if(t&&t.lat&&t.lng){newT.push([id,t.lat,t.lng,t.address,t.species].join(','));known[id]=true;}else{still.push(id);}});
       st('Cache: '+newT.length+' coords. Fetching '+still.length+' more...','#1565c0',true);
+      console.log('[sync] Missing tree IDs:',still);
       return fetchCoords(still).then(function(f){
-        still.forEach(function(id){var t=f[id];if(!t||!t.lat||!t.lng)return;newT.push([id,t.lat,t.lng,t.address,t.species].join(','));});
-        var writes=[];
-        if(newA.length){var uA=aC.trimEnd()+'\n'+newA.join('\n')+'\n';writes.push(ghW(ACT,uA,aSha,'Sync '+TODAY+' (+'+newA.length+')'));}
+        var apiFound={},afterAPI=[];
+        still.forEach(function(id){var t=f[id];if(t&&t.lat&&t.lng){apiFound[id]=t;}else{afterAPI.push(id);}});
+        console.log('[sync] After API: '+Object.keys(apiFound).length+' found, '+afterAPI.length+' still missing.');
+        st('Checking census for species + '+afterAPI.length+' missing...','#1565c0',true);
+        return fetch(CENSUS).then(function(r){return r.json();}).then(function(byId){
+          console.log('[sync] Census loaded with '+Object.keys(byId).length+' entries');
+          var cenHits=0;
+          Object.keys(apiFound).forEach(function(id){var c=byId[id];if(c&&c[3])apiFound[id].species=c[3];});
+          afterAPI.forEach(function(id){var c=byId[id];if(!c||!c[0]||!c[1]){console.log('[sync] Census miss for tree '+id);return;}apiFound[id]={lat:c[0],lng:c[1],address:c[2]||'',species:c[3]||''};cenHits++;});
+          console.log('[sync] Census found '+cenHits+' of '+afterAPI.length+' still-missing trees');
+        }).catch(function(e){console.log('[sync] Census fetch error:',e);st('Census fallback failed: '+e.message,'#e65100',true);}).then(function(){
+          Object.keys(apiFound).forEach(function(id){var t=apiFound[id];newT.push([id,t.lat,t.lng,t.address,t.species].join(','));});
+        });
+      }).then(function(){
+        var wp=Promise.resolve();
+        if(newA.length){var uA=aC.trimEnd()+'\n'+newA.join('\n')+'\n';wp=wp.then(function(){return ghW(ACT,uA,aSha,'Sync '+TODAY+' (+'+newA.length+')');});}
         var uT=tC.trimEnd()+(newT.length?'\n'+newT.join('\n'):'')+'\n';
-        writes.push(ghW(TREES,uT,tSha,'Tree coords '+TODAY+' (+'+newT.length+')'));
-        return Promise.all(writes).then(function(){
+        wp=wp.then(function(){return ghW(TREES,uT,tSha,'Tree coords '+TODAY+' (+'+newT.length+')');});
+        return wp.then(function(){
           var parts=[];
           if(newA.length)parts.push(newA.length+' new activities');
           parts.push(newT.length+' of '+missing.length+' tree locations found');
@@ -3525,9 +4028,11 @@ function switchViewById(view) {
   }
 
   try {
-    var src = __bm__.toString();
-    var body = src.slice(src.indexOf('{') + 1, src.lastIndexOf('}'));
-    link.href = 'javascript:(function(){' + body + '})()';
+    // Self-updating loader: the bookmarklet is a tiny 1-line stub that
+    // fetches the latest sync.js from GitHub and evals it. This means the
+    // user only ever has to drag this link to their bookmark bar ONCE —
+    // every future code change takes effect automatically on the next click.
+    link.href = "javascript:(function(){var u='https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/bookmarklet/sync.js?t='+Date.now();fetch(u).then(function(r){return r.text();}).then(function(c){(0,eval)(c);}).catch(function(e){alert('Sync loader failed: '+e.message);});})();";
   } catch(e) {
     console.error('Bookmarklet setup failed:', e);
   }
@@ -3561,7 +4066,9 @@ window.addEventListener('load', async () => {
   updateMap();
   updateStats();
   tcUpdateProgress();
-  tcRenderMain();
+  tcRenderMain(); // also calls tcRenderReservationsOnMainMap
+  renderReservationQueue();
+  updateReservationCounter();
 
   // Sync with backend (if configured) — merges server state into localStorage,
   // then refreshes all UI. Works silently; falls back to local data if offline.
@@ -3584,11 +4091,98 @@ window.addEventListener('load', async () => {
       tcRenderBlocksMap();
       updateMap(); // highlight cared-for trees on the main map
       updateStats();
-      tcRenderCareMap(); // populate care map in Tree Care tab
+      tcRenderCareMap(); // populate care map in Tree Care tab (also renders reservations)
       tcShowSyncStatus('✓ Loaded ' + _tcScrapedAreas.length + ' area' + (_tcScrapedAreas.length > 1 ? 's' : '') + ' from NYC Tree Map');
     }
   });
 });
+
+// ===== MOBILE UI =====
+
+function initMobileUI() {
+  if (window.innerWidth > 768) return;
+
+  // Sync JS state to match CSS: priority sidebar is hidden on mobile by CSS.
+  // Reset priorityMode so the first tap on the toggle *opens* the sidebar (not closes).
+  priorityMode = false;
+  const pt = document.getElementById('priority-toggle');
+  if (pt) { pt.classList.remove('on'); pt.textContent = '🌱 Priority View'; }
+  const legend = document.getElementById('map-legend-priority');
+  if (legend) legend.style.display = 'none';
+
+  // Default blocks view: list visible, map hidden (user taps tab to switch)
+  const blocksMapContainer = document.getElementById('blocks-map-container');
+  if (blocksMapContainer) blocksMapContainer.classList.add('mobile-hidden');
+
+  // Default myblock view: activities sidebar visible, care map hidden
+  const myblockDashboard = document.getElementById('myblock-dashboard');
+  if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
+
+  // Inject bottom navigation bar (replaces header nav on mobile)
+  if (!document.getElementById('mobile-tab-nav')) {
+    const nav = document.createElement('div');
+    nav.id = 'mobile-tab-nav';
+    nav.innerHTML = `
+      <button class="mob-nav-btn active" onclick="mobileSwitchView('map',this)">
+        <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('stats',this)">
+        <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('blocks',this)">
+        <span class="mob-icon">🏙</span><span class="mob-label">Blocks</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock',this)">
+        <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
+        <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
+      </button>
+    `;
+    document.body.appendChild(nav);
+  }
+}
+
+function mobileSwitchView(view, btn) {
+  switchView(view, null);
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function switchBlocksTab(tab, btn) {
+  const listPanel = document.getElementById('blocks-list-panel');
+  const mapContainer = document.getElementById('blocks-map-container');
+  document.querySelectorAll('#blocks-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'list') {
+    if (listPanel) listPanel.classList.remove('mobile-hidden');
+    if (mapContainer) mapContainer.classList.add('mobile-hidden');
+  } else {
+    if (listPanel) listPanel.classList.add('mobile-hidden');
+    if (mapContainer) mapContainer.classList.remove('mobile-hidden');
+    // Trigger map resize after container becomes visible
+    setTimeout(() => { if (blocksMap) blocksMap.invalidateSize(); }, 100);
+  }
+}
+
+function switchMyBlockTab(tab, btn) {
+  const sidebar = document.getElementById('myblock-sidebar');
+  const dashboard = document.getElementById('myblock-dashboard');
+  document.querySelectorAll('#myblock-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'sidebar') {
+    if (sidebar) sidebar.classList.remove('mobile-hidden');
+    if (dashboard) dashboard.classList.add('mobile-hidden');
+  } else {
+    if (sidebar) sidebar.classList.add('mobile-hidden');
+    if (dashboard) dashboard.classList.remove('mobile-hidden');
+    // Trigger care map resize after container becomes visible
+    setTimeout(() => { if (tcCareMap) tcCareMap.invalidateSize(); }, 100);
+  }
+}
+
+// Run mobile init shortly after page load (after map initialization completes)
+window.addEventListener('load', function() { setTimeout(initMobileUI, 300); });
 </script>
 </body>
 </html>

@@ -256,8 +256,9 @@ details summary{cursor:pointer;font-weight:600;color:#2d6a4f;margin:8px 0;font-s
 <button class="filter-btn" onclick="setTaskFilter('estatus','confirmed',this)">Confirmed only</button>
 <button class="filter-btn" onclick="setTaskFilter('estatus','all',this)">All (incl. drafts)</button>
 </div>
-<div class="btn-row" style="margin-bottom:12px">
-<button class="btn btn-primary btn-sm" onclick="pushTasksToCalendar()">Push visible tasks to Google Calendar</button>
+<div class="btn-row" style="margin-bottom:12px;flex-wrap:wrap">
+<button class="btn btn-primary btn-sm" onclick="pushTasksToChat()">Push to Chat Space</button>
+<button class="btn btn-primary btn-sm" onclick="pushTasksToCalendar()">Push to Google Calendar</button>
 <button class="btn btn-copy btn-sm" onclick="pushTasksToGTasks()">Push to Google Tasks</button>
 </div>
 <div id="tasks-list"></div>
@@ -368,12 +369,15 @@ function generateTasks(ev){
   });
 }
 function syncTasks(ev){
-  // Regenerate tasks but preserve done state by matching title+offset
+  // Regenerate tasks but preserve done state by matching title+offset.
+  // Assignee always follows the current event owner so reassigning an
+  // event automatically reassigns all its tasks.
   const old=ev.tasks||[];
   const fresh=generateTasks(ev);
   fresh.forEach(t=>{
     const m=old.find(o=>o.title===t.title&&o.offset===t.offset);
-    if(m){t.done=m.done;t.assignee=m.assignee||t.assignee;}
+    if(m){t.done=m.done;}
+    t.assignee=ev.owner||'';
   });
   ev.tasks=fresh;
 }
@@ -656,6 +660,15 @@ function pushTasksToGTasks(){
   google.script.run.withSuccessHandler(function(r){
     toast(r&&r.success?('Pushed '+r.count+' tasks'):('Error: '+(r&&r.error||'enable Tasks API in Code.gs')));
   }).withFailureHandler(function(e){toast('Tasks error: '+e.message);}).pushTasksToGoogleTasks(list);
+}
+function pushTasksToChat(){
+  const list=filteredTasks().filter(t=>!t.done);
+  if(!list.length){toast('No open tasks to push.');return;}
+  if(!confirm('Post '+list.length+' tasks to the Street Tree Care Crew Chat space? Each assignee will get their own card.'))return;
+  toast('Posting to Chat space...');
+  google.script.run.withSuccessHandler(function(r){
+    toast(r&&r.success?('Posted '+r.count+' tasks to '+r.assignees+' people'):('Error: '+(r&&r.error||'unknown')));
+  }).withFailureHandler(function(e){toast('Chat error: '+e.message);}).pushTasksToChatSpace(list);
 }
 
 // INIT

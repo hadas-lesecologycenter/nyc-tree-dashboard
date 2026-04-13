@@ -5,151 +5,192 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LES Ecology - Event Workflow Dashboard</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=Playfair+Display:wght@600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f4f0;min-height:100vh}
-.container{max-width:1200px;margin:0 auto;padding:20px}
-header{background:linear-gradient(135deg,#2d6a4f,#40916c);color:white;padding:24px 30px;border-radius:12px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center}
-header h1{font-size:22px;margin-bottom:4px}
-header p{opacity:0.85;font-size:13px}
-.header-right{text-align:right;font-size:12px;opacity:0.8}
+body{font-family:'DM Sans',system-ui,-apple-system,sans-serif;background:#f4f1eb;min-height:100vh;color:#2c2c2c}
+.container{max-width:1240px;margin:0 auto;padding:20px 24px}
 
-.tabs{display:flex;gap:4px;margin-bottom:24px;flex-wrap:wrap}
-.tab-btn{padding:12px 20px;border:none;background:#d8e2dc;color:#2d6a4f;font-weight:600;font-size:13px;cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s}
-.tab-btn.active{background:white;color:#1b4332;box-shadow:0 -2px 8px rgba(0,0,0,0.08)}
+/* Header */
+header{background:linear-gradient(135deg,#1a3c2a 0%,#2d6a4f 40%,#40916c 100%);color:white;padding:32px 36px;border-radius:16px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;top:-20px;right:-20px;width:200px;height:200px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 15c-8 12-25 20-25 38 0 15 11 27 25 27s25-12 25-27c0-18-17-26-25-38z' fill='rgba(255,255,255,0.06)'/%3E%3C/svg%3E") no-repeat center;background-size:contain;pointer-events:none}
+header::after{content:'';position:absolute;bottom:-30px;left:60px;width:160px;height:160px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 15c-8 12-25 20-25 38 0 15 11 27 25 27s25-12 25-27c0-18-17-26-25-38z' fill='rgba(255,255,255,0.04)'/%3E%3C/svg%3E") no-repeat center;background-size:contain;pointer-events:none;transform:rotate(25deg)}
+header h1{font-family:'Playfair Display',Georgia,serif;font-size:26px;margin-bottom:6px;letter-spacing:-0.3px}
+header p{opacity:0.85;font-size:13px;font-weight:500;letter-spacing:0.3px}
+.header-right{text-align:right;font-size:12px;opacity:0.8}
+.header-org{font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;opacity:0.7;margin-bottom:4px}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap;border-bottom:2px solid #ddd5c8;padding-bottom:0}
+.tab-btn{padding:12px 22px;border:none;background:transparent;color:#8a7e6b;font-weight:600;font-size:13px;cursor:pointer;border-radius:10px 10px 0 0;transition:all .25s;position:relative;letter-spacing:0.2px}
+.tab-btn:hover{color:#2d6a4f;background:rgba(45,106,79,0.06)}
+.tab-btn.active{color:#1b4332;background:white;box-shadow:0 -3px 12px rgba(0,0,0,0.06)}
+.tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:#2d6a4f}
 .tab-content{display:none}.tab-content.active{display:block}
 
-.card{background:white;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.card h2{color:#1b4332;font-size:18px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #d8e2dc}
-.card h3{color:#2d6a4f;font-size:15px;margin:16px 0 10px}
+/* Cards */
+.card{background:white;border-radius:14px;padding:26px;margin-bottom:22px;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04)}
+.card h2{color:#1b4332;font-family:'Playfair Display',Georgia,serif;font-size:20px;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #e8e0d4}
+.card h3{color:#2d6a4f;font-size:15px;margin:18px 0 12px;font-weight:600}
 
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+/* Forms */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
 .form-row.three{grid-template-columns:1fr 1fr 1fr}
 .form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-weight:600;color:#344e41;margin-bottom:6px;font-size:13px}
-.req{color:#bc4749}
-input,select,textarea{width:100%;padding:10px 12px;border:2px solid #d8e2dc;border-radius:6px;font-size:14px;font-family:inherit;transition:border .2s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,0.1)}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-weight:600;color:#4a5548;margin-bottom:6px;font-size:12px;text-transform:uppercase;letter-spacing:0.5px}
+.req{color:#c1574c}
+input,select,textarea{width:100%;padding:11px 14px;border:1.5px solid #ddd5c8;border-radius:8px;font-size:14px;font-family:inherit;transition:all .25s;background:#faf9f7}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#40916c;box-shadow:0 0 0 3px rgba(64,145,108,0.12);background:white}
 textarea{resize:vertical;min-height:70px}
-
-.checkbox-grid{display:flex;flex-wrap:wrap;gap:10px}
-.checkbox-grid label{display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;cursor:pointer}
+.checkbox-grid{display:flex;flex-wrap:wrap;gap:12px}
+.checkbox-grid label{display:flex;align-items:center;gap:6px;font-weight:500;font-size:13px;cursor:pointer;color:#4a5548}
 .checkbox-grid input[type="checkbox"]{width:auto;margin:0;accent-color:#40916c}
 
-.btn{padding:10px 20px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-primary{background:#2d6a4f;color:white}
-.btn-primary:hover{background:#1b4332}
+/* Buttons */
+.btn{padding:11px 22px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;letter-spacing:0.2px}
+.btn-primary{background:linear-gradient(135deg,#2d6a4f,#40916c);color:white;box-shadow:0 2px 8px rgba(45,106,79,0.25)}
+.btn-primary:hover{background:linear-gradient(135deg,#1b4332,#2d6a4f);box-shadow:0 4px 14px rgba(45,106,79,0.35);transform:translateY(-1px)}
 .btn-copy{background:#52796f;color:white;padding:8px 16px;font-size:12px}
 .btn-copy:hover{background:#2d6a4f}
-.btn-reset{background:#d8e2dc;color:#344e41}
-.btn-row{display:flex;gap:12px;margin-top:20px}
-.btn-sm{padding:6px 12px;font-size:11px}
-.btn-danger{background:#bc4749;color:white}
-.btn-danger:hover{background:#9b2226}
+.btn-reset{background:#e8e0d4;color:#4a5548}
+.btn-reset:hover{background:#ddd5c8}
+.btn-row{display:flex;gap:12px;margin-top:22px}
+.btn-sm{padding:7px 14px;font-size:11px}
+.btn-danger{background:#c1574c;color:white}
+.btn-danger:hover{background:#a3423a}
 
 /* Status badges */
-.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-.status-draft{background:#e9ecef;color:#495057}
-.status-hold{background:#fff3cd;color:#856404}
-.status-confirmed{background:#d4edda;color:#155724}
-.status-completed{background:#cce5ff;color:#004085}
+.status-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px}
+.status-draft{background:#edeae5;color:#6b6358}
+.status-hold{background:#fef3cd;color:#856404;border:1px solid #fde68a}
+.status-confirmed{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+.status-completed{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+
+/* Status bar */
+.status-bar{display:flex;gap:14px;margin-bottom:28px;flex-wrap:wrap}
+.status-item{background:white;padding:18px 20px;border-radius:12px;flex:1;min-width:120px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 16px rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.04);position:relative;overflow:hidden}
+.status-item::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.status-item:nth-child(1)::before{background:linear-gradient(90deg,#2d6a4f,#40916c)}
+.status-item:nth-child(2)::before{background:#adb5bd}
+.status-item:nth-child(3)::before{background:#f4a261}
+.status-item:nth-child(4)::before{background:#40916c}
+.status-item:nth-child(5)::before{background:#3b82f6}
+.status-num{font-size:30px;font-weight:700;color:#1b4332;font-family:'Playfair Display',Georgia,serif}
+.status-label{font-size:10px;color:#8a7e6b;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
 
 /* Calendar */
-.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.cal-header h2{border:none;padding:0;margin:0}
-.cal-nav{display:flex;gap:8px}
-.cal-nav button{background:#d8e2dc;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600;color:#2d6a4f}
-.cal-nav button:hover{background:#b7c4b1}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-day-header{text-align:center;font-weight:700;font-size:12px;color:#52796f;padding:8px 0}
-.cal-day{min-height:90px;background:#f8faf8;border:1px solid #e9ede9;border-radius:4px;padding:4px;cursor:pointer;transition:background .15s;position:relative}
-.cal-day:hover{background:#e0ebe0}
-.cal-day.today{border:2px solid #40916c}
-.cal-day.other-month{opacity:0.35}
-.cal-day-num{font-size:12px;font-weight:600;color:#344e41;margin-bottom:2px}
-.cal-event{font-size:10px;padding:2px 4px;border-radius:3px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-.cal-event.status-draft{background:#e9ecef;color:#495057}
-.cal-event.status-hold{background:#fff3cd;color:#856404}
-.cal-event.status-confirmed{background:#d4edda;color:#155724}
-.cal-event.status-completed{background:#cce5ff;color:#004085}
-.cal-event:hover{filter:brightness(0.9)}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.cal-header h2{border:none;padding:0;margin:0;font-family:'Playfair Display',Georgia,serif}
+.cal-nav{display:flex;gap:6px}
+.cal-nav button{background:#e8e0d4;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:600;color:#4a5548;font-size:13px;transition:all .2s}
+.cal-nav button:hover{background:#ddd5c8;color:#1b4332}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-header{text-align:center;font-weight:700;font-size:11px;color:#8a7e6b;padding:10px 0;text-transform:uppercase;letter-spacing:1px}
+.cal-day{min-height:95px;background:white;border:1px solid #eae4db;border-radius:6px;padding:6px;cursor:pointer;transition:all .2s;position:relative}
+.cal-day:hover{background:#f0ede8;border-color:#c8bfb0;transform:scale(1.02)}
+.cal-day.today{border:2px solid #40916c;background:linear-gradient(180deg,#f0fdf4,white)}
+.cal-day.today .cal-day-num{color:#2d6a4f;background:#d1fae5;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+.cal-day.other-month{opacity:0.3;background:#faf9f7}
+.cal-day-num{font-size:12px;font-weight:700;color:#4a5548;margin-bottom:4px}
+.cal-event{font-size:10px;padding:2px 6px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-weight:600;letter-spacing:0.1px}
+.cal-event.status-draft{background:#edeae5;color:#6b6358}
+.cal-event.status-hold{background:#fef3cd;color:#856404}
+.cal-event.status-confirmed{background:#d1fae5;color:#065f46}
+.cal-event.status-completed{background:#dbeafe;color:#1e40af}
+.cal-event:hover{filter:brightness(0.92);transform:scale(1.03)}
 
 /* Outputs */
-.output-section{margin-bottom:20px}
-.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.output-header h3{margin:0;color:#1b4332;font-size:15px}
-.output-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;font-size:13px;line-height:1.6;white-space:pre-wrap;font-family:inherit;max-height:400px;overflow-y:auto}
-.highlight{background:#fff3cd;padding:1px 4px;border-radius:3px;font-weight:600}
-.spreadsheet-preview{overflow-x:auto;margin-bottom:12px}
-.spreadsheet-preview table{border-collapse:collapse;font-size:11px;white-space:nowrap}
-.spreadsheet-preview th{background:#2d6a4f;color:white;padding:5px 8px;text-align:left;font-weight:600}
-.spreadsheet-preview td{padding:5px 8px;border:1px solid #d8e2dc}
-.spreadsheet-preview tr:nth-child(even){background:#f0f4f0}
+.output-section{margin-bottom:22px}
+.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.output-header h3{margin:0;color:#1b4332;font-size:15px;font-weight:700}
+.output-box{background:#faf9f7;border:1px solid #e8e0d4;border-radius:10px;padding:18px;font-size:13px;line-height:1.7;white-space:pre-wrap;font-family:inherit;max-height:400px;overflow-y:auto}
+.highlight{background:#fef3cd;padding:2px 6px;border-radius:4px;font-weight:600}
+.spreadsheet-preview{overflow-x:auto;margin-bottom:14px}
+.spreadsheet-preview table{border-collapse:collapse;font-size:11px;white-space:nowrap;border-radius:8px;overflow:hidden}
+.spreadsheet-preview th{background:linear-gradient(135deg,#1b4332,#2d6a4f);color:white;padding:7px 10px;text-align:left;font-weight:600;letter-spacing:0.3px}
+.spreadsheet-preview td{padding:6px 10px;border:1px solid #e8e0d4}
+.spreadsheet-preview tr:nth-child(even){background:#faf9f7}
 
 /* Events list */
-.event-card{padding:14px 16px;background:#f8faf8;border-radius:8px;margin-bottom:8px;border-left:4px solid #d8e2dc;cursor:pointer;transition:all .2s}
-.event-card:hover{background:#e9ede9;transform:translateX(2px)}
+.event-card{padding:16px 18px;background:white;border-radius:10px;margin-bottom:10px;border-left:5px solid #e8e0d4;cursor:pointer;transition:all .25s;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+.event-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);transform:translateX(3px)}
 .event-card.draft{border-left-color:#adb5bd}
-.event-card.hold{border-left-color:#ffc107}
-.event-card.confirmed{border-left-color:#28a745}
-.event-card.completed{border-left-color:#007bff}
+.event-card.hold{border-left-color:#f4a261}
+.event-card.confirmed{border-left-color:#40916c}
+.event-card.completed{border-left-color:#3b82f6}
 .event-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
-.event-card-name{font-weight:600;color:#1b4332;font-size:14px}
-.event-card-meta{font-size:12px;color:#52796f}
-.tracker-checks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.tracker-checks label{font-size:11px;display:flex;align-items:center;gap:3px;color:#52796f;cursor:pointer}
+.event-card-name{font-weight:700;color:#1b4332;font-size:15px}
+.event-card-meta{font-size:12px;color:#8a7e6b;font-weight:500}
+.tracker-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tracker-checks label{font-size:11px;display:flex;align-items:center;gap:4px;color:#6b6358;cursor:pointer;font-weight:500}
 .tracker-checks input{width:auto;accent-color:#40916c}
 
-.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.filter-btn{padding:6px 14px;border:2px solid #d8e2dc;background:white;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;color:#52796f;transition:all .2s}
-.filter-btn.active{border-color:#2d6a4f;background:#d8f3dc;color:#1b4332}
+/* Filters */
+.filter-bar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter-btn{padding:7px 16px;border:1.5px solid #ddd5c8;background:white;border-radius:24px;font-size:12px;font-weight:600;cursor:pointer;color:#6b6358;transition:all .25s;letter-spacing:0.2px}
+.filter-btn:hover{border-color:#40916c;color:#2d6a4f}
+.filter-btn.active{border-color:#2d6a4f;background:#d1fae5;color:#065f46}
 
-.status-bar{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-.status-item{background:white;padding:14px 18px;border-radius:8px;flex:1;min-width:120px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.status-num{font-size:26px;font-weight:700;color:#2d6a4f}
-.status-label{font-size:11px;color:#52796f;font-weight:600;margin-top:2px}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1b4332;color:white;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;transition:all .3s;z-index:999;pointer-events:none;box-shadow:0 4px 20px rgba(27,67,50,0.3)}
+.toast.show{opacity:1;transform:translateY(-4px)}
 
-.toast{position:fixed;bottom:20px;right:20px;background:#1b4332;color:white;padding:12px 24px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
-.toast.show{opacity:1}
+.apps-script-box{background:#faf9f7;border:1px solid #e8e0d4;border-radius:10px;padding:18px;font-family:'Courier New',monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre;line-height:1.5}
 
-.apps-script-box{background:#f8faf8;border:1px solid #d8e2dc;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:12px;max-height:300px;overflow:auto;white-space:pre;line-height:1.4}
 /* Tasks */
-.task-row{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#f8faf8;border-left:4px solid #d8e2dc;border-radius:6px;margin-bottom:8px}
-.task-row.overdue{border-left-color:#bc4749;background:#fff5f5}
-.task-row.today{border-left-color:#f4a261;background:#fffaf0}
+.task-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:white;border-left:4px solid #e8e0d4;border-radius:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.03);transition:all .2s}
+.task-row:hover{box-shadow:0 3px 12px rgba(0,0,0,0.06)}
+.task-row.overdue{border-left-color:#c1574c;background:#fef2f2}
+.task-row.today{border-left-color:#f4a261;background:#fffbeb}
 .task-row.week{border-left-color:#40916c}
-.task-row.done{opacity:0.55;background:#eef2ee}
-.task-row.done .task-title{text-decoration:line-through}
-.task-cb{margin-top:3px;accent-color:#40916c;width:auto}
+.task-row.done{opacity:0.45;background:#f5f4f1}
+.task-row.done .task-title{text-decoration:line-through;color:#8a7e6b}
+.task-cb{margin-top:3px;accent-color:#40916c;width:auto;cursor:pointer}
 .task-body{flex:1;min-width:0}
 .task-title{font-weight:600;color:#1b4332;font-size:14px}
-.task-meta{font-size:12px;color:#52796f;margin-top:3px}
-.task-event-link{color:#2d6a4f;font-weight:600;cursor:pointer;text-decoration:underline}
-.task-due{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;background:#d8e2dc;color:#344e41;white-space:nowrap}
-.task-due.overdue{background:#bc4749;color:white}
+.task-meta{font-size:12px;color:#8a7e6b;margin-top:4px;font-weight:500}
+.task-event-link{color:#2d6a4f;font-weight:700;cursor:pointer;text-decoration:none;border-bottom:1px dashed #40916c}
+.task-event-link:hover{color:#1b4332;border-bottom-style:solid}
+.task-due{font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;background:#edeae5;color:#6b6358;white-space:nowrap;letter-spacing:0.3px;text-transform:uppercase}
+.task-due.overdue{background:#c1574c;color:white}
 .task-due.today{background:#f4a261;color:white}
 .task-due.week{background:#40916c;color:white}
 .filter-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
-.filter-group label{font-size:12px;font-weight:700;color:#52796f;margin-right:6px}
-.tasks-summary{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.tasks-summary div{flex:1;min-width:90px;padding:10px;background:#f8faf8;border-radius:8px;text-align:center}
-.tasks-summary .n{font-size:22px;font-weight:700;color:#2d6a4f;display:block}
-.tasks-summary .l{font-size:11px;color:#52796f;font-weight:600}
-.tasks-summary div.overdue .n{color:#bc4749}
+.filter-group>label{font-size:11px;font-weight:700;color:#8a7e6b;margin-right:6px;text-transform:uppercase;letter-spacing:0.8px}
+.tasks-summary{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.tasks-summary div{flex:1;min-width:90px;padding:12px;background:#faf9f7;border-radius:10px;text-align:center;border:1px solid #eae4db}
+.tasks-summary .n{font-size:24px;font-weight:700;color:#1b4332;display:block;font-family:'Playfair Display',Georgia,serif}
+.tasks-summary .l{font-size:10px;color:#8a7e6b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px}
+.tasks-summary div.overdue .n{color:#c1574c}
 .tasks-summary div.today .n{color:#f4a261}
+
+/* Details/accordion */
+details summary{cursor:pointer;font-weight:600;color:#2d6a4f;margin:12px 0;font-size:14px;padding:8px 0;border-bottom:1px dashed #ddd5c8;transition:color .2s}
+details summary:hover{color:#1b4332}
+details[open] summary{border-bottom-color:#40916c}
+
+/* Footer accent */
+.container::after{content:'Street Tree Care Program';display:block;text-align:center;font-size:10px;color:#bdb3a3;letter-spacing:2px;text-transform:uppercase;padding:24px 0 8px;margin-top:12px}
 
 @media(max-width:768px){
   .form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}
   .status-bar{gap:8px}
   .cal-day{min-height:60px}
   .cal-event{font-size:9px}
+  header h1{font-size:20px}
+  .container{padding:12px}
+}
 }
 </style>
 </head>
 <body>
 <div class="container">
 <header>
-<div><h1>LES Ecology Center - Event Workflow Dashboard</h1><p>Street Tree Care Program &middot; Fill in once, generate everything</p></div>
+<div>
+<div class="header-org">Lower East Side Ecology Center</div>
+<h1>Event Workflow Dashboard</h1>
+<p>Plan once, generate everything &mdash; briefs, emails, tracker rows, task timelines</p>
+</div>
 <div class="header-right">
 <div id="apps-script-status" style="margin-bottom:4px"></div>
 </div>
@@ -540,7 +581,10 @@ function syncTasks(ev) {
   const fresh = generateTasks(ev);
   fresh.forEach(t => {
     const m = old.find(o => o.title===t.title && o.offset===t.offset);
-    if (m) { t.done = m.done; t.assignee = m.assignee || t.assignee; }
+    if (m) { t.done = m.done; }
+    // Assignee always follows the current event owner (reassigning the
+    // event reassigns all its tasks, open or done).
+    t.assignee = ev.owner || '';
   });
   ev.tasks = fresh;
 }
@@ -1175,9 +1219,87 @@ function copyTasksAsList() {
   navigator.clipboard.writeText(text).then(() => toast('Copied!'));
 }
 
+// ===== DEMO DATA =====
+function seedDemoEvents() {
+  if (events.length > 0) return; // don't overwrite real data
+  const today = new Date();
+  const d = (off) => { const x=new Date(today); x.setDate(x.getDate()+off); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+  const demo = [
+    {
+      id:1001, status:'confirmed', name:'STC with Girl Scouts Troop 4321', owner:'Maddy',
+      type:'School STC Event', date:d(16), time:'10AM-12PM', location:'Seward Park',
+      categories:['Stewardship','Education'], collab:'Other Organization', collabNotes:'Girl Scouts of Greater NY',
+      support:'Gretel', attendance:'25 students + 5 troop leaders', audiences:['Students','Families'],
+      goals:'Introduce Girl Scouts to street tree stewardship, demonstrate proper mulching and watering.',
+      metrics:'Steward 15+ trees, engage 25+ students', extName:'Girl Scouts Tree Care Day',
+      description:'Join Girl Scouts Troop 4321 and the LES Ecology Center for a morning of hands-on street tree care.',
+      marketing:['Partner cross-promo'], meeting:'Seward Park entrance at Essex & Hester',
+      stewLocation:'Hester St tree beds between Essex and Ludlow', facilities:'Park restrooms available',
+      supplies:'Water (x2 coolers), snacks', equipment:'Trowels (x30), gloves (x30), watering cans (x10)',
+      compost:'Order 500 lbs from BK composting — 2 weeks prior', mulch:'2 cubic yards from city',
+      tracker:defaultTracker()
+    },
+    {
+      id:1002, status:'confirmed', name:'Spring Into Tree Care! (Public)', owner:'Hadas',
+      type:'Public Volunteer STC Event', date:d(23), time:'2-4PM', location:'Tompkins Square Park area',
+      categories:['Stewardship','Outreach'], collab:'', collabNotes:'',
+      support:'Maddy', attendance:'15-20 volunteers', audiences:['General public','Volunteers'],
+      goals:'Engage community members in spring tree care, build volunteer pipeline for summer season.',
+      metrics:'Steward 20+ trees, recruit 5+ new volunteers for summer',
+      extName:'Spring Into Tree Care!', eventbrite:'https://eventbrite.com/e/spring-tree-care',
+      description:'Celebrate spring by caring for the street trees of the Lower East Side! Learn composting, mulching, and watering techniques.',
+      marketing:['Org email','Volunteer email','Instagram','Facebook','Flyering'],
+      meeting:'Tompkins Square Park, Ave A entrance', facilities:'', supplies:'Water, snacks',
+      equipment:'Trowels (x20), gloves (x25), watering cans (x8), hoses (x2)',
+      compost:'Order 400 lbs — 2 weeks prior', mulch:'1.5 cubic yards',
+      tracker:{briefCreated:true,eventbriteCreated:true,calendarCreated:true,commsSubmitted:true,compostOrdered:false,compostOps:false,reminderSent:false,activityReport:false,treeMapDone:false,thankYouSent:false}
+    },
+    {
+      id:1003, status:'hold', name:'Corporate Volunteer Day — TechCorp', owner:'Hadas',
+      type:'Private volunteer STC event', date:d(30), time:'1-3PM', location:'East Village, 2nd Ave corridor',
+      categories:['Stewardship'], collab:'Other Organization', collabNotes:'TechCorp Inc.',
+      support:'Gretel', attendance:'30 employees', audiences:['Volunteers'],
+      goals:'Facilitate corporate volunteer engagement, demonstrate ESG-aligned stewardship.',
+      metrics:'Steward 15+ trees, positive post-event survey results',
+      meeting:'TBD pending confirmation', tracker:defaultTracker()
+    },
+    {
+      id:1004, status:'draft', name:'Coolest Block Kickoff Workshop', owner:'Gretel',
+      type:'Workshop', date:d(37), time:'6-7:30PM', location:'LES Ecology Center office',
+      categories:['Education','Outreach'], collab:'', collabNotes:'',
+      attendance:'20 block captains', audiences:['General public','Volunteers'],
+      goals:'Train block captains on street tree stewardship basics for the Coolest Block competition.',
+      marketing:['Org email','Volunteer email','Instagram'],
+      tracker:defaultTracker()
+    },
+    {
+      id:1005, status:'completed', name:'Earth Day STC Celebration', owner:'Maddy',
+      type:'Public Volunteer STC Event', date:d(-7), time:'11AM-2PM', location:'Sara D. Roosevelt Park',
+      categories:['Stewardship','Outreach','Education'], collab:'Master Composter', collabNotes:'',
+      support:'Hadas, Gretel', attendance:'35 volunteers', audiences:['General public','Volunteers','Families'],
+      goals:'Celebrate Earth Day through community tree care action.',
+      metrics:'Steward 25+ trees, engage 30+ volunteers',
+      extName:'Earth Day Tree Care Celebration', trees:'28', compostApplied:'450', mulchApplied:'2',
+      meeting:'Sara D. Roosevelt Park, Houston St entrance',
+      tracker:{briefCreated:true,eventbriteCreated:true,calendarCreated:true,commsSubmitted:true,compostOrdered:true,compostOps:true,reminderSent:true,activityReport:true,treeMapDone:true,thankYouSent:true}
+    }
+  ];
+  demo.forEach(ev => { syncTasks(ev); events.push(ev); });
+  // Mark some tasks done on the completed event
+  const completed = events.find(e => e.id===1005);
+  if (completed && completed.tasks) completed.tasks.forEach(t => t.done = true);
+  // Mark some early tasks done on confirmed events
+  const girlScouts = events.find(e => e.id===1001);
+  if (girlScouts && girlScouts.tasks) girlScouts.tasks.filter(t => t.phase==='Immediate').forEach(t => t.done = true);
+  const spring = events.find(e => e.id===1002);
+  if (spring && spring.tasks) spring.tasks.filter(t => t.phase==='Immediate' || t.phase==='1 Month Before').forEach(t => t.done = true);
+  saveEvents();
+}
+
 // ===== INIT =====
 loadSetup();
 renderAppsScript();
+seedDemoEvents();
 events.forEach(ev => { if (!ev.tasks || !ev.tasks.length) syncTasks(ev); });
 saveEvents();
 renderCalendar();
