@@ -934,6 +934,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Compact header - bottom tab bar replaces nav */
     header { padding: 0 12px; height: 48px; gap: 8px; }
     .brand-sub { display: none; }
+    .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
     nav { display: none; }
 
     /* Filter bar - horizontal scroll */
@@ -972,8 +973,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       z-index: 2001 !important;
     }
 
-    /* Priority sidebar - bottom sheet */
+    /* Priority sidebar - hidden by default on mobile; shown as bottom sheet when toggled */
     #priority-sidebar {
+      display: none;
       position: fixed !important;
       top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
       width: 100% !important; height: auto !important; max-height: 55vh;
@@ -1114,7 +1116,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
     <!-- Priority sidebar overlaid on map -->
-    <div id="priority-sidebar" style="display:block;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
+    <div id="priority-sidebar" style="position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
       <div style="padding:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🌱 Priority Mode</h2>
@@ -3750,10 +3752,13 @@ window.addEventListener('load', async () => {
 function initMobileUI() {
   if (window.innerWidth > 768) return;
 
-  // Hide priority sidebar on mobile — it's too wide as a side panel.
-  // On mobile it becomes a bottom sheet; user can open it via the toggle button.
-  const ps = document.getElementById('priority-sidebar');
-  if (ps) ps.style.display = 'none';
+  // Sync JS state to match CSS: priority sidebar is hidden on mobile by CSS.
+  // Reset priorityMode so the first tap on the toggle *opens* the sidebar (not closes).
+  priorityMode = false;
+  const pt = document.getElementById('priority-toggle');
+  if (pt) { pt.classList.remove('on'); pt.textContent = '🌱 Priority View'; }
+  const legend = document.getElementById('map-legend-priority');
+  if (legend) legend.style.display = 'none';
 
   // Default blocks view: list visible, map hidden (user taps tab to switch)
   const blocksMapContainer = document.getElementById('blocks-map-container');
