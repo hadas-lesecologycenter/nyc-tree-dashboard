@@ -1247,6 +1247,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for in 2026</div>
         </div>
+        <div id="res-counter-widget" style="margin:0 16px 10px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0;display:none">
+          <div style="font-size:10px;font-weight:700;color:#7b3fa0;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📅 Reservations</div>
+          <div id="res-counter-text" style="font-size:10px;color:var(--text3)">0 trees reserved</div>
+        </div>
         <div id="myblock-empty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--text3)">
           <div style="font-size:36px;margin-bottom:12px">🌿</div>
           <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">No care activities yet</div>
@@ -1264,7 +1268,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tc-care-map-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;pointer-events:none">
               <div style="font-size:48px;margin-bottom:16px">🌿</div>
               <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No care activities yet</div>
-              <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet (in the About tab) to sync care activities from the NYC Tree Map automatically.</div>
+              <div style="font-size:12px;color:var(--text3);line-height:1.6">Tap any tree dot on the map to reserve it for future care. Or use the bookmarklet (in the About tab) to sync care activities from the NYC Tree Map automatically.</div>
             </div>
           </div>
           <div id="myblock-dashboard-content" style="display:none;position:absolute;inset:0;padding:24px;max-width:760px;overflow-y:auto"></div>
@@ -1284,6 +1288,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <button onclick="document.getElementById('add-goal-modal').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
       </div>
       <div id="add-goal-body"></div>
+    </div>
+  </div>
+
+  <!-- RESERVE TREE MODAL -->
+  <div id="reserve-tree-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📅 Reserve Tree for Care</h2>
+        <button onclick="closeReserveModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="reserve-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Reservation Name</label>
+        <input id="reserve-name-input" type="text" placeholder="e.g., Watering walk, Spring care…"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
+        <input id="reserve-date-input" type="date"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Reserve Tree</button>
+      </div>
     </div>
   </div>
 
@@ -2726,6 +2755,8 @@ function tcRenderCareMap() {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
+  // Add background tree dots once (guarded inside function)
+  tcAddCareMapBackgroundTrees();
 
   // Clear old year layers
   Object.values(tcCareYearLayers).forEach(ly => {
@@ -2756,8 +2787,20 @@ function tcRenderCareMap() {
   const totalTrees = Object.keys(by2026).length + Object.keys(by2025).length + Object.keys(byEarlier).length;
 
   if (totalTrees === 0) {
-    if (emptyEl)  emptyEl.style.display = 'flex';
-    if (legendEl) legendEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = reservationLoad().length > 0 ? 'none' : 'flex';
+    if (legendEl) {
+      const resCount = reservationLoad().length;
+      if (resCount > 0) {
+        legendEl.innerHTML = '<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>' +
+          '<div style="display:flex;align-items:center;gap:7px;font-size:11px">' +
+          '<span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7b3fa0;flex-shrink:0"></span>' +
+          '<span>📅 Reserved <span style="color:#999">(' + resCount + ')</span></span></div>';
+        legendEl.style.display = 'block';
+      } else {
+        legendEl.style.display = 'none';
+      }
+    }
+    tcRenderReservationsOnCareMap();
     setTimeout(() => tcCareMap.invalidateSize(), 50);
     return;
   }
@@ -2828,10 +2871,18 @@ function tcRenderCareMap() {
     </label>`
   ).join('');
 
+  const resCount = reservationLoad().length;
+  const resLegendRow = resCount > 0
+    ? `<div style="display:flex;align-items:center;gap:7px;margin-top:5px;padding-top:5px;border-top:1px solid #e0dbd3;font-size:11px">
+        <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7b3fa0;flex-shrink:0"></span>
+        <span>📅 Reserved <span style="color:#999">(${resCount})</span></span>
+      </div>`
+    : '';
   if (legendEl) {
-    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}`;
+    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}${resLegendRow}`;
     legendEl.style.display = 'block';
   }
+  tcRenderReservationsOnCareMap();
 
   // invalidateSize first so Leaflet knows the container dimensions,
   // then fitBounds so the zoom is calculated correctly.
@@ -3200,6 +3251,168 @@ function tcSimplify(pts) {
   return r;
 }
 
+// ========== TREE RESERVATIONS ==========
+
+function reservationLoad() {
+  try { return JSON.parse(localStorage.getItem('tc_reservations') || '[]'); }
+  catch(e) { return []; }
+}
+function reservationSave(reservations) {
+  localStorage.setItem('tc_reservations', JSON.stringify(reservations));
+}
+function reservationRemove(id) {
+  reservationSave(reservationLoad().filter(r => r.id !== id));
+  renderReservationQueue();
+  updateReservationCounter();
+  if (tcCareMap) tcRenderReservationsOnCareMap();
+  if (mapInstance) tcRenderReservationsOnMainMap();
+}
+function getReservedTreeIds() {
+  return new Set(reservationLoad().map(r => String(r.treeId)));
+}
+
+let _pendingReserveTree = null;
+
+function openReserveModal(tree) {
+  _pendingReserveTree = tree;
+  const modal = document.getElementById('reserve-tree-modal');
+  if (!modal) return;
+  const info = document.getElementById('reserve-tree-info');
+  if (info) {
+    info.innerHTML =
+      '<strong style="font-size:13px;display:block;margin-bottom:3px">' + (tree.spc_common || 'Unknown species') + '</strong>' +
+      (tree.address ? '<span style="color:var(--text3);font-size:11px">' + tree.address + '</span>' : '') +
+      (tree.health ? '<span style="color:var(--text3);font-size:11px;margin-left:8px">· Health: ' + tree.health + '</span>' : '');
+  }
+  const dateInput = document.getElementById('reserve-date-input');
+  if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+  modal.style.display = 'flex';
+  setTimeout(() => { const ni = document.getElementById('reserve-name-input'); if (ni) ni.focus(); }, 100);
+}
+
+function closeReserveModal() {
+  const modal = document.getElementById('reserve-tree-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingReserveTree = null;
+}
+
+function confirmReserveTree() {
+  const tree = _pendingReserveTree;
+  if (!tree) return;
+  const name = (document.getElementById('reserve-name-input').value || '').trim();
+  const date = document.getElementById('reserve-date-input').value;
+  if (!name) { document.getElementById('reserve-name-input').focus(); return; }
+  if (!date) { document.getElementById('reserve-date-input').focus(); return; }
+
+  const all = reservationLoad();
+  const existingIdx = all.findIndex(r => String(r.treeId) === String(tree.tree_id));
+  if (existingIdx >= 0) {
+    if (!confirm('This tree is already reserved as "' + all[existingIdx].name + '" on ' + all[existingIdx].date + '. Replace it?')) return;
+    all.splice(existingIdx, 1);
+  }
+
+  const reservation = {
+    id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    treeId: String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude))),
+    name,
+    date,
+    lat: parseFloat(tree.latitude || tree.lat),
+    lng: parseFloat(tree.longitude || tree.lng),
+    species: tree.spc_common || '',
+    address: tree.address || '',
+    health: tree.health || '',
+    createdAt: new Date().toISOString(),
+  };
+  all.push(reservation);
+  reservationSave(all);
+
+  document.getElementById('reserve-name-input').value = '';
+  closeReserveModal();
+  renderReservationQueue();
+  updateReservationCounter();
+  if (tcCareMap) tcRenderReservationsOnCareMap();
+  if (mapInstance) tcRenderReservationsOnMainMap();
+  tcShowSyncStatus('📅 Reserved for ' + date);
+}
+
+function updateReservationCounter() {
+  const reservations = reservationLoad();
+  const widget = document.getElementById('res-counter-widget');
+  const textEl = document.getElementById('res-counter-text');
+  if (!widget || !textEl) return;
+  if (!reservations.length) { widget.style.display = 'none'; return; }
+  widget.style.display = 'block';
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = reservations.filter(r => r.date >= today).length;
+  const total = reservations.length;
+  textEl.textContent = total + ' tree' + (total !== 1 ? 's' : '') + ' reserved' +
+    (upcoming < total ? ' · ' + upcoming + ' upcoming' : '');
+}
+
+function renderReservationQueue() {
+  const reservations = reservationLoad();
+  const listEl = document.getElementById('claimed-blocks-list');
+  const emptyEl = document.getElementById('myblock-empty');
+  if (!listEl) return;
+
+  const existing = document.getElementById('res-queue-section');
+  if (existing) existing.remove();
+
+  updateReservationCounter();
+  if (!reservations.length) return;
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+
+  const section = document.createElement('div');
+  section.id = 'res-queue-section';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:#7b3fa0;' +
+    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+  header.textContent = '📅 Reservations';
+  section.appendChild(header);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const sorted = [...reservations].sort((a, b) => a.date > b.date ? 1 : -1);
+
+  sorted.forEach(res => {
+    const dateObj = new Date(res.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const isPast = res.date < today;
+    const isToday = res.date === today;
+    const dateColor = isPast ? 'var(--text3)' : isToday ? '#c62828' : '#7b3fa0';
+
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
+      'border-left:3px solid ' + (isPast ? 'var(--border)' : '#7b3fa0');
+    row.onclick = () => tcZoomToReservation(res.id);
+    row.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px">' + res.name + '</div>' +
+          (res.species || res.address
+            ? '<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">' +
+              (res.species || '') + (res.species && res.address ? ' · ' : '') + (res.address || '') + '</div>'
+            : '') +
+          '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr +
+          (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();reservationRemove(\'' + res.id + '\')" ' +
+          'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px;flex-shrink:0;line-height:1">🗑</button>' +
+      '</div>';
+    section.appendChild(row);
+  });
+
+  listEl.insertBefore(section, listEl.firstChild);
+}
+
+function tcZoomToReservation(id) {
+  const res = reservationLoad().find(r => r.id === id);
+  if (!res) return;
+  if (tcCareMap) tcCareMap.setView([res.lat, res.lng], 17);
+}
+
 // ── Map overlays ──────────────────────────────────────────────
 let tcMainLayer = null;
 
@@ -3221,6 +3434,128 @@ function tcRenderMain() {
     poly.addTo(tcMainLayer);
   });
   tcMainLayer.addTo(mapInstance);
+  tcRenderReservationsOnMainMap();
+}
+
+// ── Reservation map layers ────────────────────────────────────
+let tcReservationsMainLayer = null;
+
+function tcRenderReservationsOnMainMap() {
+  if (!mapInstance) return;
+  if (tcReservationsMainLayer) { tcReservationsMainLayer.clearLayers(); }
+  else { tcReservationsMainLayer = L.layerGroup().addTo(mapInstance); }
+
+  const reservations = reservationLoad();
+  if (!reservations.length) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const renderer = L.canvas({ padding: 0.5 });
+
+  reservations.forEach(res => {
+    if (!res.lat || !res.lng) return;
+    const isPast = res.date < today;
+    const color = isPast ? '#78909c' : '#7b3fa0';
+    const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    L.circleMarker([res.lat, res.lng], {
+      renderer,
+      radius: 6,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      fillOpacity: 0.92,
+    })
+    .bindTooltip(
+      '<strong>📅 ' + res.name + '</strong><br><span style="font-size:10px;color:' + color + '">' + dateStr + '</span>' +
+      (res.species ? '<br><span style="font-size:10px;color:#888">' + res.species + '</span>' : ''),
+      { sticky: true }
+    )
+    .addTo(tcReservationsMainLayer);
+  });
+}
+
+let tcReservationsCareLayer = null;
+
+function tcRenderReservationsOnCareMap() {
+  if (!tcCareMap) return;
+  if (tcReservationsCareLayer) { tcReservationsCareLayer.clearLayers(); }
+  else { tcReservationsCareLayer = L.layerGroup().addTo(tcCareMap); }
+
+  const reservations = reservationLoad();
+  if (!reservations.length) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  reservations.forEach(res => {
+    if (!res.lat || !res.lng) return;
+    const isPast = res.date < today;
+    const isToday = res.date === today;
+    const color = isPast ? '#78909c' : isToday ? '#c62828' : '#7b3fa0';
+    const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const icon = L.divIcon({
+      className: '',
+      iconSize: [18, 18], iconAnchor: [9, 9],
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:' + color +
+        ';border:2.5px solid #fff;box-shadow:0 0 0 2px ' + color +
+        ',0 2px 6px rgba(0,0,0,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1">📅</div>',
+    });
+
+    L.marker([res.lat, res.lng], { icon, zIndexOffset: 1500 })
+      .bindTooltip(
+        '<strong>' + res.name + '</strong><br><span style="font-size:10px;color:' + color + '">' + dateStr +
+        (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
+        (res.species ? '<br><span style="font-size:10px;color:#888">' + res.species + '</span>' : ''),
+        { sticky: true }
+      )
+      .bindPopup(
+        '<div style="font-family:\'Nunito\',sans-serif;min-width:160px">' +
+        '<div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 ' + res.name + '</div>' +
+        (res.species ? '<div style="font-size:11px;color:#666;margin-bottom:2px">' + res.species + '</div>' : '') +
+        (res.address ? '<div style="font-size:11px;color:#888;margin-bottom:6px">' + res.address + '</div>' : '') +
+        '<div style="font-size:11px;font-weight:600;color:' + color + ';margin-bottom:10px">' + dateStr +
+        (isToday ? ' · Today!' : isPast ? ' · Past' : '') + '</div>' +
+        '<button onclick="reservationRemove(\'' + res.id + '\');if(tcCareMap)tcCareMap.closePopup();" ' +
+        'style="width:100%;padding:6px;background:#c0392b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-family:\'Nunito\',sans-serif;font-weight:600">🗑 Remove reservation</button>' +
+        '</div>'
+      )
+      .addTo(tcReservationsCareLayer);
+  });
+}
+
+// Add all census trees as faint clickable background dots to the care map.
+// Called once after the map is initialized; guarded to prevent double-add.
+function tcAddCareMapBackgroundTrees() {
+  if (!tcCareMap || tcCareMap._bgTreeLayerAdded) return;
+  if (typeof allTrees === 'undefined' || !allTrees.length) return;
+  tcCareMap._bgTreeLayerAdded = true;
+
+  const renderer = L.canvas({ padding: 0.5 });
+  allTrees.forEach(tree => {
+    const lat = parseFloat(tree.latitude || tree.lat);
+    const lng = parseFloat(tree.longitude || tree.lng);
+    if (!lat || !lng) return;
+
+    const dot = L.circleMarker([lat, lng], {
+      renderer,
+      radius: 5,
+      fillColor: '#7a9e7e',
+      color: 'transparent',
+      weight: 0,
+      fillOpacity: 0.22,
+    });
+
+    dot.on('click', (e) => {
+      L.DomEvent.stopPropagation(e);
+      openReserveModal(tree);
+    });
+    dot.bindTooltip(
+      (tree.spc_common || 'Unknown species') +
+      (tree.address ? '<br><span style="font-size:10px;color:#aaa">' + tree.address + '</span>' : '') +
+      '<br><span style="font-size:10px;color:#7b3fa0;font-weight:600">📅 Tap to reserve for care</span>',
+      { sticky: true }
+    );
+    dot.addTo(tcCareMap);
+  });
 }
 
 function tcRenderBlocksMap() {
@@ -3279,16 +3614,27 @@ function renderClaimedBlocksSidebar() {
   entries.sort((a, b) => b.latest.date > a.latest.date ? 1 : -1);
 
   if (!entries.length) {
-    if (emptyEl) emptyEl.style.display = 'flex';
+    if (emptyEl) emptyEl.style.display = 'flex'; // default; renderReservationQueue will hide if needed
     listEl.style.display = 'none';
     listEl.innerHTML = '';
     tcShowNoSelection();
+    renderReservationQueue();
+    updateReservationCounter();
+    tcUpdateProgress();
     return;
   }
 
   if (emptyEl) emptyEl.style.display = 'none';
   listEl.style.display = 'block';
   listEl.innerHTML = '';
+
+  // Care activities section header (reservation queue will be prepended above this)
+  const careHeader = document.createElement('div');
+  careHeader.id = 'care-activities-header';
+  careHeader.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:var(--accent);' +
+    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+  careHeader.textContent = '🌿 Care Activities';
+  listEl.appendChild(careHeader);
 
   entries.forEach(({ area, latest, allEvents }) => {
     const isSelected = area.id === tcSelectedId;
@@ -3337,6 +3683,8 @@ function renderClaimedBlocksSidebar() {
   });
 
   tcUpdateProgress();
+  renderReservationQueue();
+  updateReservationCounter();
 }
 
 function tcShowNoSelection() {
@@ -3718,7 +4066,9 @@ window.addEventListener('load', async () => {
   updateMap();
   updateStats();
   tcUpdateProgress();
-  tcRenderMain();
+  tcRenderMain(); // also calls tcRenderReservationsOnMainMap
+  renderReservationQueue();
+  updateReservationCounter();
 
   // Sync with backend (if configured) — merges server state into localStorage,
   // then refreshes all UI. Works silently; falls back to local data if offline.
@@ -3741,7 +4091,7 @@ window.addEventListener('load', async () => {
       tcRenderBlocksMap();
       updateMap(); // highlight cared-for trees on the main map
       updateStats();
-      tcRenderCareMap(); // populate care map in Tree Care tab
+      tcRenderCareMap(); // populate care map in Tree Care tab (also renders reservations)
       tcShowSyncStatus('✓ Loaded ' + _tcScrapedAreas.length + ' area' + (_tcScrapedAreas.length > 1 ? 's' : '') + ' from NYC Tree Map');
     }
   });
