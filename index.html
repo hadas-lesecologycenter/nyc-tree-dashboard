@@ -928,6 +928,129 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leaflet-popup-content-wrapper { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
   .leaflet-popup-tip { background: var(--bg2); }
   .leaflet-popup-content { margin: 12px 14px; }
+
+  /* ===== MOBILE RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    /* Compact header - bottom tab bar replaces nav */
+    header { padding: 0 12px; height: 48px; gap: 8px; }
+    .brand-sub { display: none; }
+    nav { display: none; }
+
+    /* Filter bar - horizontal scroll */
+    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-sep { display: none; }
+    .tree-count { display: none; }
+
+    /* Body padding for bottom tab bar */
+    body { padding-bottom: 56px; }
+
+    /* Stats view - responsive grids */
+    #stats-view { padding: 14px; gap: 14px; }
+    .summary-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .charts-grid { grid-template-columns: 1fr; gap: 12px; }
+
+    /* Map overlay - keep away from bottom tab bar */
+    .map-overlay { top: auto; bottom: 68px; right: 8px; }
+
+    /* Drag handles for bottom sheets */
+    #map-tree-panel::before,
+    #priority-sidebar::before,
+    #block-tree-panel::before {
+      content: ''; display: block; width: 36px; height: 4px;
+      background: var(--border2); border-radius: 2px; margin: 10px auto 4px;
+    }
+
+    /* Map tree detail panel - bottom sheet */
+    #map-tree-panel {
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 65vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2001 !important;
+    }
+
+    /* Priority sidebar - bottom sheet */
+    #priority-sidebar {
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 55vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2000 !important;
+    }
+
+    /* Block tree panel - bottom sheet */
+    #block-tree-panel {
+      position: fixed !important;
+      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 65vh;
+      border-left: none !important; border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
+      z-index: 2001 !important;
+    }
+
+    /* Mobile view tab bars (in Blocks and MyBlock views) */
+    .mobile-tab-bar { display: flex !important; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
+    .mobile-tab {
+      flex: 1; padding: 9px 4px; text-align: center; font-size: 13px; font-weight: 600;
+      color: var(--text2); cursor: pointer; border: none; background: none;
+      font-family: 'Nunito', sans-serif; border-bottom: 2px solid transparent;
+      transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Blocks view - stacked panels toggled by tab bar */
+    #blocks-view .blocks-inner { flex-direction: column !important; }
+    #blocks-list-panel {
+      width: 100% !important; flex-shrink: 0 !important;
+      border-right: none !important; border-bottom: 1px solid var(--border);
+      flex: 1; min-height: 0;
+    }
+    #blocks-list-panel.mobile-hidden { display: none !important; }
+    #blocks-map-container { flex: 1; min-height: 0; }
+    #blocks-map-container.mobile-hidden { display: none !important; }
+
+    /* MyBlock view - stacked panels toggled by tab bar */
+    #myblock-view .myblock-inner {
+      flex-direction: column !important;
+      height: auto !important; flex: 1; min-height: 0;
+    }
+    #myblock-sidebar {
+      width: 100% !important; flex-shrink: 0 !important;
+      border-right: none !important; border-bottom: 1px solid var(--border);
+      flex: 1; min-height: 0; max-height: 45vh;
+    }
+    #myblock-sidebar.mobile-hidden { display: none !important; }
+    #myblock-dashboard.mobile-hidden { display: none !important; }
+
+    /* Bottom navigation bar */
+    #mobile-tab-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 56px;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      display: flex; align-items: stretch; z-index: 3000;
+      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    }
+    .mob-nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px; border: none; background: none; cursor: pointer;
+      color: var(--text3); font-family: 'Nunito', sans-serif;
+      transition: color 0.15s; padding: 4px 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mob-nav-btn .mob-icon { font-size: 18px; line-height: 1; }
+    .mob-nav-btn .mob-label { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .mob-nav-btn.active { color: var(--accent); }
+  }
+
+  @media (max-width: 480px) {
+    .summary-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -1075,9 +1198,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- BLOCKS VIEW -->
   <div id="blocks-view" class="view">
-    <div style="display:flex;flex:1;overflow:hidden">
+    <div id="blocks-mobile-tabs" class="mobile-tab-bar" style="display:none">
+      <button class="mobile-tab active" onclick="switchBlocksTab('list',this)">📋 Block List</button>
+      <button class="mobile-tab" onclick="switchBlocksTab('map',this)">🗺 Map</button>
+    </div>
+    <div class="blocks-inner" style="display:flex;flex:1;overflow:hidden">
       <!-- Left: ranked list -->
-      <div style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+      <div id="blocks-list-panel" style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🏙 Top 100 Blocks</h2>
           <div id="counts-explanation" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.7">
@@ -1101,7 +1228,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
-    <div style="display:flex;height:100%;overflow:hidden">
+    <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
+      <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
+      <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
+    </div>
+    <div class="myblock-inner" style="display:flex;height:100%;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:4px">🌿 Tree Care</h2>
@@ -3613,6 +3744,90 @@ window.addEventListener('load', async () => {
     }
   });
 });
+
+// ===== MOBILE UI =====
+
+function initMobileUI() {
+  if (window.innerWidth > 768) return;
+
+  // Hide priority sidebar on mobile — it's too wide as a side panel.
+  // On mobile it becomes a bottom sheet; user can open it via the toggle button.
+  const ps = document.getElementById('priority-sidebar');
+  if (ps) ps.style.display = 'none';
+
+  // Default blocks view: list visible, map hidden (user taps tab to switch)
+  const blocksMapContainer = document.getElementById('blocks-map-container');
+  if (blocksMapContainer) blocksMapContainer.classList.add('mobile-hidden');
+
+  // Default myblock view: activities sidebar visible, care map hidden
+  const myblockDashboard = document.getElementById('myblock-dashboard');
+  if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
+
+  // Inject bottom navigation bar (replaces header nav on mobile)
+  if (!document.getElementById('mobile-tab-nav')) {
+    const nav = document.createElement('div');
+    nav.id = 'mobile-tab-nav';
+    nav.innerHTML = `
+      <button class="mob-nav-btn active" onclick="mobileSwitchView('map',this)">
+        <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('stats',this)">
+        <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('blocks',this)">
+        <span class="mob-icon">🏙</span><span class="mob-label">Blocks</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock',this)">
+        <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
+      </button>
+      <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
+        <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
+      </button>
+    `;
+    document.body.appendChild(nav);
+  }
+}
+
+function mobileSwitchView(view, btn) {
+  switchView(view, null);
+  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function switchBlocksTab(tab, btn) {
+  const listPanel = document.getElementById('blocks-list-panel');
+  const mapContainer = document.getElementById('blocks-map-container');
+  document.querySelectorAll('#blocks-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'list') {
+    if (listPanel) listPanel.classList.remove('mobile-hidden');
+    if (mapContainer) mapContainer.classList.add('mobile-hidden');
+  } else {
+    if (listPanel) listPanel.classList.add('mobile-hidden');
+    if (mapContainer) mapContainer.classList.remove('mobile-hidden');
+    // Trigger map resize after container becomes visible
+    setTimeout(() => { if (blocksMap) blocksMap.invalidateSize(); }, 100);
+  }
+}
+
+function switchMyBlockTab(tab, btn) {
+  const sidebar = document.getElementById('myblock-sidebar');
+  const dashboard = document.getElementById('myblock-dashboard');
+  document.querySelectorAll('#myblock-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'sidebar') {
+    if (sidebar) sidebar.classList.remove('mobile-hidden');
+    if (dashboard) dashboard.classList.add('mobile-hidden');
+  } else {
+    if (sidebar) sidebar.classList.add('mobile-hidden');
+    if (dashboard) dashboard.classList.remove('mobile-hidden');
+    // Trigger care map resize after container becomes visible
+    setTimeout(() => { if (tcCareMap) tcCareMap.invalidateSize(); }, 100);
+  }
+}
+
+// Run mobile init shortly after page load (after map initialization completes)
+window.addEventListener('load', function() { setTimeout(initMobileUI, 300); });
 </script>
 </body>
 </html>
