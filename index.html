@@ -1087,8 +1087,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       z-index: 2999;
     }
     #geoLocation-btn, #geoTracking-btn {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: none;
       background: white;
@@ -1223,8 +1223,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
-      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">🎯</button>
-      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()" style="font-size:20px">🛣️</button>
+      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
+      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()">✓</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1789,7 +1789,7 @@ function requestUserLocation() {
   }
 
   if (btn) btn.disabled = true;
-  if (btn) btn.textContent = '🎯';
+  if (btn) btn.textContent = '⊕';
 
   navigator.geolocation.getCurrentPosition(
     function(position) {
@@ -1826,7 +1826,7 @@ function requestUserLocation() {
       }).addTo(mapInstance);
 
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '🎯';
+      if (btn) btn.textContent = '⊕';
     },
     function(error) {
       let msg = 'Location request denied';
@@ -1835,7 +1835,7 @@ function requestUserLocation() {
       else if (error.code === error.TIMEOUT) msg = 'Location request timed out';
       alert(msg);
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '🎯';
+      if (btn) btn.textContent = '⊕';
     },
     {
       enableHighAccuracy: true,
@@ -3959,13 +3959,16 @@ function initMobileUI() {
     `;
     document.body.appendChild(nav);
 
-    // Add click handlers to mobile nav buttons (only those with data-view)
-    document.querySelectorAll('#mobile-tab-nav .mob-nav-btn[data-view]').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        const view = this.getAttribute('data-view');
-        mobileSwitchView(view, this);
-      });
-    });
+    // Add click handlers to mobile nav buttons
+    const mapBtn = nav.querySelector('[data-view="map"]');
+    const statsBtn = nav.querySelector('[data-view="stats"]');
+    const myblockBtn = nav.querySelector('[data-view="myblock"]');
+    const aboutBtn = nav.querySelector('[data-view="about"]');
+
+    if (mapBtn) mapBtn.onclick = () => mobileSwitchView('map', mapBtn);
+    if (statsBtn) statsBtn.onclick = () => mobileSwitchView('stats', statsBtn);
+    if (myblockBtn) myblockBtn.onclick = () => mobileSwitchView('myblock', myblockBtn);
+    if (aboutBtn) aboutBtn.onclick = () => mobileSwitchView('about', aboutBtn);
   }
 }
 
@@ -4037,8 +4040,12 @@ function switchMyBlockTab(tab, btn) {
   }
 }
 
-// Run mobile init shortly after page load (after map initialization completes)
-window.addEventListener('load', function() { setTimeout(initMobileUI, 300); });
+// Run mobile init on load and resize
+function checkAndInitMobileUI() {
+  if (window.innerWidth <= 768) initMobileUI();
+}
+window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
+window.addEventListener('resize', checkAndInitMobileUI);
 </script>
 </body>
 </html>
