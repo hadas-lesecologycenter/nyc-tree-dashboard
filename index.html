@@ -1940,22 +1940,6 @@ function updateMap() {
       fillOpacity: wasCaredFor ? 1 : 0.88
     });
 
-    const treeKey = 'tree_' + (tree.tree_id || (lat + '_' + lng));
-    // Lazy popup: build HTML only when the popup is actually opened, not for all 15k trees upfront.
-    m.bindPopup(() => {
-      const pm = getPriorityMeta(tree._priority || 0);
-      const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health||'').toLowerCase()] || '#9c9080';
-      return `
-        <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
-          <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
-          <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-            <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-            <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 4</span>
-          </div>
-        </div>
-      `;
-    });
     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
     m.addTo(markersLayer);
   });
@@ -1974,15 +1958,6 @@ function updateMap() {
         weight: 1.5,
         dashArray: '4,3',
         opacity: 0.75
-      }).bindPopup(() => {
-        const species = bed.spc_common ? `<div style="font-size:11px;font-style:italic;color:#6e6558;margin-bottom:6px">${bed.spc_common}</div>` : '';
-        const vis = isHighVisibility(bed);
-        const visLabel = vis === 'full' ? 'Commercial corridor' : 'Residential / high foot-traffic';
-        return `<div style="font-family:'Nunito',sans-serif;min-width:180px">
-          <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:#2c2a24">🪨 Empty planting bed</div>
-          ${species}
-          <div style="font-size:11px;color:#9B7653;margin-top:4px">Planting opportunity · ${visLabel}</div>
-        </div>`;
       }).addTo(markersLayer);
     });
   }
