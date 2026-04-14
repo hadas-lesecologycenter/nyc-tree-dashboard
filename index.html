@@ -948,11 +948,68 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
     nav { display: none; }
 
-    /* Filter bar - horizontal scroll */
-    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
-    .filter-bar::-webkit-scrollbar { display: none; }
+    /* Filter bar - hidden on mobile, shown as modal */
+    .filter-bar { display: none; }
     .filter-sep { display: none; }
     .tree-count { display: none; }
+
+    /* Mobile filter panel */
+    #mobile-filter-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 56px;
+      background: var(--bg2);
+      z-index: 2900;
+      overflow-y: auto;
+      padding: 16px;
+      display: none;
+    }
+    #mobile-filter-panel.open { display: block; }
+    #mobile-filter-panel .filter-section {
+      margin-bottom: 16px;
+    }
+    #mobile-filter-panel .filter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: block;
+    }
+    #mobile-filter-panel select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg1);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    #filter-toggle-btn {
+      position: fixed;
+      bottom: 62px;
+      right: 12px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      color: #333;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2995;
+      transition: all 0.2s ease;
+    }
+    #filter-toggle-btn:active {
+      transform: scale(0.95);
+    }
 
     /* Body padding for bottom tab bar */
     body { padding-bottom: 56px; }
@@ -1036,7 +1093,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .mob-nav-btn .mob-icon { font-size: 18px; line-height: 1; }
     .mob-nav-btn .mob-label { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
     .mob-nav-btn.active { color: var(--accent); }
+  }
 
+  @media (min-width: 769px) {
+    /* Desktop: show filter bar, hide mobile elements */
+    .filter-bar { display: flex !important; }
+    #filter-toggle-btn { display: none !important; }
+    #mobile-filter-panel { display: none !important; }
+    body { padding-bottom: 0; }
+    .map-overlay { top: 12px !important; bottom: auto !important; }
+  }
+
+  @media (max-width: 768px) {
     /* Geolocation button styles */
     .geo-button-container {
       position: fixed;
@@ -1165,6 +1233,38 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
+    <!-- Filter toggle button (mobile) -->
+    <button id="filter-toggle-btn" title="Toggle filters" onclick="toggleMobileFilters()">🔍</button>
+    <!-- Mobile filter panel -->
+    <div id="mobile-filter-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Filters</h3>
+        <button onclick="toggleMobileFilters()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Health Status</label>
+        <select id="f-health-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Health</option>
+          <option>Good</option>
+          <option>Fair</option>
+          <option>Poor</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Species</label>
+        <select id="f-species-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Species</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Age / Planting Year</label>
+        <select id="f-age-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Ages</option>
+          <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
+        </select>
+      </div>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
+    </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <div id="path-stats-badge" class="path-stats-badge" style="display:none"></div>
@@ -1619,7 +1719,9 @@ function setLoadingBar(p) {
 
 function populatePlantingYearFilter() {
   const sel = document.getElementById('f-age');
+  const selMobile = document.getElementById('f-age-mobile');
   while (sel.options.length > 1) sel.remove(1);
+  if (selMobile) while (selMobile.options.length > 1) selMobile.remove(1);
 
   const thisYear = new Date().getFullYear();
 
@@ -1642,6 +1744,18 @@ function populatePlantingYearFilter() {
       g.appendChild(o);
     });
     sel.appendChild(g);
+
+    // Also add to mobile select
+    if (selMobile) {
+      const gMobile = document.createElement('optgroup');
+      gMobile.label = label;
+      options.forEach(([val, text]) => {
+        const oMobile = document.createElement('option');
+        oMobile.value = val; oMobile.textContent = text;
+        gMobile.appendChild(oMobile);
+      });
+      selMobile.appendChild(gMobile);
+    }
   }
 
   // Special options
@@ -1678,10 +1792,26 @@ function populatePlantingYearFilter() {
 
 function populateSpeciesFilter() {
   const sel = document.getElementById('f-species');
+  const selMobile = document.getElementById('f-species-mobile');
   const current = sel.value;
   while (sel.options.length > 1) sel.remove(1);
+  if (selMobile) while (selMobile.options.length > 1) selMobile.remove(1);
+
   const seen = new Set();
-  allTrees.forEach(t => { if (t.spc_common && !seen.has(t.spc_common)) { seen.add(t.spc_common); const o = document.createElement('option'); o.value = o.textContent = t.spc_common; sel.appendChild(o); } });
+  allTrees.forEach(t => {
+    if (t.spc_common && !seen.has(t.spc_common)) {
+      seen.add(t.spc_common);
+      const o = document.createElement('option');
+      o.value = o.textContent = t.spc_common;
+      sel.appendChild(o);
+
+      if (selMobile) {
+        const oMobile = document.createElement('option');
+        oMobile.value = oMobile.textContent = t.spc_common;
+        selMobile.appendChild(oMobile);
+      }
+    }
+  });
   if (current) sel.value = current;
 }
 
@@ -1720,6 +1850,57 @@ function applyFilters(reload = false) {
   document.getElementById('tree-count').textContent = `${filteredTrees.length.toLocaleString()} trees`;
   updateMap();
   updateStats();
+}
+
+// ========== MOBILE FILTERS ==========
+function toggleMobileFilters() {
+  const panel = document.getElementById('mobile-filter-panel');
+  const btn = document.getElementById('filter-toggle-btn');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    if (btn) btn.style.opacity = '1';
+  } else {
+    panel.classList.add('open');
+    if (btn) btn.style.opacity = '0.4';
+    // Sync mobile selects with desktop values
+    syncMobileFiltersFromDesktop();
+  }
+}
+
+function syncMobileFiltersFromDesktop() {
+  const desktopHealth = document.getElementById('f-health')?.value || '';
+  const desktopSpecies = document.getElementById('f-species')?.value || '';
+  const desktopAge = document.getElementById('f-age')?.value || '';
+
+  const mobileHealth = document.getElementById('f-health-mobile');
+  const mobileSpecies = document.getElementById('f-species-mobile');
+  const mobileAge = document.getElementById('f-age-mobile');
+
+  if (mobileHealth) mobileHealth.value = desktopHealth;
+  if (mobileSpecies) mobileSpecies.value = desktopSpecies;
+  if (mobileAge) mobileAge.value = desktopAge;
+}
+
+function applyFiltersFromMobile() {
+  // Copy mobile filter values to desktop
+  const mobileHealth = document.getElementById('f-health-mobile')?.value || '';
+  const mobileSpecies = document.getElementById('f-species-mobile')?.value || '';
+  const mobileAge = document.getElementById('f-age-mobile')?.value || '';
+
+  const desktopHealth = document.getElementById('f-health');
+  const desktopSpecies = document.getElementById('f-species');
+  const desktopAge = document.getElementById('f-age');
+
+  if (desktopHealth) desktopHealth.value = mobileHealth;
+  if (desktopSpecies) desktopSpecies.value = mobileSpecies;
+  if (desktopAge) desktopAge.value = mobileAge;
+
+  // Apply filters
+  applyFilters();
+
+  // Update tree count in mobile panel
+  const countEl = document.getElementById('mobile-tree-count');
+  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees`;
 }
 
 // ========== MAP ==========
