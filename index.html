@@ -2127,6 +2127,8 @@ function openMapTreeDetail(tree) {
   window._currentMapDetailTree = tree;
   panel.style.display = 'block';
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  const btn = document.getElementById('mtp-reserve-btn');
+  if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -2203,6 +2205,49 @@ function closeMapTreeDetail() {
   const panel = document.getElementById('map-tree-panel');
   if (panel) panel.style.display = 'none';
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+}
+
+function openReservationDetail(res) {
+  const panel = document.getElementById('map-tree-panel');
+  if (!panel) return;
+  window._currentMapDetailTree = null; // not a reservable tree
+  panel.style.display = 'block';
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+
+  const isPast = res.date < new Date().toISOString().slice(0, 10);
+  const isToday = res.date === new Date().toISOString().slice(0, 10);
+  const color = isPast ? '#78909c' : '#7b3fa0';
+  const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const dateLabel = isToday ? dateStr + ' · Today' : isPast ? dateStr + ' · Past' : dateStr;
+
+  document.getElementById('mtp-title').textContent = res.species || res.address || 'Reserved Tree';
+  document.getElementById('mtp-badge').innerHTML =
+    '<span style="background:' + color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">📅 Reserved</span>';
+
+  const rows = [
+    ['Date',    dateLabel],
+    ['Staff',   res.name],
+    res.note    ? ['Note', '<em>' + res.note + '</em>'] : null,
+    res.address ? ['Address', res.address] : null,
+    res.health  ? ['Health',  res.health]  : null,
+    res.dbh     ? ['Trunk DBH', res.dbh + '"'] : null,
+    res.nta     ? ['Neighborhood', res.nta] : null,
+  ].filter(Boolean);
+
+  document.getElementById('mtp-breakdown').innerHTML = '';
+  document.getElementById('mtp-fields').innerHTML = rows.map(r =>
+    '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
+      '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span>' +
+    '</div>'
+  ).join('');
+
+  const btn = document.getElementById('mtp-reserve-btn');
+  if (btn) {
+    btn.textContent = '🗑 Remove Reservation';
+    btn.style.background = '#b0003a';
+    btn.onclick = () => { reservationRemove(res.id); closeMapTreeDetail(); };
+  }
 }
 
 // ========== EMPTY BEDS LAYER ==========
@@ -3050,6 +3095,7 @@ function tcRenderReservationsOnMainMap() {
       '<br><span style="font-size:10px;color:#888">by ' + res.name + '</span>',
       { sticky: true }
     )
+    .on('click', (e) => { L.DomEvent.stopPropagation(e); openReservationDetail(res); })
     .addTo(tcReservationsMainLayer);
   });
 }
