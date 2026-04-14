@@ -777,10 +777,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
     position: absolute; top: 12px; right: 12px; z-index: 1000;
     display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
   }
+  @media (max-width: 768px) {
+    .map-overlay {
+      top: auto;
+      bottom: 140px;
+      right: auto;
+      left: 12px;
+      align-items: flex-start;
+    }
+    #map-legend-priority {
+      position: fixed;
+      width: calc(100vw - 24px);
+      max-width: none;
+    }
+  }
   .map-pill {
     background: var(--bg2); border: 1px solid var(--border2);
     border-radius: 20px; padding: 6px 14px; font-size: 12px;
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  @media (max-width: 768px) {
+    .map-pill {
+      max-width: 90vw;
+      padding: 6px 10px;
+      font-size: 11px;
+      gap: 6px;
+    }
+    #map-legend-species {
+      position: fixed;
+      top: auto !important;
+      right: auto !important;
+      left: 12px !important;
+      bottom: 140px !important;
+      width: calc(100vw - 24px) !important;
+      max-width: none !important;
+      z-index: 2997 !important;
+    }
   }
   .toggle-btn {
     background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
