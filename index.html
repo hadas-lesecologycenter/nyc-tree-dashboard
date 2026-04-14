@@ -1184,6 +1184,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span class="dot" style="background:#d4ac0d;margin-left:8px"></span> Medium
         <span class="dot" style="background:#d35400;margin-left:8px"></span> High
         <span class="dot" style="background:#c0392b;margin-left:8px"></span> Critical
+        <span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For
+        <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
@@ -2234,7 +2236,26 @@ function toggleSpeciesView() {
   speciesBtn.classList.toggle('on', !priorityMode);
   speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
   document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
-  document.getElementById('map-legend-species').style.display = priorityMode ? 'none' : '';
+
+  // Update species legend
+  const speciesLegend = document.getElementById('map-legend-species');
+  if (!priorityMode) {
+    // Populate species legend with all species colors
+    let html = '';
+    const speciesEntries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
+    speciesEntries.forEach(([species, color]) => {
+      html += `<span class="dot" style="background:${color}${html ? ';margin-left:6px' : ''}"></span>`;
+    });
+    // Add teal and purple indicators
+    if (speciesEntries.length > 0) html += '<br style="margin:4px 0">';
+    html += `<span class="dot" style="background:#06b6d4;margin-top:4px;display:inline-block"></span>`;
+    html += ` <span style="font-size:11px">Cared For</span>`;
+    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px;display:inline-block"></span>`;
+    html += ` <span style="font-size:11px">Reserved</span>`;
+    speciesLegend.innerHTML = html;
+  }
+  speciesLegend.style.display = priorityMode ? 'none' : '';
+
   // Hide priority sidebar when switching to species mode
   if (!priorityMode) {
     document.getElementById('priority-sidebar').style.display = 'none';
