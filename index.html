@@ -996,8 +996,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .summary-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .charts-grid { grid-template-columns: 1fr; gap: 12px; }
 
-    /* Map overlay - keep away from bottom tab bar */
+    /* Map overlay - keep away from bottom tab bar and hide empty beds button on mobile */
     .map-overlay { top: auto; bottom: 68px; right: 8px; }
+    #empty-beds-toggle { display: none !important; }
 
     /* Drag handles for bottom sheets */
     #map-tree-panel::before,
@@ -1078,6 +1079,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #mobile-filter-panel { display: none !important; }
     body { padding-bottom: 0; }
     .map-overlay { top: 12px !important; bottom: auto !important; }
+    #empty-beds-toggle { display: block !important; }
   }
 
   @media (max-width: 768px) {
@@ -1833,16 +1835,18 @@ function applyFilters(reload = false) {
 // ========== MOBILE FILTERS ==========
 function toggleMobileFilters() {
   const panel = document.getElementById('mobile-filter-panel');
-  const btn = document.getElementById('filter-toggle-btn');
   if (panel.classList.contains('open')) {
     panel.classList.remove('open');
-    if (btn) btn.style.opacity = '1';
   } else {
     panel.classList.add('open');
-    if (btn) btn.style.opacity = '0.4';
     // Sync mobile selects with desktop values
     syncMobileFiltersFromDesktop();
   }
+}
+
+function toggleMobileFiltersNav() {
+  toggleMobileFilters();
+  // Don't update active button - filter doesn't switch views
 }
 
 function syncMobileFiltersFromDesktop() {
@@ -4361,7 +4365,7 @@ function initMobileUI() {
       <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
-      <button class="mob-nav-btn" onclick="toggleMobileFilters()" title="Toggle filters">
+      <button class="mob-nav-btn" onclick="toggleMobileFiltersNav()" title="Toggle filters">
         <span class="mob-icon">🔍</span><span class="mob-label">Filter</span>
       </button>
     `;
