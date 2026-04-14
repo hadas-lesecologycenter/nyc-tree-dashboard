@@ -1078,10 +1078,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-badge" style="margin-bottom:12px"></div>
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
+        <button id="mtp-reserve-btn" onclick="openReserveModal(window._currentMapDetailTree)"
+          style="margin-top:14px;width:100%;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          📅 Reserve for Care
+        </button>
       </div>
     </div>
     <div class="map-overlay">
-      <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">🎨 Species View</button>
+      <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">📊 Priority Info</button>
       <div class="map-pill" id="map-legend-species" style="display:none"></div>
       <div class="map-pill" id="map-legend-priority" style="display:block">
         <span class="dot" style="background:#3a7d44"></span> Low
@@ -1092,7 +1096,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
     <!-- Priority sidebar overlaid on map -->
-    <div id="priority-sidebar" style="position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
+    <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
       <div style="padding:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🌱 Priority Mode</h2>
@@ -1212,17 +1216,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="tc-list-panel" style="flex:1;overflow:hidden;position:relative">
           <div id="myblock-no-selection" style="position:absolute;inset:0;overflow:hidden">
             <div id="tc-care-map" style="position:absolute;inset:0"></div>
-            <div style="position:absolute;top:10px;right:10px;z-index:500">
-              <button id="tc-find-trees-btn" onclick="tcToggleFindTrees()"
-                style="padding:7px 13px;background:rgba(255,255,255,0.95);color:#7b3fa0;border:2px solid #7b3fa0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15)">
-                📅 Find trees to reserve
-              </button>
-            </div>
             <div id="tc-care-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;max-height:60vh;overflow-y:auto"></div>
             <div id="tc-care-map-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;pointer-events:none">
               <div style="font-size:48px;margin-bottom:16px">🌿</div>
               <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">No care activities yet</div>
-              <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet (in the About tab) to sync care activities. To reserve trees for future care, tap <strong style="color:#7b3fa0">📅 Find trees to reserve</strong> above.</div>
+              <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet (in the About tab) to sync care activities. To reserve trees for future care, use the <strong style="color:#7b3fa0">Map tab</strong>.</div>
             </div>
           </div>
           <div id="myblock-dashboard-content" style="display:none;position:absolute;inset:0;padding:24px;max-width:760px;overflow-y:auto"></div>
@@ -1309,7 +1307,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🗺</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Map tab</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">View all active street trees in the CB3 area. Dots are colored by priority tier (red = highest need, green = lowest). Toggle to Species View to see tree diversity. Filter by health or species using the dropdowns. Toggle empty beds to see planting opportunities.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">View all active street trees in the CB3 area. Dots are colored by priority tier (red = highest need, green = lowest). Tap any tree to see its details and reserve it for future care. Filter by health or species using the dropdowns. Toggle empty beds to see planting opportunities.</div>
             </div>
           </div>
           <div style="display:flex;gap:14px">
@@ -1751,14 +1749,15 @@ function updatePriorityTierCounts() {
 }
 
 function togglePrioritySidebar() {
-  priorityMode = !priorityMode;
   const sidebar = document.getElementById('priority-sidebar');
-  sidebar.style.display = priorityMode ? 'block' : 'none';
-  const btn = document.getElementById('priority-toggle');
-  btn.classList.toggle('on', priorityMode);
-  btn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
-  document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
-  updateMap();
+  const visible = sidebar.style.display !== 'none';
+  sidebar.style.display = visible ? 'none' : 'block';
+  if (!visible) {
+    updatePriorityTierCounts();
+    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  } else {
+    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  }
 }
 
 // ========== STATS ==========
@@ -1768,9 +1767,7 @@ function togglePrioritySidebar() {
   if (orig) {
     window.updateMap = function() {
       orig.apply(this, arguments);
-      if (document.getElementById('priority-sidebar') && document.getElementById('priority-sidebar').style.display !== 'none') {
-        updatePriorityTierCounts();
-      }
+      if (priorityMode) updatePriorityTierCounts();
     };
   }
 })();
@@ -2107,6 +2104,7 @@ function switchView(view, evt) {
 function openMapTreeDetail(tree) {
   const panel = document.getElementById('map-tree-panel');
   if (!panel) return;
+  window._currentMapDetailTree = tree;
   panel.style.display = 'block';
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   const pm = getPriorityMeta(tree._priority || 0);
@@ -2262,9 +2260,6 @@ function tcRenderCareMap() {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
-  // Add background tree dots once (guarded inside function)
-  tcAddCareMapBackgroundTrees();
-
   // Clear old year layers
   Object.values(tcCareYearLayers).forEach(ly => {
     ly.clearLayers();
@@ -3055,69 +3050,6 @@ function tcRenderReservationsOnCareMap() {
   });
 }
 
-// Background layer of all census trees — toggled on/off by the "Find Trees" button.
-let tcBgTreeLayer = null;
-let tcBgTreeLayerBuilt = false;
-
-function tcBuildBgTreeLayer() {
-  if (tcBgTreeLayerBuilt || !tcCareMap) return;
-  if (typeof allTrees === 'undefined' || !allTrees.length) return;
-  tcBgTreeLayerBuilt = true;
-  tcBgTreeLayer = L.layerGroup(); // NOT added to map yet — shown on demand
-
-  const renderer = L.canvas({ padding: 0.5 });
-  allTrees.forEach(tree => {
-    const lat = parseFloat(tree.latitude || tree.lat);
-    const lng = parseFloat(tree.longitude || tree.lng);
-    if (!lat || !lng) return;
-
-    const dot = L.circleMarker([lat, lng], {
-      renderer,
-      radius: 5,
-      fillColor: '#7a9e7e',
-      color: 'transparent',
-      weight: 0,
-      fillOpacity: 0.22,
-    });
-
-    dot.on('click', (e) => {
-      L.DomEvent.stopPropagation(e);
-      openReserveModal(tree);
-    });
-    dot.bindTooltip(
-      (tree.spc_common || 'Unknown species') +
-      (tree.address ? '<br><span style="font-size:10px;color:#aaa">' + tree.address + '</span>' : '') +
-      '<br><span style="font-size:10px;color:#7b3fa0;font-weight:600">📅 Tap to reserve for care</span>',
-      { sticky: true }
-    );
-    dot.addTo(tcBgTreeLayer);
-  });
-}
-
-// Replaced tcAddCareMapBackgroundTrees — now a no-op stub (called from tcRenderCareMap).
-function tcAddCareMapBackgroundTrees() {
-  tcBuildBgTreeLayer(); // pre-build layer so it's ready when toggled on
-}
-
-let tcFindTreesMode = false;
-
-function tcToggleFindTrees() {
-  if (!tcCareMap) return;
-  tcBuildBgTreeLayer();
-  tcFindTreesMode = !tcFindTreesMode;
-  if (tcFindTreesMode) {
-    if (tcBgTreeLayer) tcCareMap.addLayer(tcBgTreeLayer);
-  } else {
-    if (tcBgTreeLayer) tcCareMap.removeLayer(tcBgTreeLayer);
-  }
-  const btn = document.getElementById('tc-find-trees-btn');
-  if (btn) {
-    btn.style.background = tcFindTreesMode ? '#7b3fa0' : 'rgba(255,255,255,0.95)';
-    btn.style.color = tcFindTreesMode ? '#fff' : '#7b3fa0';
-    btn.textContent = tcFindTreesMode ? '✕ Stop finding trees' : '📅 Find trees to reserve';
-  }
-}
-
 // ── Progress (only counts areas with care events) ─────────────
 function tcUpdateProgress() {
   const areas = tcLoad();
@@ -3654,14 +3586,6 @@ window.addEventListener('load', async () => {
 
 function initMobileUI() {
   if (window.innerWidth > 768) return;
-
-  // Sync JS state to match CSS: priority sidebar is hidden on mobile by CSS.
-  // Reset priorityMode so the first tap on the toggle *opens* the sidebar (not closes).
-  priorityMode = false;
-  const pt = document.getElementById('priority-toggle');
-  if (pt) { pt.classList.remove('on'); pt.textContent = '🌱 Priority View'; }
-  const legend = document.getElementById('map-legend-priority');
-  if (legend) legend.style.display = 'none';
 
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
