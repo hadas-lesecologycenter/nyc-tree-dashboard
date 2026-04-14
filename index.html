@@ -782,6 +782,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     border-radius: 20px; padding: 6px 14px; font-size: 12px;
     display: flex; align-items: center; gap: 8px;
   }
+  .map-legend-wrap {
+    flex-wrap: wrap; gap: 4px 10px; padding: 7px 12px;
+    max-width: 160px; border-radius: 12px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--text2); white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .map-legend-wrap { max-width: 130px; font-size: 10px; }
+  }
   .toggle-btn {
     background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
     padding: 7px 16px; border-radius: 20px; cursor: pointer;
@@ -1252,18 +1263,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="map-overlay">
       <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">📊 Priority Info</button>
       <button class="toggle-btn" id="species-toggle" onclick="toggleSpeciesView()">🎨 Species View</button>
-      <div class="map-pill" id="map-legend-species" style="display:none"></div>
-      <div class="map-pill" id="map-legend-priority" style="display:block">
-        <span class="dot" style="background:#3a7d44"></span> Low
-        <span class="dot" style="background:#d4ac0d;margin-left:8px"></span> Medium
-        <span class="dot" style="background:#d35400;margin-left:8px"></span> High
-        <span class="dot" style="background:#c0392b;margin-left:8px"></span> Critical
-        <span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For
-        <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
-      </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
       <button class="toggle-btn" id="tree-guards-toggle" onclick="toggleTreeGuards()">🛡 Tree Guards</button>
       <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Block 2025</button>
+      <div class="map-pill" id="map-legend-species" style="display:none"></div>
+      <div class="map-pill map-legend-wrap" id="map-legend-priority" style="display:flex">
+        <span class="legend-item"><span class="dot" style="background:#3a7d44"></span>Low</span>
+        <span class="legend-item"><span class="dot" style="background:#d4ac0d"></span>Medium</span>
+        <span class="legend-item"><span class="dot" style="background:#d35400"></span>High</span>
+        <span class="legend-item"><span class="dot" style="background:#c0392b"></span>Critical</span>
+        <span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>
+        <span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
+      </div>
     </div>
     <!-- Priority sidebar overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
