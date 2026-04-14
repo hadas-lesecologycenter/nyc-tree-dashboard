@@ -937,8 +937,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
     nav { display: none; }
 
-    /* Filter bar - horizontal scroll */
-    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+    /* Filter bar - hidden on mobile */
+    .filter-bar { display: none; }
     .filter-bar::-webkit-scrollbar { display: none; }
     .filter-sep { display: none; }
     .tree-count { display: none; }
