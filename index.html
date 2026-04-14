@@ -956,8 +956,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     /* Drag handles for bottom sheets */
     #map-tree-panel::before,
-    #priority-sidebar::before,
-    #block-tree-panel::before {
+    #priority-sidebar::before {
       content: ''; display: block; width: 36px; height: 4px;
       background: var(--border2); border-radius: 2px; margin: 10px auto 4px;
     }
@@ -985,18 +984,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       z-index: 2000 !important;
     }
 
-    /* Block tree panel - bottom sheet */
-    #block-tree-panel {
-      position: fixed !important;
-      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
-      width: 100% !important; height: auto !important; max-height: 65vh;
-      border-left: none !important; border-top: 1px solid var(--border);
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
-      z-index: 2001 !important;
-    }
-
-    /* Mobile view tab bars (in Blocks and MyBlock views) */
+    /* Mobile view tab bars (in MyBlock view) */
     .mobile-tab-bar { display: flex !important; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0; }
     .mobile-tab {
       flex: 1; padding: 9px 4px; text-align: center; font-size: 13px; font-weight: 600;
@@ -1006,18 +994,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     .mobile-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    /* Blocks view - stacked panels toggled by tab bar */
-    #blocks-view .blocks-inner { flex-direction: column !important; }
-    #blocks-list-panel {
-      width: 100% !important; flex-shrink: 0 !important;
-      border-right: none !important; border-bottom: 1px solid var(--border);
-      flex: 1; min-height: 0;
-    }
-    #blocks-list-panel.mobile-hidden { display: none !important; }
-    #blocks-map-container { flex: 1; min-height: 0; }
-    #blocks-map-container.mobile-hidden { display: none !important; }
-
-    /* MyBlock view - stacked panels toggled by tab bar */
+/* MyBlock view - stacked panels toggled by tab bar */
     #myblock-view .myblock-inner {
       flex-direction: column !important;
       height: auto !important; flex: 1; min-height: 0;
@@ -1069,8 +1046,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <nav>
     <button class="nav-btn active" onclick="switchView('map',event)">🗺 Map</button>
     <button class="nav-btn" onclick="switchView('stats',event)">📊 Stats</button>
-    <button class="nav-btn" onclick="switchView('blocks',event)">🏙 Top Blocks</button>
-    <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
+<button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
     <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
 
@@ -1199,36 +1175,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 
   <!-- BLOCKS VIEW -->
-  <div id="blocks-view" class="view">
-    <div id="blocks-mobile-tabs" class="mobile-tab-bar" style="display:none">
-      <button class="mobile-tab active" onclick="switchBlocksTab('list',this)">📋 Block List</button>
-      <button class="mobile-tab" onclick="switchBlocksTab('map',this)">🗺 Map</button>
-    </div>
-    <div class="blocks-inner" style="display:flex;flex:1;overflow:hidden">
-      <!-- Left: ranked list -->
-      <div id="blocks-list-panel" style="width:420px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:20px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
-          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🏙 Top 100 Blocks</h2>
-          <div id="counts-explanation" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:11px;color:var(--text2);line-height:1.7">
-          </div>
-          <div id="blocks-summary" style="margin-top:10px;font-size:11px;color:var(--text3);font-family:'Nunito',sans-serif"></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button onclick="downloadBlocksCSV()" style="padding:6px 14px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">⬇ Download Top 100 Blocks</button>
-            <button onclick="document.getElementById('methodology-modal').style.display='flex'" style="padding:6px 14px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">ℹ️ Methodology</button>
-            <button onclick="document.getElementById('counts-explanation').style.display=document.getElementById('counts-explanation').style.display==='none'?'block':'none'" style="padding:6px 14px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif">📊 Note on numbers</button>
-          </div>
-        </div>
-        <div id="block-list" style="flex:1;overflow-y:auto"></div>
-      </div>
-      <!-- Right: map -->
-      <div style="flex:1;position:relative" id="blocks-map-container">
-        <div id="blocks-map" style="height:100%;width:100%"></div>
-      </div>
-    </div>
-  </div>
 
-
-  <!-- MY BLOCK VIEW -->
+<!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
     <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
       <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
@@ -1371,13 +1319,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <div style="font-size:13px;color:var(--text2);line-height:1.7">Summary statistics for the current filter: health breakdown, average priority tier, and the top 10 most common species.</div>
             </div>
           </div>
-          <div style="display:flex;gap:14px">
-            <div style="font-size:20px;flex-shrink:0">🏙</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Top Blocks tab</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">The 100 street blocks with the most high-priority trees, ranked by urgency. Use this to plan stewardship walks. Click any dot on the map to see a full breakdown of that tree's priority score. Download the list as CSV for offline use.</div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1410,81 +1351,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
 
-<!-- TREE DETAIL PANEL (blocks view) -->
-<div id="block-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);transition:transform 0.2s;font-family:'Nunito',sans-serif">
-  <div style="padding:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div id="btp-title" style="font-family:'Lora',serif;font-size:15px;font-weight:700;line-height:1.3;padding-right:8px"></div>
-      <button onclick="closeTreeDetail()" style="background:none;border:1px solid var(--border);color:var(--text2);min-width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">✕</button>
-    </div>
-    <div id="btp-badge" style="margin-bottom:14px"></div>
-    <div id="btp-score-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px"></div>
-    <div id="btp-fields" style="display:flex;flex-direction:column;gap:6px"></div>
-  </div>
-</div>
-
-<!-- METHODOLOGY MODAL -->
-<div id="methodology-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center">
-  <div style="background:var(--bg);border-radius:12px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;padding:28px;box-shadow:0 8px 40px rgba(0,0,0,0.3);position:relative">
-    <button onclick="document.getElementById('methodology-modal').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
-    <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700;margin-bottom:6px">How This Works</h2>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Methodology for the Top 100 Blocks list</p>
-
-    <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">Priority Score Formula</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Each street tree is assigned a priority score from 0–100, combining two factors:</p>
-    <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:16px">
-      <div style="display:flex;gap:12px;margin-bottom:10px">
-        <span style="background:var(--accent);color:white;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;flex-shrink:0">70%</span>
-        <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:2px">🌱 Young or newly planted tree</div>
-          <div style="font-size:12px;color:var(--text3)">A tree qualifies if its trunk diameter (DBH) is under 6 inches, or if it was planted within the last 5 years. Young trees need the most care in their first years to establish healthy root systems.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px">
-        <span style="background:var(--accent);color:white;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;flex-shrink:0">30%</span>
-        <div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:2px">👁 Visibility</div>
-          <div style="font-size:12px;color:var(--text3)">Trees on commercial corridors and high foot-traffic blocks score higher. Visible, well-cared-for trees reflect on the program and are more likely to receive community attention.</div>
-        </div>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Simple 1–4 tier ranking: young status × visibility level.</p>
-
-    <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">How Each Tree Is Ranked</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:8px">Every tree gets a tier from 1 (lowest) to 4 (highest), based on two yes/no questions:</p>
-    <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:12px">
-      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:6px"><strong>🌱 Is it young?</strong><br>
-        Yes if trunk diameter (DBH) is under 6", or if it was planted within the last 5 years.</p>
-      <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:0"><strong>👁 How visible is it?</strong><br>
-        Full visibility: on a named commercial corridor (Delancey, Houston, Bowery, Orchard, Grand, Essex, Rivington, Avenue A, Allen, Forsyth, etc.).<br>
-        Partial: in a high foot-traffic neighborhood (East Village, Lower East Side, Chinatown) but not on a named corridor.<br>
-        None: all others.</p>
-    </div>
-    <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:var(--text)">The 6 tiers</div>
-      <table style="width:100%;font-size:11px;border-collapse:collapse">
-        <tr style="color:var(--text3)"><th style="text-align:left;padding:3px 0">Tier</th><th style="text-align:left;padding:3px 0">Young</th><th style="text-align:left;padding:3px 0">Visibility</th></tr>
-        <tr><td style="padding:3px 0"><span style="color:#c0392b;font-weight:700">4</span></td><td>✅ Yes</td><td>Commercial corridor</td></tr>
-        <tr><td style="padding:3px 0"><span style="color:#e67e22;font-weight:700">3</span></td><td>✅ Yes</td><td>High-traffic neighborhood</td></tr>
-        <tr><td style="padding:3px 0"><span style="color:#7fb069;font-weight:700">2</span></td><td>⬜ No</td><td>Commercial corridor</td></tr>
-        <tr><td style="padding:3px 0"><span style="color:#2e8b57;font-weight:700">1</span></td><td>⬜ No</td><td>High-traffic neighborhood</td></tr>
-      </table>
-    </div>
-
-    <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">How Blocks Are Selected</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Trees are grouped into street block segments using coordinates. Blocks with 5 or more active trees are ranked by stewardship priority.</p>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Only blocks with 5 or more trees are considered. Park and playground trees are excluded — the focus is on street-side trees where volunteer stewardship has the most impact.</p>
-
-    <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">Block Ranking Score</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px">Blocks are ranked by a blended score: <strong>(number of high-priority trees) × (average priority score of those trees)</strong>. A tree is considered "high priority" if its score is 45 or above. This rewards blocks that have both <em>many</em> trees needing care and trees with <em>high urgency</em>.</p>
-
-    <h3 style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:8px">Data Sources</h3>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:4px">• <strong>2015 NYC Street Tree Census</strong> via NYC Open Data (most recent citywide census)</p>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:4px">• <strong>NYC Forestry Tree Points (live)</strong> — species, health, planting date for all active CB3 street trees</p>
-    <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:4px">• Addresses geocoded via NYC Planning Geosearch API</p>
-    <p style="font-size:12px;color:var(--text3);margin-top:12px">Note: Census data is from 2015. Actual tree conditions may differ. Use this list as a starting point for planning stewardship walks.</p>
-  </div>
-</div>
 </main>
 
 <!-- TREE DETAIL PANEL (injected dynamically) -->
@@ -1614,7 +1480,6 @@ function onWeightChange(id) {
   filteredTrees = filteredTrees.map(t => ({ ...t, _priority: calcPriority(t) }));
   allTrees = allTrees.map(t => ({ ...t, _priority: calcPriority(t) }));
   if (priorityMode) updateMap();
-  if (document.getElementById('blocks-view').classList.contains('active')) updateBlocksView();
 }
 
 function getPriorityMeta(score) {
@@ -2232,375 +2097,11 @@ function switchView(view, evt) {
   if (target) target.classList.add('active');
   if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
   if (view === 'stats') updateStats();
-  if (view === 'blocks') {
-    updateBlocksView();
-    setTimeout(tcRenderBlocksMap, 200);
-  }
   if (view === 'myblock') {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
     setTimeout(tcRenderCareMap, 100);
   }
-}
-
-// ========== BLOCKS VIEW ==========
-let blocksMap = null;
-let blockCircles = [];
-let selectedBlockId = null;
-
-function computeTopBlocks() {
-  const byBlock = {};
-
-  // Known CB3 streets for coordinate-based block naming
-  const EW_STREETS = [
-    { lat: 40.7143, name: 'Canal St' }, { lat: 40.7152, name: 'Grand St' },
-    { lat: 40.7162, name: 'Howard St' }, { lat: 40.7167, name: 'Broome St' },
-    { lat: 40.7178, name: 'Delancey St' }, { lat: 40.7191, name: 'Rivington St' },
-    { lat: 40.7205, name: 'Stanton St' }, { lat: 40.7218, name: 'E Houston St' },
-    { lat: 40.7230, name: 'E 1st St' }, { lat: 40.7237, name: 'E 2nd St' },
-    { lat: 40.7244, name: 'E 3rd St' }, { lat: 40.7253, name: 'E 4th St' },
-    { lat: 40.7263, name: 'E 5th St' }, { lat: 40.7273, name: 'E 6th St' },
-    { lat: 40.7283, name: 'E 7th St' }, { lat: 40.7293, name: 'E 8th St' },
-    { lat: 40.7303, name: 'E 9th St' }, { lat: 40.7313, name: 'E 10th St' },
-    { lat: 40.7323, name: 'E 11th St' }, { lat: 40.7333, name: 'E 12th St' },
-    { lat: 40.7343, name: 'E 13th St' }, { lat: 40.7353, name: 'E 14th St' },
-  ];
-  const NS_AVENUES = [
-    { lng: -74.001, name: 'Broadway' }, { lng: -73.997, name: 'Lafayette St' },
-    { lng: -73.994, name: 'Baxter St' }, { lng: -73.993, name: 'Mulberry St' },
-    { lng: -73.992, name: 'Mott St' }, { lng: -73.991, name: 'Bowery' },
-    { lng: -73.990, name: '2nd Ave' }, { lng: -73.989, name: 'Chrystie St' },
-    { lng: -73.988, name: 'Forsyth St' }, { lng: -73.987, name: 'Allen St' },
-    { lng: -73.986, name: 'Orchard St' }, { lng: -73.985, name: 'Ludlow St' },
-    { lng: -73.984, name: 'Essex St' }, { lng: -73.983, name: '1st Ave' },
-    { lng: -73.982, name: 'Clinton St' }, { lng: -73.981, name: 'Attorney St' },
-    { lng: -73.980, name: 'Ridge St' }, { lng: -73.979, name: 'Pitt St' },
-    { lng: -73.978, name: 'Ave A' }, { lng: -73.976, name: 'Ave B' },
-    { lng: -73.974, name: 'Ave C' }, { lng: -73.971, name: 'Ave D' },
-  ];
-
-  function getTreeBlockId(t) {
-    // Census trees: use official block_id
-    if (t.block_id && t.block_id !== '0' && t.block_id !== 0) return { bid: String(t.block_id), street: (t.address || '').replace(/^\d+\s*/, '').trim() || 'Unknown', nta: t.nta_name || '' };
-    // ForMS trees: derive block from coordinates
-    const lat = parseFloat(t.latitude || 0), lng = parseFloat(t.longitude || 0);
-    if (!lat || !lng) return null;
-    // Find nearest E-W street and N-S avenue
-    const ew = EW_STREETS.reduce((b, s) => { const d = Math.abs(lat - s.lat) * 111000; return d < b.d ? { d, s } : b; }, { d: Infinity, s: null });
-    const ns = NS_AVENUES.reduce((b, a) => { const d = Math.abs(lng - a.lng) * 85000; return d < b.d ? { d, a } : b; }, { d: Infinity, a: null });
-    // Snap to whichever named street is closer (within 40m)
-    if (ew.d < ns.d && ew.d < 40) {
-      const seg = Math.round(lng / 0.0011); // ~100m lng segments
-      return { bid: `ew_${ew.s.name.replace(/\s/g,'_')}_${seg}`, street: ew.s.name, nta: '' };
-    } else if (ns.d < 40) {
-      const seg = Math.round(lat / 0.0009); // ~100m lat segments
-      return { bid: `ns_${ns.a.name.replace(/\s/g,'_')}_${seg}`, street: ns.a.name, nta: '' };
-    } else {
-      // Fallback grid cell
-      const lb = Math.round(lat / 0.0004), lgb = Math.round(lng / 0.0011);
-      return { bid: `grid_${lb}_${lgb}`, street: 'Unknown block', nta: '' };
-    }
-  }
-
-  filteredTrees.forEach(t => {
-    const result = getTreeBlockId(t);
-    if (!result) return;
-    const { bid, street, nta } = result;
-    if (!byBlock[bid]) byBlock[bid] = { id: bid, trees: [], street, nta };
-    t._bid = bid;  // store derived block id for map rendering
-    byBlock[bid].trees.push(t);
-  });
-
-  // Filter out parks, require min 5 trees
-  const PARK_KEYWORDS = /park|playground|field|garden|square|plaza|green|oval/i;
-  const rawBlocks = Object.values(byBlock)
-    .filter(b => b.trees.length >= 5 && !PARK_KEYWORDS.test(b.street));
-
-  // Split blocks > 20 trees into north/south halves by latitude
-  const splitBlocks = [];
-  rawBlocks.forEach(b => {
-    if (b.trees.length <= 20) {
-      splitBlocks.push({ ...b, address: b.street });
-    } else {
-      const sorted = [...b.trees].sort((a, z) =>
-        parseFloat(z.latitude || 0) - parseFloat(a.latitude || 0)
-      );
-      const mid = Math.ceil(sorted.length / 2);
-      splitBlocks.push({ id: b.id + '_N', trees: sorted.slice(0, mid),  street: b.street, nta: b.nta, address: b.street + ' (N)' });
-      splitBlocks.push({ id: b.id + '_S', trees: sorted.slice(mid),     street: b.street, nta: b.nta, address: b.street + ' (S)' });
-    }
-  });
-
-  // Score and rank
-  const blocks = splitBlocks
-    .filter(b => b.trees.length >= 5)
-    .map(b => {
-      const highPriorityTrees = b.trees.filter(t => (t._priority || 0) >= 4);
-      const highPriority = highPriorityTrees.length;
-      const avgHighScore = highPriority > 0
-        ? highPriorityTrees.reduce((s, t) => s + (t._priority || 0), 0) / highPriority : 0;
-      const blendedScore = Math.round(highPriority * avgHighScore);
-      const avgLat = b.trees.reduce((s, t) => s + parseFloat(t.latitude || 0), 0) / b.trees.length;
-      const avgLng = b.trees.reduce((s, t) => s + parseFloat(t.longitude || 0), 0) / b.trees.length;
-      const avgPriority = Math.round(b.trees.reduce((s, t) => s + (t._priority || 0), 0) / b.trees.length);
-      const newPlantings = b.trees.filter(t => {
-        const d = t.tree_cen_date || t.planteddate;
-        return d && (new Date().getFullYear() - parseInt(d)) <= 5;
-      }).length;
-      return { ...b, highPriority, avgHighScore, blendedScore, avgLat, avgLng, avgPriority, treeCount: b.trees.length, newPlantings };
-    })
-    .sort((a, b) => b.blendedScore - a.blendedScore)
-    .slice(0, 100);
-
-  return blocks;
-}
-
-
-function downloadBlocksCSV() {
-  if (!window._lastBlocks || !window._lastBlocks.length) return;
-  const rows = [['Rank','Street','NTA','Total Trees','New Plantings','High Priority Trees','Avg Priority Score','Block Score']];
-  window._lastBlocks.forEach((b, i) => {
-    rows.push([i+1, b.address, b.nta, b.treeCount, b.newPlantings || 0, b.highPriority, b.avgPriority, b.blendedScore]);
-  });
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = 'cb3_top_blocks.csv';
-  a.click();
-}
-
-function renderBlockList(blocks) {
-  window._lastBlocks = blocks; // store for CSV download
-  const list = document.getElementById('block-list');
-  if (!list) return;
-  list.innerHTML = '';
-
-  const totalHighPriority = blocks.reduce((s, b) => s + b.highPriority, 0);
-  const totalTrees = blocks.reduce((s, b) => s + b.treeCount, 0);
-  const summary = document.getElementById('blocks-summary');
-  if (summary) summary.textContent = `${blocks.length} blocks · ${totalTrees} trees · ${totalHighPriority} high priority`;
-
-  blocks.forEach((block, i) => {
-    const row = document.createElement('div');
-    row.className = 'block-row';
-    row.dataset.bid = block.id;
-    const urgencyColor = block.highPriority >= 5 ? 'var(--danger)' : block.highPriority >= 2 ? 'var(--warning)' : 'var(--text3)';
-    const urgencyText = block.highPriority >= 5 ? 'High priority' : block.highPriority >= 2 ? 'High priority' : 'Low priority';
-    row.innerHTML = `
-      <span class="block-num">${i+1}</span>
-      <div class="block-info">
-        <div class="block-addr">${block.address}</div>
-        <div class="block-meta">${block.nta} &nbsp;·&nbsp; ${block.treeCount} trees${block.newPlantings > 0 ? ` &nbsp;·&nbsp; <span style="color:var(--accent2)">${block.newPlantings} newly planted</span>` : ''}</div>
-        <div style="margin-top:5px">
-          <span style="color:${urgencyColor};font-size:11px;font-weight:600">${urgencyText}</span>
-          <span style="color:var(--text3);font-size:11px"> — ${block.highPriority} high priority</span>
-        </div>
-      </div>
-    `;
-    row.onclick = () => {
-      document.querySelectorAll('.block-row').forEach(r => r.classList.remove('selected'));
-      row.classList.add('selected');
-      selectedBlockId = block.id;
-      if (blocksMap) blocksMap.setView([block.avgLat, block.avgLng], 17);
-      clearHighlight();
-      highlightBlock(block.id);
-    };
-    list.appendChild(row);
-  });
-}
-
-function renderBlocksMap(blocks) {
-  if (!blocksMap) {
-    blocksMap = L.map('blocks-map', { center: [40.7195, -73.9845], zoom: 15 });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO', maxZoom: 19
-    }).addTo(blocksMap);
-    blocksMap.on('click', () => {
-      clearHighlight();
-      selectedBlockId = null;
-      document.querySelectorAll('.block-row').forEach(r => r.classList.remove('selected'));
-    });
-    blocksMap.on('zoomend moveend', () => {
-      if (selectedBlockId) highlightBlock(selectedBlockId);
-    });
-  }
-
-  // Clear old circles and TC overlays
-  blockCircles.forEach(c => c.remove());
-  blockCircles = [];
-  if (window._tcBlocksLayer) { window._tcBlocksLayer.remove(); window._tcBlocksLayer = null; }
-
-  // Build a set of block IDs in the top 100
-  const topBlockIds = new Set(blocks.map(b => b.id));
-
-  // Layer 1: ALL trees as faint background dots
-  const allTreesSource = typeof filteredTrees !== 'undefined' ? filteredTrees : allTrees;
-  allTreesSource.forEach(tree => {
-    const lat = parseFloat(tree.latitude || tree.lat);
-    const lng = parseFloat(tree.longitude || tree.lng);
-    if (!lat || !lng) return;
-    const inTop = topBlockIds.has(tree.block_id) || topBlockIds.has(tree._bid);
-    const dot = L.circleMarker([lat, lng], {
-      radius: inTop ? 5 : 3,
-      fillColor: inTop ? getPriorityMeta(tree._priority || 0).color : '#888',
-      color: inTop ? getPriorityMeta(tree._priority || 0).color : '#888',
-      fillOpacity: inTop ? 0.9 : 0.25,
-      weight: 0,
-      interactive: inTop  // only top-block trees get click
-    });
-    if (inTop) {
-      const tip = `${tree.spc_common || 'Unknown'} · ${tree.address || ''} · ${getPriorityMeta(tree._priority || 0).label}`;
-      dot.bindTooltip(tip, { sticky: true });
-      dot.on('click', () => openTreeDetail(tree, dot));
-      dot._blockId = tree.block_id || tree._bid;
-      dot._origColor = getPriorityMeta(tree._priority || 0).color;
-      blockCircles.push(dot);
-    }
-    dot.addTo(blocksMap);
-  });
-
-  // Layer 2: Claimed TC areas
-  const tcAreas = (function() { try { return JSON.parse(localStorage.getItem('tc_areas') || '[]'); } catch(e) { return []; } })();
-  if (tcAreas.length) {
-    window._tcBlocksLayer = L.layerGroup();
-    tcAreas.forEach(area => {
-      if (!area.polygon || area.polygon.length < 3) return;
-      const cared = area.careEvents && area.careEvents.length > 0;
-      const color = cared ? '#2e8b57' : '#c47d1a';
-      const poly = L.polygon(area.polygon, {
-        color: color, fillColor: color, fillOpacity: 0.18, weight: 2.5, dashArray: cared ? null : '6 4'
-      });
-      poly.bindTooltip(
-        '<strong>' + area.name + '</strong><br><span style="font-size:10px">' +
-        area.treeCount + ' trees · ' + (cared ? '✅ Care logged' : '⏳ Watching') + '</span>',
-        { sticky: true }
-      );
-      poly.addTo(window._tcBlocksLayer);
-    });
-    window._tcBlocksLayer.addTo(blocksMap);
-  }
-
-  // Auto-fit to CB3 area
-  const allLats = [], allLngs = [];
-  blocks.forEach(b => b.trees.forEach(t => {
-    const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
-    if (lat && lng) { allLats.push(lat); allLngs.push(lng); }
-  }));
-  if (allLats.length) {
-    const bounds = [[Math.min(...allLats) - 0.001, Math.min(...allLngs) - 0.001],
-                    [Math.max(...allLats) + 0.001, Math.max(...allLngs) + 0.001]];
-    blocksMap.fitBounds(bounds);
-  }
-  setTimeout(() => blocksMap.invalidateSize(), 100);
-}
-
-function highlightBlock(bid) {
-  blockCircles.forEach(dot => {
-    const isSelected = dot._blockId === bid;
-    {
-      dot.setStyle({
-        fillColor: isSelected ? dot._origColor : '#bbb',
-        color: isSelected ? dot._origColor : '#bbb',
-        fillOpacity: isSelected ? 0.9 : 0.2,
-        weight: isSelected ? 0 : 0,
-        radius: isSelected ? 6 : 3
-      });
-    }
-    // Bring selected dots to front
-    if (isSelected && dot.bringToFront) dot.bringToFront();
-  });
-}
-
-function clearHighlight() {
-  blockCircles.forEach(dot => {
-    dot.setStyle({ fillColor: dot._origColor, color: dot._origColor, fillOpacity: 0.9, weight: 0, radius: 4 });
-  });
-}
-
-function updateBlocksView() {
-  const blocks = computeTopBlocks();
-  renderBlockList(blocks);
-  renderBlocksMap(blocks);
-}
-
-function openTreeDetail(tree, dot) {
-  const panel = document.getElementById('block-tree-panel');
-  const container = document.getElementById('blocks-map-container');
-  if (!panel || !container) return;
-
-  // Move panel into map container for proper overlay
-  container.appendChild(panel);
-  panel.style.display = 'block';
-  if (blocksMap) setTimeout(() => blocksMap.invalidateSize(), 150);
-
-  const pm = getPriorityMeta(tree._priority || 0);
-  const bd = calcPriorityBreakdown(tree);
-
-  // Title
-  const species = tree.spc_common || tree.spc_latin || 'Unknown species';
-  document.getElementById('btp-title').textContent = species;
-
-  // Priority badge
-  document.getElementById('btp-badge').innerHTML = `
-    <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">${pm.label} / 4</span>
-  `;
-
-  // Score breakdown
-  const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
-  const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
-  let breakdownHTML = `
-    <div style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-        <span style="font-size:18px">${bd.young ? '✅' : '⬜'}</span>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:${youngColor}">🌱 Young</div>
-          <div style="font-size:10px;color:var(--text3)">${bd.youngLabel}</div>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-        <span style="font-size:18px">${bd.vis === 'full' ? '✅' : bd.vis === 'partial' ? '🔶' : '⬜'}</span>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:${visColor}">👁 Visibility</div>
-          <div style="font-size:10px;color:var(--text3)">${bd.visReason}</div>
-        </div>
-      </div>
-    </div>`;
-
-  document.getElementById('btp-score-breakdown').innerHTML = breakdownHTML;
-
-  // Fields
-  const fields = [];
-  const isForestry = !tree.block_id;
-  fields.push(['Type', isForestry ? '🌳 Forestry Live Tree' : '📋 2015 Census Tree']);
-  if (tree.tree_cen_date || tree.planteddate) {
-    const d = tree.tree_cen_date || tree.planteddate;
-    const yr = parseInt(d);
-    fields.push(['Planted', yr || d]);
-  }
-  if (tree.address) fields.push(['Address', tree.address]);
-  if (tree.health) fields.push(['Health', tree.health]);
-  if (tree.tree_dbh) fields.push(['Trunk DBH', `${tree.tree_dbh}"`]);
-  if (tree.status) fields.push(['Status', tree.status]);
-  if (tree.nta_name) fields.push(['Neighborhood', tree.nta_name]);
-  if (tree.sidewalk) fields.push(['Sidewalk', tree.sidewalk]);
-  if (tree.guards) fields.push(['Guards', tree.guards]);
-  if (tree.tree_id) fields.push(['Tree ID', tree.tree_id]);
-  if (tree.spc_latin) fields.push(['Scientific Name', `<em>${tree.spc_latin}</em>`]);
-
-  document.getElementById('btp-fields').innerHTML = fields.map(([k, v]) =>
-    `<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:11px;color:var(--text3);flex-shrink:0">${k}</span>
-      <span style="font-size:11px;color:var(--text);text-align:right">${v}</span>
-    </div>`
-  ).join('');
-}
-
-function closeTreeDetail() {
-  const panel = document.getElementById('block-tree-panel');
-  if (panel) panel.style.display = 'none';
-  if (blocksMap) setTimeout(() => blocksMap.invalidateSize(), 150);
 }
 
 function openMapTreeDetail(tree) {
@@ -3617,23 +3118,6 @@ function tcToggleFindTrees() {
   }
 }
 
-function tcRenderBlocksMap() {
-  if (!blocksMap) return;
-  if (window._tcBlocksLayer) { window._tcBlocksLayer.remove(); window._tcBlocksLayer = null; }
-  const areas = tcLoad();
-  if (!areas.length) return;
-  window._tcBlocksLayer = L.layerGroup();
-  areas.forEach(area => {
-    if (!area.polygon || area.polygon.length < 3) return;
-    const cared = area.careEvents && area.careEvents.length > 0;
-    const color = cared ? '#2e8b57' : '#4a7c59';
-    const poly = L.polygon(area.polygon, { color: color, fillColor: color, fillOpacity: 0.18, weight: 2 });
-    poly.bindTooltip('<strong>' + area.name + '</strong>', { sticky: true });
-    poly.addTo(window._tcBlocksLayer);
-  });
-  window._tcBlocksLayer.addTo(blocksMap);
-}
-
 // ── Progress (only counts areas with care events) ─────────────
 function tcUpdateProgress() {
   const areas = tcLoad();
@@ -3780,7 +3264,6 @@ async function tcConfirmRemove(id) {
   if (tcSelectedId === id) { tcSelectedId = null; tcShowNoSelection(); }
   renderClaimedBlocksSidebar();
   tcRenderMain();
-  tcRenderBlocksMap();
   tcUpdateProgress();
 }
 
@@ -4148,7 +3631,6 @@ window.addEventListener('load', async () => {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
     tcRenderMain();
-    tcRenderBlocksMap();
     updateStats();
   });
 
@@ -4160,7 +3642,6 @@ window.addEventListener('load', async () => {
       renderClaimedBlocksSidebar();
       tcUpdateProgress();
       tcRenderMain();
-      tcRenderBlocksMap();
       updateMap(); // highlight cared-for trees on the main map
       updateStats();
       tcRenderCareMap(); // populate care map in Tree Care tab (also renders reservations)
@@ -4182,10 +3663,6 @@ function initMobileUI() {
   const legend = document.getElementById('map-legend-priority');
   if (legend) legend.style.display = 'none';
 
-  // Default blocks view: list visible, map hidden (user taps tab to switch)
-  const blocksMapContainer = document.getElementById('blocks-map-container');
-  if (blocksMapContainer) blocksMapContainer.classList.add('mobile-hidden');
-
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
@@ -4200,9 +3677,6 @@ function initMobileUI() {
       </button>
       <button class="mob-nav-btn" onclick="mobileSwitchView('stats',this)">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
-      </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('blocks',this)">
-        <span class="mob-icon">🏙</span><span class="mob-label">Blocks</span>
       </button>
       <button class="mob-nav-btn" onclick="mobileSwitchView('myblock',this)">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
@@ -4221,21 +3695,6 @@ function mobileSwitchView(view, btn) {
   if (btn) btn.classList.add('active');
 }
 
-function switchBlocksTab(tab, btn) {
-  const listPanel = document.getElementById('blocks-list-panel');
-  const mapContainer = document.getElementById('blocks-map-container');
-  document.querySelectorAll('#blocks-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  if (tab === 'list') {
-    if (listPanel) listPanel.classList.remove('mobile-hidden');
-    if (mapContainer) mapContainer.classList.add('mobile-hidden');
-  } else {
-    if (listPanel) listPanel.classList.add('mobile-hidden');
-    if (mapContainer) mapContainer.classList.remove('mobile-hidden');
-    // Trigger map resize after container becomes visible
-    setTimeout(() => { if (blocksMap) blocksMap.invalidateSize(); }, 100);
-  }
-}
 
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
