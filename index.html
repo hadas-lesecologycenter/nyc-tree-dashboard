@@ -988,29 +988,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       font-size: 13px;
       margin-bottom: 8px;
     }
-    #filter-toggle-btn {
-      position: fixed;
-      bottom: 62px;
-      right: 12px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      border: none;
-      background: white;
-      color: #333;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2995;
-      transition: all 0.2s ease;
-    }
-    #filter-toggle-btn:active {
-      transform: scale(0.95);
-    }
-
     /* Body padding for bottom tab bar */
     body { padding-bottom: 56px; }
 
@@ -1098,7 +1075,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   @media (min-width: 769px) {
     /* Desktop: show filter bar, hide mobile elements */
     .filter-bar { display: flex !important; }
-    #filter-toggle-btn { display: none !important; }
     #mobile-filter-panel { display: none !important; }
     body { padding-bottom: 0; }
     .map-overlay { top: 12px !important; bottom: auto !important; }
@@ -1233,8 +1209,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
-    <!-- Filter toggle button (mobile) -->
-    <button id="filter-toggle-btn" title="Toggle filters" onclick="toggleMobileFilters()">🔍</button>
     <!-- Mobile filter panel -->
     <div id="mobile-filter-panel">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -1262,6 +1236,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <option value="">All Ages</option>
           <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
         </select>
+      </div>
+      <div class="filter-section" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="f-empty-beds-mobile" onchange="applyFiltersFromMobile()" style="cursor: pointer;">
+        <label for="f-empty-beds-mobile" style="cursor: pointer; font-size: 13px; color: var(--text); margin: 0;">Show empty tree beds</label>
       </div>
       <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
     </div>
@@ -1875,10 +1853,12 @@ function syncMobileFiltersFromDesktop() {
   const mobileHealth = document.getElementById('f-health-mobile');
   const mobileSpecies = document.getElementById('f-species-mobile');
   const mobileAge = document.getElementById('f-age-mobile');
+  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
 
   if (mobileHealth) mobileHealth.value = desktopHealth;
   if (mobileSpecies) mobileSpecies.value = desktopSpecies;
   if (mobileAge) mobileAge.value = desktopAge;
+  if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
 }
 
 function applyFiltersFromMobile() {
@@ -1886,14 +1866,21 @@ function applyFiltersFromMobile() {
   const mobileHealth = document.getElementById('f-health-mobile')?.value || '';
   const mobileSpecies = document.getElementById('f-species-mobile')?.value || '';
   const mobileAge = document.getElementById('f-age-mobile')?.value || '';
+  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
 
   const desktopHealth = document.getElementById('f-health');
   const desktopSpecies = document.getElementById('f-species');
   const desktopAge = document.getElementById('f-age');
+  const desktopEmptyBedsBtn = document.getElementById('empty-beds-toggle');
 
   if (desktopHealth) desktopHealth.value = mobileHealth;
   if (desktopSpecies) desktopSpecies.value = mobileSpecies;
   if (desktopAge) desktopAge.value = mobileAge;
+
+  // Sync empty beds toggle
+  if (mobileEmptyBeds !== emptyBedsVisible) {
+    toggleEmptyBeds();
+  }
 
   // Apply filters
   applyFilters();
@@ -2429,21 +2416,11 @@ function toggleSpeciesView() {
   speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
   document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
 
-  // Update species legend
+  // Update species legend - only show care status in species view
   const speciesLegend = document.getElementById('map-legend-species');
   if (!priorityMode) {
-    // Populate species legend with all species colors
-    let html = '';
-    const speciesEntries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
-    speciesEntries.forEach(([species, color]) => {
-      html += `<span class="dot" style="background:${color}${html ? ';margin-left:6px' : ''}"></span>`;
-    });
-    // Add teal and purple indicators
-    if (speciesEntries.length > 0) html += '<br style="margin:4px 0">';
-    html += `<span class="dot" style="background:#06b6d4;margin-top:4px;display:inline-block"></span>`;
-    html += ` <span style="font-size:11px">Cared For</span>`;
-    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px;display:inline-block"></span>`;
-    html += ` <span style="font-size:11px">Reserved</span>`;
+    let html = `<span class="dot" style="background:#06b6d4"></span> Cared For`;
+    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved`;
     speciesLegend.innerHTML = html;
   }
   speciesLegend.style.display = priorityMode ? 'none' : '';
@@ -4383,6 +4360,9 @@ function initMobileUI() {
       </button>
       <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
+      </button>
+      <button class="mob-nav-btn" onclick="toggleMobileFilters()" title="Toggle filters">
+        <span class="mob-icon">🔍</span><span class="mob-label">Filter</span>
       </button>
     `;
     document.body.appendChild(nav);
