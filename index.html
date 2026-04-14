@@ -935,6 +935,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     header { padding: 0 12px; height: 48px; gap: 8px; }
     .brand-sub { display: none; }
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+    .brand-long { display: none; }
+    .brand-short { display: inline !important; }
     nav { display: none; }
 
     /* Filter bar - hidden on mobile */
@@ -1155,7 +1157,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="brand">
     <span class="brand-icon">🌳</span>
     <div>
-      <div class="brand-name">LES Ecology Center Tree Care Map</div>
+      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short" style="display:none">LESEC Tree Care Map</span></div>
       <div class="brand-sub">LES Ecology Center · East Village · Lower East Side · Chinatown</div>
     </div>
   </div>
@@ -1221,8 +1223,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
-      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">📍</button>
-      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()" style="font-size:16px">📡</button>
+      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">🎯</button>
+      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()" style="font-size:20px">🛣️</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1787,7 +1789,7 @@ function requestUserLocation() {
   }
 
   if (btn) btn.disabled = true;
-  if (btn) btn.textContent = '📍 Locating...';
+  if (btn) btn.textContent = '🎯';
 
   navigator.geolocation.getCurrentPosition(
     function(position) {
@@ -1824,7 +1826,7 @@ function requestUserLocation() {
       }).addTo(mapInstance);
 
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '📍 Your Location';
+      if (btn) btn.textContent = '🎯';
     },
     function(error) {
       let msg = 'Location request denied';
@@ -1833,7 +1835,7 @@ function requestUserLocation() {
       else if (error.code === error.TIMEOUT) msg = 'Location request timed out';
       alert(msg);
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '📍 Your Location';
+      if (btn) btn.textContent = '🎯';
     },
     {
       enableHighAccuracy: true,
@@ -3968,6 +3970,12 @@ function initMobileUI() {
 }
 
 function mobileSwitchView(view, btn) {
+  // Close filter panel if it's open when switching views
+  const filterPanel = document.getElementById('mobile-filter-panel');
+  if (filterPanel && filterPanel.classList.contains('open')) {
+    filterPanel.classList.remove('open');
+  }
+
   switchView(view, null);
   document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
