@@ -3862,8 +3862,6 @@ window.addEventListener('load', async () => {
 // ===== MOBILE UI =====
 
 function initMobileUI() {
-  if (window.innerWidth > 768) return;
-
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
@@ -3873,20 +3871,28 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="mobileSwitchView('map',this)">
+      <button class="mob-nav-btn active" data-view="map">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('stats',this)">
+      <button class="mob-nav-btn" data-view="stats">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock',this)">
+      <button class="mob-nav-btn" data-view="myblock">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
+      <button class="mob-nav-btn" data-view="about">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
     document.body.appendChild(nav);
+
+    // Add click handlers to mobile nav buttons
+    document.querySelectorAll('#mobile-tab-nav .mob-nav-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const view = this.getAttribute('data-view');
+        mobileSwitchView(view, this);
+      });
+    });
   }
 }
 
