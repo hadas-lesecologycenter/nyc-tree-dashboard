@@ -3979,23 +3979,48 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="mobileSwitchView('map', this)">
+      <button class="mob-nav-btn active" data-view="map">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('stats', this)">
+      <button class="mob-nav-btn" data-view="stats">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock', this)">
+      <button class="mob-nav-btn" data-view="myblock">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
-      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters()">
+      <button class="mob-nav-btn" id="filter-toggle-btn">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('about', this)">
+      <button class="mob-nav-btn" data-view="about">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
     document.body.appendChild(nav);
+
+    // Use touchstart for mobile, click for desktop - attach to each button
+    const mapBtn = nav.querySelector('[data-view="map"]');
+    const statsBtn = nav.querySelector('[data-view="stats"]');
+    const myblockBtn = nav.querySelector('[data-view="myblock"]');
+    const aboutBtn = nav.querySelector('[data-view="about"]');
+    const filterBtn = nav.querySelector('#filter-toggle-btn');
+
+    function attachButtonHandlers(btn, view) {
+      if (!btn) return;
+      const handler = () => { mobileSwitchView(view, btn); };
+      btn.addEventListener('touchstart', handler, false);
+      btn.addEventListener('click', handler, false);
+    }
+
+    attachButtonHandlers(mapBtn, 'map');
+    attachButtonHandlers(statsBtn, 'stats');
+    attachButtonHandlers(myblockBtn, 'myblock');
+    attachButtonHandlers(aboutBtn, 'about');
+
+    if (filterBtn) {
+      const filterHandler = () => { toggleMobileFilters(); };
+      filterBtn.addEventListener('touchstart', filterHandler, false);
+      filterBtn.addEventListener('click', filterHandler, false);
+    }
   }
 }
 
