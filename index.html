@@ -2167,6 +2167,28 @@ function openMapTreeDetail(tree) {
       '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
       '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>';
   }).join('');
+
+  // Care history
+  const careArea = (_tcScrapedAreas || []).find(a => a._fromScraper && String(a._treeId) === String(tree.tree_id));
+  const careEvents = careArea ? careArea.careEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1) : [];
+  if (careEvents.length) {
+    const evRows = careEvents.slice(0, 15).map(ev => {
+      const d = (ev.date || '').slice(0, 10);
+      const acts = (ev.activities || []).map(aid => {
+        const a = TC_ACTIVITIES.find(x => x.id === aid);
+        return a ? a.emoji + ' ' + a.label : aid;
+      }).join(', ') || '(care logged)';
+      return '<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">' +
+        '<span style="font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap">' + d + '</span>' +
+        '<span style="font-size:11px;color:var(--text)">' + acts + '</span>' +
+      '</div>';
+    }).join('');
+    document.getElementById('mtp-fields').innerHTML +=
+      '<div style="margin-top:14px;padding-top:12px;border-top:2px solid var(--border)">' +
+        '<div style="font-size:10px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">🌿 Care History</div>' +
+        evRows +
+      '</div>';
+  }
 }
 
 function closeMapTreeDetail() {
