@@ -1685,10 +1685,10 @@ function updateMap() {
 
     const m = L.circleMarker([lat, lng], {
       renderer,
-      radius: wasCaredFor ? 7 : size / 2,
-      fillColor: color,
-      color: wasCaredFor ? '#22cc66' : 'rgba(0,0,0,0.2)',
-      weight: wasCaredFor ? 3 : 1,
+      radius: size / 2,
+      fillColor: wasCaredFor ? '#06b6d4' : color,
+      color: wasCaredFor ? '#fff' : 'rgba(0,0,0,0.2)',
+      weight: wasCaredFor ? 1.5 : 1,
       fillOpacity: wasCaredFor ? 1 : 0.88
     });
 
