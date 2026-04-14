@@ -935,16 +935,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
     header { padding: 0 12px; height: 48px; gap: 8px; }
     .brand-sub { display: none; }
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+    .brand-long { display: none; }
+    .brand-short { display: inline !important; }
     nav { display: none; }
 
-    /* Filter bar - horizontal scroll */
-    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+    /* Filter bar - hidden on mobile */
+    .filter-bar { display: none; }
     .filter-bar::-webkit-scrollbar { display: none; }
     .filter-sep { display: none; }
     .tree-count { display: none; }
 
+    /* Mobile filter panel */
+    #mobile-filter-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 48px;
+      background: var(--bg2);
+      z-index: 2900;
+      overflow-y: auto;
+      padding: 16px;
+      display: none;
+    }
+    #mobile-filter-panel.open { display: block; }
+    #mobile-filter-panel .filter-section {
+      margin-bottom: 16px;
+    }
+    #mobile-filter-panel .filter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: block;
+    }
+    #mobile-filter-panel select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg1);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
     /* Body padding for bottom tab bar */
-    body { padding-bottom: 56px; }
+    body { padding-bottom: 48px; }
 
     /* Stats view - responsive grids */
     #stats-view { padding: 14px; gap: 14px; }
@@ -954,34 +992,45 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Map overlay - keep away from bottom tab bar */
     .map-overlay { top: auto; bottom: 68px; right: 8px; }
 
-    /* Drag handles for bottom sheets */
-    #map-tree-panel::before,
-    #priority-sidebar::before {
-      content: ''; display: block; width: 36px; height: 4px;
-      background: var(--border2); border-radius: 2px; margin: 10px auto 4px;
+    /* Drag handle for bottom sheets - clickable to close */
+    .panel-drag-handle {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 24px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+    }
+    .panel-drag-handle::before {
+      content: ''; display: block; width: 40px; height: 5px;
+      background: var(--border2); border-radius: 3px;
+    }
+    .panel-drag-handle:active::before {
+      background: var(--text3);
     }
 
-    /* Map tree detail panel - bottom sheet */
+    /* Map tree detail panel - bottom sheet (smaller so tree is visible) */
     #map-tree-panel {
       position: fixed !important;
-      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
-      width: 100% !important; height: auto !important; max-height: 65vh;
+      top: auto !important; right: 0 !important; bottom: 48px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 50vh;
       border-left: none !important; border-top: 1px solid var(--border);
       border-radius: 16px 16px 0 0;
       box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
       z-index: 2001 !important;
+      padding-top: 20px !important;
     }
+    #map-tree-panel > div { padding-top: 4px !important; }
 
     /* Priority sidebar - hidden by default on mobile; shown as bottom sheet when toggled */
     #priority-sidebar {
       display: none;
       position: fixed !important;
-      top: auto !important; right: 0 !important; bottom: 56px !important; left: 0 !important;
-      width: 100% !important; height: auto !important; max-height: 55vh;
+      top: auto !important; right: 0 !important; bottom: 48px !important; left: 0 !important;
+      width: 100% !important; height: auto !important; max-height: 45vh;
       border-left: none !important; border-top: 1px solid var(--border);
       border-radius: 16px 16px 0 0;
       box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
       z-index: 2000 !important;
+      padding-top: 20px !important;
     }
 
     /* Mobile view tab bars (in MyBlock view) */
@@ -997,15 +1046,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
 /* MyBlock view - stacked panels toggled by tab bar */
     #myblock-view .myblock-inner {
       flex-direction: column !important;
-      height: auto !important; flex: 1; min-height: 0;
+      height: 100% !important; flex: 1; min-height: 0;
     }
     #myblock-sidebar {
-      width: 100% !important; flex-shrink: 0 !important;
-      border-right: none !important; border-bottom: 1px solid var(--border);
-      flex: 1; min-height: 0; max-height: 45vh;
+      width: 100% !important;
+      border-right: none !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow-y: auto !important;
+    }
+    #myblock-dashboard {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
     }
     #myblock-sidebar.mobile-hidden { display: none !important; }
     #myblock-dashboard.mobile-hidden { display: none !important; }
+    #claimed-blocks-list { max-height: none !important; }
 
     /* Bottom navigation bar - Google Maps style */
     #mobile-tab-nav {
@@ -1030,16 +1087,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Floating action buttons - Google Maps style */
     .geo-button-container {
       position: fixed;
-      bottom: 64px;
-      right: 16px;
+      bottom: 120px;
+      left: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
       z-index: 2999;
     }
     #geoLocation-btn, #geoTracking-btn {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       border: none;
       background: white;
@@ -1081,8 +1138,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Path tracking stats */
     .path-stats-badge {
       position: fixed;
-      bottom: 130px;
-      right: 12px;
+      bottom: 190px;
+      left: 16px;
       background: #4285f4;
       color: white;
       padding: 10px 14px;
@@ -1091,7 +1148,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       font-weight: 600;
       box-shadow: 0 2px 8px rgba(66,133,244,0.2);
       z-index: 2998;
-      text-align: right;
+      text-align: left;
       line-height: 1.4;
     }
   }
@@ -1108,7 +1165,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="brand">
     <span class="brand-icon">🌳</span>
     <div>
-      <div class="brand-name">LES Ecology Center Tree Care Map</div>
+      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short" style="display:none">LESEC Tree Care Map</span></div>
       <div class="brand-sub">LES Ecology Center · East Village · Lower East Side · Chinatown</div>
     </div>
   </div>
@@ -1138,10 +1195,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
+    <!-- Mobile filter panel -->
+    <div id="mobile-filter-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Filters</h3>
+        <button onclick="toggleMobileFilters()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Health Status</label>
+        <select id="f-health-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Health</option>
+          <option>Good</option>
+          <option>Fair</option>
+          <option>Poor</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Species</label>
+        <select id="f-species-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Species</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Age / Planting Year</label>
+        <select id="f-age-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Ages</option>
+          <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
+        </select>
+      </div>
+      <div class="filter-section" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="f-empty-beds-mobile" onchange="applyFiltersFromMobile()" style="cursor: pointer;">
+        <label for="f-empty-beds-mobile" style="cursor: pointer; font-size: 13px; color: var(--text); margin: 0;">Show empty tree beds</label>
+      </div>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
+    </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
-      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">📍</button>
-      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()" style="font-size:16px">📡</button>
+      <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
+      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()">✓</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1167,6 +1258,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span class="dot" style="background:#d4ac0d;margin-left:8px"></span> Medium
         <span class="dot" style="background:#d35400;margin-left:8px"></span> High
         <span class="dot" style="background:#c0392b;margin-left:8px"></span> Critical
+        <span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For
+        <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
@@ -1706,7 +1799,7 @@ function requestUserLocation() {
   }
 
   if (btn) btn.disabled = true;
-  if (btn) btn.textContent = '📍 Locating...';
+  if (btn) btn.textContent = '⊕';
 
   navigator.geolocation.getCurrentPosition(
     function(position) {
@@ -1743,7 +1836,7 @@ function requestUserLocation() {
       }).addTo(mapInstance);
 
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '📍 Your Location';
+      if (btn) btn.textContent = '⊕';
     },
     function(error) {
       let msg = 'Location request denied';
@@ -1752,7 +1845,7 @@ function requestUserLocation() {
       else if (error.code === error.TIMEOUT) msg = 'Location request timed out';
       alert(msg);
       if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '📍 Your Location';
+      if (btn) btn.textContent = '⊕';
     },
     {
       enableHighAccuracy: true,
@@ -1827,7 +1920,8 @@ function getMarkerColor(tree) {
 }
 
 function getMarkerSize(tree) {
-  return 9;
+  // Larger markers on mobile for easier tapping
+  return window.innerWidth <= 768 ? 14 : 9;
 }
 
 // Returns a Set of tree_ids that have at least one scraped care event.
@@ -1870,22 +1964,6 @@ function updateMap() {
       fillOpacity: wasCaredFor ? 1 : 0.88
     });
 
-    const treeKey = 'tree_' + (tree.tree_id || (lat + '_' + lng));
-    // Lazy popup: build HTML only when the popup is actually opened, not for all 15k trees upfront.
-    m.bindPopup(() => {
-      const pm = getPriorityMeta(tree._priority || 0);
-      const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health||'').toLowerCase()] || '#9c9080';
-      return `
-        <div style="font-family:'Nunito',sans-serif;min-width:210px" id="popup-${treeKey}">
-          <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:#2c2a24">${tree.spc_common||'Unknown Species'}</div>
-          <div style="font-size:11px;color:#6b6456;margin-bottom:8px">${tree.address||''} ${tree.boroname?'· '+tree.boroname:''}</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-            <span style="color:${healthColor};font-size:11px;font-weight:600">● ${tree.health||'Unknown'}</span>
-            <span style="background:${pm.bg};color:${pm.color};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1px solid ${pm.color}33">${pm.label} / 4</span>
-          </div>
-        </div>
-      `;
-    });
     m.on('click', (e) => { L.DomEvent.stopPropagation(e); openMapTreeDetail(tree); });
     m.addTo(markersLayer);
   });
@@ -1904,15 +1982,6 @@ function updateMap() {
         weight: 1.5,
         dashArray: '4,3',
         opacity: 0.75
-      }).bindPopup(() => {
-        const species = bed.spc_common ? `<div style="font-size:11px;font-style:italic;color:#6e6558;margin-bottom:6px">${bed.spc_common}</div>` : '';
-        const vis = isHighVisibility(bed);
-        const visLabel = vis === 'full' ? 'Commercial corridor' : 'Residential / high foot-traffic';
-        return `<div style="font-family:'Nunito',sans-serif;min-width:180px">
-          <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:#2c2a24">🪨 Empty planting bed</div>
-          ${species}
-          <div style="font-size:11px;color:#9B7653;margin-top:4px">Planting opportunity · ${visLabel}</div>
-        </div>`;
       }).addTo(markersLayer);
     });
   }
@@ -1948,7 +2017,20 @@ function toggleSpeciesView() {
   speciesBtn.classList.toggle('on', !priorityMode);
   speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
   document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
-  document.getElementById('map-legend-species').style.display = priorityMode ? 'none' : '';
+
+  // Populate species legend with color dots + teal/purple indicators
+  const speciesLegend = document.getElementById('map-legend-species');
+  if (speciesLegend && !priorityMode) {
+    const entries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
+    let html = '';
+    entries.forEach(([sp, col], i) => {
+      html += `<span class="dot" style="background:${col}${i > 0 ? ';margin-left:6px' : ''}" title="${sp}"></span>`;
+    });
+    html += `<span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For`;
+    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved`;
+    speciesLegend.innerHTML = html;
+  }
+  if (speciesLegend) speciesLegend.style.display = priorityMode ? 'none' : '';
   // Hide priority sidebar when switching to species mode
   if (!priorityMode) {
     document.getElementById('priority-sidebar').style.display = 'none';
@@ -2304,6 +2386,17 @@ function openMapTreeDetail(tree) {
   if (!panel) return;
   window._currentMapDetailTree = tree;
   panel.style.display = 'block';
+
+  // Add drag handle close functionality on mobile
+  if (window.innerWidth <= 768) {
+    const handle = panel.querySelector('.panel-drag-handle');
+    if (!handle) {
+      const dragHandle = document.createElement('div');
+      dragHandle.className = 'panel-drag-handle';
+      dragHandle.onclick = () => closeMapTreeDetail();
+      panel.insertBefore(dragHandle, panel.firstChild);
+    }
+  }
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   const btn = document.getElementById('mtp-reserve-btn');
   if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
@@ -3862,40 +3955,100 @@ window.addEventListener('load', async () => {
 // ===== MOBILE UI =====
 
 function initMobileUI() {
-  if (window.innerWidth > 768) return;
-
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
+
+  // Show the myblock tabs on mobile
+  const myblockTabs = document.getElementById('myblock-mobile-tabs');
+  if (myblockTabs) myblockTabs.style.display = '';
 
   // Inject bottom navigation bar (replaces header nav on mobile)
   if (!document.getElementById('mobile-tab-nav')) {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="mobileSwitchView('map',this)">
+      <button class="mob-nav-btn active" data-view="map">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('stats',this)">
+      <button class="mob-nav-btn" data-view="stats">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock',this)">
+      <button class="mob-nav-btn" data-view="myblock">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
+      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters()" title="Filters">
+        <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
+      </button>
+      <button class="mob-nav-btn" data-view="about">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
     document.body.appendChild(nav);
+
+    // Add reliable tap/click handlers - use bubbling phase, not capture
+    nav.addEventListener('click', function(e) {
+      const btn = e.target.closest('.mob-nav-btn');
+      if (!btn || !nav.contains(btn)) return;
+      const view = btn.getAttribute('data-view');
+      if (!view) return; // filter button handles itself via onclick
+      e.stopPropagation();
+      mobileSwitchView(view, btn);
+    }, false);
   }
 }
 
 function mobileSwitchView(view, btn) {
+  // Close filter panel if it's open when switching views
+  const filterPanel = document.getElementById('mobile-filter-panel');
+  if (filterPanel && filterPanel.classList.contains('open')) {
+    filterPanel.classList.remove('open');
+  }
+
   switchView(view, null);
   document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
 
+function toggleMobileFilters() {
+  const panel = document.getElementById('mobile-filter-panel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    syncMobileFiltersFromDesktop();
+  }
+}
+
+function syncMobileFiltersFromDesktop() {
+  const desktopHealth = document.getElementById('f-health')?.value || '';
+  const desktopSpecies = document.getElementById('f-species')?.value || '';
+  const desktopAge = document.getElementById('f-age')?.value || '';
+
+  const mobileHealth = document.getElementById('f-health-mobile');
+  const mobileSpecies = document.getElementById('f-species-mobile');
+  const mobileAge = document.getElementById('f-age-mobile');
+  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
+
+  if (mobileHealth) mobileHealth.value = desktopHealth;
+  if (mobileSpecies) mobileSpecies.value = desktopSpecies;
+  if (mobileAge) mobileAge.value = desktopAge;
+  if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
+}
+
+function applyFiltersFromMobile() {
+  const health = document.getElementById('f-health-mobile')?.value || '';
+  const species = document.getElementById('f-species-mobile')?.value || '';
+  const age = document.getElementById('f-age-mobile')?.value || '';
+  const emptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
+
+  document.getElementById('f-health').value = health;
+  document.getElementById('f-species').value = species;
+  document.getElementById('f-age').value = age;
+  emptyBedsVisible = emptyBeds;
+
+  applyFilters();
+}
 
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
@@ -3913,8 +4066,19 @@ function switchMyBlockTab(tab, btn) {
   }
 }
 
-// Run mobile init shortly after page load (after map initialization completes)
-window.addEventListener('load', function() { setTimeout(initMobileUI, 300); });
+// Run mobile init on load and resize
+function checkAndInitMobileUI() {
+  if (window.innerWidth <= 768) {
+    initMobileUI();
+    // On mobile, default to species view to show teal/purple legend indicators
+    if (priorityMode) toggleSpeciesView();
+  } else {
+    // On desktop, ensure priority view is active
+    if (!priorityMode) toggleSpeciesView();
+  }
+}
+window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
+window.addEventListener('resize', checkAndInitMobileUI);
 </script>
 </body>
 </html>
