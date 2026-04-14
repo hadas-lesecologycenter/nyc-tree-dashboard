@@ -2367,17 +2367,28 @@ function updateStats() {
 
 // ========== VIEW SWITCHING ==========
 function switchView(view, evt) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`${view}-view`).classList.add('active');
-  const target = evt ? evt.currentTarget : (typeof event !== 'undefined' && event ? event.currentTarget : null);
-  if (target) target.classList.add('active');
-  if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
-  if (view === 'stats') updateStats();
-  if (view === 'myblock') {
-    renderClaimedBlocksSidebar();
-    tcUpdateProgress();
-    setTimeout(tcRenderCareMap, 100);
+  console.log('switchView called with view:', view);
+  try {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const viewEl = document.getElementById(`${view}-view`);
+    if (!viewEl) {
+      console.error('View element not found:', `${view}-view`);
+      return;
+    }
+    viewEl.classList.add('active');
+    const target = evt ? evt.currentTarget : (typeof event !== 'undefined' && event ? event.currentTarget : null);
+    if (target) target.classList.add('active');
+    if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
+    if (view === 'stats') updateStats();
+    if (view === 'myblock') {
+      renderClaimedBlocksSidebar();
+      tcUpdateProgress();
+      setTimeout(tcRenderCareMap, 100);
+    }
+    console.log('switchView completed for:', view);
+  } catch(err) {
+    console.error('switchView error:', err);
   }
 }
 
@@ -3989,15 +4000,21 @@ function initMobileUI() {
 }
 
 function mobileSwitchView(view, btn) {
-  // Close filter panel if it's open when switching views
-  const filterPanel = document.getElementById('mobile-filter-panel');
-  if (filterPanel && filterPanel.classList.contains('open')) {
-    filterPanel.classList.remove('open');
-  }
+  console.log('mobileSwitchView called with view:', view, 'btn:', btn);
+  try {
+    // Close filter panel if it's open when switching views
+    const filterPanel = document.getElementById('mobile-filter-panel');
+    if (filterPanel && filterPanel.classList.contains('open')) {
+      filterPanel.classList.remove('open');
+    }
 
-  switchView(view, null);
-  document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
+    switchView(view, null);
+    document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    console.log('mobileSwitchView completed successfully');
+  } catch(err) {
+    console.error('mobileSwitchView error:', err);
+  }
 }
 
 function toggleMobileFilters() {
