@@ -2168,15 +2168,23 @@ function openMapTreeDetail(tree) {
       '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>';
   }).join('');
 
-  // Care history
-  const careArea = (_tcScrapedAreas || []).find(a => a._fromScraper && String(a._treeId) === String(tree.tree_id));
-  const careEvents = careArea ? careArea.careEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1) : [];
-  if (careEvents.length) {
-    const evRows = careEvents.slice(0, 15).map(ev => {
+  // Care history — search all areas (scraped + manual) for this tree
+  const tid = String(tree.tree_id || '');
+  let allCareEvents = [];
+  if (tid) {
+    tcLoad().forEach(area => {
+      if (String(area._treeId) === tid && area.careEvents && area.careEvents.length) {
+        allCareEvents = allCareEvents.concat(area.careEvents);
+      }
+    });
+    allCareEvents.sort((a, b) => b.date > a.date ? 1 : -1);
+  }
+  if (allCareEvents.length) {
+    const evRows = allCareEvents.slice(0, 15).map(ev => {
       const d = (ev.date || '').slice(0, 10);
       const acts = (ev.activities || []).map(aid => {
-        const a = TC_ACTIVITIES.find(x => x.id === aid);
-        return a ? a.emoji + ' ' + a.label : aid;
+        const act = TC_ACTIVITIES.find(x => x.id === aid);
+        return act ? act.emoji + ' ' + act.label : aid;
       }).join(', ') || '(care logged)';
       return '<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">' +
         '<span style="font-size:10px;color:var(--text3);flex-shrink:0;white-space:nowrap">' + d + '</span>' +
