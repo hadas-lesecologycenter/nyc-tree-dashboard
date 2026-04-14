@@ -3965,10 +3965,10 @@ function initMobileUI() {
     const myblockBtn = nav.querySelector('[data-view="myblock"]');
     const aboutBtn = nav.querySelector('[data-view="about"]');
 
-    if (mapBtn) mapBtn.onclick = () => mobileSwitchView('map', mapBtn);
-    if (statsBtn) statsBtn.onclick = () => mobileSwitchView('stats', statsBtn);
-    if (myblockBtn) myblockBtn.onclick = () => mobileSwitchView('myblock', myblockBtn);
-    if (aboutBtn) aboutBtn.onclick = () => mobileSwitchView('about', aboutBtn);
+    if (mapBtn) mapBtn.onclick = (e) => { e.stopPropagation(); console.log('map clicked'); mobileSwitchView('map', mapBtn); };
+    if (statsBtn) statsBtn.onclick = (e) => { e.stopPropagation(); console.log('stats clicked'); mobileSwitchView('stats', statsBtn); };
+    if (myblockBtn) myblockBtn.onclick = (e) => { e.stopPropagation(); console.log('myblock clicked'); mobileSwitchView('myblock', myblockBtn); };
+    if (aboutBtn) aboutBtn.onclick = (e) => { e.stopPropagation(); console.log('about clicked'); mobileSwitchView('about', aboutBtn); };
   }
 }
 
