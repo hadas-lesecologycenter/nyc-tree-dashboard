@@ -2876,6 +2876,7 @@ function confirmReserveTree() {
   document.getElementById('reserve-name-input').value = '';
   document.getElementById('reserve-note-input').value = '';
   closeReserveModal();
+  closeMapTreeDetail(); // restore full map width so user can pick another tree
   renderReservationQueue();
   updateReservationCounter();
   if (tcCareMap) tcRenderReservationsOnCareMap();
