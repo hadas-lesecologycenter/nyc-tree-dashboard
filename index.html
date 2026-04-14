@@ -1086,6 +1086,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
     <div class="map-overlay">
       <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">📊 Priority Info</button>
+      <button class="toggle-btn" id="species-toggle" onclick="toggleSpeciesView()">🎨 Species View</button>
       <div class="map-pill" id="map-legend-species" style="display:none"></div>
       <div class="map-pill" id="map-legend-priority" style="display:block">
         <span class="dot" style="background:#3a7d44"></span> Low
@@ -1749,15 +1750,29 @@ function updatePriorityTierCounts() {
 }
 
 function togglePrioritySidebar() {
+  if (!priorityMode) return; // sidebar only meaningful in priority mode
   const sidebar = document.getElementById('priority-sidebar');
   const visible = sidebar.style.display !== 'none';
   sidebar.style.display = visible ? 'none' : 'block';
-  if (!visible) {
-    updatePriorityTierCounts();
-    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
-  } else {
+  if (!visible) updatePriorityTierCounts();
+  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+}
+
+function toggleSpeciesView() {
+  priorityMode = !priorityMode;
+  const speciesBtn = document.getElementById('species-toggle');
+  const priorityBtn = document.getElementById('priority-toggle');
+  speciesBtn.classList.toggle('on', !priorityMode);
+  speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
+  document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
+  document.getElementById('map-legend-species').style.display = priorityMode ? 'none' : '';
+  // Hide priority sidebar when switching to species mode
+  if (!priorityMode) {
+    document.getElementById('priority-sidebar').style.display = 'none';
     if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   }
+  if (priorityBtn) priorityBtn.style.opacity = priorityMode ? '1' : '0.4';
+  updateMap();
 }
 
 // ========== STATS ==========
