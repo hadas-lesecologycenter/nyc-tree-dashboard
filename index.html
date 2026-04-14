@@ -3968,32 +3968,23 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" data-view="map">
+      <button class="mob-nav-btn active" onclick="mobileSwitchView('map', this)">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" data-view="stats">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('stats', this)">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" data-view="myblock">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock', this)">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
-      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters()" title="Filters">
+      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters()">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
       </button>
-      <button class="mob-nav-btn" data-view="about">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('about', this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
     document.body.appendChild(nav);
-
-    // Attach direct click handlers to each button
-    nav.querySelectorAll('.mob-nav-btn[data-view]').forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        const view = this.getAttribute('data-view');
-        mobileSwitchView(view, this);
-      });
-    });
   }
 }
 
