@@ -1046,15 +1046,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
 /* MyBlock view - stacked panels toggled by tab bar */
     #myblock-view .myblock-inner {
       flex-direction: column !important;
-      height: auto !important; flex: 1; min-height: 0;
+      height: 100% !important; flex: 1; min-height: 0;
     }
     #myblock-sidebar {
-      width: 100% !important; flex-shrink: 0 !important;
-      border-right: none !important; border-bottom: 1px solid var(--border);
-      flex: 1; min-height: 0; max-height: 45vh;
+      width: 100% !important;
+      border-right: none !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow-y: auto !important;
+    }
+    #myblock-dashboard {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
     }
     #myblock-sidebar.mobile-hidden { display: none !important; }
     #myblock-dashboard.mobile-hidden { display: none !important; }
+    #claimed-blocks-list { max-height: none !important; }
 
     /* Bottom navigation bar - Google Maps style */
     #mobile-tab-nav {
@@ -1250,6 +1258,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span class="dot" style="background:#d4ac0d;margin-left:8px"></span> Medium
         <span class="dot" style="background:#d35400;margin-left:8px"></span> High
         <span class="dot" style="background:#c0392b;margin-left:8px"></span> Critical
+        <span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For
+        <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
@@ -2007,7 +2017,20 @@ function toggleSpeciesView() {
   speciesBtn.classList.toggle('on', !priorityMode);
   speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
   document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
-  document.getElementById('map-legend-species').style.display = priorityMode ? 'none' : '';
+
+  // Populate species legend with color dots + teal/purple indicators
+  const speciesLegend = document.getElementById('map-legend-species');
+  if (speciesLegend && !priorityMode) {
+    const entries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
+    let html = '';
+    entries.forEach(([sp, col], i) => {
+      html += `<span class="dot" style="background:${col}${i > 0 ? ';margin-left:6px' : ''}" title="${sp}"></span>`;
+    });
+    html += `<span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For`;
+    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved`;
+    speciesLegend.innerHTML = html;
+  }
+  if (speciesLegend) speciesLegend.style.display = priorityMode ? 'none' : '';
   // Hide priority sidebar when switching to species mode
   if (!priorityMode) {
     document.getElementById('priority-sidebar').style.display = 'none';
@@ -3936,6 +3959,10 @@ function initMobileUI() {
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
 
+  // Show the myblock tabs on mobile
+  const myblockTabs = document.getElementById('myblock-mobile-tabs');
+  if (myblockTabs) myblockTabs.style.display = '';
+
   // Inject bottom navigation bar (replaces header nav on mobile)
   if (!document.getElementById('mobile-tab-nav')) {
     const nav = document.createElement('div');
@@ -3959,16 +3986,15 @@ function initMobileUI() {
     `;
     document.body.appendChild(nav);
 
-    // Add click handlers to mobile nav buttons
-    const mapBtn = nav.querySelector('[data-view="map"]');
-    const statsBtn = nav.querySelector('[data-view="stats"]');
-    const myblockBtn = nav.querySelector('[data-view="myblock"]');
-    const aboutBtn = nav.querySelector('[data-view="about"]');
-
-    if (mapBtn) mapBtn.onclick = (e) => { e.stopPropagation(); console.log('map clicked'); mobileSwitchView('map', mapBtn); };
-    if (statsBtn) statsBtn.onclick = (e) => { e.stopPropagation(); console.log('stats clicked'); mobileSwitchView('stats', statsBtn); };
-    if (myblockBtn) myblockBtn.onclick = (e) => { e.stopPropagation(); console.log('myblock clicked'); mobileSwitchView('myblock', myblockBtn); };
-    if (aboutBtn) aboutBtn.onclick = (e) => { e.stopPropagation(); console.log('about clicked'); mobileSwitchView('about', aboutBtn); };
+    // Add reliable tap/click handlers - use bubbling phase, not capture
+    nav.addEventListener('click', function(e) {
+      const btn = e.target.closest('.mob-nav-btn');
+      if (!btn || !nav.contains(btn)) return;
+      const view = btn.getAttribute('data-view');
+      if (!view) return; // filter button handles itself via onclick
+      e.stopPropagation();
+      mobileSwitchView(view, btn);
+    }, false);
   }
 }
 
@@ -4042,7 +4068,14 @@ function switchMyBlockTab(tab, btn) {
 
 // Run mobile init on load and resize
 function checkAndInitMobileUI() {
-  if (window.innerWidth <= 768) initMobileUI();
+  if (window.innerWidth <= 768) {
+    initMobileUI();
+    // On mobile, default to species view to show teal/purple legend indicators
+    if (priorityMode) toggleSpeciesView();
+  } else {
+    // On desktop, ensure priority view is active
+    if (!priorityMode) toggleSpeciesView();
+  }
 }
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
 window.addEventListener('resize', checkAndInitMobileUI);
