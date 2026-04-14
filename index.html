@@ -3979,48 +3979,23 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" data-view="map">
+      <button class="mob-nav-btn active" onclick="window.mobileNavClick('map')">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" data-view="stats">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('stats')">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" data-view="myblock">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('myblock')">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
-      <button class="mob-nav-btn" id="filter-toggle-btn">
+      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="window.mobileFilterClick()">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
       </button>
-      <button class="mob-nav-btn" data-view="about">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('about')">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
     document.body.appendChild(nav);
-
-    // Use touchstart for mobile, click for desktop - attach to each button
-    const mapBtn = nav.querySelector('[data-view="map"]');
-    const statsBtn = nav.querySelector('[data-view="stats"]');
-    const myblockBtn = nav.querySelector('[data-view="myblock"]');
-    const aboutBtn = nav.querySelector('[data-view="about"]');
-    const filterBtn = nav.querySelector('#filter-toggle-btn');
-
-    function attachButtonHandlers(btn, view) {
-      if (!btn) return;
-      const handler = () => { mobileSwitchView(view, btn); };
-      btn.addEventListener('touchstart', handler, false);
-      btn.addEventListener('click', handler, false);
-    }
-
-    attachButtonHandlers(mapBtn, 'map');
-    attachButtonHandlers(statsBtn, 'stats');
-    attachButtonHandlers(myblockBtn, 'myblock');
-    attachButtonHandlers(aboutBtn, 'about');
-
-    if (filterBtn) {
-      const filterHandler = () => { toggleMobileFilters(); };
-      filterBtn.addEventListener('touchstart', filterHandler, false);
-      filterBtn.addEventListener('click', filterHandler, false);
-    }
   }
 }
 
@@ -4106,6 +4081,18 @@ function checkAndInitMobileUI() {
 }
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
 window.addEventListener('resize', checkAndInitMobileUI);
+
+// Global mobile nav click handlers - must be at window level for onclick to work
+window.mobileNavClick = function(view) {
+  console.log('mobileNavClick:', view);
+  const btn = document.querySelector(`[onclick="window.mobileNavClick('${view}')"]`);
+  mobileSwitchView(view, btn);
+};
+
+window.mobileFilterClick = function() {
+  console.log('mobileFilterClick');
+  toggleMobileFilters();
+};
 </script>
 </body>
 </html>
