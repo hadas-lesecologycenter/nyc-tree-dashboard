@@ -1262,6 +1262,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <input id="reserve-date-input" type="date"
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
       </div>
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Note <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <textarea id="reserve-note-input" placeholder="e.g., check for root damage, bring mulch"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
+      </div>
       <div style="display:flex;gap:8px">
         <button onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
         <button onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Reserve Tree</button>
@@ -2837,6 +2842,7 @@ function confirmReserveTree() {
   if (!tree) return;
   const name = (document.getElementById('reserve-name-input').value || '').trim();
   const date = document.getElementById('reserve-date-input').value;
+  const note = (document.getElementById('reserve-note-input').value || '').trim();
   if (!name) { document.getElementById('reserve-name-input').focus(); return; }
   if (!date) { document.getElementById('reserve-date-input').focus(); return; }
 
@@ -2851,6 +2857,7 @@ function confirmReserveTree() {
     id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
     treeId: String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude))),
     name,
+    note,
     date,
     lat: parseFloat(tree.latitude || tree.lat),
     lng: parseFloat(tree.longitude || tree.lng),
@@ -2867,6 +2874,7 @@ function confirmReserveTree() {
   reservationSave(all);
 
   document.getElementById('reserve-name-input').value = '';
+  document.getElementById('reserve-note-input').value = '';
   closeReserveModal();
   renderReservationQueue();
   updateReservationCounter();
@@ -2939,6 +2947,7 @@ function renderReservationQueue() {
             '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
             '<span style="font-size:10px;color:var(--text3)">by ' + res.name + '</span>' +
           '</div>' +
+          (res.note ? '<div style="font-size:10px;color:var(--text2);margin-top:3px;font-style:italic">' + res.note + '</div>' : '') +
         '</div>' +
         '<button onclick="event.stopPropagation();reservationRemove(\'' + res.id + '\')" ' +
           'style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);padding:2px 4px;flex-shrink:0;line-height:1">🗑</button>' +
