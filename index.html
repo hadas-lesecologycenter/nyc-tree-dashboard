@@ -1036,19 +1036,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
       gap: 8px;
       z-index: 2999;
     }
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
       .geo-button-container {
-        bottom: 68px;
+        bottom: auto;
+        top: 140px;
+        left: 12px;
+        right: auto;
       }
     }
     #geoLocation-btn, #geoTracking-btn {
-      width: 48px;
-      height: 48px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       border: none;
       background: white;
       color: #333;
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: flex;
@@ -1056,6 +1059,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       justify-content: center;
       transition: all 0.2s ease;
       padding: 0;
+      flex-shrink: 0;
     }
     #geoLocation-btn:hover, #geoTracking-btn:hover {
       background: #f0f0f0;
@@ -1065,6 +1069,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #geoLocation-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+    #geoLocation-btn:active, #geoTracking-btn:active {
+      transform: scale(0.95);
     }
     #geoTracking-btn.active {
       background: #28a745;
@@ -1093,6 +1100,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       z-index: 2998;
       text-align: right;
       line-height: 1.4;
+    }
+    @media (max-width: 768px) {
+      .path-stats-badge {
+        bottom: auto;
+        top: 200px;
+        left: 12px;
+        right: auto;
+        text-align: left;
+      }
     }
   }
 
