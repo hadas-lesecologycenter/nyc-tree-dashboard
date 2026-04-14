@@ -953,22 +953,49 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .filter-sep { display: none; }
     .tree-count { display: none; }
 
-    /* Mobile filter panel */
+    /* Mobile filter panel - bottom sheet style */
     #mobile-filter-panel {
       position: fixed;
-      top: 0;
+      bottom: 0;
       left: 0;
       right: 0;
-      bottom: 56px;
+      max-height: 85vh;
       background: var(--bg2);
       z-index: 2900;
       overflow-y: auto;
-      padding: 16px;
+      overflow-x: hidden;
+      padding: 0;
       display: none;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
     #mobile-filter-panel.open { display: block; }
+    #mobile-filter-panel.open ~ #map {
+      filter: brightness(0.9);
+    }
+    #mobile-filter-panel::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 12px auto 16px;
+    }
     #mobile-filter-panel .filter-section {
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+      padding: 0 16px;
     }
     #mobile-filter-panel .filter-label {
       font-size: 12px;
@@ -976,20 +1003,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
       color: var(--text);
       margin-bottom: 8px;
       display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.7;
     }
     #mobile-filter-panel select {
       width: 100%;
-      padding: 8px;
+      padding: 10px 12px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--bg1);
       color: var(--text);
       font-family: 'Nunito', sans-serif;
-      font-size: 13px;
+      font-size: 14px;
       margin-bottom: 8px;
     }
+    #mobile-filter-panel > div:first-child {
+      padding: 16px;
+    }
+    #mobile-filter-panel #mobile-tree-count {
+      padding: 16px;
+      margin: 0;
+      border-top: 1px solid var(--border);
+      background: var(--bg1);
+    }
     /* Body padding for bottom tab bar */
-    body { padding-bottom: 56px; }
+    body { padding-bottom: 48px; }
 
     /* Stats view - responsive grids */
     #stats-view { padding: 14px; gap: 14px; }
@@ -997,7 +1036,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .charts-grid { grid-template-columns: 1fr; gap: 12px; }
 
     /* Map overlay - keep away from bottom tab bar and hide empty beds button on mobile */
-    .map-overlay { top: auto; bottom: 68px; right: 8px; }
+    .map-overlay { top: auto; bottom: 60px; right: 16px; }
     #empty-beds-toggle { display: none !important; }
 
     /* Drag handles for bottom sheets */
@@ -1053,23 +1092,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #myblock-sidebar.mobile-hidden { display: none !important; }
     #myblock-dashboard.mobile-hidden { display: none !important; }
 
-    /* Bottom navigation bar */
+    /* Bottom navigation bar - Google Maps style */
     #mobile-tab-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 56px;
-      background: var(--bg2); border-top: 1px solid var(--border);
+      position: fixed; bottom: 0; left: 0; right: 0; height: 48px;
+      background: var(--bg2); border-top: none;
       display: flex; align-items: stretch; z-index: 3000;
-      box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 -1px 8px rgba(0,0,0,0.12);
+      gap: 0;
     }
     .mob-nav-btn {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 2px; border: none; background: none; cursor: pointer;
+      flex: 1; display: flex; align-items: center;
+      justify-content: center; border: none; background: none; cursor: pointer;
       color: var(--text3); font-family: 'Nunito', sans-serif;
-      transition: color 0.15s; padding: 4px 2px;
+      transition: color 0.2s, background 0.2s; padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
-    .mob-nav-btn .mob-icon { font-size: 18px; line-height: 1; }
-    .mob-nav-btn .mob-label { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .mob-nav-btn:active { background: rgba(0,0,0,0.05); }
+    .mob-nav-btn .mob-icon { font-size: 24px; line-height: 1; }
+    .mob-nav-btn .mob-label { display: none; }
     .mob-nav-btn.active { color: var(--accent); }
   }
 
@@ -1083,14 +1123,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   @media (max-width: 768px) {
-    /* Geolocation button styles */
+    /* Floating action buttons - Google Maps style */
     .geo-button-container {
       position: fixed;
-      bottom: 70px;
-      right: 12px;
+      bottom: 64px;
+      right: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
       z-index: 2999;
     }
     @media (max-width: 768px) {
@@ -1102,38 +1142,38 @@ svg.leaflet-image-layer.leaflet-interactive path {
       }
     }
     #geoLocation-btn, #geoTracking-btn {
-      width: 44px;
-      height: 44px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       border: none;
       background: white;
       color: #333;
-      font-size: 18px;
+      font-size: 24px;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       padding: 0;
       flex-shrink: 0;
     }
     #geoLocation-btn:hover, #geoTracking-btn:hover {
-      background: #f0f0f0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transform: scale(1.05);
+      background: white;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      transform: scale(1.08);
     }
     #geoLocation-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
     #geoLocation-btn:active, #geoTracking-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.92);
     }
     #geoTracking-btn.active {
-      background: #28a745;
+      background: #4285f4;
       color: white;
-      box-shadow: 0 2px 8px rgba(40,167,69,0.4);
+      box-shadow: 0 2px 8px rgba(66,133,244,0.4);
       animation: pulse 1s infinite;
     }
 
