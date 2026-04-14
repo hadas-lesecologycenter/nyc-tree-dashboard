@@ -943,6 +943,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .filter-sep { display: none; }
     .tree-count { display: none; }
 
+    /* Mobile filter panel */
+    #mobile-filter-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 48px;
+      background: var(--bg2);
+      z-index: 2900;
+      overflow-y: auto;
+      padding: 16px;
+      display: none;
+    }
+    #mobile-filter-panel.open { display: block; }
+    #mobile-filter-panel .filter-section {
+      margin-bottom: 16px;
+    }
+    #mobile-filter-panel .filter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: block;
+    }
+    #mobile-filter-panel select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg1);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
     /* Body padding for bottom tab bar */
     body { padding-bottom: 48px; }
 
@@ -1138,6 +1174,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
+    <!-- Mobile filter panel -->
+    <div id="mobile-filter-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Filters</h3>
+        <button onclick="toggleMobileFilters()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Health Status</label>
+        <select id="f-health-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Health</option>
+          <option>Good</option>
+          <option>Fair</option>
+          <option>Poor</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Species</label>
+        <select id="f-species-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Species</option>
+        </select>
+      </div>
+      <div class="filter-section">
+        <label class="filter-label">Age / Planting Year</label>
+        <select id="f-age-mobile" onchange="applyFiltersFromMobile()">
+          <option value="">All Ages</option>
+          <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
+        </select>
+      </div>
+      <div class="filter-section" style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="f-empty-beds-mobile" onchange="applyFiltersFromMobile()" style="cursor: pointer;">
+        <label for="f-empty-beds-mobile" style="cursor: pointer; font-size: 13px; color: var(--text); margin: 0;">Show empty tree beds</label>
+      </div>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
+    </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">📍</button>
@@ -3880,6 +3950,9 @@ function initMobileUI() {
       <button class="mob-nav-btn" data-view="myblock">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
+      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters()" title="Filters">
+        <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
+      </button>
       <button class="mob-nav-btn" data-view="about">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
@@ -3902,6 +3975,45 @@ function mobileSwitchView(view, btn) {
   if (btn) btn.classList.add('active');
 }
 
+function toggleMobileFilters() {
+  const panel = document.getElementById('mobile-filter-panel');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    syncMobileFiltersFromDesktop();
+  }
+}
+
+function syncMobileFiltersFromDesktop() {
+  const desktopHealth = document.getElementById('f-health')?.value || '';
+  const desktopSpecies = document.getElementById('f-species')?.value || '';
+  const desktopAge = document.getElementById('f-age')?.value || '';
+
+  const mobileHealth = document.getElementById('f-health-mobile');
+  const mobileSpecies = document.getElementById('f-species-mobile');
+  const mobileAge = document.getElementById('f-age-mobile');
+  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
+
+  if (mobileHealth) mobileHealth.value = desktopHealth;
+  if (mobileSpecies) mobileSpecies.value = desktopSpecies;
+  if (mobileAge) mobileAge.value = desktopAge;
+  if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
+}
+
+function applyFiltersFromMobile() {
+  const health = document.getElementById('f-health-mobile')?.value || '';
+  const species = document.getElementById('f-species-mobile')?.value || '';
+  const age = document.getElementById('f-age-mobile')?.value || '';
+  const emptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
+
+  document.getElementById('f-health').value = health;
+  document.getElementById('f-species').value = species;
+  document.getElementById('f-age').value = age;
+  emptyBedsVisible = emptyBeds;
+
+  applyFilters();
+}
 
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
