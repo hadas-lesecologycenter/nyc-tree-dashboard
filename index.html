@@ -1262,6 +1262,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
+      <button class="toggle-btn" id="tree-guards-toggle" onclick="toggleTreeGuards()">🛡 Tree Guards</button>
+      <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Blocks</button>
     </div>
     <!-- Priority sidebar overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
@@ -1570,6 +1572,18 @@ let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let geolocationWatcher = null;
 
+// ========== LESEC PROGRAM DATA ==========
+const LESEC_TOOL_STORAGE = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98623112196117, 40.70984670353943]}, "properties": {"fid": 1, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.979572548085, 40.724745436610114]}, "properties": {"fid": 2, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98948618305218, 40.71459411209329]}, "properties": {"fid": 3, "Tree ID": null, "Zipcode": null, "Notes": null}}]};
+const LESEC_TREE_GUARDS = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98489085175882, 40.71387113971309]}, "properties": {"fid": 1}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.97975576711322, 40.72685493136279]}, "properties": {"fid": 2}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.97797309549082, 40.7261022477889]}, "properties": {"fid": 3}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98048864322463, 40.72716194703109]}, "properties": {"fid": 4}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98059758426822, 40.72721146568727]}, "properties": {"fid": 5}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.97825039996542, 40.726221092563726]}, "properties": {"fid": 6}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98373070754644, 40.72775994698523]}, "properties": {"fid": 7}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.97950626787029, 40.7292007327026]}, "properties": {"fid": 8}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98566620385266, 40.73095603199569]}, "properties": {"fid": 9}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98840277352471, 40.72139661902166]}, "properties": {"fid": 10}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.99107129974448, 40.71591441662042]}, "properties": {"fid": 11}}]};
+const LESEC_COOLEST_RESIDENTS = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98176567905793, 40.72844861794851], [-73.98122869079534, 40.728456601148396]]}, "properties": {"fid": 1, "Group": "Kadidja Handmade Collection", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.9834260718867, 40.71477861069619], [-73.98274527025498, 40.714806503499535]]}, "properties": {"fid": 2, "Group": "Seward Park NYCHA", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10002, "City Council District": 1}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98439283490543, 40.72072175854006], [-73.98410183012898, 40.72071461524884]]}, "properties": {"fid": 3, "Group": "Gouverneur Gardens HDFC", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10002, "City Council District": 1}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.97950626787029, 40.72913020447278], [-73.97913416474938, 40.728578703882226]]}, "properties": {"fid": 4, "Group": "JMO Block Association", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.97867086791505, 40.72551099614494], [-73.97889940900124, 40.72489424851714]]}, "properties": {"fid": 5, "Group": "GOLES Block Association", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98507165624044, 40.71508851499397], [-73.98415003764888, 40.71516498427025]]}, "properties": {"fid": 6, "Group": "Vladeck Houses NYCHA", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10002, "City Council District": 1}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98404109660529, 40.71599244850337], [-73.98439283490543, 40.71593427918703]]}, "properties": {"fid": 7, "Group": "Rutgers Houses NYCHA", "Youth or Resident": "Resident", "Category": "Pollinator Friendly", "Zipcode": 10002, "City Council District": 1}}]};
+const LESEC_COOLEST_YOUTH = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.9839778753275, 40.72936492314467], [-73.98181407696056, 40.728458716991]]}, "properties": {"fid": 2, "Group": "East Side Community High School", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98524835800242, 40.71444491110464], [-73.98514588826572, 40.71383009268444]]}, "properties": {"fid": 4, "Group": "Henry Street Settlement CRT", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10002, "City Council District": 1}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98162776063899, 40.724486945301365], [-73.97928803498431, 40.7235134828027]]}, "properties": {"fid": 5, "Group": "Sixth Street Community Center", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98352901293029, 40.720685640218505], [-73.98291097053814, 40.72062747112461]]}, "properties": {"fid": 7, "Group": "Manny Cantor Center", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10002, "City Council District": 1}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.97949600000001, 40.7293175], [-73.9790895, 40.7286755]]}, "properties": {"fid": 9, "Group": "CAMBA", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10009, "City Council District": 2}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-73.98551940000001, 40.7145949], [-73.9853869, 40.7139601]]}, "properties": {"fid": 11, "Group": "Educational Alliance", "Youth or Resident": "Youth", "Category": null, "Zipcode": 10002, "City Council District": 1}}]};
+
+let toolStorageLayer = null;
+let treeGuardsLayer = null;
+let treeGuardsVisible = false;
+let coolestBlocksLayer = null;
+let coolestBlocksVisible = false;
+
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
   // Fixed formula: 70 young + 30 visibility
@@ -1788,6 +1802,7 @@ function initMap() {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
+  initToolStorageLayer();
 }
 
 // ========== GEOLOCATION ==========
@@ -2529,6 +2544,94 @@ function openReservationDetail(res) {
     btn.textContent = '🗑 Remove Reservation';
     btn.style.background = '#b0003a';
     btn.onclick = () => { reservationRemove(res.id); closeMapTreeDetail(); };
+  }
+}
+
+// ========== LESEC PROGRAM LAYERS ==========
+
+function initToolStorageLayer() {
+  toolStorageLayer = L.layerGroup().addTo(mapInstance);
+  LESEC_TOOL_STORAGE.features.forEach(f => {
+    const [lng, lat] = f.geometry.coordinates;
+    const notes = f.properties['Notes'] || '';
+    const marker = L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="width:14px;height:14px;background:#5c3d1e;border:2px solid #fff;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      })
+    });
+    marker.bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:160px">
+      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;margin-bottom:4px;color:#2c2a24">🧰 Tool Storage</div>
+      ${notes ? `<div style="font-size:11px;color:#6b6456">${notes}</div>` : ''}
+    </div>`);
+    marker.addTo(toolStorageLayer);
+  });
+}
+
+function initTreeGuardsLayer() {
+  treeGuardsLayer = L.layerGroup();
+  LESEC_TREE_GUARDS.features.forEach(f => {
+    const [lng, lat] = f.geometry.coordinates;
+    L.circleMarker([lat, lng], {
+      radius: 7,
+      fillColor: '#1a1a1a',
+      color: '#fff',
+      weight: 1.5,
+      fillOpacity: 0.9
+    }).bindPopup(`<div style="font-family:'Nunito',sans-serif">
+      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 Spring 2026 Tree Guard Install</div>
+    </div>`).addTo(treeGuardsLayer);
+  });
+}
+
+function initCoolestBlocksLayer() {
+  coolestBlocksLayer = L.layerGroup();
+  LESEC_COOLEST_RESIDENTS.features.forEach(f => {
+    if (!f.geometry.coordinates.length) return;
+    const coords = f.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const p = f.properties;
+    L.polyline(coords, { color: '#e8b84b', weight: 5, opacity: 0.85 })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
+        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🏆 Coolest Block — Resident</div>
+        <div style="font-size:12px;font-weight:600;margin:4px 0">${p['Group'] || ''}</div>
+        ${p['Category'] ? `<div style="font-size:11px;color:#6b6456">${p['Category']}</div>` : ''}
+      </div>`).addTo(coolestBlocksLayer);
+  });
+  LESEC_COOLEST_YOUTH.features.forEach(f => {
+    if (!f.geometry.coordinates.length) return;
+    const coords = f.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+    const p = f.properties;
+    L.polyline(coords, { color: '#c94fa5', weight: 5, opacity: 0.85 })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
+        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🏆 Coolest Block — Youth</div>
+        <div style="font-size:12px;font-weight:600;margin:4px 0">${p['Group'] || ''}</div>
+      </div>`).addTo(coolestBlocksLayer);
+  });
+}
+
+function toggleTreeGuards() {
+  if (!treeGuardsLayer) initTreeGuardsLayer();
+  treeGuardsVisible = !treeGuardsVisible;
+  if (treeGuardsVisible) treeGuardsLayer.addTo(mapInstance);
+  else treeGuardsLayer.remove();
+  const btn = document.getElementById('tree-guards-toggle');
+  if (btn) {
+    btn.classList.toggle('on', treeGuardsVisible);
+    btn.textContent = treeGuardsVisible ? `🛡 ${LESEC_TREE_GUARDS.features.length} Tree Guards` : '🛡 Tree Guards';
+  }
+}
+
+function toggleCoolestBlocks() {
+  if (!coolestBlocksLayer) initCoolestBlocksLayer();
+  coolestBlocksVisible = !coolestBlocksVisible;
+  if (coolestBlocksVisible) coolestBlocksLayer.addTo(mapInstance);
+  else coolestBlocksLayer.remove();
+  const btn = document.getElementById('coolest-blocks-toggle');
+  if (btn) {
+    btn.classList.toggle('on', coolestBlocksVisible);
+    btn.textContent = coolestBlocksVisible ? '🏆 Coolest Blocks' : '🏆 Coolest Blocks';
   }
 }
 
