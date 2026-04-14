@@ -3986,15 +3986,14 @@ function initMobileUI() {
     `;
     document.body.appendChild(nav);
 
-    // Add reliable tap/click handlers - use bubbling phase, not capture
-    nav.addEventListener('click', function(e) {
-      const btn = e.target.closest('.mob-nav-btn');
-      if (!btn || !nav.contains(btn)) return;
-      const view = btn.getAttribute('data-view');
-      if (!view) return; // filter button handles itself via onclick
-      e.stopPropagation();
-      mobileSwitchView(view, btn);
-    }, false);
+    // Attach direct click handlers to each button
+    nav.querySelectorAll('.mob-nav-btn[data-view]').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const view = this.getAttribute('data-view');
+        mobileSwitchView(view, this);
+      });
+    });
   }
 }
 
@@ -4070,11 +4069,6 @@ function switchMyBlockTab(tab, btn) {
 function checkAndInitMobileUI() {
   if (window.innerWidth <= 768) {
     initMobileUI();
-    // On mobile, default to species view to show teal/purple legend indicators
-    if (priorityMode) toggleSpeciesView();
-  } else {
-    // On desktop, ensure priority view is active
-    if (!priorityMode) toggleSpeciesView();
   }
 }
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
