@@ -1263,7 +1263,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
       <button class="toggle-btn" id="tree-guards-toggle" onclick="toggleTreeGuards()">🛡 Tree Guards</button>
-      <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Blocks</button>
+      <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Block 2025</button>
     </div>
     <!-- Priority sidebar overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
@@ -2631,7 +2631,7 @@ function toggleCoolestBlocks() {
   const btn = document.getElementById('coolest-blocks-toggle');
   if (btn) {
     btn.classList.toggle('on', coolestBlocksVisible);
-    btn.textContent = coolestBlocksVisible ? '🏆 Coolest Blocks' : '🏆 Coolest Blocks';
+    btn.textContent = coolestBlocksVisible ? '🏆 Coolest Block 2025' : '🏆 Coolest Block 2025';
   }
 }
 
