@@ -780,18 +780,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .map-pill {
     background: var(--bg2); border: 1px solid var(--border2);
     border-radius: 20px; padding: 6px 14px; font-size: 12px;
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    max-width: 280px;
-  }
-  @media (max-width: 768px) {
-    .map-pill {
-      max-width: 170px;
-      padding: 5px 10px;
-      font-size: 10px;
-      gap: 5px;
-      order: -1;
-      margin-bottom: 8px;
-    }
+    display: flex; align-items: center; gap: 8px;
   }
   .toggle-btn {
     background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
@@ -948,96 +937,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
     nav { display: none; }
 
-    /* Filter bar - hidden on mobile, shown as modal */
-    .filter-bar { display: none; }
+    /* Filter bar - horizontal scroll */
+    .filter-bar { overflow-x: auto; flex-wrap: nowrap; padding: 5px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; }
+    .filter-bar::-webkit-scrollbar { display: none; }
     .filter-sep { display: none; }
     .tree-count { display: none; }
 
-    /* Mobile filter panel - bottom sheet style */
-    #mobile-filter-panel {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      max-height: 85vh;
-      background: var(--bg2);
-      z-index: 2900;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 0;
-      display: none;
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      animation: slideUp 0.3s ease-out;
-    }
-    @keyframes slideUp {
-      from {
-        transform: translateY(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-    #mobile-filter-panel.open { display: block; }
-    #mobile-filter-panel.open ~ #map {
-      filter: brightness(0.9);
-    }
-    #mobile-filter-panel::before {
-      content: '';
-      display: block;
-      width: 40px;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 12px auto 16px;
-    }
-    #mobile-filter-panel .filter-section {
-      margin-bottom: 12px;
-      padding: 0 16px;
-    }
-    #mobile-filter-panel .filter-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 8px;
-      display: block;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.7;
-    }
-    #mobile-filter-panel select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg1);
-      color: var(--text);
-      font-family: 'Nunito', sans-serif;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    #mobile-filter-panel > div:first-child {
-      padding: 16px;
-    }
-    #mobile-filter-panel #mobile-tree-count {
-      padding: 16px;
-      margin: 0;
-      border-top: 1px solid var(--border);
-      background: var(--bg1);
-    }
     /* Body padding for bottom tab bar */
-    body { padding-bottom: 48px; }
+    body { padding-bottom: 56px; }
 
     /* Stats view - responsive grids */
     #stats-view { padding: 14px; gap: 14px; }
     .summary-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .charts-grid { grid-template-columns: 1fr; gap: 12px; }
 
-    /* Map overlay - keep away from bottom tab bar and hide empty beds button on mobile */
-    .map-overlay { top: auto; bottom: 60px; right: 16px; }
-    #empty-beds-toggle { display: none !important; }
+    /* Map overlay - keep away from bottom tab bar */
+    .map-overlay { top: auto; bottom: 68px; right: 8px; }
 
     /* Drag handles for bottom sheets */
     #map-tree-panel::before,
@@ -1111,18 +1026,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .mob-nav-btn .mob-icon { font-size: 24px; line-height: 1; }
     .mob-nav-btn .mob-label { display: none; }
     .mob-nav-btn.active { color: var(--accent); }
-  }
 
-  @media (min-width: 769px) {
-    /* Desktop: show filter bar, hide mobile elements */
-    .filter-bar { display: flex !important; }
-    #mobile-filter-panel { display: none !important; }
-    body { padding-bottom: 0; }
-    .map-overlay { top: 12px !important; bottom: auto !important; }
-    #empty-beds-toggle { display: block !important; }
-  }
-
-  @media (max-width: 768px) {
     /* Floating action buttons - Google Maps style */
     .geo-button-container {
       position: fixed;
@@ -1132,14 +1036,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       flex-direction: column;
       gap: 12px;
       z-index: 2999;
-    }
-    @media (max-width: 768px) {
-      .geo-button-container {
-        bottom: 70px;
-        top: auto;
-        left: 12px;
-        right: auto;
-      }
     }
     #geoLocation-btn, #geoTracking-btn {
       width: 56px;
@@ -1178,8 +1074,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 2px 8px rgba(40,167,69,0.4); }
-      50% { box-shadow: 0 2px 16px rgba(40,167,69,0.8); }
+      0%, 100% { box-shadow: 0 2px 8px rgba(66,133,244,0.4); }
+      50% { box-shadow: 0 2px 16px rgba(66,133,244,0.8); }
     }
 
     /* Path tracking stats */
@@ -1187,25 +1083,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       position: fixed;
       bottom: 130px;
       right: 12px;
-      background: #28a745;
+      background: #4285f4;
       color: white;
       padding: 10px 14px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(66,133,244,0.2);
       z-index: 2998;
       text-align: right;
       line-height: 1.4;
-    }
-    @media (max-width: 768px) {
-      .path-stats-badge {
-        bottom: auto;
-        top: 12px;
-        left: auto;
-        right: 12px;
-        text-align: right;
-      }
     }
   }
 
@@ -1251,43 +1138,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
-    <!-- Mobile filter panel -->
-    <div id="mobile-filter-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Filters</h3>
-        <button onclick="toggleMobileFilters()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Health Status</label>
-        <select id="f-health-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Health</option>
-          <option>Good</option>
-          <option>Fair</option>
-          <option>Poor</option>
-        </select>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Species</label>
-        <select id="f-species-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Species</option>
-        </select>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Age / Planting Year</label>
-        <select id="f-age-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Ages</option>
-          <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
-        </select>
-      </div>
-      <div class="filter-section" style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="f-empty-beds-mobile" onchange="applyFiltersFromMobile()" style="cursor: pointer;">
-        <label for="f-empty-beds-mobile" style="cursor: pointer; font-size: 13px; color: var(--text); margin: 0;">Show empty tree beds</label>
-      </div>
-      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
-    </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
-      <div id="path-stats-badge" class="path-stats-badge" style="display:none"></div>
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">📍</button>
       <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()" style="font-size:16px">📡</button>
     </div>
@@ -1315,8 +1167,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <span class="dot" style="background:#d4ac0d;margin-left:8px"></span> Medium
         <span class="dot" style="background:#d35400;margin-left:8px"></span> High
         <span class="dot" style="background:#c0392b;margin-left:8px"></span> Critical
-        <span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For
-        <span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved
       </div>
       <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
     </div>
@@ -1626,10 +1476,6 @@ let emptyBeds = [];
 let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let geolocationWatcher = null;
-let pathCoordinates = [];
-let pathPolyline = null;
-let pathStartTime = null;
-let pathDistanceMeters = 0;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -1739,9 +1585,7 @@ function setLoadingBar(p) {
 
 function populatePlantingYearFilter() {
   const sel = document.getElementById('f-age');
-  const selMobile = document.getElementById('f-age-mobile');
   while (sel.options.length > 1) sel.remove(1);
-  if (selMobile) while (selMobile.options.length > 1) selMobile.remove(1);
 
   const thisYear = new Date().getFullYear();
 
@@ -1764,18 +1608,6 @@ function populatePlantingYearFilter() {
       g.appendChild(o);
     });
     sel.appendChild(g);
-
-    // Also add to mobile select
-    if (selMobile) {
-      const gMobile = document.createElement('optgroup');
-      gMobile.label = label;
-      options.forEach(([val, text]) => {
-        const oMobile = document.createElement('option');
-        oMobile.value = val; oMobile.textContent = text;
-        gMobile.appendChild(oMobile);
-      });
-      selMobile.appendChild(gMobile);
-    }
   }
 
   // Special options
@@ -1812,26 +1644,10 @@ function populatePlantingYearFilter() {
 
 function populateSpeciesFilter() {
   const sel = document.getElementById('f-species');
-  const selMobile = document.getElementById('f-species-mobile');
   const current = sel.value;
   while (sel.options.length > 1) sel.remove(1);
-  if (selMobile) while (selMobile.options.length > 1) selMobile.remove(1);
-
   const seen = new Set();
-  allTrees.forEach(t => {
-    if (t.spc_common && !seen.has(t.spc_common)) {
-      seen.add(t.spc_common);
-      const o = document.createElement('option');
-      o.value = o.textContent = t.spc_common;
-      sel.appendChild(o);
-
-      if (selMobile) {
-        const oMobile = document.createElement('option');
-        oMobile.value = oMobile.textContent = t.spc_common;
-        selMobile.appendChild(oMobile);
-      }
-    }
-  });
+  allTrees.forEach(t => { if (t.spc_common && !seen.has(t.spc_common)) { seen.add(t.spc_common); const o = document.createElement('option'); o.value = o.textContent = t.spc_common; sel.appendChild(o); } });
   if (current) sel.value = current;
 }
 
@@ -1870,68 +1686,6 @@ function applyFilters(reload = false) {
   document.getElementById('tree-count').textContent = `${filteredTrees.length.toLocaleString()} trees`;
   updateMap();
   updateStats();
-}
-
-// ========== MOBILE FILTERS ==========
-function toggleMobileFilters() {
-  const panel = document.getElementById('mobile-filter-panel');
-  if (panel.classList.contains('open')) {
-    panel.classList.remove('open');
-  } else {
-    panel.classList.add('open');
-    // Sync mobile selects with desktop values
-    syncMobileFiltersFromDesktop();
-  }
-}
-
-function toggleMobileFiltersNav() {
-  toggleMobileFilters();
-  // Don't update active button - filter doesn't switch views
-}
-
-function syncMobileFiltersFromDesktop() {
-  const desktopHealth = document.getElementById('f-health')?.value || '';
-  const desktopSpecies = document.getElementById('f-species')?.value || '';
-  const desktopAge = document.getElementById('f-age')?.value || '';
-
-  const mobileHealth = document.getElementById('f-health-mobile');
-  const mobileSpecies = document.getElementById('f-species-mobile');
-  const mobileAge = document.getElementById('f-age-mobile');
-  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
-
-  if (mobileHealth) mobileHealth.value = desktopHealth;
-  if (mobileSpecies) mobileSpecies.value = desktopSpecies;
-  if (mobileAge) mobileAge.value = desktopAge;
-  if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
-}
-
-function applyFiltersFromMobile() {
-  // Copy mobile filter values to desktop
-  const mobileHealth = document.getElementById('f-health-mobile')?.value || '';
-  const mobileSpecies = document.getElementById('f-species-mobile')?.value || '';
-  const mobileAge = document.getElementById('f-age-mobile')?.value || '';
-  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
-
-  const desktopHealth = document.getElementById('f-health');
-  const desktopSpecies = document.getElementById('f-species');
-  const desktopAge = document.getElementById('f-age');
-  const desktopEmptyBedsBtn = document.getElementById('empty-beds-toggle');
-
-  if (desktopHealth) desktopHealth.value = mobileHealth;
-  if (desktopSpecies) desktopSpecies.value = mobileSpecies;
-  if (desktopAge) desktopAge.value = mobileAge;
-
-  // Sync empty beds toggle
-  if (mobileEmptyBeds !== emptyBedsVisible) {
-    toggleEmptyBeds();
-  }
-
-  // Apply filters
-  applyFilters();
-
-  // Update tree count in mobile panel
-  const countEl = document.getElementById('mobile-tree-count');
-  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees`;
 }
 
 // ========== MAP ==========
@@ -2016,12 +1770,6 @@ function toggleContinuousTracking() {
     geolocationWatcher = null;
     if (btn) btn.classList.remove('active');
     if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
-    updatePathStats(); // Hide stats badge
-
-    // Show path summary and tree selection if path was recorded
-    if (pathCoordinates.length > 1) {
-      setTimeout(() => showPathTreeSelection(), 300);
-    }
     return;
   }
 
@@ -2030,40 +1778,13 @@ function toggleContinuousTracking() {
     return;
   }
 
-  // Initialize path tracking
-  pathCoordinates = [];
-  pathStartTime = new Date();
-  pathDistanceMeters = 0;
-  if (pathPolyline) mapInstance.removeLayer(pathPolyline);
-
-  // Start stats update
-  updatePathStats();
-  pathStatsInterval = setInterval(updatePathStats, 1000);
-
   geolocationWatcher = navigator.geolocation.watchPosition(
     function(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
 
-      // Record path point
-      if (pathCoordinates.length > 0) {
-        const lastPt = pathCoordinates[pathCoordinates.length - 1];
-        const dist = mapInstance.distance([lastPt.lat, lastPt.lng], [lat, lng]);
-        pathDistanceMeters += dist;
-      }
-      pathCoordinates.push({ lat, lng });
-
-      // Update polyline
-      const coords = pathCoordinates.map(p => [p.lat, p.lng]);
-      if (pathPolyline) mapInstance.removeLayer(pathPolyline);
-      pathPolyline = L.polyline(coords, {
-        color: '#0066ff',
-        weight: 3,
-        opacity: 0.8,
-        dashArray: '5, 5'
-      }).addTo(mapInstance);
-
       if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
+
       userLocationMarker = L.circleMarker([lat, lng], {
         radius: 8,
         fillColor: '#28a745',
@@ -2076,238 +1797,6 @@ function toggleContinuousTracking() {
       if (btn) btn.classList.add('active');
     }
   );
-}
-
-// Helper: Calculate distance between two points (in meters)
-function getDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-// Update live stats during path tracking
-let pathStatsInterval = null;
-
-function updatePathStats() {
-  const badge = document.getElementById('path-stats-badge');
-  if (!geolocationWatcher) {
-    if (pathStatsInterval) clearInterval(pathStatsInterval);
-    if (badge) badge.style.display = 'none';
-    return;
-  }
-
-  if (badge) {
-    const duration = Math.round((new Date() - pathStartTime) / 1000);
-    const mins = Math.floor(duration / 60);
-    const secs = duration % 60;
-    const distanceKm = (pathDistanceMeters / 1000).toFixed(2);
-    badge.innerHTML = `📏 ${distanceKm} km<br>⏱️ ${mins}m ${secs}s`;
-    badge.style.display = 'block';
-  }
-}
-
-// Find all trees within buffer distance of the path
-function findTreesNearPath(bufferMeters = 30) {
-  const nearbyTrees = [];
-  const treeSet = new Set();
-
-  filteredTrees.forEach(tree => {
-    const treeLat = parseFloat(tree.latitude || tree.lat);
-    const treeLng = parseFloat(tree.longitude || tree.lng || tree.lon);
-    if (!treeLat || !treeLng) return;
-
-    // Check distance to each path segment
-    for (let i = 0; i < pathCoordinates.length - 1; i++) {
-      const p1 = pathCoordinates[i];
-      const p2 = pathCoordinates[i + 1];
-
-      // Distance to line segment
-      const dist = pointToLineDistance(treeLat, treeLng, p1.lat, p1.lng, p2.lat, p2.lng);
-
-      if (dist <= bufferMeters && !treeSet.has(tree.tree_id)) {
-        nearbyTrees.push(tree);
-        treeSet.add(tree.tree_id);
-        break;
-      }
-    }
-  });
-
-  return nearbyTrees;
-}
-
-// Calculate perpendicular distance from point to line segment
-function pointToLineDistance(px, py, x1, y1, x2, y2) {
-  const A = px - x1;
-  const B = py - y1;
-  const C = x2 - x1;
-  const D = y2 - y1;
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = -1;
-  if (lenSq !== 0) param = dot / lenSq;
-
-  let xx, yy;
-  if (param < 0) {
-    xx = x1;
-    yy = y1;
-  } else if (param > 1) {
-    xx = x2;
-    yy = y2;
-  } else {
-    xx = x1 + param * C;
-    yy = y1 + param * D;
-  }
-
-  return getDistance(px, py, xx, yy);
-}
-
-function showPathTreeSelection() {
-  const trees = findTreesNearPath(30);
-
-  if (trees.length === 0) {
-    alert('No trees found within 30m of your path');
-    return;
-  }
-
-  // Create modal
-  const modal = document.createElement('div');
-  modal.id = 'path-tree-modal';
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 5000;
-    padding: 20px;
-  `;
-
-  const duration = Math.round((new Date() - pathStartTime) / 1000);
-  const hours = Math.floor(duration / 3600);
-  const mins = Math.floor((duration % 3600) / 60);
-  const secs = duration % 60;
-  const durationStr = `${hours}h ${mins}m ${secs}s`;
-  const distanceKm = (pathDistanceMeters / 1000).toFixed(2);
-
-  const content = document.createElement('div');
-  content.style.cssText = `
-    background: var(--bg2);
-    border-radius: 12px;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    font-family: 'Nunito', sans-serif;
-  `;
-
-  content.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 style="margin: 0; color: var(--text); font-size: 20px;">Path Results</h2>
-      <button onclick="document.getElementById('path-tree-modal').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
-    </div>
-
-    <div style="background: var(--bg1); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; color: var(--text2);">
-      <div>📏 Distance: <strong>${distanceKm} km</strong></div>
-      <div>⏱️ Duration: <strong>${durationStr}</strong></div>
-      <div>🌳 Trees Found: <strong>${trees.length}</strong></div>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" id="select-all-trees" onchange="toggleAllTreeCheckboxes()" style="cursor: pointer;">
-        <span style="font-weight: 600; color: var(--text);">Select All (${trees.length})</span>
-      </label>
-    </div>
-
-    <div id="trees-list" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px;">
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <label style="font-size: 13px; font-weight: 600; color: var(--text); display: block; margin-bottom: 6px;">Group Name:</label>
-      <input type="text" id="group-name-input" placeholder="e.g., Canal St Path" style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: 'Nunito', sans-serif; box-sizing: border-box;">
-    </div>
-
-    <div style="display: flex; gap: 8px;">
-      <button onclick="document.getElementById('path-tree-modal').remove()" style="flex: 1; padding: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text);">Cancel</button>
-      <button onclick="addSelectedTreesAsGroup()" style="flex: 1; padding: 10px; background: var(--accent); border: none; border-radius: 6px; cursor: pointer; font-weight: 600; color: white;">Add Selected Trees</button>
-    </div>
-  `;
-
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-
-  // Populate tree list
-  const treesList = modal.querySelector('#trees-list');
-  trees.forEach(tree => {
-    const item = document.createElement('label');
-    item.style.cssText = `
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s;
-    `;
-    item.onmouseover = () => item.style.background = 'var(--bg1)';
-    item.onmouseout = () => item.style.background = 'none';
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'tree-checkbox';
-    checkbox.value = tree.tree_id;
-    checkbox.style.cursor = 'pointer';
-    checkbox.checked = true;
-
-    const info = document.createElement('div');
-    info.style.cssText = 'flex: 1; font-size: 13px;';
-    const species = tree.spc_common || 'Unknown';
-    const health = tree.health ? ` • ${tree.health}` : '';
-    info.innerHTML = `<strong>${species}</strong><br><span style="color: var(--text3); font-size: 12px;">${tree.address || 'No address'}${health}</span>`;
-
-    item.appendChild(checkbox);
-    item.appendChild(info);
-    treesList.appendChild(item);
-  });
-
-  // Store trees globally for batch add function
-  window._pathTreesData = trees;
-}
-
-function toggleAllTreeCheckboxes() {
-  const allCheckbox = document.getElementById('select-all-trees');
-  const checkboxes = document.querySelectorAll('.tree-checkbox');
-  checkboxes.forEach(cb => cb.checked = allCheckbox.checked);
-}
-
-function addSelectedTreesAsGroup() {
-  const groupName = document.getElementById('group-name-input').value.trim() || 'Path Group ' + new Date().toLocaleDateString();
-  const checkboxes = document.querySelectorAll('.tree-checkbox:checked');
-
-  if (checkboxes.length === 0) {
-    alert('Please select at least one tree');
-    return;
-  }
-
-  const selectedTrees = Array.from(checkboxes).map(cb => {
-    return window._pathTreesData.find(t => String(t.tree_id) === cb.value);
-  });
-
-  console.log(`Adding ${selectedTrees.length} trees as group: "${groupName}"`);
-  // TODO: Integrate with actual reservation/care list system
-  alert(`Ready to add ${selectedTrees.length} trees as group: "${groupName}"\n\nIntegration with care list coming soon!`);
-
-  document.getElementById('path-tree-modal').remove();
 }
 
 const PCOLORS = { Critical: '#c0392b', High: '#d35400', Medium: '#d4ac0d', Low: '#3a7d44' };
@@ -2459,16 +1948,7 @@ function toggleSpeciesView() {
   speciesBtn.classList.toggle('on', !priorityMode);
   speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
   document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
-
-  // Update species legend - only show care status in species view
-  const speciesLegend = document.getElementById('map-legend-species');
-  if (!priorityMode) {
-    let html = `<span class="dot" style="background:#06b6d4"></span> Cared For`;
-    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved`;
-    speciesLegend.innerHTML = html;
-  }
-  speciesLegend.style.display = priorityMode ? 'none' : '';
-
+  document.getElementById('map-legend-species').style.display = priorityMode ? 'none' : '';
   // Hide priority sidebar when switching to species mode
   if (!priorityMode) {
     document.getElementById('priority-sidebar').style.display = 'none';
@@ -4404,9 +3884,6 @@ function initMobileUI() {
       </button>
       <button class="mob-nav-btn" onclick="mobileSwitchView('about',this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
-      </button>
-      <button class="mob-nav-btn" onclick="toggleMobileFiltersNav()" title="Toggle filters">
-        <span class="mob-icon">🔍</span><span class="mob-label">Filter</span>
       </button>
     `;
     document.body.appendChild(nav);
