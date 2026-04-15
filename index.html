@@ -794,6 +794,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
     display: flex; align-items: center; gap: 4px;
     font-size: 11px; color: var(--text2); white-space: nowrap;
   }
+  .side-filter-panel {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    width: 200px; font-size: 12px;
+  }
+  .side-filter-panel .filter-row { display: flex; flex-direction: column; gap: 3px; }
+  .side-filter-panel label { color: var(--text3); font-size: 10px; margin: 0;
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .side-filter-panel select {
+    width: 100%; padding: 5px 8px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 6px;
+    color: var(--text); font-size: 12px; font-family: 'Nunito', sans-serif;
+    cursor: pointer;
+  }
+  .side-filter-panel select:focus { outline: none; border-color: var(--accent); }
+  .side-filter-panel .chk { display: flex; align-items: center; gap: 6px;
+    color: var(--text2); font-size: 11px; cursor: pointer; margin: 0; }
+  .side-filter-panel .chk input { cursor: pointer; margin: 0; }
+  .side-filter-panel .count-line {
+    font-size: 10px; color: var(--text3); padding-top: 6px;
+    border-top: 1px solid var(--border); margin-top: 2px;
+  }
   @media (max-width: 480px) {
     .map-legend-wrap { max-width: 130px; font-size: 10px; }
   }
@@ -1011,6 +1034,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Larger tap targets for map toggle buttons on mobile */
     .toggle-btn { min-height: 44px; padding: 10px 16px; }
 
+    /* On mobile the bottom nav has its own filter button, so hide the desktop one */
+    #filters-toggle, #side-filter-panel { display: none !important; }
+
     /* Drag handle for bottom sheets - clickable to close */
     .panel-drag-handle {
       position: absolute; top: 0; left: 0; right: 0;
@@ -1205,9 +1231,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <option value="">All Health</option>
     <option>Good</option><option>Fair</option><option>Poor</option>
   </select>
-  <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
-  <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
-  <span id="tree-count"></span>
 </div>
 
 <main>
@@ -1271,7 +1294,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="map-overlay">
       <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">📊 Priority Info</button>
       <button class="toggle-btn" id="species-toggle" onclick="toggleSpeciesView()">🎨 Species View</button>
-      <button class="toggle-btn" id="empty-beds-toggle" onclick="toggleEmptyBeds()">○ Show Empty Beds</button>
+      <button class="toggle-btn" id="filters-toggle" onclick="toggleFiltersPanel()">🔍 Filters</button>
+      <div class="side-filter-panel" id="side-filter-panel" style="display:none">
+        <div class="filter-row">
+          <label for="f-species">Species</label>
+          <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
+        </div>
+        <div class="filter-row">
+          <label for="f-age">Age / Planting Year</label>
+          <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
+        </div>
+        <label class="chk">
+          <input type="checkbox" id="f-empty-beds-desktop" onchange="toggleEmptyBedsFromPanel()">
+          Show empty tree beds
+        </label>
+        <div class="count-line" id="tree-count">—</div>
+      </div>
       <button class="toggle-btn" id="tree-guards-toggle" onclick="toggleTreeGuards()">🛡 Tree Guards</button>
       <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Block 2025</button>
       <div class="map-pill" id="map-legend-species" style="display:none"></div>
@@ -2658,12 +2696,24 @@ function toggleCoolestBlocks() {
 
 function toggleEmptyBeds() {
   emptyBedsVisible = !emptyBedsVisible;
-  const btn = document.getElementById('empty-beds-toggle');
-  if (btn) {
-    btn.classList.toggle('on', emptyBedsVisible);
-    btn.textContent = emptyBedsVisible ? `○ ${emptyBeds.length.toLocaleString()} Empty Beds` : '○ Show Empty Beds';
-  }
+  const cb = document.getElementById('f-empty-beds-desktop');
+  if (cb) cb.checked = emptyBedsVisible;
   updateMap();
+}
+
+function toggleEmptyBedsFromPanel() {
+  const cb = document.getElementById('f-empty-beds-desktop');
+  emptyBedsVisible = !!(cb && cb.checked);
+  updateMap();
+}
+
+function toggleFiltersPanel() {
+  const btn = document.getElementById('filters-toggle');
+  const panel = document.getElementById('side-filter-panel');
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  if (btn) btn.classList.toggle('on', !isOpen);
 }
 
 // ========== INIT ==========
@@ -4161,6 +4211,8 @@ function applyFiltersFromMobile() {
   document.getElementById('f-species').value = species;
   document.getElementById('f-age').value = age;
   emptyBedsVisible = emptyBeds;
+  const desktopCb = document.getElementById('f-empty-beds-desktop');
+  if (desktopCb) desktopCb.checked = emptyBeds;
 
   applyFilters();
 }
