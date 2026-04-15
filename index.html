@@ -749,7 +749,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   main { flex: 1; overflow: hidden; position: relative; }
   .view { display: none; height: 100%; overflow: hidden; }
   .view.active { display: flex; flex-direction: column; }
-  .view.active { display: flex; flex-direction: column; }
+  .view:target { display: flex !important; flex-direction: column; }
+  #map-view { display: flex; flex-direction: column; }
 
   /* Mobile filter panel — hidden by default on desktop, shown only on mobile via media query */
   #mobile-filter-panel { display: none; }
@@ -1093,11 +1094,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       transition: color 0.2s, background 0.2s; padding: 0;
       -webkit-tap-highlight-color: transparent;
       height: 100%; width: 100%; min-height: 48px;
+      text-decoration: none;
     }
     .mob-nav-btn:active { background: rgba(0,0,0,0.05); }
+    .mob-nav-btn:hover { background: rgba(0,0,0,0.02); }
     .mob-nav-btn .mob-icon { font-size: 28px; line-height: 1; }
     .mob-nav-btn .mob-label { display: none; }
     .mob-nav-btn.active { color: var(--accent); }
+    a.mob-nav-btn { color: var(--text3); }
 
     /* Floating action buttons - Google Maps style */
     .geo-button-container {
@@ -4081,21 +4085,21 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="window.mobileNavClick('map', this)">
+      <a href="#map-view" class="mob-nav-btn active">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
-      </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('stats', this)">
+      </a>
+      <a href="#stats-view" class="mob-nav-btn">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
-      </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('myblock', this)">
+      </a>
+      <a href="#myblock-view" class="mob-nav-btn">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
-      </button>
-      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="window.mobileFilterClick()">
+      </a>
+      <a href="#" class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters(); return false;">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
-      </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('about', this)">
+      </a>
+      <a href="#about-view" class="mob-nav-btn">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
-      </button>
+      </a>
     `;
     document.body.appendChild(nav);
   }
@@ -4184,16 +4188,36 @@ function checkAndInitMobileUI() {
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
 window.addEventListener('resize', checkAndInitMobileUI);
 
-// Global mobile nav click handlers - must be at window level for onclick to work
-window.mobileNavClick = function(view, btn) {
-  console.log('mobileNavClick:', view, btn);
-  mobileSwitchView(view, btn);
-};
+// Hash-based view routing for mobile
+window.addEventListener('hashchange', function() {
+  const hash = window.location.hash;
+  console.log('View changed to:', hash);
 
-window.mobileFilterClick = function() {
-  console.log('mobileFilterClick');
-  toggleMobileFilters();
-};
+  // Update active nav button
+  document.querySelectorAll('.mob-nav-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.querySelector(`a[href="${hash}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  // View-specific initialization
+  if (hash === '#stats-view') updateStats();
+  if (hash === '#myblock-view') {
+    renderClaimedBlocksSidebar();
+    tcUpdateProgress();
+    setTimeout(tcRenderCareMap, 100);
+  }
+  if (hash === '#map-view' && mapInstance) {
+    setTimeout(() => mapInstance.invalidateSize(), 50);
+  }
+});
+
+// Set initial view
+window.addEventListener('load', function() {
+  if (!window.location.hash) {
+    window.location.hash = '#map-view';
+  } else {
+    window.dispatchEvent(new Event('hashchange'));
+  }
+});
 </script>
 </body>
 </html>
