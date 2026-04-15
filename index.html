@@ -1368,15 +1368,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         <div class="cp-section">
           <div class="cp-label">Legend</div>
-          <div id="cp-legend-priority" class="cp-legend">
-            <span class="legend-item"><span class="dot" style="background:#3a7d44"></span>Low</span>
-            <span class="legend-item"><span class="dot" style="background:#d4ac0d"></span>Medium</span>
-            <span class="legend-item"><span class="dot" style="background:#d35400"></span>High</span>
-            <span class="legend-item"><span class="dot" style="background:#c0392b"></span>Critical</span>
+          <div class="cp-legend">
             <span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>
             <span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
           </div>
-          <div id="cp-legend-species" class="cp-legend" style="display:none"></div>
         </div>
 
         <div class="cp-count" id="tree-count">—</div>
@@ -1835,7 +1830,12 @@ function populateSpeciesFilter() {
   const current = sel.value;
   while (sel.options.length > 1) sel.remove(1);
   const seen = new Set();
-  allTrees.forEach(t => { if (t.spc_common && !seen.has(t.spc_common)) { seen.add(t.spc_common); const o = document.createElement('option'); o.value = o.textContent = t.spc_common; sel.appendChild(o); } });
+  allTrees.forEach(t => { if (t.spc_common) seen.add(t.spc_common); });
+  [...seen].sort((a, b) => a.localeCompare(b)).forEach(name => {
+    const o = document.createElement('option');
+    o.value = o.textContent = name;
+    sel.appendChild(o);
+  });
   if (current) sel.value = current;
 }
 
@@ -2115,24 +2115,7 @@ function setViewMode(mode) {
   // mode: 'priority' | 'species'
   priorityMode = (mode === 'priority');
 
-  const priLegend = document.getElementById('cp-legend-priority');
-  const spLegend = document.getElementById('cp-legend-species');
   const priInfo = document.getElementById('cp-priority-info');
-
-  if (priLegend) priLegend.style.display = priorityMode ? 'flex' : 'none';
-  if (spLegend) {
-    if (!priorityMode) {
-      const entries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
-      let html = '';
-      entries.forEach(([sp, col]) => {
-        html += `<span class="legend-item"><span class="dot" style="background:${col}"></span>${sp}</span>`;
-      });
-      html += `<span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>`;
-      html += `<span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>`;
-      spLegend.innerHTML = html;
-    }
-    spLegend.style.display = priorityMode ? 'none' : 'flex';
-  }
   if (priInfo) priInfo.style.display = priorityMode ? '' : 'none';
 
   // Keep radios in sync
