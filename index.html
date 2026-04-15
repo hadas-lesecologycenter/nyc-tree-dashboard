@@ -751,8 +751,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .view.active { display: flex; flex-direction: column; }
   #map-view { flex-direction: column; }
 
-  /* Mobile filter panel — hidden by default on desktop, shown only on mobile via media query */
-  #mobile-filter-panel { display: none; }
 
   /* LOADING */
   #loading-bar {
@@ -1027,42 +1025,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .filter-sep { display: none; }
     .tree-count { display: none; }
 
-    /* Mobile filter panel */
-    #mobile-filter-panel {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 48px;
-      background: var(--bg2);
-      z-index: 2900;
-      overflow-y: auto;
-      padding: 16px;
-      display: none;
-    }
-    #mobile-filter-panel.open { display: block; }
-    #mobile-filter-panel .filter-section {
-      margin-bottom: 16px;
-    }
-    #mobile-filter-panel .filter-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 8px;
-      display: block;
-    }
-    #mobile-filter-panel select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg1);
-      color: var(--text);
-      font-family: 'Nunito', sans-serif;
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-
     /* Body padding for bottom tab bar */
     body { padding-bottom: 48px; }
 
@@ -1076,9 +1038,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     /* Larger tap targets for map toggle buttons on mobile */
     .toggle-btn { min-height: 44px; padding: 10px 16px; }
-
-    /* Desktop controls panel hidden on mobile — bottom nav has its own Filter button */
-    #controls-toggle, #controls-panel { display: none !important; }
 
     /* Drag handle for bottom sheets - clickable to close */
     .panel-drag-handle {
@@ -1280,40 +1239,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
     <div id="map"></div>
-    <!-- Mobile filter panel -->
-    <div id="mobile-filter-panel">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="margin: 0; font-size: 16px; color: var(--text);">Filters</h3>
-        <button onclick="toggleMobileFilters()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Health Status</label>
-        <select id="f-health-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Health</option>
-          <option>Good</option>
-          <option>Fair</option>
-          <option>Poor</option>
-        </select>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Species</label>
-        <select id="f-species-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Species</option>
-        </select>
-      </div>
-      <div class="filter-section">
-        <label class="filter-label">Age / Planting Year</label>
-        <select id="f-age-mobile" onchange="applyFiltersFromMobile()">
-          <option value="">All Ages</option>
-          <option value="small-dbh">Small trunk (DBH &lt; 5")</option>
-        </select>
-      </div>
-      <div class="filter-section" style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="f-empty-beds-mobile" onchange="applyFiltersFromMobile()" style="cursor: pointer;">
-        <label for="f-empty-beds-mobile" style="cursor: pointer; font-size: 13px; color: var(--text); margin: 0;">Show empty tree beds</label>
-      </div>
-      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3);" id="mobile-tree-count">Loading...</div>
-    </div>
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
@@ -1962,18 +1887,6 @@ function populateSpeciesFilter() {
       list.insertAdjacentHTML('beforeend',
         `<label class="ms-opt"><input type="checkbox" value="${msEsc(name)}"${checked} onchange="msOnChange('species', this.value, this.checked)">${msEsc(name)}</label>`);
     });
-  }
-  // Also populate the mobile single-select dropdown
-  const mobileSel = document.getElementById('f-species-mobile');
-  if (mobileSel) {
-    const current = mobileSel.value;
-    while (mobileSel.options.length > 1) mobileSel.remove(1);
-    sortedSpecies.forEach(name => {
-      const o = document.createElement('option');
-      o.value = o.textContent = name;
-      mobileSel.appendChild(o);
-    });
-    if (current) mobileSel.value = current;
   }
   msUpdateLabel('species');
 }
@@ -4330,10 +4243,12 @@ function initMobileUI() {
 function mobileSwitchView(view, btn) {
   console.log('mobileSwitchView called with view:', view, 'btn:', btn);
   try {
-    // Close filter panel if it's open when switching views
-    const filterPanel = document.getElementById('mobile-filter-panel');
-    if (filterPanel && filterPanel.classList.contains('open')) {
-      filterPanel.classList.remove('open');
+    // Close controls panel if it's open when switching views
+    const panel = document.getElementById('priority-sidebar');
+    if (panel && panel.style.display !== 'none') {
+      panel.style.display = 'none';
+      const toggleBtn = document.getElementById('controls-toggle');
+      if (toggleBtn) toggleBtn.classList.remove('on');
     }
 
     switchView(view, null);
@@ -4345,55 +4260,13 @@ function mobileSwitchView(view, btn) {
   }
 }
 
+// Mobile bottom-nav Filter button routes to the unified controls panel
 function toggleMobileFilters() {
-  const panel = document.getElementById('mobile-filter-panel');
-  if (panel.classList.contains('open')) {
-    panel.classList.remove('open');
-  } else {
-    panel.classList.add('open');
-    syncMobileFiltersFromDesktop();
+  // Ensure we're on the Map view so the panel is visible
+  if (!document.getElementById('map-view').classList.contains('active')) {
+    switchView('map', null);
   }
-}
-
-function syncMobileFiltersFromDesktop() {
-  const desktopHealth = document.getElementById('f-health')?.value || '';
-  // Mobile selects are single-select; show the first selection (or blank) from the
-  // multi-select state so the UI is at least consistent. Desktop state is authoritative.
-  const speciesFirst = [...filterSel.species][0] || '';
-  const ageFirst = [...filterSel.age][0] || '';
-
-  const mobileHealth = document.getElementById('f-health-mobile');
-  const mobileSpecies = document.getElementById('f-species-mobile');
-  const mobileAge = document.getElementById('f-age-mobile');
-  const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
-
-  if (mobileHealth) mobileHealth.value = desktopHealth;
-  if (mobileSpecies) mobileSpecies.value = speciesFirst;
-  if (mobileAge) mobileAge.value = ageFirst;
-  if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
-}
-
-function applyFiltersFromMobile() {
-  const health = document.getElementById('f-health-mobile')?.value || '';
-  const species = document.getElementById('f-species-mobile')?.value || '';
-  const age = document.getElementById('f-age-mobile')?.value || '';
-  const emptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
-
-  document.getElementById('f-health').value = health;
-  filterSel.species.clear();
-  if (species) filterSel.species.add(species);
-  filterSel.age.clear();
-  if (age) filterSel.age.add(age);
-  emptyBedsVisible = emptyBeds;
-
-  // Reflect changes in the desktop multi-select UI if rendered
-  document.querySelectorAll('#ms-list-species input[type=checkbox]').forEach(cb => cb.checked = filterSel.species.has(cb.value));
-  document.querySelectorAll('#ms-list-age input[type=checkbox]').forEach(cb => cb.checked = filterSel.age.has(cb.value));
-  msUpdateLabel('species'); msUpdateLabel('age');
-  const desktopCb = document.getElementById('f-empty-beds-desktop');
-  if (desktopCb) desktopCb.checked = emptyBeds;
-
-  applyFilters();
+  toggleControlsPanel();
 }
 
 function switchMyBlockTab(tab, btn) {
