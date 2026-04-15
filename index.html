@@ -4186,35 +4186,52 @@ function checkAndInitMobileUI() {
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
 window.addEventListener('resize', checkAndInitMobileUI);
 
-// Hash-based view routing for mobile
+// Hash-based view routing - actually switch views
 window.addEventListener('hashchange', function() {
-  const hash = window.location.hash;
-  console.log('View changed to:', hash);
+  const hash = window.location.hash.substring(1); // remove #
+  console.log('Hash changed to:', hash);
 
-  // Update active nav button
+  if (!hash) {
+    window.location.hash = 'map-view';
+    return;
+  }
+
+  // Remove active from all views and buttons
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.mob-nav-btn').forEach(btn => btn.classList.remove('active'));
-  const activeBtn = document.querySelector(`a[href="${hash}"]`);
-  if (activeBtn) activeBtn.classList.add('active');
+
+  // Show the target view
+  const view = document.getElementById(hash);
+  if (view) {
+    view.classList.add('active');
+    console.log('Switched to view:', hash);
+  }
+
+  // Find and mark active button
+  const buttons = document.querySelectorAll('.mob-nav-btn');
+  buttons.forEach(btn => {
+    const btnHash = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (btnHash === hash) btn.classList.add('active');
+  });
 
   // View-specific initialization
-  if (hash === '#stats-view') updateStats();
-  if (hash === '#myblock-view') {
+  if (hash === 'stats-view') { updateStats(); }
+  if (hash === 'myblock-view') {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
     setTimeout(tcRenderCareMap, 100);
   }
-  if (hash === '#map-view' && mapInstance) {
+  if (hash === 'map-view' && mapInstance) {
     setTimeout(() => mapInstance.invalidateSize(), 50);
   }
 });
 
-// Set initial view
+// Initialize on load
 window.addEventListener('load', function() {
-  if (!window.location.hash) {
-    window.location.hash = '#map-view';
-  } else {
-    window.dispatchEvent(new Event('hashchange'));
-  }
+  setTimeout(() => {
+    if (!window.location.hash) window.location.hash = 'map-view';
+    else window.dispatchEvent(new Event('hashchange'));
+  }, 100);
 });
 </script>
 </body>
