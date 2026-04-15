@@ -751,6 +751,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .view.active { display: flex; flex-direction: column; }
   .view.active { display: flex; flex-direction: column; }
 
+  /* Mobile filter panel — hidden by default on desktop, shown only on mobile via media query */
+  #mobile-filter-panel { display: none; }
+
   /* LOADING */
   #loading-bar {
     position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9999;
@@ -1190,17 +1193,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 </header>
 
-<div class="filter-bar">
-  <span class="filter-label">Filter by</span>
-  <span class="map-pill" style="background:var(--bg3);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;font-size:11px;color:var(--accent)">📍 CB3 Area, Manhattan</span>
+<!-- hidden filter selects kept for applyFilters() compatibility -->
+<div style="display:none">
   <select id="f-health" onchange="applyFilters()">
     <option value="">All Health</option>
     <option>Good</option><option>Fair</option><option>Poor</option>
   </select>
   <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
   <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
-  <div class="filter-sep"></div>
-  <span class="tree-count" id="tree-count">Loading...</span>
+  <span id="tree-count"></span>
 </div>
 
 <main>
@@ -3443,21 +3444,7 @@ let tcMainLayer = null;
 function tcRenderMain() {
   if (!mapInstance) return;
   if (tcMainLayer) { tcMainLayer.remove(); tcMainLayer = null; }
-  const areas = tcLoad();
-  if (!areas.length) return;
-  tcMainLayer = L.layerGroup();
-  areas.forEach(area => {
-    if (!area.polygon || area.polygon.length < 3) return;
-    const cared = area.careEvents && area.careEvents.length > 0;
-    const color = cared ? '#2e8b57' : '#4a7c59';
-    const poly = L.polygon(area.polygon, {
-      color: color, fillColor: color, fillOpacity: cared ? 0.25 : 0.12, weight: 2.5
-    });
-    poly.bindTooltip('<strong>' + area.name + '</strong><br><span style="font-size:10px">' +
-      area.treeCount + ' trees · ' + (cared ? '✅ Care logged' : '⏳ Watching') + '</span>', { sticky: true });
-    poly.addTo(tcMainLayer);
-  });
-  tcMainLayer.addTo(mapInstance);
+  // Care area polygons no longer render on the main map — they only appear in the Tree Care tab.
   tcRenderReservationsOnMainMap();
 }
 
