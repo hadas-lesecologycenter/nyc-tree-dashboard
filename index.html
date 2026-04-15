@@ -4094,19 +4094,19 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="window.mobileNavClick('map')">
+      <button class="mob-nav-btn active" onclick="window.mobileNavClick('map', this)">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('stats')">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('stats', this)">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('myblock')">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('myblock', this)">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
       <button class="mob-nav-btn" id="filter-toggle-btn" onclick="window.mobileFilterClick()">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.mobileNavClick('about')">
+      <button class="mob-nav-btn" onclick="window.mobileNavClick('about', this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
@@ -4198,9 +4198,8 @@ window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 30
 window.addEventListener('resize', checkAndInitMobileUI);
 
 // Global mobile nav click handlers - must be at window level for onclick to work
-window.mobileNavClick = function(view) {
-  console.log('mobileNavClick:', view);
-  const btn = document.querySelector(`[onclick="window.mobileNavClick('${view}')"]`);
+window.mobileNavClick = function(view, btn) {
+  console.log('mobileNavClick:', view, btn);
   mobileSwitchView(view, btn);
 };
 
