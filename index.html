@@ -786,39 +786,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
     border-radius: 20px; padding: 6px 14px; font-size: 12px;
     display: flex; align-items: center; gap: 8px;
   }
-  .map-legend-wrap {
-    flex-wrap: wrap; gap: 4px 10px; padding: 7px 12px;
-    max-width: 160px; border-radius: 12px;
-  }
   .legend-item {
     display: flex; align-items: center; gap: 4px;
     font-size: 11px; color: var(--text2); white-space: nowrap;
   }
-  .side-filter-panel {
-    background: var(--bg2); border: 1px solid var(--border2);
-    border-radius: 12px; padding: 10px 12px;
-    display: flex; flex-direction: column; gap: 8px;
-    width: 200px; font-size: 12px;
+  /* Unified controls panel (right-docked) */
+  .cp-section { border-top: 1px solid var(--border); padding: 14px 0 4px; }
+  .cp-section:first-of-type { border-top: none; padding-top: 4px; }
+  .cp-label {
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px;
   }
-  .side-filter-panel .filter-row { display: flex; flex-direction: column; gap: 3px; }
-  .side-filter-panel label { color: var(--text3); font-size: 10px; margin: 0;
-    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-  .side-filter-panel select {
-    width: 100%; padding: 5px 8px; background: var(--bg3);
+  .cp-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;
+    font-size: 11px; color: var(--text2); }
+  .cp-field select {
+    width: 100%; padding: 6px 8px; background: var(--bg3);
     border: 1px solid var(--border2); border-radius: 6px;
     color: var(--text); font-size: 12px; font-family: 'Nunito', sans-serif;
     cursor: pointer;
   }
-  .side-filter-panel select:focus { outline: none; border-color: var(--accent); }
-  .side-filter-panel .chk { display: flex; align-items: center; gap: 6px;
-    color: var(--text2); font-size: 11px; cursor: pointer; margin: 0; }
-  .side-filter-panel .chk input { cursor: pointer; margin: 0; }
-  .side-filter-panel .count-line {
-    font-size: 10px; color: var(--text3); padding-top: 6px;
-    border-top: 1px solid var(--border); margin-top: 2px;
-  }
-  @media (max-width: 480px) {
-    .map-legend-wrap { max-width: 130px; font-size: 10px; }
+  .cp-field select:focus { outline: none; border-color: var(--accent); }
+  .cp-chk, .cp-radio { display: flex; align-items: center; gap: 8px;
+    color: var(--text); font-size: 12px; cursor: pointer; margin: 6px 0;
+    line-height: 1.3; }
+  .cp-chk input, .cp-radio input { cursor: pointer; margin: 0; flex-shrink: 0; }
+  .cp-hint { font-size: 11px; color: var(--text2); line-height: 1.4; margin: 0 0 8px; }
+  .cp-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .cp-count {
+    margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text2); font-weight: 600;
   }
   .toggle-btn {
     background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
@@ -1034,8 +1030,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Larger tap targets for map toggle buttons on mobile */
     .toggle-btn { min-height: 44px; padding: 10px 16px; }
 
-    /* On mobile the bottom nav has its own filter button, so hide the desktop one */
-    #filters-toggle, #side-filter-panel { display: none !important; }
+    /* Desktop controls panel hidden on mobile — bottom nav has its own Filter button */
+    #controls-toggle, #controls-panel { display: none !important; }
 
     /* Drag handle for bottom sheets - clickable to close */
     .panel-drag-handle {
@@ -1292,70 +1288,98 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
     <div class="map-overlay">
-      <button class="toggle-btn on" id="priority-toggle" onclick="togglePrioritySidebar()">📊 Priority Info</button>
-      <button class="toggle-btn" id="species-toggle" onclick="toggleSpeciesView()">🎨 Species View</button>
-      <button class="toggle-btn" id="filters-toggle" onclick="toggleFiltersPanel()">🔍 Filters</button>
-      <div class="side-filter-panel" id="side-filter-panel" style="display:none">
-        <div class="filter-row">
-          <label for="f-species">Species</label>
-          <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
-        </div>
-        <div class="filter-row">
-          <label for="f-age">Age / Planting Year</label>
-          <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
-        </div>
-        <label class="chk">
-          <input type="checkbox" id="f-empty-beds-desktop" onchange="toggleEmptyBedsFromPanel()">
-          Show empty tree beds
-        </label>
-        <div class="count-line" id="tree-count">—</div>
-      </div>
-      <button class="toggle-btn" id="tree-guards-toggle" onclick="toggleTreeGuards()">🛡 Tree Guards</button>
-      <button class="toggle-btn" id="coolest-blocks-toggle" onclick="toggleCoolestBlocks()">🏆 Coolest Block 2025</button>
-      <div class="map-pill" id="map-legend-species" style="display:none"></div>
-      <div class="map-pill map-legend-wrap" id="map-legend-priority" style="display:flex">
-        <span class="legend-item"><span class="dot" style="background:#3a7d44"></span>Low</span>
-        <span class="legend-item"><span class="dot" style="background:#d4ac0d"></span>Medium</span>
-        <span class="legend-item"><span class="dot" style="background:#d35400"></span>High</span>
-        <span class="legend-item"><span class="dot" style="background:#c0392b"></span>Critical</span>
-        <span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>
-        <span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
-      </div>
+      <button class="toggle-btn" id="controls-toggle" onclick="toggleControlsPanel()">🔍 Filters</button>
     </div>
-    <!-- Priority sidebar overlaid on map -->
+    <!-- Unified controls panel overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
-      <div style="padding:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🌱 Priority Mode</h2>
-          <button onclick="togglePrioritySidebar()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
+      <div style="padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🔍 Map Controls</h2>
+          <button onclick="toggleControlsPanel()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
         </div>
-        <p style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">Trees ranked into 4 tiers by two factors: how young they are, and how visible their location is.</p>
-        <p style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:14px;padding:8px;background:var(--bg3);border-radius:6px">🌱 <strong>Young</strong> = trunk diameter &lt; 6" <em>or</em> planted within the last 5 years</p>
 
-        <div id="priority-tier-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
-          <!-- populated by updatePriorityTierCounts() -->
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:10px;height:10px;border-radius:50%;background:#c0392b;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young · commercial corridor</span>
-            <span id="tier-count-4" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:10px;height:10px;border-radius:50%;background:#e67e22;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 3 — Young · high-traffic area</span>
-            <span id="tier-count-3" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:10px;height:10px;border-radius:50%;background:#7fb069;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 2 — Mature · commercial corridor</span>
-            <span id="tier-count-2" style="font-size:10px;font-weight:700;color:#7fb069;min-width:28px;text-align:right"></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="width:10px;height:10px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div>
-            <span style="font-size:11px;color:var(--text2);flex:1">Tier 1 — Mature · high-traffic area</span>
-            <span id="tier-count-1" style="font-size:10px;font-weight:700;color:#2e8b57;min-width:28px;text-align:right"></span>
+        <div class="cp-section">
+          <div class="cp-label">View Mode</div>
+          <label class="cp-radio">
+            <input type="radio" name="view-mode" id="view-mode-priority" value="priority" checked onchange="setViewMode('priority')">
+            🌱 Priority tiers
+          </label>
+          <label class="cp-radio">
+            <input type="radio" name="view-mode" id="view-mode-species" value="species" onchange="setViewMode('species')">
+            🎨 Species colors
+          </label>
+        </div>
+
+        <div class="cp-section" id="cp-priority-info">
+          <div class="cp-label">Priority Tiers</div>
+          <p class="cp-hint">Trees ranked into 4 tiers by how young they are and how visible their location is.</p>
+          <p class="cp-hint" style="padding:8px;background:var(--bg3);border-radius:6px">🌱 <strong>Young</strong> = trunk diameter &lt; 6" <em>or</em> planted within the last 5 years</p>
+          <div id="priority-tier-list" style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#c0392b;flex-shrink:0"></div>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young · commercial corridor</span>
+              <span id="tier-count-4" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#e67e22;flex-shrink:0"></div>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 3 — Young · high-traffic area</span>
+              <span id="tier-count-3" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#7fb069;flex-shrink:0"></div>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 2 — Mature · commercial corridor</span>
+              <span id="tier-count-2" style="font-size:10px;font-weight:700;color:#7fb069;min-width:28px;text-align:right"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 1 — Mature · high-traffic area</span>
+              <span id="tier-count-1" style="font-size:10px;font-weight:700;color:#2e8b57;min-width:28px;text-align:right"></span>
+            </div>
           </div>
         </div>
-        <p style="font-size:10px;color:var(--text3);margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">Counts reflect current map filters.</p>
+
+        <div class="cp-section">
+          <div class="cp-label">Filters</div>
+          <div class="cp-field">
+            <label for="f-species">Species</label>
+            <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
+          </div>
+          <div class="cp-field">
+            <label for="f-age">Age / Planting Year</label>
+            <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
+          </div>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-empty-beds-desktop" onchange="toggleEmptyBedsFromPanel()">
+            ○ Show empty tree beds
+          </label>
+        </div>
+
+        <div class="cp-section">
+          <div class="cp-label">Program Layers</div>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-tree-guards" onchange="toggleTreeGuardsFromPanel()">
+            🛡 Tree Guards (Spring 2026)
+          </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-coolest-blocks" onchange="toggleCoolestBlocksFromPanel()">
+            🏆 Coolest Block 2025
+          </label>
+        </div>
+
+        <div class="cp-section">
+          <div class="cp-label">Legend</div>
+          <div id="cp-legend-priority" class="cp-legend">
+            <span class="legend-item"><span class="dot" style="background:#3a7d44"></span>Low</span>
+            <span class="legend-item"><span class="dot" style="background:#d4ac0d"></span>Medium</span>
+            <span class="legend-item"><span class="dot" style="background:#d35400"></span>High</span>
+            <span class="legend-item"><span class="dot" style="background:#c0392b"></span>Critical</span>
+            <span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>
+            <span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
+          </div>
+          <div id="cp-legend-species" class="cp-legend" style="display:none"></div>
+        </div>
+
+        <div class="cp-count" id="tree-count">—</div>
       </div>
     </div>
   </div>
@@ -2073,44 +2097,55 @@ function updatePriorityTierCounts() {
   }
 }
 
-function togglePrioritySidebar() {
-  if (!priorityMode) return; // sidebar only meaningful in priority mode
-  const sidebar = document.getElementById('priority-sidebar');
-  const visible = sidebar.style.display !== 'none';
-  sidebar.style.display = visible ? 'none' : 'block';
+function toggleControlsPanel() {
+  const panel = document.getElementById('priority-sidebar');
+  const btn = document.getElementById('controls-toggle');
+  if (!panel) return;
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (btn) btn.classList.toggle('on', !visible);
   if (!visible) updatePriorityTierCounts();
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
 }
 
-function toggleSpeciesView() {
-  priorityMode = !priorityMode;
-  const speciesBtn = document.getElementById('species-toggle');
-  const priorityBtn = document.getElementById('priority-toggle');
-  speciesBtn.classList.toggle('on', !priorityMode);
-  speciesBtn.textContent = priorityMode ? '🎨 Species View' : '🌱 Priority View';
-  document.getElementById('map-legend-priority').style.display = priorityMode ? '' : 'none';
+// Kept for backwards compatibility (any old callers just open the unified panel)
+function togglePrioritySidebar() { toggleControlsPanel(); }
 
-  // Populate species legend with color dots + teal/purple indicators
-  const speciesLegend = document.getElementById('map-legend-species');
-  if (speciesLegend && !priorityMode) {
-    const entries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
-    let html = '';
-    entries.forEach(([sp, col], i) => {
-      html += `<span class="dot" style="background:${col}${i > 0 ? ';margin-left:6px' : ''}" title="${sp}"></span>`;
-    });
-    html += `<span class="dot" style="background:#06b6d4;margin-left:8px"></span> Cared For`;
-    html += `<span class="dot" style="background:#7b3fa0;margin-left:8px"></span> Reserved`;
-    speciesLegend.innerHTML = html;
+function setViewMode(mode) {
+  // mode: 'priority' | 'species'
+  priorityMode = (mode === 'priority');
+
+  const priLegend = document.getElementById('cp-legend-priority');
+  const spLegend = document.getElementById('cp-legend-species');
+  const priInfo = document.getElementById('cp-priority-info');
+
+  if (priLegend) priLegend.style.display = priorityMode ? 'flex' : 'none';
+  if (spLegend) {
+    if (!priorityMode) {
+      const entries = Object.entries(speciesColorMap).sort((a, b) => a[0].localeCompare(b[0]));
+      let html = '';
+      entries.forEach(([sp, col]) => {
+        html += `<span class="legend-item"><span class="dot" style="background:${col}"></span>${sp}</span>`;
+      });
+      html += `<span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>`;
+      html += `<span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>`;
+      spLegend.innerHTML = html;
+    }
+    spLegend.style.display = priorityMode ? 'none' : 'flex';
   }
-  if (speciesLegend) speciesLegend.style.display = priorityMode ? 'none' : '';
-  // Hide priority sidebar when switching to species mode
-  if (!priorityMode) {
-    document.getElementById('priority-sidebar').style.display = 'none';
-    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
-  }
-  if (priorityBtn) priorityBtn.style.opacity = priorityMode ? '1' : '0.4';
+  if (priInfo) priInfo.style.display = priorityMode ? '' : 'none';
+
+  // Keep radios in sync
+  const pr = document.getElementById('view-mode-priority');
+  const sp = document.getElementById('view-mode-species');
+  if (pr) pr.checked = priorityMode;
+  if (sp) sp.checked = !priorityMode;
+
   updateMap();
 }
+
+// Back-compat shim
+function toggleSpeciesView() { setViewMode(priorityMode ? 'species' : 'priority'); }
 
 // ========== STATS ==========
 // Refresh tier counts whenever map updates
@@ -2673,11 +2708,18 @@ function toggleTreeGuards() {
   treeGuardsVisible = !treeGuardsVisible;
   if (treeGuardsVisible) treeGuardsLayer.addTo(mapInstance);
   else treeGuardsLayer.remove();
-  const btn = document.getElementById('tree-guards-toggle');
-  if (btn) {
-    btn.classList.toggle('on', treeGuardsVisible);
-    btn.textContent = treeGuardsVisible ? `🛡 ${LESEC_TREE_GUARDS.features.length} Tree Guards` : '🛡 Tree Guards';
-  }
+  const cb = document.getElementById('layer-tree-guards');
+  if (cb) cb.checked = treeGuardsVisible;
+}
+
+function toggleTreeGuardsFromPanel() {
+  const cb = document.getElementById('layer-tree-guards');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === treeGuardsVisible) return;
+  if (!treeGuardsLayer) initTreeGuardsLayer();
+  treeGuardsVisible = shouldShow;
+  if (treeGuardsVisible) treeGuardsLayer.addTo(mapInstance);
+  else treeGuardsLayer.remove();
 }
 
 function toggleCoolestBlocks() {
@@ -2685,11 +2727,18 @@ function toggleCoolestBlocks() {
   coolestBlocksVisible = !coolestBlocksVisible;
   if (coolestBlocksVisible) coolestBlocksLayer.addTo(mapInstance);
   else coolestBlocksLayer.remove();
-  const btn = document.getElementById('coolest-blocks-toggle');
-  if (btn) {
-    btn.classList.toggle('on', coolestBlocksVisible);
-    btn.textContent = coolestBlocksVisible ? '🏆 Coolest Block 2025' : '🏆 Coolest Block 2025';
-  }
+  const cb = document.getElementById('layer-coolest-blocks');
+  if (cb) cb.checked = coolestBlocksVisible;
+}
+
+function toggleCoolestBlocksFromPanel() {
+  const cb = document.getElementById('layer-coolest-blocks');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === coolestBlocksVisible) return;
+  if (!coolestBlocksLayer) initCoolestBlocksLayer();
+  coolestBlocksVisible = shouldShow;
+  if (coolestBlocksVisible) coolestBlocksLayer.addTo(mapInstance);
+  else coolestBlocksLayer.remove();
 }
 
 // ========== EMPTY BEDS LAYER ==========
@@ -2705,15 +2754,6 @@ function toggleEmptyBedsFromPanel() {
   const cb = document.getElementById('f-empty-beds-desktop');
   emptyBedsVisible = !!(cb && cb.checked);
   updateMap();
-}
-
-function toggleFiltersPanel() {
-  const btn = document.getElementById('filters-toggle');
-  const panel = document.getElementById('side-filter-panel');
-  if (!panel) return;
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'flex';
-  if (btn) btn.classList.toggle('on', !isOpen);
 }
 
 // ========== INIT ==========
