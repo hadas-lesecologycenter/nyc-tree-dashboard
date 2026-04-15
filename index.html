@@ -1026,7 +1026,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .tree-count { display: none; }
 
     /* Body padding for bottom tab bar */
-    body { padding-bottom: 48px; }
+    body { padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 
     /* Stats view - responsive grids */
     #stats-view { padding: 14px; gap: 14px; }
@@ -1113,11 +1113,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     /* Bottom navigation bar - Google Maps style */
     #mobile-tab-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 48px;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: calc(48px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
       background: var(--bg2); border-top: none;
       display: flex; align-items: stretch; z-index: 3000;
       box-shadow: 0 -1px 8px rgba(0,0,0,0.12);
-      gap: 0;
+      gap: 0; pointer-events: auto;
     }
     .mob-nav-btn {
       flex: 1; display: flex; align-items: center;
@@ -1127,10 +1129,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       -webkit-tap-highlight-color: transparent; touch-action: manipulation;
       height: 100%; width: 100%; min-height: 48px;
       text-decoration: none; -webkit-user-select: none; user-select: none;
+      pointer-events: auto;
     }
     .mob-nav-btn:active { background: rgba(0,0,0,0.05); }
-    .mob-nav-btn .mob-icon { font-size: 28px; line-height: 1; }
-    .mob-nav-btn .mob-label { display: none; }
+    .mob-nav-btn .mob-icon { font-size: 28px; line-height: 1; pointer-events: none; }
+    .mob-nav-btn .mob-label { display: none; pointer-events: none; }
     .mob-nav-btn.active { color: var(--accent); }
 
     /* Floating action buttons - Google Maps style */
@@ -4207,6 +4210,7 @@ window.addEventListener('load', async () => {
 // ===== MOBILE UI =====
 
 function initMobileUI() {
+  console.log('initMobileUI called');
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
@@ -4219,26 +4223,53 @@ function initMobileUI() {
   if (!document.getElementById('mobile-tab-nav')) {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
-    nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="mobileSwitchView('map', this)">
-        <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
-      </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('stats', this)">
-        <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
-      </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock', this)">
-        <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
-      </button>
-      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters(); return false;">
-        <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
-      </button>
-      <button class="mob-nav-btn" onclick="mobileSwitchView('about', this)">
-        <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
-      </button>
-    `;
+
+    const navItems = [
+      { view: 'map',     icon: '🗺',  label: 'Map',    action: 'switch', active: true },
+      { view: 'stats',   icon: '📊', label: 'Stats',  action: 'switch' },
+      { view: 'myblock', icon: '🌿', label: 'Care',   action: 'switch' },
+      { view: null,      icon: '⚙️', label: 'Filter', action: 'filter', id: 'filter-toggle-btn' },
+      { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
+    ];
+
+    navItems.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mob-nav-btn' + (item.active ? ' active' : '');
+      if (item.id) btn.id = item.id;
+      if (item.view) btn.setAttribute('data-view', item.view);
+      btn.innerHTML = `<span class="mob-icon">${item.icon}</span><span class="mob-label">${item.label}</span>`;
+
+      const handler = function(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        console.log('mob-nav-btn tapped:', item.label, 'action:', item.action);
+        try {
+          if (item.action === 'switch') {
+            mobileSwitchView(item.view, btn);
+          } else if (item.action === 'filter') {
+            toggleMobileFilters();
+          }
+        } catch(err) {
+          console.error('mob-nav-btn handler error:', err);
+        }
+      };
+      // Attach both click and touchend to cover desktop, mobile browsers,
+      // and webviews that may not synthesize click from touch events.
+      btn.addEventListener('click', handler);
+      btn.addEventListener('touchend', handler, { passive: false });
+      nav.appendChild(btn);
+    });
+
     document.body.appendChild(nav);
+    console.log('mobile-tab-nav injected with', navItems.length, 'buttons');
   }
 }
+
+// Expose mobile functions on window in case inline handlers run in a
+// scope where the top-level function declarations aren't visible.
+window.mobileSwitchView = (view, btn) => mobileSwitchView(view, btn);
+window.toggleMobileFilters = () => toggleMobileFilters();
+window.initMobileUI = () => initMobileUI();
 
 function mobileSwitchView(view, btn) {
   console.log('mobileSwitchView called with view:', view, 'btn:', btn);
@@ -4287,9 +4318,15 @@ function switchMyBlockTab(tab, btn) {
 
 // Run mobile init on load and resize
 function checkAndInitMobileUI() {
+  console.log('checkAndInitMobileUI: width=', window.innerWidth);
   if (window.innerWidth <= 768) {
     initMobileUI();
   }
+}
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(checkAndInitMobileUI, 50);
+} else {
+  document.addEventListener('DOMContentLoaded', checkAndInitMobileUI);
 }
 window.addEventListener('load', function() { setTimeout(checkAndInitMobileUI, 300); });
 window.addEventListener('resize', checkAndInitMobileUI);
@@ -4315,11 +4352,11 @@ window.addEventListener('hashchange', function() {
     console.log('Switched to view:', hash);
   }
 
-  // Find and mark active button
+  // Find and mark active button (hash is like "map-view", data-view is "map")
+  const viewKey = hash.replace(/-view$/, '');
   const buttons = document.querySelectorAll('.mob-nav-btn');
   buttons.forEach(btn => {
-    const btnHash = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-    if (btnHash === hash) btn.classList.add('active');
+    if (btn.getAttribute('data-view') === viewKey) btn.classList.add('active');
   });
 
   // View-specific initialization
