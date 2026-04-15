@@ -802,6 +802,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     padding: 7px 16px; border-radius: 20px; cursor: pointer;
     font-size: 12px; font-family: 'Nunito', sans-serif;
     display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   }
   .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
   .toggle-btn.on { border-color: var(--danger); color: var(--danger); background: rgba(255,85,85,0.08); }
@@ -1005,7 +1006,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .charts-grid { grid-template-columns: 1fr; gap: 12px; }
 
     /* Map overlay - keep away from bottom tab bar */
-    .map-overlay { top: auto; bottom: 68px; right: 8px; }
+    .map-overlay { top: auto; bottom: 68px; right: 8px; z-index: 1500; }
+
+    /* Larger tap targets for map toggle buttons on mobile */
+    .toggle-btn { min-height: 44px; padding: 10px 16px; }
 
     /* Drag handle for bottom sheets - clickable to close */
     .panel-drag-handle {
@@ -1092,7 +1096,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       justify-content: center; border: none; background: none; cursor: pointer;
       color: var(--text3); font-family: 'Nunito', sans-serif;
       transition: color 0.2s, background 0.2s; padding: 0;
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
       height: 100%; width: 100%; min-height: 48px;
       text-decoration: none; -webkit-user-select: none; user-select: none;
     }
@@ -4083,19 +4087,19 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <button class="mob-nav-btn active" onclick="window.location.hash='map-view'">
+      <button class="mob-nav-btn active" onclick="mobileSwitchView('map', this)">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.location.hash='stats-view'">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('stats', this)">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.location.hash='myblock-view'">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('myblock', this)">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
       </button>
       <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters(); return false;">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
       </button>
-      <button class="mob-nav-btn" onclick="window.location.hash='about-view'">
+      <button class="mob-nav-btn" onclick="mobileSwitchView('about', this)">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
       </button>
     `;
