@@ -1094,14 +1094,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       transition: color 0.2s, background 0.2s; padding: 0;
       -webkit-tap-highlight-color: transparent;
       height: 100%; width: 100%; min-height: 48px;
-      text-decoration: none;
+      text-decoration: none; -webkit-user-select: none; user-select: none;
     }
     .mob-nav-btn:active { background: rgba(0,0,0,0.05); }
-    .mob-nav-btn:hover { background: rgba(0,0,0,0.02); }
     .mob-nav-btn .mob-icon { font-size: 28px; line-height: 1; }
     .mob-nav-btn .mob-label { display: none; }
     .mob-nav-btn.active { color: var(--accent); }
-    a.mob-nav-btn { color: var(--text3); }
 
     /* Floating action buttons - Google Maps style */
     .geo-button-container {
@@ -4085,21 +4083,21 @@ function initMobileUI() {
     const nav = document.createElement('div');
     nav.id = 'mobile-tab-nav';
     nav.innerHTML = `
-      <a href="#map-view" class="mob-nav-btn active">
+      <button class="mob-nav-btn active" onclick="window.location.hash='map-view'">
         <span class="mob-icon">🗺</span><span class="mob-label">Map</span>
-      </a>
-      <a href="#stats-view" class="mob-nav-btn">
+      </button>
+      <button class="mob-nav-btn" onclick="window.location.hash='stats-view'">
         <span class="mob-icon">📊</span><span class="mob-label">Stats</span>
-      </a>
-      <a href="#myblock-view" class="mob-nav-btn">
+      </button>
+      <button class="mob-nav-btn" onclick="window.location.hash='myblock-view'">
         <span class="mob-icon">🌿</span><span class="mob-label">Care</span>
-      </a>
-      <a href="#" class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters(); return false;">
+      </button>
+      <button class="mob-nav-btn" id="filter-toggle-btn" onclick="toggleMobileFilters(); return false;">
         <span class="mob-icon">⚙️</span><span class="mob-label">Filter</span>
-      </a>
-      <a href="#about-view" class="mob-nav-btn">
+      </button>
+      <button class="mob-nav-btn" onclick="window.location.hash='about-view'">
         <span class="mob-icon">ℹ️</span><span class="mob-label">About</span>
-      </a>
+      </button>
     `;
     document.body.appendChild(nav);
   }
