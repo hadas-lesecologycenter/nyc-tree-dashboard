@@ -749,7 +749,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
   main { flex: 1; overflow: hidden; position: relative; }
   .view { display: none; height: 100%; overflow: hidden; }
   .view.active { display: flex; flex-direction: column; }
-  .view:target { display: flex !important; flex-direction: column; }
   #map-view { flex-direction: column; }
 
   /* Mobile filter panel — hidden by default on desktop, shown only on mobile via media query */
@@ -2612,6 +2611,9 @@ function switchView(view, evt) {
       return;
     }
     viewEl.classList.add('active');
+    if (window.location.hash !== `#${view}-view`) {
+      history.replaceState(null, '', `#${view}-view`);
+    }
     const target = evt ? evt.currentTarget : (typeof event !== 'undefined' && event ? event.currentTarget : null);
     if (target) target.classList.add('active');
     if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
