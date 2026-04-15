@@ -816,6 +816,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
     margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
     font-size: 11px; color: var(--text2); font-weight: 600;
   }
+  /* Multi-select dropdown */
+  .ms-wrap { position: relative; }
+  .ms-btn {
+    width: 100%; padding: 6px 10px; background: var(--bg3);
+    border: 1px solid var(--border2); border-radius: 6px;
+    color: var(--text); font-size: 12px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; text-align: left;
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .ms-btn:focus, .ms-btn:hover { border-color: var(--accent); outline: none; }
+  .ms-btn .ms-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .ms-btn .ms-caret { font-size: 10px; color: var(--text3); }
+  .ms-pop {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 6px;
+    max-height: 280px; display: flex; flex-direction: column;
+  }
+  .ms-search {
+    padding: 6px 8px; font-size: 12px;
+    border: 1px solid var(--border2); border-radius: 5px;
+    background: var(--bg3); color: var(--text); margin-bottom: 4px;
+    font-family: 'Nunito', sans-serif;
+  }
+  .ms-search:focus { outline: none; border-color: var(--accent); }
+  .ms-list { flex: 1; overflow-y: auto; min-height: 0; max-height: 200px; }
+  .ms-opt {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 6px; font-size: 12px; cursor: pointer;
+    color: var(--text); line-height: 1.3; border-radius: 4px; margin: 0;
+  }
+  .ms-opt:hover { background: var(--bg3); }
+  .ms-opt input { margin: 0; cursor: pointer; flex-shrink: 0; }
+  .ms-group {
+    font-size: 10px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 8px 6px 3px;
+  }
+  .ms-actions {
+    border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px;
+    display: flex; justify-content: flex-end;
+  }
+  .ms-actions button {
+    background: none; border: none; color: var(--text2);
+    font-size: 11px; cursor: pointer; padding: 3px 8px; border-radius: 4px;
+    font-family: 'Nunito', sans-serif;
+  }
+  .ms-actions button:hover { color: var(--accent); background: var(--bg3); }
   .toggle-btn {
     background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
     padding: 7px 16px; border-radius: 20px; cursor: pointer;
@@ -1341,12 +1389,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="cp-section">
           <div class="cp-label">Filters</div>
           <div class="cp-field">
-            <label for="f-species">Species</label>
-            <select id="f-species" onchange="applyFilters()"><option value="">All Species</option></select>
+            <label>Species</label>
+            <div class="ms-wrap">
+              <button class="ms-btn" type="button" onclick="msToggle('species', event)">
+                <span class="ms-label" id="ms-label-species">All Species</span>
+                <span class="ms-caret">▾</span>
+              </button>
+              <div class="ms-pop" id="ms-pop-species" style="display:none">
+                <input class="ms-search" type="text" placeholder="Search species..." oninput="msFilterOptions('species', this.value)">
+                <div class="ms-list" id="ms-list-species"></div>
+                <div class="ms-actions"><button type="button" onclick="msClear('species')">Clear</button></div>
+              </div>
+            </div>
           </div>
           <div class="cp-field">
-            <label for="f-age">Age / Planting Year</label>
-            <select id="f-age" onchange="applyFilters()"><option value="">All Ages</option><option value="small-dbh">Small trunk (DBH &lt; 5")</option></select>
+            <label>Age / Planting Year</label>
+            <div class="ms-wrap">
+              <button class="ms-btn" type="button" onclick="msToggle('age', event)">
+                <span class="ms-label" id="ms-label-age">All Ages</span>
+                <span class="ms-caret">▾</span>
+              </button>
+              <div class="ms-pop" id="ms-pop-age" style="display:none">
+                <input class="ms-search" type="text" placeholder="Search..." oninput="msFilterOptions('age', this.value)">
+                <div class="ms-list" id="ms-list-age"></div>
+                <div class="ms-actions"><button type="button" onclick="msClear('age')">Clear</button></div>
+              </div>
+            </div>
           </div>
           <label class="cp-chk">
             <input type="checkbox" id="f-empty-beds-desktop" onchange="toggleEmptyBedsFromPanel()">
@@ -1764,114 +1832,190 @@ function setLoadingBar(p) {
   if (p >= 1) setTimeout(() => bar.style.transform = 'scaleX(0)', 400);
 }
 
-// Species filter populated from embedded data via populateSpeciesFilter()
+// ========== MULTI-SELECT FILTER ==========
+const filterSel = { species: new Set(), age: new Set() };
+const filterLabels = { species: new Map(), age: new Map() };
+const filterPlaceholders = { species: 'All Species', age: 'All Ages' };
+
+function msEsc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function msToggle(field, evt) {
+  if (evt) evt.stopPropagation();
+  const pop = document.getElementById('ms-pop-' + field);
+  const isOpen = pop.style.display !== 'none';
+  document.querySelectorAll('.ms-pop').forEach(p => p.style.display = 'none');
+  pop.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) {
+    const search = pop.querySelector('.ms-search');
+    if (search) { search.value = ''; msFilterOptions(field, ''); setTimeout(() => search.focus(), 30); }
+  }
+}
+
+function msFilterOptions(field, q) {
+  const list = document.getElementById('ms-list-' + field);
+  q = (q || '').toLowerCase().trim();
+  list.querySelectorAll('.ms-opt').forEach(opt => {
+    const txt = opt.textContent.toLowerCase();
+    opt.style.display = (!q || txt.includes(q)) ? 'flex' : 'none';
+  });
+  list.querySelectorAll('.ms-group').forEach(g => {
+    let next = g.nextElementSibling, anyVisible = false;
+    while (next && !next.classList.contains('ms-group')) {
+      if (next.style.display !== 'none') { anyVisible = true; break; }
+      next = next.nextElementSibling;
+    }
+    g.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+function msClear(field) {
+  filterSel[field].clear();
+  document.querySelectorAll('#ms-list-' + field + ' input[type=checkbox]').forEach(cb => cb.checked = false);
+  msUpdateLabel(field);
+  applyFilters();
+}
+
+function msOnChange(field, value, checked) {
+  if (checked) filterSel[field].add(value);
+  else filterSel[field].delete(value);
+  msUpdateLabel(field);
+  applyFilters();
+}
+
+function msUpdateLabel(field) {
+  const label = document.getElementById('ms-label-' + field);
+  if (!label) return;
+  const set = filterSel[field];
+  if (!set.size) { label.textContent = filterPlaceholders[field]; return; }
+  if (set.size === 1) {
+    const val = [...set][0];
+    label.textContent = filterLabels[field].get(val) || val;
+    return;
+  }
+  label.textContent = `${set.size} selected`;
+}
+
+// Close multi-select dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.ms-wrap')) {
+    document.querySelectorAll('.ms-pop').forEach(p => p.style.display = 'none');
+  }
+});
 
 function populatePlantingYearFilter() {
-  const sel = document.getElementById('f-age');
-  while (sel.options.length > 1) sel.remove(1);
+  const list = document.getElementById('ms-list-age');
+  if (!list) return;
+  list.innerHTML = '';
+  filterLabels.age.clear();
 
   const thisYear = new Date().getFullYear();
-
-  // Collect available years from data
   const years = new Set();
   allTrees.forEach(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
     if (yr > 1900) years.add(yr);
   });
   const sortedYears = [...years].sort((a, b) => b - a);
-  const minYear = sortedYears[sortedYears.length - 1] || 1990;
 
-  // Helper to add an optgroup
   function addGroup(label, options) {
-    const g = document.createElement('optgroup');
-    g.label = label;
+    list.insertAdjacentHTML('beforeend', `<div class="ms-group">${msEsc(label)}</div>`);
     options.forEach(([val, text]) => {
-      const o = document.createElement('option');
-      o.value = val; o.textContent = text;
-      g.appendChild(o);
+      filterLabels.age.set(val, text);
+      const checked = filterSel.age.has(val) ? ' checked' : '';
+      list.insertAdjacentHTML('beforeend',
+        `<label class="ms-opt"><input type="checkbox" value="${msEsc(val)}"${checked} onchange="msOnChange('age', this.value, this.checked)">${msEsc(text)}</label>`);
     });
-    sel.appendChild(g);
   }
 
-  // Special options
   addGroup('Special', [
     ['small-dbh', 'No year recorded (DBH < 5")'],
     ['no-year',   'No planting year recorded'],
   ]);
-
-  // Recent ranges
   addGroup('Recent', [
     ['last3',  'Last 3 years (' + (thisYear - 2) + '–' + thisYear + ')'],
     ['last5',  'Last 5 years (' + (thisYear - 4) + '–' + thisYear + ')'],
     ['last10', 'Last 10 years (' + (thisYear - 9) + '–' + thisYear + ')'],
   ]);
-
-  // Decade groups derived from available data
   const decades = new Set(sortedYears.map(y => Math.floor(y / 10) * 10));
   const decadeOptions = [...decades].sort((a, b) => b - a).map(d => {
     const end = Math.min(d + 9, thisYear);
     return [String(d) + 's', d + 's (' + d + '–' + end + ')'];
   });
   if (decadeOptions.length) addGroup('By Decade', decadeOptions);
+  addGroup('Individual Year', sortedYears.map(yr => [String(yr), String(yr)]));
 
-  // Individual years
-  const yearGroup = document.createElement('optgroup');
-  yearGroup.label = 'Individual Year';
-  sortedYears.forEach(yr => {
-    const o = document.createElement('option');
-    o.value = o.textContent = yr;
-    yearGroup.appendChild(o);
-  });
-  sel.appendChild(yearGroup);
+  msUpdateLabel('age');
 }
 
 function populateSpeciesFilter() {
-  const sel = document.getElementById('f-species');
-  const current = sel.value;
-  while (sel.options.length > 1) sel.remove(1);
+  const list = document.getElementById('ms-list-species');
+  filterLabels.species.clear();
+
   const seen = new Set();
   allTrees.forEach(t => { if (t.spc_common) seen.add(t.spc_common); });
-  [...seen].sort((a, b) => a.localeCompare(b)).forEach(name => {
-    const o = document.createElement('option');
-    o.value = o.textContent = name;
-    sel.appendChild(o);
-  });
-  if (current) sel.value = current;
+  const sortedSpecies = [...seen].sort((a, b) => a.localeCompare(b));
+
+  if (list) {
+    list.innerHTML = '';
+    sortedSpecies.forEach(name => {
+      filterLabels.species.set(name, name);
+      const checked = filterSel.species.has(name) ? ' checked' : '';
+      list.insertAdjacentHTML('beforeend',
+        `<label class="ms-opt"><input type="checkbox" value="${msEsc(name)}"${checked} onchange="msOnChange('species', this.value, this.checked)">${msEsc(name)}</label>`);
+    });
+  }
+  // Also populate the mobile single-select dropdown
+  const mobileSel = document.getElementById('f-species-mobile');
+  if (mobileSel) {
+    const current = mobileSel.value;
+    while (mobileSel.options.length > 1) mobileSel.remove(1);
+    sortedSpecies.forEach(name => {
+      const o = document.createElement('option');
+      o.value = o.textContent = name;
+      mobileSel.appendChild(o);
+    });
+    if (current) mobileSel.value = current;
+  }
+  msUpdateLabel('species');
 }
 
 // ========== FILTERS ==========
+function matchesAgeToken(t, age, thisYear) {
+  const y = parseInt(t.tree_cen_date || t.planteddate || 0);
+  if (age === 'small-dbh') {
+    const d = parseFloat(t.tree_dbh || 0);
+    return y <= 1900 && d > 0 && d < 5;
+  }
+  if (age === 'no-year') return y <= 1900;
+  if (age === 'last3')   return y >= thisYear - 2;
+  if (age === 'last5')   return y >= thisYear - 4;
+  if (age === 'last10')  return y >= thisYear - 9;
+  if (/^\d+s$/.test(age)) {
+    const decade = parseInt(age);
+    return y >= decade && y < decade + 10;
+  }
+  const yr = parseInt(age);
+  return yr > 1900 && y === yr;
+}
+
 function applyFilters(reload = false) {
   const health = document.getElementById('f-health').value;
-  const species = document.getElementById('f-species').value;
-  const age = document.getElementById('f-age').value;
+  const selSpecies = filterSel.species;
+  const selAge = filterSel.age;
 
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
-  if (species) base = base.filter(t => (t.spc_common||'').toLowerCase() === species.toLowerCase());
-  if (age) {
+  if (selSpecies.size) base = base.filter(t => selSpecies.has(t.spc_common || ''));
+  if (selAge.size) {
     const thisYear = new Date().getFullYear();
-    const treeYear = t => parseInt(t.tree_cen_date || t.planteddate || 0);
-    if (age === 'small-dbh') {
-      base = base.filter(t => treeYear(t) <= 1900 && parseFloat(t.tree_dbh || 0) > 0 && parseFloat(t.tree_dbh || 0) < 5);
-    } else if (age === 'no-year') {
-      base = base.filter(t => treeYear(t) <= 1900);
-    } else if (age === 'last3') {
-      base = base.filter(t => treeYear(t) >= thisYear - 2);
-    } else if (age === 'last5') {
-      base = base.filter(t => treeYear(t) >= thisYear - 4);
-    } else if (age === 'last10') {
-      base = base.filter(t => treeYear(t) >= thisYear - 9);
-    } else if (age.endsWith('s') && !isNaN(parseInt(age))) {
-      const decade = parseInt(age);
-      base = base.filter(t => { const y = treeYear(t); return y >= decade && y < decade + 10; });
-    } else {
-      const yr = parseInt(age);
-      if (yr > 1900) base = base.filter(t => treeYear(t) === yr);
-    }
+    base = base.filter(t => {
+      for (const age of selAge) if (matchesAgeToken(t, age, thisYear)) return true;
+      return false;
+    });
   }
   filteredTrees = base;
 
-  document.getElementById('tree-count').textContent = `${filteredTrees.length.toLocaleString()} trees`;
+  const countEl = document.getElementById('tree-count');
+  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees`;
   updateMap();
   updateStats();
 }
@@ -4210,8 +4354,10 @@ function toggleMobileFilters() {
 
 function syncMobileFiltersFromDesktop() {
   const desktopHealth = document.getElementById('f-health')?.value || '';
-  const desktopSpecies = document.getElementById('f-species')?.value || '';
-  const desktopAge = document.getElementById('f-age')?.value || '';
+  // Mobile selects are single-select; show the first selection (or blank) from the
+  // multi-select state so the UI is at least consistent. Desktop state is authoritative.
+  const speciesFirst = [...filterSel.species][0] || '';
+  const ageFirst = [...filterSel.age][0] || '';
 
   const mobileHealth = document.getElementById('f-health-mobile');
   const mobileSpecies = document.getElementById('f-species-mobile');
@@ -4219,8 +4365,8 @@ function syncMobileFiltersFromDesktop() {
   const mobileEmptyBeds = document.getElementById('f-empty-beds-mobile');
 
   if (mobileHealth) mobileHealth.value = desktopHealth;
-  if (mobileSpecies) mobileSpecies.value = desktopSpecies;
-  if (mobileAge) mobileAge.value = desktopAge;
+  if (mobileSpecies) mobileSpecies.value = speciesFirst;
+  if (mobileAge) mobileAge.value = ageFirst;
   if (mobileEmptyBeds) mobileEmptyBeds.checked = emptyBedsVisible;
 }
 
@@ -4231,9 +4377,16 @@ function applyFiltersFromMobile() {
   const emptyBeds = document.getElementById('f-empty-beds-mobile')?.checked || false;
 
   document.getElementById('f-health').value = health;
-  document.getElementById('f-species').value = species;
-  document.getElementById('f-age').value = age;
+  filterSel.species.clear();
+  if (species) filterSel.species.add(species);
+  filterSel.age.clear();
+  if (age) filterSel.age.add(age);
   emptyBedsVisible = emptyBeds;
+
+  // Reflect changes in the desktop multi-select UI if rendered
+  document.querySelectorAll('#ms-list-species input[type=checkbox]').forEach(cb => cb.checked = filterSel.species.has(cb.value));
+  document.querySelectorAll('#ms-list-age input[type=checkbox]').forEach(cb => cb.checked = filterSel.age.has(cb.value));
+  msUpdateLabel('species'); msUpdateLabel('age');
   const desktopCb = document.getElementById('f-empty-beds-desktop');
   if (desktopCb) desktopCb.checked = emptyBeds;
 
