@@ -1347,6 +1347,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-empty-beds-desktop" onchange="toggleEmptyBedsFromPanel()">
             ○ Show empty tree beds
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
+            🛡 Trees with guards (≤50m)
+          </label>
         </div>
 
         <div class="cp-section">
@@ -1656,6 +1660,25 @@ let treeGuardsVisible = false;
 let coolestBlocksLayer = null;
 let coolestBlocksVisible = false;
 
+// Build fast lookup for tree guard locations
+const treeGuardCoords = LESEC_TREE_GUARDS.features.map(f => ({
+  lat: f.geometry.coordinates[1],
+  lng: f.geometry.coordinates[0]
+}));
+
+// Check if a tree is near a tree guard (within ~50 meters = 0.0005 degrees)
+function hasNearbyTreeGuard(tree) {
+  const treeLat = parseFloat(tree.latitude || tree.lat || 0);
+  const treeLng = parseFloat(tree.longitude || tree.lng || 0);
+  if (!treeLat || !treeLng) return false;
+
+  const threshold = 0.0005; // ~50 meters
+  return treeGuardCoords.some(guard =>
+    Math.abs(treeLat - guard.lat) < threshold &&
+    Math.abs(treeLng - guard.lng) < threshold
+  );
+}
+
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
   // Fixed formula: 70 young + 30 visibility
@@ -1917,6 +1940,7 @@ function applyFilters(reload = false) {
   const health = document.getElementById('f-health').value;
   const selSpecies = filterSel.species;
   const selAge = filterSel.age;
+  const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
 
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
@@ -1928,6 +1952,7 @@ function applyFilters(reload = false) {
       return false;
     });
   }
+  if (treeGuardsOnly) base = base.filter(t => hasNearbyTreeGuard(t));
   filteredTrees = base;
 
   const countEl = document.getElementById('tree-count');
