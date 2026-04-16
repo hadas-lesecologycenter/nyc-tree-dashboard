@@ -1260,6 +1260,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:14px;width:100%;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
           📅 Reserve for Care
         </button>
+        <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
+          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          🛡 Mark Tree Guard Present
+        </button>
       </div>
     </div>
     <div class="map-overlay">
@@ -1348,8 +1352,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
             ○ Show empty tree beds
           </label>
           <label class="cp-chk">
+            <input type="checkbox" id="f-care-needed" onchange="applyFilters()">
+            🔧 Care Needed (To-Do list)
+          </label>
+          <label class="cp-chk">
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
-            🛡 Trees with guards (≤50m)
+            🛡 Tree Guard present
           </label>
         </div>
 
@@ -1357,7 +1365,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="cp-label">Program Layers</div>
           <label class="cp-chk">
             <input type="checkbox" id="layer-tree-guards" onchange="toggleTreeGuardsFromPanel()">
-            🛡 Tree Guards (Spring 2026)
+            🛡 DEC Grant Tree Guards
           </label>
           <label class="cp-chk">
             <input type="checkbox" id="layer-coolest-blocks" onchange="toggleCoolestBlocksFromPanel()">
@@ -1506,6 +1514,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
         <input id="reserve-date-input" type="date"
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Needs Care? <span style="font-weight:400;color:var(--text3)">(check all that apply)</span></label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="reserve-care-mulch" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
+            🌱 Mulch removal
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="reserve-care-prune" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
+            ✂️ Pruning
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="reserve-care-health" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
+            🩺 Health inspection
+          </label>
+        </div>
       </div>
       <div style="margin-bottom:20px">
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Note <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
@@ -1659,25 +1684,6 @@ let treeGuardsLayer = null;
 let treeGuardsVisible = false;
 let coolestBlocksLayer = null;
 let coolestBlocksVisible = false;
-
-// Build fast lookup for tree guard locations
-const treeGuardCoords = LESEC_TREE_GUARDS.features.map(f => ({
-  lat: f.geometry.coordinates[1],
-  lng: f.geometry.coordinates[0]
-}));
-
-// Check if a tree is near a tree guard (within ~50 meters = 0.0005 degrees)
-function hasNearbyTreeGuard(tree) {
-  const treeLat = parseFloat(tree.latitude || tree.lat || 0);
-  const treeLng = parseFloat(tree.longitude || tree.lng || 0);
-  if (!treeLat || !treeLng) return false;
-
-  const threshold = 0.0005; // ~50 meters
-  return treeGuardCoords.some(guard =>
-    Math.abs(treeLat - guard.lat) < threshold &&
-    Math.abs(treeLng - guard.lng) < threshold
-  );
-}
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -1940,6 +1946,7 @@ function applyFilters(reload = false) {
   const health = document.getElementById('f-health').value;
   const selSpecies = filterSel.species;
   const selAge = filterSel.age;
+  const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
 
   let base = [...allTrees];
@@ -1952,7 +1959,14 @@ function applyFilters(reload = false) {
       return false;
     });
   }
-  if (treeGuardsOnly) base = base.filter(t => hasNearbyTreeGuard(t));
+  if (careNeededOnly) {
+    const careNeededIds = getCareNeededTreeIds();
+    base = base.filter(t => careNeededIds.has(String(t.tree_id)));
+  }
+  if (treeGuardsOnly) {
+    const guardedIds = getTreeGuardIds();
+    base = base.filter(t => guardedIds.has(String(t.tree_id)));
+  }
   filteredTrees = base;
 
   const countEl = document.getElementById('tree-count');
@@ -2589,6 +2603,7 @@ function openMapTreeDetail(tree) {
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   const btn = document.getElementById('mtp-reserve-btn');
   if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
+  updateTreeGuardButton(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -2744,7 +2759,8 @@ function initTreeGuardsLayer() {
       weight: 1.5,
       fillOpacity: 0.9
     }).bindPopup(`<div style="font-family:'Nunito',sans-serif">
-      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 Spring 2026 Tree Guard Install</div>
+      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 DEC Grant Tree Guard</div>
+      <div style="font-size:11px;color:#6b6456;margin-top:2px">Spring 2026 install</div>
     </div>`).addTo(treeGuardsLayer);
   });
 }
@@ -2949,9 +2965,9 @@ function tcRenderCareMap() {
   const totalTrees = Object.keys(by2026).length + Object.keys(by2025).length + Object.keys(byEarlier).length;
 
   if (totalTrees === 0) {
-    if (emptyEl) emptyEl.style.display = reservationLoad().length > 0 ? 'none' : 'flex';
+    if (emptyEl) emptyEl.style.display = reservationLoadSync().length > 0 ? 'none' : 'flex';
     if (legendEl) {
-      const resCount = reservationLoad().length;
+      const resCount = reservationLoadSync().length;
       if (resCount > 0) {
         legendEl.innerHTML = '<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>' +
           '<div style="display:flex;align-items:center;gap:7px;font-size:11px">' +
@@ -3033,7 +3049,7 @@ function tcRenderCareMap() {
     </label>`
   ).join('');
 
-  const resCount = reservationLoad().length;
+  const resCount = reservationLoadSync().length;
   const resLegendRow = resCount > 0
     ? `<div style="display:flex;align-items:center;gap:7px;margin-top:5px;padding-top:5px;border-top:1px solid #e0dbd3;font-size:11px">
         <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#7b3fa0;flex-shrink:0"></span>
@@ -3431,7 +3447,7 @@ async function reservationLoad() {
       const lines = csv.trim().split('\n');
       lines.slice(1).forEach(line => {
         if (!line.trim()) return;
-        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, createdAt] =
+        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, careNeeds, createdAt] =
           tcParseCSVLine(line);
         if (id) {
           reservations.push({
@@ -3440,7 +3456,9 @@ async function reservationLoad() {
             lng: lng ? parseFloat(lng) : null,
             species, address, health, dbh, planted,
             priority: priority ? parseInt(priority) : 0,
-            nta, note, createdAt
+            nta, note,
+            careNeeds: careNeeds || '',
+            createdAt
           });
         }
       });
@@ -3456,6 +3474,155 @@ async function reservationLoad() {
   catch(e) { return []; }
 }
 
+// Synchronous load from localStorage (for UI rendering that can't await)
+function reservationLoadSync() {
+  try { return JSON.parse(localStorage.getItem('tc_reservations') || '[]'); }
+  catch(e) { return []; }
+}
+
+// Get tree IDs that have care needs (from reservations)
+function getCareNeededTreeIds() {
+  return new Set(reservationLoadSync()
+    .filter(r => r.careNeeds && r.careNeeds.length > 0)
+    .map(r => String(r.treeId)));
+}
+
+// ========== TREE GUARDS (user-marked) ==========
+const TREE_GUARDS_PATH = 'data/tree-guards.csv';
+const TREE_GUARDS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + TREE_GUARDS_PATH;
+
+async function treeGuardsLoad() {
+  try {
+    const res = await fetch(TREE_GUARDS_CSV_URL);
+    if (res.ok) {
+      const csv = await res.text();
+      const guards = [];
+      const lines = csv.trim().split('\n');
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const [treeId, markedBy, markedAt, note] = tcParseCSVLine(line);
+        if (treeId) guards.push({ treeId, markedBy, markedAt, note });
+      });
+      localStorage.setItem('tc_tree_guards', JSON.stringify(guards));
+      return guards;
+    }
+  } catch (e) {
+    console.log('Could not fetch tree guards from GitHub, using localStorage');
+  }
+  try { return JSON.parse(localStorage.getItem('tc_tree_guards') || '[]'); }
+  catch(e) { return []; }
+}
+
+function treeGuardsLoadSync() {
+  try { return JSON.parse(localStorage.getItem('tc_tree_guards') || '[]'); }
+  catch(e) { return []; }
+}
+
+function getTreeGuardIds() {
+  return new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
+}
+
+function treeGuardsSave(guards) {
+  localStorage.setItem('tc_tree_guards', JSON.stringify(guards));
+  treeGuardsSyncToGitHub(guards);
+}
+
+async function treeGuardsSyncToGitHub(guards) {
+  const token = localStorage.getItem('_ts_tok');
+  if (!token) return;
+  try {
+    const escapeCSV = (v) => {
+      if (!v) return '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
+      return v;
+    };
+    const header = 'treeId,markedBy,markedAt,note\n';
+    const rows = guards.map(g =>
+      [g.treeId, escapeCSV(g.markedBy), g.markedAt, escapeCSV(g.note || '')].join(',')
+    ).join('\n');
+    const csv = header + rows;
+
+    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + TREE_GUARDS_PATH;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'nyc-tree-dashboard'
+    };
+    let sha = null;
+    try {
+      const getRes = await fetch(apiUrl, { headers });
+      if (getRes.ok) sha = (await getRes.json()).sha;
+    } catch (e) {}
+    await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: '🛡 Sync tree guards',
+        content: btoa(csv),
+        sha: sha || undefined
+      })
+    });
+  } catch (e) {
+    console.error('Tree guards GitHub sync error:', e);
+  }
+}
+
+// Toggle a tree's "has guard" status (called from tree detail card)
+function toggleTreeGuardPresent(tree) {
+  if (!tree) return;
+
+  // Prompt for GitHub token on first use (so guards sync across devices)
+  if (!localStorage.getItem('_ts_tok')) {
+    const token = prompt(
+      'To sync tree guard markings across devices, enter your GitHub personal access token.\n\n' +
+      '1. github.com → Settings → Developer settings → Personal access tokens (classic)\n' +
+      '2. Generate new token → check "repo" → Generate\n\n' +
+      'Skip (leave blank) to save locally only.\n\nToken (starts with ghp_):'
+    );
+    if (token && token.trim()) {
+      localStorage.setItem('_ts_tok', token.trim());
+    }
+  }
+
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const guards = treeGuardsLoadSync();
+  const existingIdx = guards.findIndex(g => String(g.treeId) === treeId);
+
+  if (existingIdx >= 0) {
+    // Remove
+    guards.splice(existingIdx, 1);
+    treeGuardsSave(guards);
+    tcShowSyncStatus('🛡 Tree guard removed');
+  } else {
+    // Add
+    const markedBy = prompt('Your name (to track who marked this):') || 'anonymous';
+    guards.push({
+      treeId,
+      markedBy: markedBy.trim(),
+      markedAt: new Date().toISOString(),
+      note: ''
+    });
+    treeGuardsSave(guards);
+    tcShowSyncStatus('🛡 Tree marked as guarded');
+  }
+  // Update UI
+  updateTreeGuardButton(tree);
+  applyFilters();
+}
+
+// Update the button label in the tree detail panel
+function updateTreeGuardButton(tree) {
+  const btn = document.getElementById('mtp-guard-btn');
+  if (!btn || !tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const has = getTreeGuardIds().has(treeId);
+  btn.textContent = has ? '🛡 Tree Guard Present ✓' : '🛡 Mark Tree Guard Present';
+  btn.style.background = has ? '#1a1a1a' : 'var(--bg2)';
+  btn.style.color = has ? 'white' : 'var(--text)';
+  btn.style.borderColor = has ? '#1a1a1a' : 'var(--border)';
+}
+
 function reservationSave(reservations) {
   // Save to localStorage immediately
   localStorage.setItem('tc_reservations', JSON.stringify(reservations));
@@ -3469,7 +3636,7 @@ async function reservationSyncToGitHub(reservations) {
 
   try {
     // Convert to CSV
-    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,createdAt\n';
+    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,careNeeds,createdAt\n';
     const rows = reservations.map(r => {
       const escapeCSV = (v) => {
         if (!v) return '';
@@ -3481,7 +3648,8 @@ async function reservationSyncToGitHub(reservations) {
         r.id, r.treeId, escapeCSV(r.name), r.date,
         r.lat || '', r.lng || '', escapeCSV(r.species), escapeCSV(r.address),
         escapeCSV(r.health), escapeCSV(r.dbh), escapeCSV(r.planted),
-        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note), r.createdAt
+        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note),
+        escapeCSV(r.careNeeds || ''), r.createdAt
       ].map(escapeCSV).join(',');
     }).join('\n');
 
@@ -3523,14 +3691,14 @@ async function reservationSyncToGitHub(reservations) {
   }
 }
 function reservationRemove(id) {
-  reservationSave(reservationLoad().filter(r => r.id !== id));
+  reservationSave(reservationLoadSync().filter(r => r.id !== id));
   renderReservationQueue();
   updateReservationCounter();
   if (tcCareMap) tcRenderReservationsOnCareMap();
   if (mapInstance) tcRenderReservationsOnMainMap();
 }
 function getReservedTreeIds() {
-  return new Set(reservationLoad().map(r => String(r.treeId)));
+  return new Set(reservationLoadSync().map(r => String(r.treeId)));
 }
 
 let _pendingReserveTree = null;
@@ -3598,15 +3766,24 @@ function confirmReserveTree() {
   const name = (document.getElementById('reserve-name-input').value || '').trim();
   const date = document.getElementById('reserve-date-input').value;
   const note = (document.getElementById('reserve-note-input').value || '').trim();
+  const careMulch = document.getElementById('reserve-care-mulch').checked;
+  const carePrune = document.getElementById('reserve-care-prune').checked;
+  const careHealth = document.getElementById('reserve-care-health').checked;
   if (!name) { document.getElementById('reserve-name-input').focus(); return; }
   if (!date) { document.getElementById('reserve-date-input').focus(); return; }
 
-  const all = reservationLoad();
+  const all = reservationLoadSync();
   const existingIdx = all.findIndex(r => String(r.treeId) === String(tree.tree_id));
   if (existingIdx >= 0) {
     if (!confirm('This tree is already reserved as "' + all[existingIdx].name + '" on ' + all[existingIdx].date + '. Replace it?')) return;
     all.splice(existingIdx, 1);
   }
+
+  // Build care needs string from checkboxes
+  const careNeeds = [];
+  if (careMulch) careNeeds.push('mulch');
+  if (carePrune) careNeeds.push('prune');
+  if (careHealth) careNeeds.push('health');
 
   const reservation = {
     id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -3623,6 +3800,7 @@ function confirmReserveTree() {
     planted: tree.tree_cen_date || tree.planteddate || '',
     priority: tree._priority || 0,
     nta: tree.nta_name || '',
+    careNeeds: careNeeds.join(';'),
     createdAt: new Date().toISOString(),
   };
   all.push(reservation);
@@ -3630,17 +3808,22 @@ function confirmReserveTree() {
 
   document.getElementById('reserve-name-input').value = '';
   document.getElementById('reserve-note-input').value = '';
+  document.getElementById('reserve-care-mulch').checked = false;
+  document.getElementById('reserve-care-prune').checked = false;
+  document.getElementById('reserve-care-health').checked = false;
   closeReserveModal();
   closeMapTreeDetail(); // restore full map width so user can pick another tree
   renderReservationQueue();
+  renderCareNeededQueue();
   updateReservationCounter();
+  applyFilters();
   if (tcCareMap) tcRenderReservationsOnCareMap();
   if (mapInstance) tcRenderReservationsOnMainMap();
   tcShowSyncStatus('📅 Reserved for ' + date);
 }
 
 function updateReservationCounter() {
-  const reservations = reservationLoad();
+  const reservations = reservationLoadSync();
   const widget = document.getElementById('res-counter-widget');
   const textEl = document.getElementById('res-counter-text');
   if (!widget || !textEl) return;
@@ -3654,7 +3837,7 @@ function updateReservationCounter() {
 }
 
 function renderReservationQueue() {
-  const reservations = reservationLoad();
+  const reservations = reservationLoadSync();
   const listEl = document.getElementById('claimed-blocks-list');
   const emptyEl = document.getElementById('myblock-empty');
   if (!listEl) return;
@@ -3663,6 +3846,10 @@ function renderReservationQueue() {
   if (existing) existing.remove();
 
   updateReservationCounter();
+
+  // Render the Care Needed (To-Do) queue as well
+  renderCareNeededQueue();
+
   if (!reservations.length) return;
 
   if (emptyEl) emptyEl.style.display = 'none';
@@ -3714,8 +3901,71 @@ function renderReservationQueue() {
   listEl.insertBefore(section, listEl.firstChild);
 }
 
+// Render the "Care Needed" (To-Do) queue — reservations with care checkboxes set
+function renderCareNeededQueue() {
+  const listEl = document.getElementById('claimed-blocks-list');
+  const emptyEl = document.getElementById('myblock-empty');
+  if (!listEl) return;
+
+  const existing = document.getElementById('care-needed-queue-section');
+  if (existing) existing.remove();
+
+  const reservations = reservationLoadSync();
+  const careItems = reservations.filter(r => r.careNeeds && r.careNeeds.length > 0);
+  if (!careItems.length) return;
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  listEl.style.display = 'block';
+
+  const section = document.createElement('div');
+  section.id = 'care-needed-queue-section';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:#d97706;' +
+    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+  header.textContent = '🔧 To-Do · Care Needed (' + careItems.length + ')';
+  section.appendChild(header);
+
+  const careLabels = { mulch: '🌱 Mulch', prune: '✂️ Prune', health: '🩺 Health' };
+  const today = new Date().toISOString().slice(0, 10);
+  const sorted = [...careItems].sort((a, b) => a.date > b.date ? 1 : -1);
+
+  sorted.forEach(res => {
+    const dateObj = new Date(res.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const isPast = res.date < today;
+    const isToday = res.date === today;
+    const dateColor = isPast ? 'var(--text3)' : isToday ? '#c62828' : '#d97706';
+
+    const needs = res.careNeeds.split(';').filter(Boolean);
+    const needsTags = needs.map(n =>
+      '<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;padding:1px 6px;border-radius:8px;margin-right:3px;font-weight:600">' +
+      (careLabels[n] || n) + '</span>'
+    ).join('');
+
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
+      'border-left:3px solid #d97706';
+    row.onclick = () => tcZoomToReservation(res.id);
+    const treeTitle = res.address || res.species || ('Tree #' + res.treeId);
+    row.innerHTML =
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">' + treeTitle + '</div>' +
+        '<div style="margin-bottom:4px">' + needsTags + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
+          '<span style="font-size:10px;color:var(--text3)">by ' + res.name + '</span>' +
+        '</div>' +
+      '</div>';
+    section.appendChild(row);
+  });
+
+  // Insert at the very top (before reservations section)
+  listEl.insertBefore(section, listEl.firstChild);
+}
+
 function tcZoomToReservation(id) {
-  const res = reservationLoad().find(r => r.id === id);
+  const res = reservationLoadSync().find(r => r.id === id);
   if (!res) return;
   if (tcCareMap) tcCareMap.setView([res.lat, res.lng], 17);
 }
@@ -3738,7 +3988,7 @@ function tcRenderReservationsOnMainMap() {
   if (tcReservationsMainLayer) { tcReservationsMainLayer.clearLayers(); }
   else { tcReservationsMainLayer = L.layerGroup().addTo(mapInstance); }
 
-  const reservations = reservationLoad();
+  const reservations = reservationLoadSync();
   if (!reservations.length) return;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -3773,7 +4023,7 @@ function tcRenderReservationsOnCareMap() {
   if (tcReservationsCareLayer) { tcReservationsCareLayer.clearLayers(); }
   else { tcReservationsCareLayer = L.layerGroup().addTo(tcCareMap); }
 
-  const reservations = reservationLoad();
+  const reservations = reservationLoadSync();
   if (!reservations.length) return;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -4291,9 +4541,9 @@ function switchViewById(view) {
 })();
 
 window.addEventListener('load', async () => {
-  // Load reservations from GitHub (synced copy) or localStorage
-  console.log('Loading reservations from GitHub...');
-  await reservationLoad();
+  // Load reservations and tree guards from GitHub (synced copy) or localStorage
+  console.log('Loading reservations and tree guards from GitHub...');
+  await Promise.all([reservationLoad(), treeGuardsLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
