@@ -3390,12 +3390,112 @@ function tcSimplify(pts) {
 
 // ========== TREE RESERVATIONS ==========
 
-function reservationLoad() {
+// GitHub sync config for reservations
+const RESERVATIONS_REPO = 'hadas-lesecologycenter/nyc-tree-dashboard';
+const RESERVATIONS_PATH = 'data/reservations.csv';
+const RESERVATIONS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + RESERVATIONS_PATH;
+
+// Load from both localStorage and GitHub
+async function reservationLoad() {
+  // Try GitHub first (synced copy)
+  try {
+    const res = await fetch(RESERVATIONS_CSV_URL);
+    if (res.ok) {
+      const csv = await res.text();
+      const reservations = [];
+      const lines = csv.trim().split('\n');
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, createdAt] =
+          tcParseCSVLine(line);
+        if (id) {
+          reservations.push({
+            id, treeId, name, date,
+            lat: lat ? parseFloat(lat) : null,
+            lng: lng ? parseFloat(lng) : null,
+            species, address, health, dbh, planted,
+            priority: priority ? parseInt(priority) : 0,
+            nta, note, createdAt
+          });
+        }
+      });
+      // Cache in localStorage
+      localStorage.setItem('tc_reservations', JSON.stringify(reservations));
+      return reservations;
+    }
+  } catch (e) {
+    console.log('Could not fetch reservations from GitHub, using localStorage');
+  }
+  // Fallback to localStorage
   try { return JSON.parse(localStorage.getItem('tc_reservations') || '[]'); }
   catch(e) { return []; }
 }
+
 function reservationSave(reservations) {
+  // Save to localStorage immediately
   localStorage.setItem('tc_reservations', JSON.stringify(reservations));
+  // Sync to GitHub in background
+  reservationSyncToGitHub(reservations);
+}
+
+async function reservationSyncToGitHub(reservations) {
+  const token = localStorage.getItem('_ts_tok');
+  if (!token) return; // User hasn't authenticated yet
+
+  try {
+    // Convert to CSV
+    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,createdAt\n';
+    const rows = reservations.map(r => {
+      const escapeCSV = (v) => {
+        if (!v) return '';
+        v = String(v).replace(/"/g, '""');
+        if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
+        return v;
+      };
+      return [
+        r.id, r.treeId, escapeCSV(r.name), r.date,
+        r.lat || '', r.lng || '', escapeCSV(r.species), escapeCSV(r.address),
+        escapeCSV(r.health), escapeCSV(r.dbh), escapeCSV(r.planted),
+        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note), r.createdAt
+      ].map(escapeCSV).join(',');
+    }).join('\n');
+
+    const csv = header + rows;
+
+    // Get current file SHA for update
+    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + RESERVATIONS_PATH;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'nyc-tree-dashboard'
+    };
+
+    let sha = null;
+    try {
+      const getRes = await fetch(apiUrl, { headers });
+      if (getRes.ok) {
+        const data = await getRes.json();
+        sha = data.sha;
+      }
+    } catch (e) {}
+
+    // Push to GitHub
+    const pushRes = await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: '📅 Sync reservations',
+        content: btoa(csv),
+        sha: sha || undefined
+      })
+    });
+
+    if (!pushRes.ok) {
+      console.error('Failed to sync reservations to GitHub:', pushRes.statusText);
+    }
+  } catch (e) {
+    console.error('Reservation GitHub sync error:', e);
+  }
 }
 function reservationRemove(id) {
   reservationSave(reservationLoad().filter(r => r.id !== id));
@@ -3412,6 +3512,21 @@ let _pendingReserveTree = null;
 
 function openReserveModal(tree) {
   _pendingReserveTree = tree;
+
+  // Prompt for GitHub token on first use
+  if (!localStorage.getItem('_ts_tok')) {
+    const token = prompt(
+      'To sync reservations across devices, enter your GitHub personal access token.\n\n' +
+      '1. github.com → profile photo → Settings\n' +
+      '2. Developer settings → Personal access tokens → Tokens (classic)\n' +
+      '3. Generate new token → check "repo" → Generate\n\n' +
+      'Skip (leave blank) to save reservations locally only.\n\nToken (starts with ghp_):'
+    );
+    if (token && token.trim()) {
+      localStorage.setItem('_ts_tok', token.trim());
+    }
+  }
+
   const modal = document.getElementById('reserve-tree-modal');
   if (!modal) return;
   const info = document.getElementById('reserve-tree-info');
@@ -4151,6 +4266,10 @@ function switchViewById(view) {
 })();
 
 window.addEventListener('load', async () => {
+  // Load reservations from GitHub (synced copy) or localStorage
+  console.log('Loading reservations from GitHub...');
+  await reservationLoad();
+
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
   if (countEl) countEl.textContent = 'Loading trees…';
@@ -4178,6 +4297,8 @@ window.addEventListener('load', async () => {
   updateMap();
   updateStats();
   tcUpdateProgress();
+  renderReservationQueue();
+  updateReservationCounter();
   tcRenderMain(); // also calls tcRenderReservationsOnMainMap
   renderReservationQueue();
   updateReservationCounter();
