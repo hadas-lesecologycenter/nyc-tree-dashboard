@@ -714,7 +714,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     flex-shrink: 0; position: relative; z-index: 100;
     box-shadow: 0 1px 8px rgba(0,0,0,0.06);
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .brand-icon { font-size: 22px; }
   .brand-name { font-family: 'Lora', serif; font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 0.01em; }
   .brand-short { display: none; }
@@ -1015,9 +1015,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Compact header - bottom tab bar replaces nav */
     header { padding: 0 12px; height: 48px; gap: 8px; }
     .brand-sub { display: none; }
-    .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
+    /* Remove overflow:hidden — it collapses the flex item to zero width on some browsers */
+    .brand-name { font-size: 13px; white-space: nowrap; min-width: 0; }
     .brand-long { display: none; }
-    .brand-short { display: inline; }
+    .brand-short { display: inline; color: var(--accent); font-weight: 700; }
     nav { display: none; }
 
     /* Filter bar - hidden on mobile */
@@ -1194,7 +1195,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <header>
   <div class="brand">
     <span class="brand-icon">🌳</span>
-    <div>
+    <div style="min-width:0">
       <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short">LESEC Tree Care Map</span></div>
       <div class="brand-sub">LES Ecology Center · East Village · Lower East Side · Chinatown</div>
     </div>
