@@ -1261,15 +1261,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
           📅 Reserve for Care
         </button>
         <button id="mtp-needs-care-btn" onclick="openNeedsCareModal(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
           🔧 Needs Care
         </button>
         <button id="mtp-stewarded-btn" onclick="openStewardedModal(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
           🌱 Community Stewarded
         </button>
         <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:10px;background:#64748b;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
           🛡 Mark Guard Present
         </button>
       </div>
@@ -3675,9 +3675,9 @@ function updateTreeGuardButton(tree) {
   const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
   const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Guard Present';
   btn.textContent = label;
-  btn.style.background = has ? '#1a1a1a' : 'var(--bg2)';
-  btn.style.color = has ? 'white' : 'var(--text)';
-  btn.style.borderColor = has ? '#1a1a1a' : 'var(--border)';
+  btn.style.background = has ? '#334155' : '#64748b';
+  btn.style.color = 'white';
+  btn.style.border = 'none';
 }
 
 // ========== NEEDS CARE (separate from reservations) ==========
@@ -3817,8 +3817,9 @@ function updateNeedsCareButton(tree) {
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
   btn.textContent = has ? '🔧 Needs Care ✓' : '🔧 Needs Care';
-  btn.style.background = has ? '#d97706' : 'var(--bg2)';
-  btn.style.color = has ? 'white' : 'var(--text)';
+  btn.style.background = has ? '#b45309' : '#d97706';
+  btn.style.color = 'white';
+  btn.style.border = 'none';
 }
 
 // ========== COMMUNITY STEWARDED ==========
@@ -3950,8 +3951,9 @@ function updateStewardedButton(tree) {
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
   btn.textContent = has ? '🌱 Stewarded ✓' : '🌱 Community Stewarded';
-  btn.style.background = has ? '#10b981' : 'var(--bg2)';
-  btn.style.color = has ? 'white' : 'var(--text)';
+  btn.style.background = has ? '#059669' : '#10b981';
+  btn.style.color = 'white';
+  btn.style.border = 'none';
 }
 
 function reservationSave(reservations) {
