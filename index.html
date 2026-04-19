@@ -1015,10 +1015,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Compact header - bottom tab bar replaces nav */
     header { padding: 0 12px; height: 48px; gap: 8px; }
     .brand-sub { display: none; }
-    /* Remove overflow:hidden — it collapses the flex item to zero width on some browsers */
-    .brand-name { font-size: 13px; white-space: nowrap; min-width: 0; }
-    .brand-long { display: none; }
-    .brand-short { display: inline; color: var(--accent); font-weight: 700; }
+    .brand-name { font-size: 13px; }
+    /* brand-long/brand-short visibility is set by initMobileUI() in JS */
     nav { display: none; }
 
     /* Filter bar - hidden on mobile */
@@ -1153,6 +1151,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #map-view.filters-open .geo-button-container {
       bottom: calc(45vh + 64px);
     }
+    /* Push geo button above the tree detail panel when it's open */
+    #map-view.tree-panel-open .geo-button-container {
+      bottom: calc(50vh + 64px);
+    }
     #geoLocation-btn {
       width: 48px;
       height: 48px;
@@ -1248,7 +1250,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </button>
         <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
           style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
-          🛡 Mark Guard Present
+          🛡 Mark Tree Guard Present
         </button>
       </div>
     </div>
@@ -2621,6 +2623,7 @@ function openMapTreeDetail(tree) {
   if (!panel) return;
   window._currentMapDetailTree = tree;
   panel.style.display = 'block';
+  document.getElementById('map-view').classList.add('tree-panel-open');
 
   // Add drag handle close functionality on mobile
   if (window.innerWidth <= 768) {
@@ -2633,8 +2636,7 @@ function openMapTreeDetail(tree) {
     }
   }
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
-  const btn = document.getElementById('mtp-reserve-btn');
-  if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.style.backgroundColor = '#7b3fa0'; btn.style.color = '#fff'; btn.style.webkitAppearance = 'none'; btn.style.boxShadow = '0 2px 6px rgba(123,63,160,0.35)'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
+  updateReserveButton(tree);
   updateNeedsCareButton(tree);
   updateStewardedButton(tree);
   updateTreeGuardButton(tree);
@@ -2713,6 +2715,7 @@ function openMapTreeDetail(tree) {
 function closeMapTreeDetail() {
   const panel = document.getElementById('map-tree-panel');
   if (panel) panel.style.display = 'none';
+  document.getElementById('map-view').classList.remove('tree-panel-open');
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
 }
 
@@ -3688,7 +3691,7 @@ function updateTreeGuardButton(tree) {
   const guardRecord = guards.find(g => String(g.treeId) === treeId);
   const has = !!guardRecord;
   const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
-  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Guard Present';
+  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Tree Guard Present';
   btn.textContent = label;
   const bg = has ? '#2d5180' : '#3d6b9e';
   btn.style.background = bg;
@@ -3836,14 +3839,20 @@ function updateNeedsCareButton(tree) {
   if (!btn || !tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
-  btn.textContent = has ? '🔧 Needs Care ✓' : '🔧 Needs Care';
-  const bg = has ? '#c26200' : '#e07b00';
-  btn.style.background = bg;
-  btn.style.backgroundColor = bg;
+  if (has) {
+    btn.textContent = '🔧 Remove Care Flag';
+    btn.style.background = btn.style.backgroundColor = '#7d3500';
+    btn.style.boxShadow = '0 2px 6px rgba(125,53,0,0.35)';
+    btn.onclick = () => { careNeededRemoveByTreeId(treeId); updateNeedsCareButton(tree); };
+  } else {
+    btn.textContent = '🔧 Needs Care';
+    btn.style.background = btn.style.backgroundColor = '#e07b00';
+    btn.style.boxShadow = '0 2px 6px rgba(224,123,0,0.35)';
+    btn.onclick = () => openNeedsCareModal(window._currentMapDetailTree);
+  }
   btn.style.color = '#fff';
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
-  btn.style.boxShadow = '0 2px 6px rgba(224,123,0,0.35)';
 }
 
 // ========== COMMUNITY STEWARDED ==========
@@ -3975,14 +3984,20 @@ function updateStewardedButton(tree) {
   if (!btn || !tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
-  btn.textContent = has ? '🌱 Stewarded ✓' : '🌱 Community Stewarded';
-  const bg = has ? '#0b7a55' : '#0f9e6e';
-  btn.style.background = bg;
-  btn.style.backgroundColor = bg;
+  if (has) {
+    btn.textContent = '🌱 Remove Stewardship';
+    btn.style.background = btn.style.backgroundColor = '#0b7a55';
+    btn.style.boxShadow = '0 2px 6px rgba(11,122,85,0.35)';
+    btn.onclick = () => { stewardedRemoveByTreeId(treeId); updateStewardedButton(tree); };
+  } else {
+    btn.textContent = '🌱 Community Stewarded';
+    btn.style.background = btn.style.backgroundColor = '#0f9e6e';
+    btn.style.boxShadow = '0 2px 6px rgba(15,158,110,0.35)';
+    btn.onclick = () => openStewardedModal(window._currentMapDetailTree);
+  }
   btn.style.color = '#fff';
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
-  btn.style.boxShadow = '0 2px 6px rgba(15,158,110,0.35)';
 }
 
 function reservationSave(reservations) {
@@ -4060,6 +4075,36 @@ function reservationRemove(id) {
 }
 function getReservedTreeIds() {
   return new Set(reservationLoadSync().map(r => String(r.treeId)));
+}
+function careNeededRemoveByTreeId(treeId) {
+  careNeededSave(careNeededLoadSync().filter(i => String(i.treeId) !== String(treeId)));
+  applyFilters();
+  tcShowSyncStatus('🔧 Care flag removed');
+}
+function stewardedRemoveByTreeId(treeId) {
+  stewardedSave(stewardedLoadSync().filter(i => String(i.treeId) !== String(treeId)));
+  applyFilters();
+  tcShowSyncStatus('🌱 Stewardship record removed');
+}
+function updateReserveButton(tree) {
+  const btn = document.getElementById('mtp-reserve-btn');
+  if (!btn || !tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const res = reservationLoadSync().find(r => String(r.treeId) === treeId);
+  if (res) {
+    btn.textContent = '🗑 Remove Reservation';
+    btn.style.background = btn.style.backgroundColor = '#b0003a';
+    btn.style.boxShadow = '0 2px 6px rgba(176,0,58,0.35)';
+    btn.onclick = () => { reservationRemove(res.id); closeMapTreeDetail(); };
+  } else {
+    btn.textContent = '📅 Reserve for Care';
+    btn.style.background = btn.style.backgroundColor = '#7b3fa0';
+    btn.style.boxShadow = '0 2px 6px rgba(123,63,160,0.35)';
+    btn.onclick = () => openReserveModal(window._currentMapDetailTree);
+  }
+  btn.style.color = '#fff';
+  btn.style.border = 'none';
+  btn.style.webkitAppearance = btn.style.appearance = 'none';
 }
 
 let _pendingReserveTree = null;
@@ -4945,6 +4990,15 @@ window.addEventListener('load', async () => {
 
 function initMobileUI() {
   console.log('initMobileUI called');
+
+  // Always set the title explicitly so CSS cascade issues can't hide it
+  const brandLong = document.querySelector('.brand-long');
+  const brandShort = document.querySelector('.brand-short');
+  if (brandLong) brandLong.style.display = 'none';
+  if (brandShort) {
+    brandShort.style.cssText = 'display:inline;font-family:Lora,serif;font-size:14px;font-weight:700;color:#4a7c59;letter-spacing:0.01em;';
+  }
+
   // Default myblock view: activities sidebar visible, care map hidden
   const myblockDashboard = document.getElementById('myblock-dashboard');
   if (myblockDashboard) myblockDashboard.classList.add('mobile-hidden');
