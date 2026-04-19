@@ -717,6 +717,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-icon { font-size: 22px; }
   .brand-name { font-family: 'Lora', serif; font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 0.01em; }
+  .brand-short { display: none; }
   .brand-sub { font-size: 10px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
   nav { display: flex; gap: 3px; margin-left: auto; }
   .nav-btn {
@@ -1016,7 +1017,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .brand-sub { display: none; }
     .brand-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 52vw; }
     .brand-long { display: none; }
-    .brand-short { display: inline !important; }
+    .brand-short { display: inline; }
     nav { display: none; }
 
     /* Filter bar - hidden on mobile */
@@ -1145,8 +1146,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       flex-direction: column;
       gap: 12px;
       z-index: 2999;
+      transition: bottom 0.25s ease;
     }
-    #geoLocation-btn, #geoTracking-btn {
+    /* Push geo button above the filter panel when it's open */
+    #map-view.filters-open .geo-button-container {
+      bottom: calc(45vh + 64px);
+    }
+    #geoLocation-btn {
       width: 48px;
       height: 48px;
       border-radius: 50%;
@@ -1163,7 +1169,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       padding: 0;
       flex-shrink: 0;
     }
-    #geoLocation-btn:hover, #geoTracking-btn:hover {
+    #geoLocation-btn:hover {
       background: white;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
       transform: scale(1.08);
@@ -1172,36 +1178,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    #geoLocation-btn:active, #geoTracking-btn:active {
+    #geoLocation-btn:active {
       transform: scale(0.92);
-    }
-    #geoTracking-btn.active {
-      background: #4285f4;
-      color: white;
-      box-shadow: 0 2px 8px rgba(66,133,244,0.4);
-      animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 2px 8px rgba(66,133,244,0.4); }
-      50% { box-shadow: 0 2px 16px rgba(66,133,244,0.8); }
-    }
-
-    /* Path tracking stats */
-    .path-stats-badge {
-      position: fixed;
-      bottom: 190px;
-      left: 16px;
-      background: #4285f4;
-      color: white;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      box-shadow: 0 2px 8px rgba(66,133,244,0.2);
-      z-index: 2998;
-      text-align: left;
-      line-height: 1.4;
     }
   }
 
@@ -1217,7 +1195,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="brand">
     <span class="brand-icon">🌳</span>
     <div>
-      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short" style="display:none">LESEC Tree Care Map</span></div>
+      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short">LESEC Tree Care Map</span></div>
       <div class="brand-sub">LES Ecology Center · East Village · Lower East Side · Chinatown</div>
     </div>
   </div>
@@ -1245,7 +1223,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
-      <button id="geoTracking-btn" title="Toggle continuous location tracking" onclick="toggleContinuousTracking()">✓</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1759,7 +1736,7 @@ let emptyBedsLayer = null;
 let emptyBeds = [];
 let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
-let geolocationWatcher = null;
+let userAccuracyCircle = null;
 
 // ========== LESEC PROGRAM DATA ==========
 const LESEC_TOOL_STORAGE = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98623112196117, 40.70984670353943]}, "properties": {"fid": 1, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.979572548085, 40.724745436610114]}, "properties": {"fid": 2, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98948618305218, 40.71459411209329]}, "properties": {"fid": 3, "Tree ID": null, "Zipcode": null, "Notes": null}}]};
@@ -2093,10 +2070,21 @@ function requestUserLocation() {
       // Center map on user location
       mapInstance.setView([lat, lng], 17);
 
-      // Remove old marker if exists
+      // Remove old marker and accuracy circle
       if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
+      if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
 
-      // Add new marker with accuracy circle
+      // Add accuracy circle first (renders below the dot)
+      userAccuracyCircle = L.circle([lat, lng], {
+        radius: accuracy,
+        fillColor: '#007bff',
+        color: '#007bff',
+        weight: 1,
+        opacity: 0.2,
+        fillOpacity: 0.1
+      }).addTo(mapInstance);
+
+      // Add location dot on top
       userLocationMarker = L.circleMarker([lat, lng], {
         radius: 8,
         fillColor: '#007bff',
@@ -2107,16 +2095,6 @@ function requestUserLocation() {
       }).addTo(mapInstance);
 
       userLocationMarker.bindPopup(`<div style="font-size:12px"><strong>Your Location</strong><br>Accuracy: ±${Math.round(accuracy)}m</div>`);
-
-      // Add accuracy circle
-      L.circle([lat, lng], {
-        radius: accuracy,
-        fillColor: '#007bff',
-        color: '#007bff',
-        weight: 1,
-        opacity: 0.2,
-        fillOpacity: 0.1
-      }).addTo(mapInstance);
 
       if (btn) btn.disabled = false;
       if (btn) btn.textContent = '⊕';
@@ -2134,43 +2112,6 @@ function requestUserLocation() {
       enableHighAccuracy: true,
       timeout: 10000,
       maximumAge: 0
-    }
-  );
-}
-
-function toggleContinuousTracking() {
-  const btn = document.getElementById('geoTracking-btn');
-
-  if (geolocationWatcher) {
-    navigator.geolocation.clearWatch(geolocationWatcher);
-    geolocationWatcher = null;
-    if (btn) btn.classList.remove('active');
-    if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
-    return;
-  }
-
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser');
-    return;
-  }
-
-  geolocationWatcher = navigator.geolocation.watchPosition(
-    function(position) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-
-      if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
-
-      userLocationMarker = L.circleMarker([lat, lng], {
-        radius: 8,
-        fillColor: '#28a745',
-        color: '#fff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.8
-      }).addTo(mapInstance);
-
-      if (btn) btn.classList.add('active');
     }
   );
 }
@@ -2287,10 +2228,12 @@ function updatePriorityTierCounts() {
 function toggleControlsPanel() {
   const panel = document.getElementById('priority-sidebar');
   const btn = document.getElementById('controls-toggle');
+  const mapView = document.getElementById('map-view');
   if (!panel) return;
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
   if (btn) btn.classList.toggle('on', !visible);
+  if (mapView) mapView.classList.toggle('filters-open', !visible);
   if (!visible) updatePriorityTierCounts();
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
 }
@@ -5070,6 +5013,8 @@ function mobileSwitchView(view, btn) {
       panel.style.display = 'none';
       const toggleBtn = document.getElementById('controls-toggle');
       if (toggleBtn) toggleBtn.classList.remove('on');
+      const mapView = document.getElementById('map-view');
+      if (mapView) mapView.classList.remove('filters-open');
     }
 
     switchView(view, null);
