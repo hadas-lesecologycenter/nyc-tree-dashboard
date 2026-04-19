@@ -1257,19 +1257,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
         <button id="mtp-reserve-btn" onclick="openReserveModal(window._currentMapDetailTree)"
-          style="margin-top:14px;width:100%;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:14px;width:100%;padding:11px;background:#7b3fa0;background-color:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
           📅 Reserve for Care
         </button>
         <button id="mtp-needs-care-btn" onclick="openNeedsCareModal(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:11px;background:#e07b00;background-color:#e07b00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(224,123,0,0.35)">
           🔧 Needs Care
         </button>
         <button id="mtp-stewarded-btn" onclick="openStewardedModal(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
           🌱 Community Stewarded
         </button>
         <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
-          style="margin-top:8px;width:100%;padding:10px;background:#64748b;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
           🛡 Mark Guard Present
         </button>
       </div>
@@ -2650,7 +2650,7 @@ function openMapTreeDetail(tree) {
   }
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   const btn = document.getElementById('mtp-reserve-btn');
-  if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
+  if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.style.backgroundColor = '#7b3fa0'; btn.style.color = '#fff'; btn.style.webkitAppearance = 'none'; btn.style.boxShadow = '0 2px 6px rgba(123,63,160,0.35)'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
   updateNeedsCareButton(tree);
   updateStewardedButton(tree);
   updateTreeGuardButton(tree);
@@ -3486,6 +3486,16 @@ const RESERVATIONS_REPO = 'hadas-lesecologycenter/nyc-tree-dashboard';
 const RESERVATIONS_PATH = 'data/reservations.csv';
 const RESERVATIONS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + RESERVATIONS_PATH;
 
+// Shared community write token — set this once so ALL visitors can save data
+// without needing their own GitHub PAT. Use a fine-grained PAT scoped to
+// contents:write on this repo only (Settings → Developer settings → Fine-grained tokens).
+// Leave empty to fall back to each user's personal token stored in localStorage.
+const COMMUNITY_WRITE_TOKEN = '';
+
+function getWriteToken() {
+  return COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok') || null;
+}
+
 // Load from both localStorage and GitHub
 async function reservationLoad() {
   // Try GitHub first (synced copy)
@@ -3576,7 +3586,7 @@ function treeGuardsSave(guards) {
 }
 
 async function treeGuardsSyncToGitHub(guards) {
-  const token = localStorage.getItem('_ts_tok');
+  const token = getWriteToken();
   if (!token) return;
   try {
     const escapeCSV = (v) => {
@@ -3620,10 +3630,10 @@ async function treeGuardsSyncToGitHub(guards) {
 function toggleTreeGuardPresent(tree) {
   if (!tree) return;
 
-  // Prompt for GitHub token on first use (so guards sync across devices)
-  if (!localStorage.getItem('_ts_tok')) {
+  // Prompt for personal GitHub token only when no shared community token is configured
+  if (!COMMUNITY_WRITE_TOKEN && !localStorage.getItem('_ts_tok')) {
     const token = prompt(
-      'To sync tree guard markings across devices, enter your GitHub personal access token.\n\n' +
+      'To sync tree guard markings for all community members, enter your GitHub personal access token.\n\n' +
       '1. github.com → Settings → Developer settings → Personal access tokens (classic)\n' +
       '2. Generate new token → check "repo" → Generate\n\n' +
       'Skip (leave blank) to save locally only.\n\nToken (starts with ghp_):'
@@ -3675,9 +3685,13 @@ function updateTreeGuardButton(tree) {
   const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
   const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Guard Present';
   btn.textContent = label;
-  btn.style.background = has ? '#334155' : '#64748b';
-  btn.style.color = 'white';
+  const bg = has ? '#2d5180' : '#3d6b9e';
+  btn.style.background = bg;
+  btn.style.backgroundColor = bg;
+  btn.style.color = '#fff';
   btn.style.border = 'none';
+  btn.style.webkitAppearance = 'none';
+  btn.style.boxShadow = '0 2px 6px rgba(61,107,158,0.35)';
 }
 
 // ========== NEEDS CARE (separate from reservations) ==========
@@ -3715,7 +3729,7 @@ function careNeededSave(items) {
 }
 
 async function careNeededSyncToGitHub(items) {
-  const token = localStorage.getItem('_ts_tok');
+  const token = getWriteToken();
   if (!token) return;
   try {
     const escapeCSV = (v) => {
@@ -3817,9 +3831,13 @@ function updateNeedsCareButton(tree) {
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
   btn.textContent = has ? '🔧 Needs Care ✓' : '🔧 Needs Care';
-  btn.style.background = has ? '#b45309' : '#d97706';
-  btn.style.color = 'white';
+  const bg = has ? '#c26200' : '#e07b00';
+  btn.style.background = bg;
+  btn.style.backgroundColor = bg;
+  btn.style.color = '#fff';
   btn.style.border = 'none';
+  btn.style.webkitAppearance = 'none';
+  btn.style.boxShadow = '0 2px 6px rgba(224,123,0,0.35)';
 }
 
 // ========== COMMUNITY STEWARDED ==========
@@ -3857,7 +3875,7 @@ function stewardedSave(items) {
 }
 
 async function stewardedSyncToGitHub(items) {
-  const token = localStorage.getItem('_ts_tok');
+  const token = getWriteToken();
   if (!token) return;
   try {
     const escapeCSV = (v) => {
@@ -3951,9 +3969,13 @@ function updateStewardedButton(tree) {
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
   btn.textContent = has ? '🌱 Stewarded ✓' : '🌱 Community Stewarded';
-  btn.style.background = has ? '#059669' : '#10b981';
-  btn.style.color = 'white';
+  const bg = has ? '#0b7a55' : '#0f9e6e';
+  btn.style.background = bg;
+  btn.style.backgroundColor = bg;
+  btn.style.color = '#fff';
   btn.style.border = 'none';
+  btn.style.webkitAppearance = 'none';
+  btn.style.boxShadow = '0 2px 6px rgba(15,158,110,0.35)';
 }
 
 function reservationSave(reservations) {
@@ -3964,7 +3986,7 @@ function reservationSave(reservations) {
 }
 
 async function reservationSyncToGitHub(reservations) {
-  const token = localStorage.getItem('_ts_tok');
+  const token = getWriteToken();
   if (!token) return; // User hasn't authenticated yet
 
   try {
@@ -4038,14 +4060,14 @@ let _pendingReserveTree = null;
 function openReserveModal(tree) {
   _pendingReserveTree = tree;
 
-  // Prompt for GitHub token on first use
-  if (!localStorage.getItem('_ts_tok')) {
+  // Prompt for personal GitHub token only when no shared community token is configured
+  if (!COMMUNITY_WRITE_TOKEN && !localStorage.getItem('_ts_tok')) {
     const token = prompt(
-      'To sync reservations across devices, enter your GitHub personal access token.\n\n' +
+      'To sync reservations for all community members, enter your GitHub personal access token.\n\n' +
       '1. github.com → profile photo → Settings\n' +
       '2. Developer settings → Personal access tokens → Tokens (classic)\n' +
       '3. Generate new token → check "repo" → Generate\n\n' +
-      'Skip (leave blank) to save reservations locally only.\n\nToken (starts with ghp_):'
+      'Skip (leave blank) to save locally only.\n\nToken (starts with ghp_):'
     );
     if (token && token.trim()) {
       localStorage.setItem('_ts_tok', token.trim());
