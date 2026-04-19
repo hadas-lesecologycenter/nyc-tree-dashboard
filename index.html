@@ -1260,9 +1260,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:14px;width:100%;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
           📅 Reserve for Care
         </button>
+        <button id="mtp-needs-care-btn" onclick="openNeedsCareModal(window._currentMapDetailTree)"
+          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          🔧 Needs Care
+        </button>
+        <button id="mtp-stewarded-btn" onclick="openStewardedModal(window._currentMapDetailTree)"
+          style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
+          🌱 Community Stewarded
+        </button>
         <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
           style="margin-top:8px;width:100%;padding:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif">
-          🛡 Mark Tree Guard Present
+          🛡 Mark Guard Present
         </button>
       </div>
     </div>
@@ -1486,6 +1494,63 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 
 
+  <!-- NEEDS CARE MODAL -->
+  <div id="needs-care-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🔧 Mark as Needs Care</h2>
+        <button onclick="closeNeedsCareModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="needs-care-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">What care is needed? <span style="font-weight:400;color:var(--text3)">(check all that apply)</span></label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="care-mulch" style="width:16px;height:16px;cursor:pointer;accent-color:#d97706">
+            🌱 Mulch removal
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="care-prune" style="width:16px;height:16px;cursor:pointer;accent-color:#d97706">
+            ✂️ Pruning
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="care-health" style="width:16px;height:16px;cursor:pointer;accent-color:#d97706">
+            🩺 Health inspection
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeNeedsCareModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="confirmNeedsCare()" style="flex:2;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Mark as Needs Care</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMUNITY STEWARDED MODAL -->
+  <div id="stewarded-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🌱 Community Stewarded</h2>
+        <button onclick="closeStewardedModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+      </div>
+      <div id="stewarded-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Caretaker Name</label>
+        <input id="stewarded-name-input" type="text" placeholder="e.g., Jane Doe, Block Association"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Care Activities <span style="font-weight:400;color:var(--text3)">(describe what's been done)</span></label>
+        <textarea id="stewarded-note-input" placeholder="e.g., weekly watering, mulch added summer 2025, pruned dead branches"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:80px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeStewardedModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="confirmStewardship()" style="flex:2;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Mark as Stewarded</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ADD GOAL MODAL -->
   <div id="add-goal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
@@ -1514,23 +1579,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
         <input id="reserve-date-input" type="date"
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
-      </div>
-      <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Needs Care? <span style="font-weight:400;color:var(--text3)">(check all that apply)</span></label>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
-            <input type="checkbox" id="reserve-care-mulch" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
-            🌱 Mulch removal
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
-            <input type="checkbox" id="reserve-care-prune" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
-            ✂️ Pruning
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
-            <input type="checkbox" id="reserve-care-health" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
-            🩺 Health inspection
-          </label>
-        </div>
       </div>
       <div style="margin-bottom:20px">
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Note <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
@@ -2603,6 +2651,8 @@ function openMapTreeDetail(tree) {
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
   const btn = document.getElementById('mtp-reserve-btn');
   if (btn) { btn.textContent = '📅 Reserve for Care'; btn.style.background = '#7b3fa0'; btn.onclick = () => openReserveModal(window._currentMapDetailTree); }
+  updateNeedsCareButton(tree);
+  updateStewardedButton(tree);
   updateTreeGuardButton(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
@@ -3447,7 +3497,7 @@ async function reservationLoad() {
       const lines = csv.trim().split('\n');
       lines.slice(1).forEach(line => {
         if (!line.trim()) return;
-        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, careNeeds, createdAt] =
+        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, createdAt] =
           tcParseCSVLine(line);
         if (id) {
           reservations.push({
@@ -3456,9 +3506,7 @@ async function reservationLoad() {
             lng: lng ? parseFloat(lng) : null,
             species, address, health, dbh, planted,
             priority: priority ? parseInt(priority) : 0,
-            nta, note,
-            careNeeds: careNeeds || '',
-            createdAt
+            nta, note, createdAt
           });
         }
       });
@@ -3480,11 +3528,11 @@ function reservationLoadSync() {
   catch(e) { return []; }
 }
 
-// Get tree IDs that have care needs (from reservations)
+// Get tree IDs that have care needs (from care-needed data)
 function getCareNeededTreeIds() {
-  return new Set(reservationLoadSync()
-    .filter(r => r.careNeeds && r.careNeeds.length > 0)
-    .map(r => String(r.treeId)));
+  return new Set(careNeededLoadSync()
+    .filter(c => c.careNeeds && c.careNeeds.length > 0)
+    .map(c => String(c.treeId)));
 }
 
 // ========== TREE GUARDS (user-marked) ==========
@@ -3632,6 +3680,280 @@ function updateTreeGuardButton(tree) {
   btn.style.borderColor = has ? '#1a1a1a' : 'var(--border)';
 }
 
+// ========== NEEDS CARE (separate from reservations) ==========
+const CARE_NEEDED_PATH = 'data/care-needed.csv';
+const CARE_NEEDED_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + CARE_NEEDED_PATH;
+
+async function careNeededLoad() {
+  try {
+    const res = await fetch(CARE_NEEDED_CSV_URL);
+    if (res.ok) {
+      const csv = await res.text();
+      const items = [];
+      const lines = csv.trim().split('\n');
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const [treeId, careNeeds, markedAt, markedBy] = tcParseCSVLine(line);
+        if (treeId) items.push({ treeId, careNeeds, markedAt, markedBy });
+      });
+      localStorage.setItem('tc_care_needed', JSON.stringify(items));
+      return items;
+    }
+  } catch (e) {}
+  try { return JSON.parse(localStorage.getItem('tc_care_needed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function careNeededLoadSync() {
+  try { return JSON.parse(localStorage.getItem('tc_care_needed') || '[]'); }
+  catch(e) { return []; }
+}
+
+function careNeededSave(items) {
+  localStorage.setItem('tc_care_needed', JSON.stringify(items));
+  careNeededSyncToGitHub(items);
+}
+
+async function careNeededSyncToGitHub(items) {
+  const token = localStorage.getItem('_ts_tok');
+  if (!token) return;
+  try {
+    const escapeCSV = (v) => {
+      if (!v) return '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
+      return v;
+    };
+    const header = 'treeId,careNeeds,markedAt,markedBy\n';
+    const rows = items.map(i =>
+      [i.treeId, escapeCSV(i.careNeeds), i.markedAt, escapeCSV(i.markedBy || '')].join(',')
+    ).join('\n');
+    const csv = header + rows;
+
+    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + CARE_NEEDED_PATH;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'nyc-tree-dashboard'
+    };
+    let sha = null;
+    try {
+      const getRes = await fetch(apiUrl, { headers });
+      if (getRes.ok) sha = (await getRes.json()).sha;
+    } catch (e) {}
+    await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: '🔧 Sync care needed',
+        content: btoa(csv),
+        sha: sha || undefined
+      })
+    });
+  } catch (e) {
+    console.error('Care needed GitHub sync error:', e);
+  }
+}
+
+let _pendingNeedsCareTree = null;
+
+function openNeedsCareModal(tree) {
+  _pendingNeedsCareTree = tree;
+  const modal = document.getElementById('needs-care-modal');
+  const info = document.getElementById('needs-care-info');
+  if (info) {
+    const treeTitle = tree.spc_common || tree.address || ('Tree #' + tree.tree_id);
+    info.innerHTML = '<strong>' + treeTitle + '</strong>' +
+      (tree.address ? '<br><span style="font-size:11px;color:var(--text3)">' + tree.address + '</span>' : '');
+  }
+  document.getElementById('care-mulch').checked = false;
+  document.getElementById('care-prune').checked = false;
+  document.getElementById('care-health').checked = false;
+  modal.style.display = 'flex';
+}
+
+function closeNeedsCareModal() {
+  document.getElementById('needs-care-modal').style.display = 'none';
+  _pendingNeedsCareTree = null;
+}
+
+function confirmNeedsCare() {
+  const tree = _pendingNeedsCareTree;
+  if (!tree) return;
+  const careMulch = document.getElementById('care-mulch').checked;
+  const carePrune = document.getElementById('care-prune').checked;
+  const careHealth = document.getElementById('care-health').checked;
+  if (!careMulch && !carePrune && !careHealth) {
+    alert('Please select at least one care need');
+    return;
+  }
+
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const items = careNeededLoadSync();
+  const existingIdx = items.findIndex(i => String(i.treeId) === treeId);
+  if (existingIdx >= 0) items.splice(existingIdx, 1);
+
+  const careNeeds = [];
+  if (careMulch) careNeeds.push('mulch');
+  if (carePrune) careNeeds.push('prune');
+  if (careHealth) careNeeds.push('health');
+
+  items.push({
+    treeId,
+    careNeeds: careNeeds.join(';'),
+    markedAt: new Date().toISOString(),
+    markedBy: 'user'
+  });
+  careNeededSave(items);
+  closeNeedsCareModal();
+  updateNeedsCareButton(tree);
+  applyFilters();
+  tcShowSyncStatus('🔧 Tree marked as needing care');
+}
+
+function updateNeedsCareButton(tree) {
+  const btn = document.getElementById('mtp-needs-care-btn');
+  if (!btn || !tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
+  btn.textContent = has ? '🔧 Needs Care ✓' : '🔧 Needs Care';
+  btn.style.background = has ? '#d97706' : 'var(--bg2)';
+  btn.style.color = has ? 'white' : 'var(--text)';
+}
+
+// ========== COMMUNITY STEWARDED ==========
+const STEWARDED_PATH = 'data/community-stewarded.csv';
+const STEWARDED_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + STEWARDED_PATH;
+
+async function stewardedLoad() {
+  try {
+    const res = await fetch(STEWARDED_CSV_URL);
+    if (res.ok) {
+      const csv = await res.text();
+      const items = [];
+      const lines = csv.trim().split('\n');
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const [treeId, caretaker, activities, markedAt] = tcParseCSVLine(line);
+        if (treeId) items.push({ treeId, caretaker, activities, markedAt });
+      });
+      localStorage.setItem('tc_stewarded', JSON.stringify(items));
+      return items;
+    }
+  } catch (e) {}
+  try { return JSON.parse(localStorage.getItem('tc_stewarded') || '[]'); }
+  catch(e) { return []; }
+}
+
+function stewardedLoadSync() {
+  try { return JSON.parse(localStorage.getItem('tc_stewarded') || '[]'); }
+  catch(e) { return []; }
+}
+
+function stewardedSave(items) {
+  localStorage.setItem('tc_stewarded', JSON.stringify(items));
+  stewardedSyncToGitHub(items);
+}
+
+async function stewardedSyncToGitHub(items) {
+  const token = localStorage.getItem('_ts_tok');
+  if (!token) return;
+  try {
+    const escapeCSV = (v) => {
+      if (!v) return '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
+      return v;
+    };
+    const header = 'treeId,caretaker,activities,markedAt\n';
+    const rows = items.map(i =>
+      [i.treeId, escapeCSV(i.caretaker), escapeCSV(i.activities), i.markedAt].join(',')
+    ).join('\n');
+    const csv = header + rows;
+
+    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + STEWARDED_PATH;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'nyc-tree-dashboard'
+    };
+    let sha = null;
+    try {
+      const getRes = await fetch(apiUrl, { headers });
+      if (getRes.ok) sha = (await getRes.json()).sha;
+    } catch (e) {}
+    await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: '🌱 Sync community stewarded',
+        content: btoa(csv),
+        sha: sha || undefined
+      })
+    });
+  } catch (e) {
+    console.error('Stewarded GitHub sync error:', e);
+  }
+}
+
+let _pendingStewardedTree = null;
+
+function openStewardedModal(tree) {
+  _pendingStewardedTree = tree;
+  const modal = document.getElementById('stewarded-modal');
+  const info = document.getElementById('stewarded-info');
+  if (info) {
+    const treeTitle = tree.spc_common || tree.address || ('Tree #' + tree.tree_id);
+    info.innerHTML = '<strong>' + treeTitle + '</strong>' +
+      (tree.address ? '<br><span style="font-size:11px;color:var(--text3)">' + tree.address + '</span>' : '');
+  }
+  document.getElementById('stewarded-name-input').value = '';
+  document.getElementById('stewarded-note-input').value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('stewarded-name-input').focus(), 100);
+}
+
+function closeStewardedModal() {
+  document.getElementById('stewarded-modal').style.display = 'none';
+  _pendingStewardedTree = null;
+}
+
+function confirmStewardship() {
+  const tree = _pendingStewardedTree;
+  if (!tree) return;
+  const caretaker = (document.getElementById('stewarded-name-input').value || '').trim();
+  const activities = (document.getElementById('stewarded-note-input').value || '').trim();
+  if (!caretaker) { document.getElementById('stewarded-name-input').focus(); return; }
+  if (!activities) { document.getElementById('stewarded-note-input').focus(); return; }
+
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const items = stewardedLoadSync();
+  const existingIdx = items.findIndex(i => String(i.treeId) === treeId);
+  if (existingIdx >= 0) items.splice(existingIdx, 1);
+
+  items.push({
+    treeId,
+    caretaker,
+    activities,
+    markedAt: new Date().toISOString()
+  });
+  stewardedSave(items);
+  closeStewardedModal();
+  updateStewardedButton(tree);
+  applyFilters();
+  tcShowSyncStatus('🌱 Tree marked as community stewarded');
+}
+
+function updateStewardedButton(tree) {
+  const btn = document.getElementById('mtp-stewarded-btn');
+  if (!btn || !tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
+  btn.textContent = has ? '🌱 Stewarded ✓' : '🌱 Community Stewarded';
+  btn.style.background = has ? '#10b981' : 'var(--bg2)';
+  btn.style.color = has ? 'white' : 'var(--text)';
+}
+
 function reservationSave(reservations) {
   // Save to localStorage immediately
   localStorage.setItem('tc_reservations', JSON.stringify(reservations));
@@ -3645,7 +3967,7 @@ async function reservationSyncToGitHub(reservations) {
 
   try {
     // Convert to CSV
-    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,careNeeds,createdAt\n';
+    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,createdAt\n';
     const rows = reservations.map(r => {
       const escapeCSV = (v) => {
         if (!v) return '';
@@ -3657,8 +3979,7 @@ async function reservationSyncToGitHub(reservations) {
         r.id, r.treeId, escapeCSV(r.name), r.date,
         r.lat || '', r.lng || '', escapeCSV(r.species), escapeCSV(r.address),
         escapeCSV(r.health), escapeCSV(r.dbh), escapeCSV(r.planted),
-        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note),
-        escapeCSV(r.careNeeds || ''), r.createdAt
+        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note), r.createdAt
       ].map(escapeCSV).join(',');
     }).join('\n');
 
@@ -3775,9 +4096,6 @@ function confirmReserveTree() {
   const name = (document.getElementById('reserve-name-input').value || '').trim();
   const date = document.getElementById('reserve-date-input').value;
   const note = (document.getElementById('reserve-note-input').value || '').trim();
-  const careMulch = document.getElementById('reserve-care-mulch').checked;
-  const carePrune = document.getElementById('reserve-care-prune').checked;
-  const careHealth = document.getElementById('reserve-care-health').checked;
   if (!name) { document.getElementById('reserve-name-input').focus(); return; }
   if (!date) { document.getElementById('reserve-date-input').focus(); return; }
 
@@ -3787,12 +4105,6 @@ function confirmReserveTree() {
     if (!confirm('This tree is already reserved as "' + all[existingIdx].name + '" on ' + all[existingIdx].date + '. Replace it?')) return;
     all.splice(existingIdx, 1);
   }
-
-  // Build care needs string from checkboxes
-  const careNeeds = [];
-  if (careMulch) careNeeds.push('mulch');
-  if (carePrune) careNeeds.push('prune');
-  if (careHealth) careNeeds.push('health');
 
   const reservation = {
     id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -3809,7 +4121,6 @@ function confirmReserveTree() {
     planted: tree.tree_cen_date || tree.planteddate || '',
     priority: tree._priority || 0,
     nta: tree.nta_name || '',
-    careNeeds: careNeeds.join(';'),
     createdAt: new Date().toISOString(),
   };
   all.push(reservation);
@@ -3817,13 +4128,9 @@ function confirmReserveTree() {
 
   document.getElementById('reserve-name-input').value = '';
   document.getElementById('reserve-note-input').value = '';
-  document.getElementById('reserve-care-mulch').checked = false;
-  document.getElementById('reserve-care-prune').checked = false;
-  document.getElementById('reserve-care-health').checked = false;
   closeReserveModal();
-  closeMapTreeDetail(); // restore full map width so user can pick another tree
+  closeMapTreeDetail();
   renderReservationQueue();
-  renderCareNeededQueue();
   updateReservationCounter();
   applyFilters();
   if (tcCareMap) tcRenderReservationsOnCareMap();
@@ -4550,9 +4857,9 @@ function switchViewById(view) {
 })();
 
 window.addEventListener('load', async () => {
-  // Load reservations and tree guards from GitHub (synced copy) or localStorage
-  console.log('Loading reservations and tree guards from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad()]);
+  // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
+  console.log('Loading data from GitHub...');
+  await Promise.all([reservationLoad(), treeGuardsLoad(), careNeededLoad(), stewardedLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
