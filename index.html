@@ -3500,8 +3500,8 @@ async function treeGuardsLoad() {
       const lines = csv.trim().split('\n');
       lines.slice(1).forEach(line => {
         if (!line.trim()) return;
-        const [treeId, markedBy, markedAt, note] = tcParseCSVLine(line);
-        if (treeId) guards.push({ treeId, markedBy, markedAt, note });
+        const [treeId, markedBy, guardType, markedAt, note] = tcParseCSVLine(line);
+        if (treeId) guards.push({ treeId, markedBy, guardType, markedAt, note });
       });
       localStorage.setItem('tc_tree_guards', JSON.stringify(guards));
       return guards;
@@ -3537,9 +3537,9 @@ async function treeGuardsSyncToGitHub(guards) {
       if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
       return v;
     };
-    const header = 'treeId,markedBy,markedAt,note\n';
+    const header = 'treeId,markedBy,guardType,markedAt,note\n';
     const rows = guards.map(g =>
-      [g.treeId, escapeCSV(g.markedBy), g.markedAt, escapeCSV(g.note || '')].join(',')
+      [g.treeId, escapeCSV(g.markedBy), g.guardType || 'standard', g.markedAt, escapeCSV(g.note || '')].join(',')
     ).join('\n');
     const csv = header + rows;
 
@@ -3595,16 +3595,21 @@ function toggleTreeGuardPresent(tree) {
     treeGuardsSave(guards);
     tcShowSyncStatus('🛡 Tree guard removed');
   } else {
-    // Add
+    // Add - prompt for guard type
     const markedBy = prompt('Your name (to track who marked this):') || 'anonymous';
+    if (markedBy === null) return; // user cancelled
+
+    const guardType = prompt('Guard type:\n\nEnter "standard" for standard guard or "nonstandard" for other types.\n\nDefault is "standard".', 'standard') || 'standard';
+
     guards.push({
       treeId,
       markedBy: markedBy.trim(),
+      guardType: guardType.trim().toLowerCase(),
       markedAt: new Date().toISOString(),
       note: ''
     });
     treeGuardsSave(guards);
-    tcShowSyncStatus('🛡 Tree marked as guarded');
+    tcShowSyncStatus('🛡 Tree marked as guarded (' + guardType.trim() + ')');
   }
   // Update UI
   updateTreeGuardButton(tree);
@@ -3616,8 +3621,12 @@ function updateTreeGuardButton(tree) {
   const btn = document.getElementById('mtp-guard-btn');
   if (!btn || !tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
-  const has = getTreeGuardIds().has(treeId);
-  btn.textContent = has ? '🛡 Tree Guard Present ✓' : '🛡 Mark Tree Guard Present';
+  const guards = treeGuardsLoadSync();
+  const guardRecord = guards.find(g => String(g.treeId) === treeId);
+  const has = !!guardRecord;
+  const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
+  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Guard Present';
+  btn.textContent = label;
   btn.style.background = has ? '#1a1a1a' : 'var(--bg2)';
   btn.style.color = has ? 'white' : 'var(--text)';
   btn.style.borderColor = has ? '#1a1a1a' : 'var(--border)';
