@@ -4757,6 +4757,178 @@ function renderCareNeededQueue() {
   listEl.insertBefore(section, listEl.firstChild);
 }
 
+function openTreeDetailCard(tree) {
+  if (!tree) return;
+  const dashboardContent = document.getElementById('myblock-dashboard-content');
+  const noSelection = document.getElementById('myblock-no-selection');
+  if (!dashboardContent || !noSelection) return;
+
+  noSelection.style.display = 'none';
+  dashboardContent.style.display = 'block';
+
+  const treeId = String(tree.tree_id || (tree.latitude + '_' + tree.longitude));
+
+  // Get care activities for this tree
+  const reservations = reservationLoadSync();
+  const careItems = careNeededLoadSync();
+  const guards = treeGuardsLoadSync();
+  const stewarded = stewardedLoadSync();
+  const missing = missingLoadSync();
+
+  const reservation = reservations.find(r => String(r.treeId) === treeId);
+  const careNeeded = careItems.find(c => String(c.treeId) === treeId);
+  const guard = guards.find(g => String(g.treeId) === treeId);
+  const stewardRecord = stewarded.find(s => String(s.treeId) === treeId);
+  const missingRecord = missing.find(m => String(m.treeId) === treeId);
+
+  // Check if tree is in PLANTINGS_DATA (LES Ecology Center plantings)
+  const plantingRecord = PLANTINGS_DATA.find(p =>
+    p.street.toUpperCase() === (tree.address || '').split(',')[0].toUpperCase().trim()
+  );
+
+  // Build care activity HTML
+  const pm = getPriorityMeta(tree._priority || 0);
+  const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+  const address = tree.address || 'Unknown location';
+  const health = (tree.health || '').toLowerCase();
+  const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[health] || 'var(--text3)';
+  const dbh = tree.tree_dbh ? tree.tree_dbh + '"' : 'N/A';
+
+  let activitiesHTML = '<div style="margin-bottom:16px"><h3 style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:6px">';
+
+  // NYC Plantings Data
+  if (plantingRecord) {
+    activitiesHTML += `<div style="background:#e0f2fe;border-left:3px solid #0284c7;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#0c4a6e">🌱 LES Ecology Center Planting</div><div style="font-size:11px;color:#164e63">Planted ${plantingRecord.planted} · ${plantingRecord.season}<br>Guard: ${plantingRecord.guard}</div></div>`;
+  }
+
+  if (reservation) {
+    activitiesHTML += `<div style="background:#f3e8ff;border-left:3px solid #7b3fa0;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#5b21b6">📅 Reserved for Care</div><div style="font-size:11px;color:#6b21a8">${reservation.date} by ${reservation.name}</div></div>`;
+  }
+
+  if (careNeeded) {
+    const needs = careNeeded.careNeeds.split(';').filter(Boolean);
+    const careLabels = { mulch: '🌱 Mulch', prune: '✂️ Prune', health: '🩺 Health', other: '⚠️ Other' };
+    const needsTags = needs.map(n => {
+      const tag = n.startsWith('other:') ? 'Other' : careLabels[n] || n;
+      return tag;
+    }).join(', ');
+    activitiesHTML += `<div style="background:#fef3c7;border-left:3px solid #d97706;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#92400e">🔧 Needs Care</div><div style="font-size:11px;color:#b45309">${needsTags}</div></div>`;
+  }
+
+  if (guard) {
+    activitiesHTML += `<div style="background:#dbeafe;border-left:3px solid #3d6b9e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#1e40af">🛡 Tree Guard</div><div style="font-size:11px;color:#1e3a8a">${guard.guardType}</div></div>`;
+  }
+
+  if (stewardRecord) {
+    activitiesHTML += `<div style="background:#dcfce7;border-left:3px solid #0f9e6e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#065f46">🌱 Community Stewarded</div><div style="font-size:11px;color:#047857">Caretaker: ${stewardRecord.caretaker}</div></div>`;
+  }
+
+  if (missingRecord) {
+    activitiesHTML += `<div style="background:#fed7aa;border-left:3px solid #a16207;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#7c2d12">⚠️ Report Missing</div><div style="font-size:11px;color:#9a3412">${missingRecord.type}</div></div>`;
+  }
+
+  // NYC Tree Map synced care activities
+  const tcAreas = tcLoad();
+  const matchingAreas = tcAreas.filter(a => String(a._treeId) === treeId);
+  let allCareEvents = [];
+  matchingAreas.forEach(area => {
+    if (area.careEvents && area.careEvents.length) {
+      allCareEvents = allCareEvents.concat(area.careEvents);
+    }
+  });
+
+  if (allCareEvents.length > 0) {
+    // Aggregate activity counts
+    const actCounts = {};
+    TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; });
+    allCareEvents.forEach(ev => {
+      (ev.activities || []).forEach(a => { if (actCounts[a] !== undefined) actCounts[a]++; });
+    });
+
+    // Activity summary badges
+    const actSummary = TC_ACTIVITIES.filter(a => actCounts[a.id] > 0).map(a =>
+      `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px">${a.emoji} ${a.label} <strong>×${actCounts[a.id]}</strong></span>`
+    ).join(' ');
+
+    // Build care log by year
+    const sorted = allCareEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1);
+    const events2026 = sorted.filter(ev => (ev.date || '').startsWith('2026'));
+    const events2025 = sorted.filter(ev => (ev.date || '').startsWith('2025'));
+    const eventsPre = sorted.filter(ev => { const y = (ev.date || '').slice(0, 4); return y && y < '2025'; });
+
+    let careLog = '';
+    if (events2026.length > 0) {
+      careLog += '<div style="font-size:10px;font-weight:700;color:#c62828;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #c6282844;margin-top:6px">2026</div>';
+      events2026.forEach(ev => {
+        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        const badges = (ev.activities || []).map(aid => {
+          const a = TC_ACTIVITIES.find(x => x.id === aid);
+          return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
+        }).join('');
+        careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px">${d} ${badges}</div>`;
+      });
+    }
+    if (events2025.length > 0) {
+      careLog += '<div style="font-size:10px;font-weight:700;color:#e65100;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #e6510044;margin-top:6px">2025</div>';
+      events2025.forEach(ev => {
+        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        const badges = (ev.activities || []).map(aid => {
+          const a = TC_ACTIVITIES.find(x => x.id === aid);
+          return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
+        }).join('');
+        careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px">${d} ${badges}</div>`;
+      });
+    }
+    if (eventsPre.length > 0) {
+      careLog += '<details style="margin-top:6px"><summary style="font-size:10px;color:var(--text3);cursor:pointer;padding:2px 0">Earlier visits (' + eventsPre.length + ')</summary>';
+      eventsPre.forEach(ev => {
+        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+        const badges = (ev.activities || []).map(aid => {
+          const a = TC_ACTIVITIES.find(x => x.id === aid);
+          return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
+        }).join('');
+        careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px;opacity:0.7">${d} ${badges}</div>`;
+      });
+      careLog += '</details>';
+    }
+
+    activitiesHTML += `<div style="background:#ecfdf5;border-left:3px solid #10b981;padding:10px;border-radius:4px">
+      <div style="font-size:12px;font-weight:600;color:#065f46;margin-bottom:6px">✅ Synced from NYC Tree Map</div>
+      ${actSummary ? `<div style="font-size:10px;color:#047857;margin-bottom:6px;display:flex;flex-wrap:wrap;gap:4px">${actSummary}</div>` : ''}
+      <div style="font-size:11px;color:#047857">${careLog}</div>
+    </div>`;
+  }
+
+  if (!reservation && !careNeeded && !guard && !stewardRecord && !missingRecord && allCareEvents.length === 0) {
+    activitiesHTML += '<div style="font-size:12px;color:var(--text3);font-style:italic;padding:8px">No care activities recorded</div>';
+  }
+
+  activitiesHTML += '</div></div>';
+
+  dashboardContent.innerHTML = `
+    <div style="padding:20px;max-width:100%;overflow-y:auto;max-height:calc(100% - 40px)">
+      <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <span style="background:${pm.color};color:white;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">Tier ${pm.label} / 4</span>
+        ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">${tree.health}</span>` : ''}
+      </div>
+      <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <span style="font-size:16px">📍</span>
+          <div><div style="font-weight:700;color:var(--text)">${address}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">
+          ${dbh && dbh !== 'N/A' ? `<span style="color:var(--text3)">Trunk DBH:</span><span style="color:var(--text)">${dbh}</span>` : ''}
+          ${tree.nta_name ? `<span style="color:var(--text3)">Neighborhood:</span><span style="color:var(--text)">${tree.nta_name}</span>` : ''}
+          ${tree.spc_latin ? `<span style="color:var(--text3)">Scientific:</span><span style="color:var(--text);font-style:italic">${tree.spc_latin}</span>` : ''}
+        </div>
+      </div>
+      ${activitiesHTML}
+      <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:10px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
+    </div>
+  `;
+}
+
 function tcZoomToReservation(id) {
   const res = reservationLoadSync().find(r => r.id === id);
   if (!res) return;
@@ -4769,176 +4941,9 @@ function tcZoomToReservation(id) {
   const tree = allTrees.find(t => String(t.tree_id || (t.latitude + '_' + t.longitude)) === treeId);
 
   if (tree) {
-    // Open the tree detail panel
-    const dashboardContent = document.getElementById('myblock-dashboard-content');
-    const noSelection = document.getElementById('myblock-no-selection');
-    if (dashboardContent && noSelection) {
-      noSelection.style.display = 'none';
-      dashboardContent.style.display = 'block';
-
-      // Build tree detail HTML
-      const pm = getPriorityMeta(tree._priority || 0);
-      const species = tree.spc_common || tree.spc_latin || 'Unknown species';
-      const address = tree.address || 'Unknown location';
-      const health = (tree.health || '').toLowerCase();
-      const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[health] || 'var(--text3)';
-      const dbh = tree.tree_dbh ? tree.tree_dbh + '"' : 'N/A';
-
-      // Get care activities for this tree
-      const reservations = reservationLoadSync();
-      const careItems = careNeededLoadSync();
-      const guards = treeGuardsLoadSync();
-      const stewarded = stewardedLoadSync();
-      const missing = missingLoadSync();
-
-      const treeId = String(tree.tree_id || (tree.latitude + '_' + tree.longitude));
-      const reservation = reservations.find(r => String(r.treeId) === treeId);
-      const careNeeded = careItems.find(c => String(c.treeId) === treeId);
-      const guard = guards.find(g => String(g.treeId) === treeId);
-      const stewardRecord = stewarded.find(s => String(s.treeId) === treeId);
-      const missingRecord = missing.find(m => String(m.treeId) === treeId);
-
-      // Check if tree is in PLANTINGS_DATA (LES Ecology Center plantings)
-      const plantingRecord = PLANTINGS_DATA.find(p =>
-        p.street.toUpperCase() === (tree.address || '').split(',')[0].toUpperCase().trim()
-      );
-
-      // Build care activity HTML
-      let activitiesHTML = '<div style="margin-bottom:16px"><h3 style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:6px">';
-
-      // NYC Plantings Data
-      if (plantingRecord) {
-        activitiesHTML += `<div style="background:#e0f2fe;border-left:3px solid #0284c7;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#0c4a6e">🌱 LES Ecology Center Planting</div><div style="font-size:11px;color:#164e63">Planted ${plantingRecord.planted} · ${plantingRecord.season}<br>Guard: ${plantingRecord.guard}</div></div>`;
-      }
-
-      if (reservation) {
-        activitiesHTML += `<div style="background:#f3e8ff;border-left:3px solid #7b3fa0;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#5b21b6">📅 Reserved for Care</div><div style="font-size:11px;color:#6b21a8">${reservation.date} by ${reservation.name}</div></div>`;
-      }
-
-      if (careNeeded) {
-        const needs = careNeeded.careNeeds.split(';').filter(Boolean);
-        const careLabels = { mulch: '🌱 Mulch', prune: '✂️ Prune', health: '🩺 Health', other: '⚠️ Other' };
-        const needsTags = needs.map(n => {
-          const tag = n.startsWith('other:') ? 'Other' : careLabels[n] || n;
-          return tag;
-        }).join(', ');
-        activitiesHTML += `<div style="background:#fef3c7;border-left:3px solid #d97706;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#92400e">🔧 Needs Care</div><div style="font-size:11px;color:#b45309">${needsTags}</div></div>`;
-      }
-
-      if (guard) {
-        activitiesHTML += `<div style="background:#dbeafe;border-left:3px solid #3d6b9e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#1e40af">🛡 Tree Guard</div><div style="font-size:11px;color:#1e3a8a">${guard.guardType}</div></div>`;
-      }
-
-      if (stewardRecord) {
-        activitiesHTML += `<div style="background:#dcfce7;border-left:3px solid #0f9e6e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#065f46">🌱 Community Stewarded</div><div style="font-size:11px;color:#047857">Caretaker: ${stewardRecord.caretaker}</div></div>`;
-      }
-
-      if (missingRecord) {
-        activitiesHTML += `<div style="background:#fed7aa;border-left:3px solid #a16207;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#7c2d12">⚠️ Report Missing</div><div style="font-size:11px;color:#9a3412">${missingRecord.type}</div></div>`;
-      }
-
-      // NYC Tree Map synced care activities
-      const tcAreas = tcLoad();
-      const matchingAreas = tcAreas.filter(a => String(a._treeId) === treeId);
-      let allCareEvents = [];
-      matchingAreas.forEach(area => {
-        if (area.careEvents && area.careEvents.length) {
-          allCareEvents = allCareEvents.concat(area.careEvents);
-        }
-      });
-
-      if (allCareEvents.length > 0) {
-        // Aggregate activity counts
-        const actCounts = {};
-        TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; });
-        allCareEvents.forEach(ev => {
-          (ev.activities || []).forEach(a => { if (actCounts[a] !== undefined) actCounts[a]++; });
-        });
-
-        // Activity summary badges
-        const actSummary = TC_ACTIVITIES.filter(a => actCounts[a.id] > 0).map(a =>
-          `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px">${a.emoji} ${a.label} <strong>×${actCounts[a.id]}</strong></span>`
-        ).join(' ');
-
-        // Build care log by year
-        const sorted = allCareEvents.slice().sort((a, b) => b.date > a.date ? 1 : -1);
-        const events2026 = sorted.filter(ev => (ev.date || '').startsWith('2026'));
-        const events2025 = sorted.filter(ev => (ev.date || '').startsWith('2025'));
-        const eventsPre = sorted.filter(ev => { const y = (ev.date || '').slice(0, 4); return y && y < '2025'; });
-
-        let careLog = '';
-        if (events2026.length > 0) {
-          careLog += '<div style="font-size:10px;font-weight:700;color:#c62828;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #c6282844;margin-top:6px">2026</div>';
-          events2026.forEach(ev => {
-            const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-            const badges = (ev.activities || []).map(aid => {
-              const a = TC_ACTIVITIES.find(x => x.id === aid);
-              return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
-            }).join('');
-            careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px">${d} ${badges}</div>`;
-          });
-        }
-        if (events2025.length > 0) {
-          careLog += '<div style="font-size:10px;font-weight:700;color:#e65100;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #e6510044;margin-top:6px">2025</div>';
-          events2025.forEach(ev => {
-            const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
-            const badges = (ev.activities || []).map(aid => {
-              const a = TC_ACTIVITIES.find(x => x.id === aid);
-              return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
-            }).join('');
-            careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px">${d} ${badges}</div>`;
-          });
-        }
-        if (eventsPre.length > 0) {
-          careLog += '<details style="margin-top:6px"><summary style="font-size:10px;color:var(--text3);cursor:pointer;padding:2px 0">Earlier visits (' + eventsPre.length + ')</summary>';
-          eventsPre.forEach(ev => {
-            const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-            const badges = (ev.activities || []).map(aid => {
-              const a = TC_ACTIVITIES.find(x => x.id === aid);
-              return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
-            }).join('');
-            careLog += `<div style="font-size:11px;color:var(--text2);padding:4px 0;display:flex;align-items:center;gap:4px;opacity:0.7">${d} ${badges}</div>`;
-          });
-          careLog += '</details>';
-        }
-
-        activitiesHTML += `<div style="background:#ecfdf5;border-left:3px solid #10b981;padding:10px;border-radius:4px">
-          <div style="font-size:12px;font-weight:600;color:#065f46;margin-bottom:6px">✅ Synced from NYC Tree Map</div>
-          ${actSummary ? `<div style="font-size:10px;color:#047857;margin-bottom:6px;display:flex;flex-wrap:wrap;gap:4px">${actSummary}</div>` : ''}
-          <div style="font-size:11px;color:#047857">${careLog}</div>
-        </div>`;
-      }
-
-      if (!reservation && !careNeeded && !guard && !stewardRecord && !missingRecord && allCareEvents.length === 0) {
-        activitiesHTML += '<div style="font-size:12px;color:var(--text3);font-style:italic;padding:8px">No care activities recorded</div>';
-      }
-
-      activitiesHTML += '</div></div>';
-
-      dashboardContent.innerHTML = `
-        <div style="padding:20px;max-width:100%;overflow-y:auto;max-height:calc(100% - 40px)">
-          <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
-          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-            <span style="background:${pm.color};color:white;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">Tier ${pm.label} / 4</span>
-            ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">${tree.health}</span>` : ''}
-          </div>
-          <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-              <span style="font-size:16px">📍</span>
-              <div><div style="font-weight:700;color:var(--text)">${address}</div></div>
-            </div>
-            <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">
-              ${dbh && dbh !== 'N/A' ? `<span style="color:var(--text3)">Trunk DBH:</span><span style="color:var(--text)">${dbh}</span>` : ''}
-              ${tree.nta_name ? `<span style="color:var(--text3)">Neighborhood:</span><span style="color:var(--text)">${tree.nta_name}</span>` : ''}
-              ${tree.spc_latin ? `<span style="color:var(--text3)">Scientific:</span><span style="color:var(--text);font-style:italic">${tree.spc_latin}</span>` : ''}
-            </div>
-          </div>
-          ${activitiesHTML}
-          <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:10px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
-        </div>
-      `;
-    }
+    openTreeDetailCard(tree);
   }
+}
 }
 
 function closeTreeCareDetail() {
@@ -5169,17 +5174,19 @@ function tcSelectArea(id) {
   tcSelectedId = id;
   renderClaimedBlocksSidebar();
   tcOpenDashboard(id);
-  // Pan the care map to this tree if it has a known location
+  // Pan the care map to this tree and open tree detail card
   if (tcCareMap) {
     const area = tcLoad().find(a => a.id === id);
     if (area && area._treeId) {
       const tid = String(area._treeId);
       let coords = _tcTreeCoords[tid];
-      if (!coords && typeof allTrees !== 'undefined') {
-        const ct = allTrees.find(t => String(t.tree_id) === tid);
-        if (ct && ct.latitude && ct.longitude) coords = { lat: parseFloat(ct.latitude), lng: parseFloat(ct.longitude) };
+      let tree = null;
+      if (typeof allTrees !== 'undefined') {
+        tree = allTrees.find(t => String(t.tree_id) === tid);
+        if (tree && tree.latitude && tree.longitude) coords = { lat: parseFloat(tree.latitude), lng: parseFloat(tree.longitude) };
       }
       if (coords && coords.lat && coords.lng) tcCareMap.setView([coords.lat, coords.lng], 17);
+      if (tree) openTreeDetailCard(tree);
     }
   }
 }
