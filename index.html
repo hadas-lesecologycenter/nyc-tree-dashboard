@@ -4668,13 +4668,13 @@ function renderReservationQueue() {
     row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
       'border-left:3px solid ' + (isPast ? 'var(--border)' : '#7b3fa0');
     row.onclick = () => tcZoomToReservation(res.id);
-    const treeTitle = res.address || res.species || ('Tree #' + res.treeId);
+    const treeTitle = res.species || ('Tree #' + res.treeId);
     row.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px">' + treeTitle + '</div>' +
-          (res.species && res.address
-            ? '<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">' + res.species + '</div>'
+          '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">' + treeTitle + '</div>' +
+          (res.address
+            ? '<div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;display:flex;align-items:center;gap:4px"><span>📍</span><span>' + res.address + '</span></div>'
             : '') +
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
             '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
@@ -4737,10 +4737,13 @@ function renderCareNeededQueue() {
     row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
       'border-left:3px solid #d97706';
     row.onclick = () => tcZoomToReservation(res.id);
-    const treeTitle = res.address || res.species || ('Tree #' + res.treeId);
+    const treeTitle = res.species || ('Tree #' + res.treeId);
     row.innerHTML =
       '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px">' + treeTitle + '</div>' +
+        '<div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">' + treeTitle + '</div>' +
+        (res.address
+          ? '<div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;display:flex;align-items:center;gap:4px"><span>📍</span><span>' + res.address + '</span></div>'
+          : '') +
         '<div style="margin-bottom:4px">' + needsTags + '</div>' +
         '<div style="display:flex;align-items:center;gap:6px">' +
           '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
