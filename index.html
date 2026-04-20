@@ -1605,11 +1605,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div id="tree-guard-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Your Name</label>
-        <input id="guard-name-input" type="text" placeholder="e.g., Jane Doe, John Smith"
-          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
-      </div>
-      <div style="margin-bottom:16px">
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Guard Type</label>
         <div style="display:flex;flex-direction:column;gap:10px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
@@ -3801,11 +3796,9 @@ function openTreeGuardModal(tree) {
   }
   document.getElementById('guard-standard').checked = true;
   document.getElementById('guard-nonstandard').checked = false;
-  document.getElementById('guard-name-input').value = '';
   document.getElementById('guard-note-input').value = '';
   document.getElementById('guard-note-section').style.display = 'none';
   modal.style.display = 'flex';
-  setTimeout(() => { const ni = document.getElementById('guard-name-input'); if (ni) ni.focus(); }, 100);
 }
 
 function closeTreeGuardModal() {
@@ -3823,8 +3816,6 @@ function toggleGuardNoteField() {
 function confirmTreeGuard() {
   const tree = _pendingTreeGuardTree;
   if (!tree) return;
-  const name = (document.getElementById('guard-name-input').value || '').trim();
-  if (!name) { document.getElementById('guard-name-input').focus(); return; }
 
   const guardType = document.querySelector('input[name="guard-type"]:checked')?.value || 'standard';
   const note = (document.getElementById('guard-note-input').value || '').trim();
@@ -3834,14 +3825,13 @@ function confirmTreeGuard() {
 
   guards.push({
     treeId,
-    markedBy: name,
+    markedBy: 'user',
     guardType: guardType,
     markedAt: new Date().toISOString(),
     note: note
   });
   treeGuardsSave(guards);
 
-  document.getElementById('guard-name-input').value = '';
   document.getElementById('guard-note-input').value = '';
   closeTreeGuardModal();
   updateTreeGuardButton(tree);
