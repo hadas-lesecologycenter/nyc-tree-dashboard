@@ -1248,9 +1248,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
           🌱 Community Stewarded
         </button>
-        <button id="mtp-guard-btn" onclick="toggleTreeGuardPresent(window._currentMapDetailTree)"
+        <button type="button" id="mtp-guard-btn" onclick="handleMapTreeGuardBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
-          🛡 Mark Tree Guard Present
+          🛡 Tree Guard?
         </button>
       </div>
     </div>
@@ -1567,6 +1567,44 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeStewardedModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
         <button type="button" onclick="confirmStewardship()" style="flex:2;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark as Stewarded</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREE GUARD MODAL -->
+  <div id="tree-guard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🛡 Tree Guard?</h2>
+        <button type="button" onclick="closeTreeGuardModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="tree-guard-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Your Name</label>
+        <input id="guard-name-input" type="text" placeholder="e.g., Jane Doe, John Smith"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Guard Type</label>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="guard-type" value="standard" id="guard-standard" style="width:16px;height:16px;cursor:pointer;accent-color:#3d6b9e" checked>
+            Standard
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="guard-type" value="non-standard" id="guard-nonstandard" style="width:16px;height:16px;cursor:pointer;accent-color:#3d6b9e" onchange="toggleGuardNoteField()">
+            Non-standard
+          </label>
+        </div>
+      </div>
+      <div id="guard-note-section" style="margin-bottom:16px;display:none">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Notes <span style="font-weight:400;color:var(--text3)">(describe the guard)</span></label>
+        <textarea id="guard-note-input" placeholder="e.g., homemade, metal, plastic, damaged, etc."
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeTreeGuardModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="confirmTreeGuard()" style="flex:2;padding:10px;background:#3d6b9e;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark Guard</button>
       </div>
     </div>
   </div>
@@ -3643,43 +3681,92 @@ async function treeGuardsSyncToGitHub(guards) {
 }
 
 // Toggle a tree's "has guard" status (called from tree detail card)
-function toggleTreeGuardPresent(tree) {
+let _pendingTreeGuardTree = null;
+
+function handleMapTreeGuardBtn() {
+  const tree = window._currentMapDetailTree;
   if (!tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const guards = treeGuardsLoadSync();
+  const guardRecord = guards.find(g => String(g.treeId) === treeId);
+  if (guardRecord) { treeGuardsRemoveByTreeId(treeId); updateTreeGuardButton(tree); }
+  else openTreeGuardModal(tree);
+}
+
+function openTreeGuardModal(tree) {
+  _pendingTreeGuardTree = tree;
 
   if (!getWriteToken()) {
-    showTokenSetupModal(() => toggleTreeGuardPresent(tree));
+    showTokenSetupModal(() => openTreeGuardModal(tree));
     return;
   }
 
-  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
-  const guards = treeGuardsLoadSync();
-  const existingIdx = guards.findIndex(g => String(g.treeId) === treeId);
-
-  if (existingIdx >= 0) {
-    // Remove
-    guards.splice(existingIdx, 1);
-    treeGuardsSave(guards);
-    tcShowSyncStatus('🛡 Tree guard removed');
-  } else {
-    // Add - prompt for guard type
-    const markedBy = prompt('Your name (to track who marked this):') || 'anonymous';
-    if (markedBy === null) return; // user cancelled
-
-    const guardType = prompt('Guard type:\n\nEnter "standard" for standard guard or "nonstandard" for other types.\n\nDefault is "standard".', 'standard') || 'standard';
-
-    guards.push({
-      treeId,
-      markedBy: markedBy.trim(),
-      guardType: guardType.trim().toLowerCase(),
-      markedAt: new Date().toISOString(),
-      note: ''
-    });
-    treeGuardsSave(guards);
-    tcShowSyncStatus('🛡 Tree marked as guarded (' + guardType.trim() + ')');
+  const modal = document.getElementById('tree-guard-modal');
+  if (!modal) return;
+  const info = document.getElementById('tree-guard-info');
+  if (info) {
+    const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+    const address = tree.address || 'Unknown location';
+    info.innerHTML =
+      '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' +
+        species +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + address + '</div>';
   }
-  // Update UI
+  document.getElementById('guard-standard').checked = true;
+  document.getElementById('guard-nonstandard').checked = false;
+  document.getElementById('guard-name-input').value = '';
+  document.getElementById('guard-note-input').value = '';
+  document.getElementById('guard-note-section').style.display = 'none';
+  modal.style.display = 'flex';
+  setTimeout(() => { const ni = document.getElementById('guard-name-input'); if (ni) ni.focus(); }, 100);
+}
+
+function closeTreeGuardModal() {
+  const modal = document.getElementById('tree-guard-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingTreeGuardTree = null;
+}
+
+function toggleGuardNoteField() {
+  const isNonStandard = document.getElementById('guard-nonstandard').checked;
+  const noteSection = document.getElementById('guard-note-section');
+  if (noteSection) noteSection.style.display = isNonStandard ? 'block' : 'none';
+}
+
+function confirmTreeGuard() {
+  const tree = _pendingTreeGuardTree;
+  if (!tree) return;
+  const name = (document.getElementById('guard-name-input').value || '').trim();
+  if (!name) { document.getElementById('guard-name-input').focus(); return; }
+
+  const guardType = document.querySelector('input[name="guard-type"]:checked')?.value || 'standard';
+  const note = (document.getElementById('guard-note-input').value || '').trim();
+
+  const guards = treeGuardsLoadSync();
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+
+  guards.push({
+    treeId,
+    markedBy: name,
+    guardType: guardType,
+    markedAt: new Date().toISOString(),
+    note: note
+  });
+  treeGuardsSave(guards);
+
+  document.getElementById('guard-name-input').value = '';
+  document.getElementById('guard-note-input').value = '';
+  closeTreeGuardModal();
   updateTreeGuardButton(tree);
   applyFilters();
+  tcShowSyncStatus('🛡 Tree marked as guarded (' + guardType + ')');
+}
+
+function treeGuardsRemoveByTreeId(treeId) {
+  treeGuardsSave(treeGuardsLoadSync().filter(g => String(g.treeId) !== String(treeId)));
+  applyFilters();
+  tcShowSyncStatus('🛡 Tree guard removed');
 }
 
 // Update the button label in the tree detail panel
@@ -3691,7 +3778,7 @@ function updateTreeGuardButton(tree) {
   const guardRecord = guards.find(g => String(g.treeId) === treeId);
   const has = !!guardRecord;
   const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
-  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Mark Tree Guard Present';
+  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Tree Guard?';
   btn.textContent = label;
   const bg = has ? '#2d5180' : '#3d6b9e';
   btn.style.background = bg;
