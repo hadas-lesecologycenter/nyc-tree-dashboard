@@ -5241,9 +5241,7 @@ async function tcDeleteCareEvent(areaId, eventIdx) {
 function tcOpenDashboard(id) {
   const area = tcGet(id);
   if (!area) return;
-  const noSel = document.getElementById('myblock-no-selection');
   const content = document.getElementById('myblock-dashboard-content');
-  if (noSel) noSel.style.display = 'none';
   if (!content) return;
   content.style.display = 'block';
 
