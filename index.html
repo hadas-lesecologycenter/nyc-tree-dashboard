@@ -2752,6 +2752,7 @@ function openMapTreeDetail(tree) {
   const panel = document.getElementById('map-tree-panel');
   if (!panel) return;
   window._currentMapDetailTree = tree;
+  window._currentMapDetailReservation = null;
   panel.style.display = 'block';
   document.getElementById('map-view').classList.add('tree-panel-open');
 
@@ -2885,11 +2886,13 @@ function openReservationDetail(res) {
     '</div>'
   ).join('');
 
+  window._currentMapDetailReservation = res;
   const btn = document.getElementById('mtp-reserve-btn');
   if (btn) {
     btn.textContent = '🗑 Remove Reservation';
     btn.style.background = '#b0003a';
-    btn.onclick = () => { reservationRemove(res.id); closeMapTreeDetail(); };
+    btn.style.backgroundColor = '#b0003a';
+    btn.style.boxShadow = '0 2px 6px rgba(176,0,58,0.35)';
   }
 }
 
@@ -4261,6 +4264,11 @@ function updateReserveButton(tree) {
 }
 
 function handleMapReserveBtn() {
+  if (!window._currentMapDetailTree && window._currentMapDetailReservation) {
+    reservationRemove(window._currentMapDetailReservation.id);
+    closeMapTreeDetail();
+    return;
+  }
   const tree = window._currentMapDetailTree;
   if (!tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
