@@ -1,15 +1,3 @@
-/**
- * Tree Care Data - Google Apps Script
- * =====================================
- * SETUP:
- *   1. Go to https://script.google.com -> New Project
- *   2. Paste this file as Code.gs
- *   3. Update TREE_CARE_SHEET_ID below with your Sheet ID
- *   4. Deploy -> New deployment -> Web app
- *      Execute as: Me | Access: Anyone
- *   5. Copy the deployment URL into index.html as TREE_CARE_SCRIPT_URL
- */
-
 var TREE_CARE_SHEET_ID = 'YOUR_SHEET_ID_HERE';
 
 var SHEETS = ['Reservations', 'TreeGuards', 'CareNeeded', 'CommunityStewardship', 'MissingTrees'];
@@ -53,16 +41,14 @@ function respond(obj) {
 function setupSheets() {
   var ss = SpreadsheetApp.openById(TREE_CARE_SHEET_ID);
   var headers = {
-    'Reservations':          ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt'],
-    'TreeGuards':            ['treeId','markedBy','guardType','markedAt','note'],
-    'CareNeeded':            ['treeId','careNeeds','markedAt','markedBy'],
-    'CommunityStewardship':  ['treeId','caretaker','activities','markedAt'],
-    'MissingTrees':          ['treeId','type','note','markedAt']
+    'Reservations': ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt'],
+    'TreeGuards': ['treeId','markedBy','guardType','markedAt','note'],
+    'CareNeeded': ['treeId','careNeeds','markedAt','markedBy'],
+    'CommunityStewardship': ['treeId','caretaker','activities','markedAt'],
+    'MissingTrees': ['treeId','type','note','markedAt']
   };
   SHEETS.forEach(function(name) {
     var ws = ss.getSheetByName(name) || ss.insertSheet(name);
-    if (ws.getLastRow() === 0) {
-      ws.appendRow(headers[name]);
-    }
+    if (ws.getLastRow() === 0) ws.appendRow(headers[name]);
   });
 }
