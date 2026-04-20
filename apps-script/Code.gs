@@ -31,7 +31,7 @@ var CONFIG = {
 };
 
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('Index.html')
+  return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('LES Ecology - Event Dashboard')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
