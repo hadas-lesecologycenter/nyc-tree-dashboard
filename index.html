@@ -1236,15 +1236,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-badge" style="margin-bottom:12px"></div>
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
-        <button id="mtp-reserve-btn" onclick="openReserveModal(window._currentMapDetailTree)"
+        <button id="mtp-reserve-btn" onclick="handleMapReserveBtn()"
           style="margin-top:14px;width:100%;padding:11px;background:#7b3fa0;background-color:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
           📅 Reserve for Care
         </button>
-        <button id="mtp-needs-care-btn" onclick="openNeedsCareModal(window._currentMapDetailTree)"
+        <button id="mtp-needs-care-btn" onclick="handleMapNeedsCareBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#e07b00;background-color:#e07b00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(224,123,0,0.35)">
           🔧 Needs Care
         </button>
-        <button id="mtp-stewarded-btn" onclick="openStewardedModal(window._currentMapDetailTree)"
+        <button id="mtp-stewarded-btn" onclick="handleMapStewardedBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
           🌱 Community Stewarded
         </button>
@@ -3841,14 +3841,14 @@ function updateNeedsCareButton(tree) {
   const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
   if (has) {
     btn.textContent = '🔧 Remove Care Flag';
-    btn.style.background = btn.style.backgroundColor = '#7d3500';
+    btn.style.background = '#7d3500';
+    btn.style.backgroundColor = '#7d3500';
     btn.style.boxShadow = '0 2px 6px rgba(125,53,0,0.35)';
-    btn.onclick = () => { careNeededRemoveByTreeId(treeId); updateNeedsCareButton(tree); };
   } else {
     btn.textContent = '🔧 Needs Care';
-    btn.style.background = btn.style.backgroundColor = '#e07b00';
+    btn.style.background = '#e07b00';
+    btn.style.backgroundColor = '#e07b00';
     btn.style.boxShadow = '0 2px 6px rgba(224,123,0,0.35)';
-    btn.onclick = () => openNeedsCareModal(window._currentMapDetailTree);
   }
   btn.style.color = '#fff';
   btn.style.border = 'none';
@@ -3986,14 +3986,14 @@ function updateStewardedButton(tree) {
   const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
   if (has) {
     btn.textContent = '🌱 Remove Stewardship';
-    btn.style.background = btn.style.backgroundColor = '#0b7a55';
+    btn.style.background = '#0b7a55';
+    btn.style.backgroundColor = '#0b7a55';
     btn.style.boxShadow = '0 2px 6px rgba(11,122,85,0.35)';
-    btn.onclick = () => { stewardedRemoveByTreeId(treeId); updateStewardedButton(tree); };
   } else {
     btn.textContent = '🌱 Community Stewarded';
-    btn.style.background = btn.style.backgroundColor = '#0f9e6e';
+    btn.style.background = '#0f9e6e';
+    btn.style.backgroundColor = '#0f9e6e';
     btn.style.boxShadow = '0 2px 6px rgba(15,158,110,0.35)';
-    btn.onclick = () => openStewardedModal(window._currentMapDetailTree);
   }
   btn.style.color = '#fff';
   btn.style.border = 'none';
@@ -4093,18 +4093,45 @@ function updateReserveButton(tree) {
   const res = reservationLoadSync().find(r => String(r.treeId) === treeId);
   if (res) {
     btn.textContent = '🗑 Remove Reservation';
-    btn.style.background = btn.style.backgroundColor = '#b0003a';
+    btn.style.background = '#b0003a';
+    btn.style.backgroundColor = '#b0003a';
     btn.style.boxShadow = '0 2px 6px rgba(176,0,58,0.35)';
-    btn.onclick = () => { reservationRemove(res.id); closeMapTreeDetail(); };
   } else {
     btn.textContent = '📅 Reserve for Care';
-    btn.style.background = btn.style.backgroundColor = '#7b3fa0';
+    btn.style.background = '#7b3fa0';
+    btn.style.backgroundColor = '#7b3fa0';
     btn.style.boxShadow = '0 2px 6px rgba(123,63,160,0.35)';
-    btn.onclick = () => openReserveModal(window._currentMapDetailTree);
   }
   btn.style.color = '#fff';
   btn.style.border = 'none';
-  btn.style.webkitAppearance = btn.style.appearance = 'none';
+  btn.style.webkitAppearance = 'none';
+}
+
+function handleMapReserveBtn() {
+  const tree = window._currentMapDetailTree;
+  if (!tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const res = reservationLoadSync().find(r => String(r.treeId) === treeId);
+  if (res) { reservationRemove(res.id); closeMapTreeDetail(); }
+  else openReserveModal(tree);
+}
+
+function handleMapNeedsCareBtn() {
+  const tree = window._currentMapDetailTree;
+  if (!tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const has = careNeededLoadSync().some(i => String(i.treeId) === treeId);
+  if (has) { careNeededRemoveByTreeId(treeId); updateNeedsCareButton(tree); }
+  else openNeedsCareModal(tree);
+}
+
+function handleMapStewardedBtn() {
+  const tree = window._currentMapDetailTree;
+  if (!tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
+  if (has) { stewardedRemoveByTreeId(treeId); updateStewardedButton(tree); }
+  else openStewardedModal(tree);
 }
 
 let _pendingReserveTree = null;
