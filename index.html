@@ -1363,6 +1363,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-missing" onchange="applyFilters()">
             ⚠️ Missing/Removed
           </label>
+          <button type="button" onclick="clearAllFilters()" style="width:100%;margin-top:12px;padding:8px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Clear All</button>
         </div>
 
         <div class="cp-section">
@@ -2151,6 +2152,19 @@ function applyFilters(reload = false) {
   if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees`;
   updateMap();
   updateStats();
+}
+
+function clearAllFilters() {
+  document.getElementById('f-health').value = '';
+  document.getElementById('f-care-needed').checked = false;
+  document.getElementById('f-tree-guards').checked = false;
+  document.getElementById('f-reserved').checked = false;
+  document.getElementById('f-stewarded').checked = false;
+  document.getElementById('f-missing').checked = false;
+  filterSel.species.clear();
+  filterSel.age.clear();
+  msUpdateLabel('species');
+  applyFilters();
 }
 
 // ========== MAP ==========
