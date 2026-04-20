@@ -4784,8 +4784,57 @@ function tcZoomToReservation(id) {
       const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[health] || 'var(--text3)';
       const dbh = tree.tree_dbh ? tree.tree_dbh + '"' : 'N/A';
 
+      // Get care activities for this tree
+      const reservations = reservationLoadSync();
+      const careItems = careNeededLoadSync();
+      const guards = treeGuardsLoadSync();
+      const stewarded = stewardedLoadSync();
+      const missing = missingLoadSync();
+
+      const treeId = String(tree.tree_id || (tree.latitude + '_' + tree.longitude));
+      const reservation = reservations.find(r => String(r.treeId) === treeId);
+      const careNeeded = careItems.find(c => String(c.treeId) === treeId);
+      const guard = guards.find(g => String(g.treeId) === treeId);
+      const stewardRecord = stewarded.find(s => String(s.treeId) === treeId);
+      const missingRecord = missing.find(m => String(m.treeId) === treeId);
+
+      // Build care activity HTML
+      let activitiesHTML = '<div style="margin-bottom:16px"><h3 style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:6px">';
+
+      if (reservation) {
+        activitiesHTML += `<div style="background:#f3e8ff;border-left:3px solid #7b3fa0;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#5b21b6">📅 Reserved for Care</div><div style="font-size:11px;color:#6b21a8">${reservation.date} by ${reservation.name}</div></div>`;
+      }
+
+      if (careNeeded) {
+        const needs = careNeeded.careNeeds.split(';').filter(Boolean);
+        const careLabels = { mulch: '🌱 Mulch', prune: '✂️ Prune', health: '🩺 Health', other: '⚠️ Other' };
+        const needsTags = needs.map(n => {
+          const tag = n.startsWith('other:') ? 'Other' : careLabels[n] || n;
+          return tag;
+        }).join(', ');
+        activitiesHTML += `<div style="background:#fef3c7;border-left:3px solid #d97706;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#92400e">🔧 Needs Care</div><div style="font-size:11px;color:#b45309">${needsTags}</div></div>`;
+      }
+
+      if (guard) {
+        activitiesHTML += `<div style="background:#dbeafe;border-left:3px solid #3d6b9e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#1e40af">🛡 Tree Guard</div><div style="font-size:11px;color:#1e3a8a">${guard.guardType}</div></div>`;
+      }
+
+      if (stewardRecord) {
+        activitiesHTML += `<div style="background:#dcfce7;border-left:3px solid #0f9e6e;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#065f46">🌱 Community Stewarded</div><div style="font-size:11px;color:#047857">Caretaker: ${stewardRecord.caretaker}</div></div>`;
+      }
+
+      if (missingRecord) {
+        activitiesHTML += `<div style="background:#fed7aa;border-left:3px solid #a16207;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#7c2d12">⚠️ Report Missing</div><div style="font-size:11px;color:#9a3412">${missingRecord.type}</div></div>`;
+      }
+
+      if (!reservation && !careNeeded && !guard && !stewardRecord && !missingRecord) {
+        activitiesHTML += '<div style="font-size:12px;color:var(--text3);font-style:italic;padding:8px">No care activities recorded</div>';
+      }
+
+      activitiesHTML += '</div></div>';
+
       dashboardContent.innerHTML = `
-        <div style="padding:20px;max-width:100%">
+        <div style="padding:20px;max-width:100%;overflow-y:auto;max-height:calc(100% - 40px)">
           <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
           <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
             <span style="background:${pm.color};color:white;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">Tier ${pm.label} / 4</span>
@@ -4802,6 +4851,7 @@ function tcZoomToReservation(id) {
               ${tree.spc_latin ? `<span style="color:var(--text3)">Scientific:</span><span style="color:var(--text);font-style:italic">${tree.spc_latin}</span>` : ''}
             </div>
           </div>
+          ${activitiesHTML}
           <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:10px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
         </div>
       `;
