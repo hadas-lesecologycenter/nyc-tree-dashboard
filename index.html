@@ -3074,7 +3074,6 @@ function tcYearColor(year) {
 
 let tcCareMap        = null;
 let tcCareYearLayers = {}; // year → L.LayerGroup
-let tcSelectedTreeMarker = null; // marker for currently selected tree
 
 function tcToggleCareYear(year, visible) {
   if (!tcCareMap || !tcCareYearLayers[year]) return;
@@ -4769,19 +4768,6 @@ function openTreeDetailCard(tree) {
 
   const treeId = String(tree.tree_id || (tree.latitude + '_' + tree.longitude));
 
-  // Add a visual marker on the care map for the selected tree
-  if (tcCareMap && tree.latitude && tree.longitude) {
-    if (tcSelectedTreeMarker) tcSelectedTreeMarker.remove();
-    tcSelectedTreeMarker = L.circleMarker([tree.latitude, tree.longitude], {
-      radius: 12,
-      fillColor: '#fbbf24',
-      color: '#f59e0b',
-      weight: 3,
-      opacity: 1,
-      fillOpacity: 0.8
-    }).addTo(tcCareMap);
-  }
-
   // Get care activities for this tree
   const reservations = reservationLoadSync();
   const careItems = careNeededLoadSync();
@@ -4966,10 +4952,6 @@ function closeTreeCareDetail() {
   if (dashboardContent && noSelection) {
     noSelection.style.display = 'flex';
     dashboardContent.style.display = 'none';
-  }
-  if (tcSelectedTreeMarker) {
-    tcSelectedTreeMarker.remove();
-    tcSelectedTreeMarker = null;
   }
 }
 
