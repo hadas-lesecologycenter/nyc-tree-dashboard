@@ -1347,6 +1347,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-reserved" onchange="applyFilters()">
+            📅 Reserved for Care
+          </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-stewarded" onchange="applyFilters()">
+            🌱 Community Stewarded
+          </label>
         </div>
 
         <div class="cp-section">
@@ -2063,6 +2071,8 @@ function applyFilters(reload = false) {
   const selAge = filterSel.age;
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
+  const reservedOnly = document.getElementById('f-reserved')?.checked || false;
+  const stewardedOnly = document.getElementById('f-stewarded')?.checked || false;
 
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
@@ -2081,6 +2091,14 @@ function applyFilters(reload = false) {
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
     base = base.filter(t => guardedIds.has(String(t.tree_id)));
+  }
+  if (reservedOnly) {
+    const reservedIds = getReservationTreeIds();
+    base = base.filter(t => reservedIds.has(String(t.tree_id)));
+  }
+  if (stewardedOnly) {
+    const stewardedIds = getStewardedTreeIds();
+    base = base.filter(t => stewardedIds.has(String(t.tree_id)));
   }
   filteredTrees = base;
 
@@ -3641,6 +3659,14 @@ function treeGuardsLoadSync() {
 
 function getTreeGuardIds() {
   return new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
+}
+
+function getReservationTreeIds() {
+  return new Set(reservationLoadSync().map(r => String(r.treeId)));
+}
+
+function getStewardedTreeIds() {
+  return new Set(stewardedLoadSync().map(s => String(s.treeId)));
 }
 
 function treeGuardsSave(guards) {
