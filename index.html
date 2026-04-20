@@ -1252,6 +1252,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
           🛡 Tree Guard?
         </button>
+        <button type="button" id="mtp-missing-btn" onclick="handleMapMissingBtn()"
+          style="margin-top:8px;width:100%;padding:11px;background:#a16207;background-color:#a16207;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(161,98,7,0.35)">
+          ⚠️ Report Missing?
+        </button>
       </div>
     </div>
     <div class="map-overlay">
@@ -1354,6 +1358,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label class="cp-chk">
             <input type="checkbox" id="f-stewarded" onchange="applyFilters()">
             🌱 Community Stewarded
+          </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-missing" onchange="applyFilters()">
+            ⚠️ Missing/Removed
           </label>
         </div>
 
@@ -1622,6 +1630,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeTreeGuardModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
         <button type="button" onclick="confirmTreeGuard()" style="flex:2;padding:10px;background:#3d6b9e;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark Guard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT MISSING MODAL -->
+  <div id="missing-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">⚠️ Report Missing Tree</h2>
+        <button type="button" onclick="closeMissingModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="missing-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">What happened to this tree? <span style="font-weight:400;color:var(--text3)">(check one)</span></label>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="missing-type" value="dead" id="missing-dead" style="width:16px;height:16px;cursor:pointer;accent-color:#a16207" checked>
+            ☠️ Dead/Dying
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="missing-type" value="stump" id="missing-stump" style="width:16px;height:16px;cursor:pointer;accent-color:#a16207">
+            🪵 Stump Only
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="missing-type" value="empty" id="missing-empty" style="width:16px;height:16px;cursor:pointer;accent-color:#a16207">
+            ⬜ Empty Tree Bed
+          </label>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <textarea id="missing-note-input" placeholder="e.g., recently cut down, replaced with another tree, etc."
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeMissingModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="confirmMissing()" style="flex:2;padding:10px;background:#a16207;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Report Missing</button>
       </div>
     </div>
   </div>
@@ -2073,6 +2118,7 @@ function applyFilters(reload = false) {
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
   const reservedOnly = document.getElementById('f-reserved')?.checked || false;
   const stewardedOnly = document.getElementById('f-stewarded')?.checked || false;
+  const missingOnly = document.getElementById('f-missing')?.checked || false;
 
   let base = [...allTrees];
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
@@ -2099,6 +2145,10 @@ function applyFilters(reload = false) {
   if (stewardedOnly) {
     const stewardedIds = getStewardedTreeIds();
     base = base.filter(t => stewardedIds.has(String(t.tree_id)));
+  }
+  if (missingOnly) {
+    const missingIds = getMissingTreeIds();
+    base = base.filter(t => missingIds.has(String(t.tree_id)));
   }
   filteredTrees = base;
 
@@ -2705,6 +2755,7 @@ function openMapTreeDetail(tree) {
   updateNeedsCareButton(tree);
   updateStewardedButton(tree);
   updateTreeGuardButton(tree);
+  updateMissingButton(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -4138,6 +4189,182 @@ function updateStewardedButton(tree) {
   btn.style.color = '#fff';
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
+}
+
+// ========== MISSING TREES (dead, stump, empty bed) ==========
+const MISSING_PATH = 'data/missing-trees.csv';
+const MISSING_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + MISSING_PATH;
+
+async function missingLoad() {
+  try {
+    const res = await fetch(MISSING_CSV_URL);
+    if (res.ok) {
+      const csv = await res.text();
+      const items = [];
+      const lines = csv.trim().split('\n');
+      lines.slice(1).forEach(line => {
+        if (!line.trim()) return;
+        const [treeId, type, note, markedAt] = tcParseCSVLine(line);
+        if (treeId) items.push({ treeId, type, note, markedAt });
+      });
+      localStorage.setItem('tc_missing', JSON.stringify(items));
+      return items;
+    }
+  } catch (e) {}
+  try { return JSON.parse(localStorage.getItem('tc_missing') || '[]'); }
+  catch(e) { return []; }
+}
+
+function missingLoadSync() {
+  try { return JSON.parse(localStorage.getItem('tc_missing') || '[]'); }
+  catch(e) { return []; }
+}
+
+function missingSave(items) {
+  localStorage.setItem('tc_missing', JSON.stringify(items));
+  missingSyncToGitHub(items);
+}
+
+async function missingSyncToGitHub(items) {
+  const token = getWriteToken();
+  if (!token) return;
+  try {
+    const escapeCSV = (v) => {
+      if (!v) return '';
+      v = String(v).replace(/"/g, '""');
+      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
+      return v;
+    };
+    const header = 'treeId,type,note,markedAt\n';
+    const rows = items.map(i =>
+      [i.treeId, escapeCSV(i.type), escapeCSV(i.note), i.markedAt].join(',')
+    ).join('\n');
+    const csv = header + rows;
+
+    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + MISSING_PATH;
+    const headers = {
+      'Authorization': 'token ' + token,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'nyc-tree-dashboard'
+    };
+    let sha = null;
+    try {
+      const getRes = await fetch(apiUrl, { headers });
+      if (getRes.ok) sha = (await getRes.json()).sha;
+    } catch (e) {}
+    await fetch(apiUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        message: '⚠️ Sync missing trees',
+        content: btoa(csv),
+        sha: sha || undefined
+      })
+    });
+  } catch (e) {
+    console.error('Missing trees GitHub sync error:', e);
+  }
+}
+
+function getMissingTreeIds() {
+  return new Set(missingLoadSync().map(m => String(m.treeId)));
+}
+
+function missingRemoveByTreeId(treeId) {
+  missingSave(missingLoadSync().filter(m => String(m.treeId) !== String(treeId)));
+  applyFilters();
+  tcShowSyncStatus('⚠️ Missing tree report removed');
+}
+
+let _pendingMissingTree = null;
+
+function handleMapMissingBtn() {
+  const tree = window._currentMapDetailTree;
+  if (!tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const missing = missingLoadSync();
+  const missingRecord = missing.find(m => String(m.treeId) === treeId);
+  if (missingRecord) { missingRemoveByTreeId(treeId); updateMissingButton(tree); }
+  else openMissingModal(tree);
+}
+
+function openMissingModal(tree) {
+  _pendingMissingTree = tree;
+
+  if (!getWriteToken()) {
+    showTokenSetupModal(() => openMissingModal(tree));
+    return;
+  }
+
+  const modal = document.getElementById('missing-modal');
+  if (!modal) return;
+  const info = document.getElementById('missing-info');
+  if (info) {
+    const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+    const address = tree.address || 'Unknown location';
+    info.innerHTML =
+      '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' +
+        species +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + address + '</div>';
+  }
+  document.getElementById('missing-dead').checked = true;
+  document.getElementById('missing-stump').checked = false;
+  document.getElementById('missing-empty').checked = false;
+  document.getElementById('missing-note-input').value = '';
+  modal.style.display = 'flex';
+}
+
+function closeMissingModal() {
+  const modal = document.getElementById('missing-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingMissingTree = null;
+}
+
+function confirmMissing() {
+  const tree = _pendingMissingTree;
+  if (!tree) return;
+
+  const type = document.querySelector('input[name="missing-type"]:checked')?.value || 'dead';
+  const note = (document.getElementById('missing-note-input').value || '').trim();
+
+  const missing = missingLoadSync();
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const existingIdx = missing.findIndex(m => String(m.treeId) === treeId);
+  if (existingIdx >= 0) missing.splice(existingIdx, 1);
+
+  missing.push({
+    treeId,
+    type,
+    note,
+    markedAt: new Date().toISOString()
+  });
+  missingSave(missing);
+
+  document.getElementById('missing-note-input').value = '';
+  closeMissingModal();
+  updateMissingButton(tree);
+  applyFilters();
+  tcShowSyncStatus('⚠️ Tree reported as ' + type);
+}
+
+function updateMissingButton(tree) {
+  const btn = document.getElementById('mtp-missing-btn');
+  if (!btn || !tree) return;
+  const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+  const missing = missingLoadSync();
+  const missingRecord = missing.find(m => String(m.treeId) === treeId);
+  const has = !!missingRecord;
+  const missingType = missingRecord ? (missingRecord.type || '') : '';
+  const label = has ? ('⚠️ ' + missingType) : '⚠️ Report Missing?';
+  btn.textContent = label;
+  const bg = has ? '#7c2d12' : '#a16207';
+  btn.style.background = bg;
+  btn.style.backgroundColor = bg;
+  btn.style.color = '#fff';
+  btn.style.border = 'none';
+  btn.style.webkitAppearance = 'none';
+  btn.style.boxShadow = '0 2px 6px rgba(161,98,7,0.35)';
 }
 
 function reservationSave(reservations) {
