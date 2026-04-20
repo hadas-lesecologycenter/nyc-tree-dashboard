@@ -26,7 +26,7 @@ var CONFIG = {
     'Hadas': '',
     'Gretel': ''
   },
-  EVENTBRITE_TOKEN: '',
+  EVENTBRITE_TOKEN: 'EOOY2OVT2KXVOXMOMQHL',
   EVENTBRITE_ORG_ID: '13297911311'
 };
 
