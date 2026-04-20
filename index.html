@@ -3607,7 +3607,7 @@ const RESERVATIONS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS
 // without needing their own GitHub PAT. Use a fine-grained PAT scoped to
 // contents:write on this repo only (Settings → Developer settings → Fine-grained tokens).
 // Leave empty to fall back to each user's personal token stored in localStorage.
-const COMMUNITY_WRITE_TOKEN = '';
+const COMMUNITY_WRITE_TOKEN = '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';
 
 function getWriteToken() {
   return COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok') || null;
