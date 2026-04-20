@@ -907,6 +907,15 @@ function genEventBrief(ev) {
 function S(t) { return '\n<strong style="color:#2d6a4f;font-size:13px;display:block;margin:14px 0 6px;border-bottom:2px solid #d8e2dc;padding-bottom:3px">' + t + '</strong>\n'; }
 function F(l, v) { const val = v || 'TBD'; return '<span style="font-weight:600;color:#344e41;font-size:12px">' + l + ':</span> <span' + (val==='TBD'||val==='N/A' ? ' class="highlight"' : '') + '>' + val + '</span>\n'; }
 
+// ===== INTEGRATION HELPERS =====
+function buildReportFormUrl(ev) {
+  return 'https://docs.google.com/forms/d/e/1FAIpQLSftVFR0w5zrNKr_T00DxueKDp3S5bM919cQ3paHQn9igpvUfw/viewform?usp=pp_url' +
+    '&entry.2077906898=' + encodeURIComponent(ev.owner||'') +
+    '&entry.775101325=' + encodeURIComponent(fmtDate(ev.date)) +
+    '&entry.1505955813=' + encodeURIComponent(ev.location||'') +
+    '&entry.1659762902=' + encodeURIComponent(ev.type||'');
+}
+
 // ===== EVENTS LIST =====
 function renderEvents() {
   const container = document.getElementById('events-list');
@@ -919,10 +928,17 @@ function renderEvents() {
     const t = ev.tracker || {};
     const fields = [['briefCreated','Brief'],['eventbriteCreated','Eventbrite'],['calendarCreated','Calendar'],['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Reminder'],['activityReport','Report'],['treeMapDone','Tree Map'],['thankYouSent','Thank You']];
     const checks = fields.map(([k,l]) => '<label><input type="checkbox" '+(t[k]?'checked':'')+' onchange="event.stopPropagation();toggleTracker('+ev.id+',\''+k+'\')"> '+l+'</label>').join('');
-    const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSftVFR0w5zrNKr_T00DxueKDp3S5bM919cQ3paHQn9igpvUfw/viewform?usp=pp_url&entry.2077906898=' + encodeURIComponent(ev.owner||'') + '&entry.775101325=' + encodeURIComponent(fmtDate(ev.date)) + '&entry.1505955813=' + encodeURIComponent(ev.location||'') + '&entry.1659762902=' + encodeURIComponent(ev.type||'');
+    const formUrl = buildReportFormUrl(ev);
+    const ebUrl = ev.eventbrite || 'https://www.eventbrite.com/manage/events/create';
+    const ebLabel = ev.eventbrite ? 'Eventbrite' : '+ Eventbrite';
+    const isPublic = ev.type && (/Public|Workshop|Walk|Tabling/i.test(ev.type));
     return '<div class="event-card '+(ev.status||'confirmed')+'" onclick="loadEventOutputs('+ev.id+')">' +
       '<div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\''+formUrl+'\',\'_blank\')">Report</button> <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\'https://photos.google.com/share/AF1QipP_n-l0r0Q5x5XK_-SC6HvS_RKvhj3E21JOjKTknZa5M6F6US8-7MI-fo85AWpCWg\',\'_blank\')">Photos</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button>' +
+      (isPublic ? ' <button class="btn btn-sm btn-copy" style="'+(ev.eventbrite?'background:#e85d04':'background:#52796f')+'" onclick="event.stopPropagation();window.open(\''+ebUrl+'\',\'_blank\')">'+ebLabel+'</button>' : '') +
+      ' <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\''+formUrl+'\',\'_blank\')">Report</button>' +
+      ' <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\'https://photos.google.com/share/AF1QipP_n-l0r0Q5x5XK_-SC6HvS_RKvhj3E21JOjKTknZa5M6F6US8-7MI-fo85AWpCWg\',\'_blank\')">Photos</button>' +
+      ' <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div>' +
       '<div class="event-card-meta">'+fmtDate(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+' &middot; '+ev.type+'</div>' +
       '<div class="tracker-checks">'+checks+'</div></div>';
   }).join('');

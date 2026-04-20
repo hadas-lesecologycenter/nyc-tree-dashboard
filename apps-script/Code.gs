@@ -25,7 +25,9 @@ var CONFIG = {
     'Maddy': '',
     'Hadas': '',
     'Gretel': ''
-  }
+  },
+  EVENTBRITE_TOKEN: '',
+  EVENTBRITE_ORG_ID: '13297911311'
 };
 
 function doGet(e) {
@@ -288,8 +290,68 @@ function formatDue_(dueStr) {
   return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
 }
 
+/**
+ * ========================================================================
+ * EVENTBRITE INTEGRATION
+ * ========================================================================
+ * Creates an Eventbrite event from dashboard event data.
+ *
+ * SETUP:
+ *   1. Go to https://www.eventbrite.com/platform/api-keys
+ *   2. Create a new Private Token
+ *   3. Paste it into CONFIG.EVENTBRITE_TOKEN above
+ */
+function createEventbriteEvent(ev) {
+  try {
+    if (!CONFIG.EVENTBRITE_TOKEN) {
+      return {success:false, error:'Set EVENTBRITE_TOKEN in Code.gs CONFIG. Get one at eventbrite.com/platform/api-keys'};
+    }
+    var startDate = new Date(ev.date + 'T' + (parseTime_(ev.time) || '12:00:00'));
+    var endDate = new Date(startDate.getTime() + 2*60*60*1000);
+    var payload = {
+      event: {
+        name: {html: ev.extName || ev.name},
+        description: {html: ev.description || 'Join LES Ecology Center for ' + ev.name},
+        start: {timezone: 'America/New_York', utc: startDate.toISOString().replace(/\.\d+Z$/,'Z')},
+        end: {timezone: 'America/New_York', utc: endDate.toISOString().replace(/\.\d+Z$/,'Z')},
+        currency: 'USD',
+        online_event: ev.type && ev.type.indexOf('Virtual') >= 0,
+        organizer_id: CONFIG.EVENTBRITE_ORG_ID,
+        listed: false,
+        capacity: parseInt(ev.attendance) || 50
+      }
+    };
+    var resp = UrlFetchApp.fetch('https://www.eventbriteapi.com/v3/organizations/' + CONFIG.EVENTBRITE_ORG_ID + '/events/', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {'Authorization': 'Bearer ' + CONFIG.EVENTBRITE_TOKEN},
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    var data = JSON.parse(resp.getContentText());
+    if (resp.getResponseCode() >= 200 && resp.getResponseCode() < 300) {
+      return {success:true, url:data.url, id:data.id};
+    }
+    return {success:false, error:data.error_description || resp.getContentText()};
+  } catch(e) {
+    return {success:false, error:e.message};
+  }
+}
+
+function parseTime_(timeStr) {
+  if (!timeStr) return null;
+  var m = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|AM|PM)?/);
+  if (!m) return null;
+  var h = parseInt(m[1]);
+  var min = m[2] ? parseInt(m[2]) : 0;
+  if (m[3] && m[3].toLowerCase() === 'pm' && h < 12) h += 12;
+  if (m[3] && m[3].toLowerCase() === 'am' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00';
+}
+
 function testConfig() {
   try { var ss=SpreadsheetApp.openById(CONFIG.TRACKER_SHEET_ID); Logger.log('Sheet OK: '+ss.getName()); } catch(e) { Logger.log('Sheet ERROR: '+e.message); }
   if (CONFIG.BRIEF_FOLDER_ID) { try { var f=DriveApp.getFolderById(CONFIG.BRIEF_FOLDER_ID); Logger.log('Folder OK: '+f.getName()); } catch(e) { Logger.log('Folder ERROR: '+e.message); } }
   Logger.log('Chat webhook: ' + (CONFIG.CHAT_WEBHOOK_URL ? 'configured' : 'NOT configured'));
+  Logger.log('Eventbrite: ' + (CONFIG.EVENTBRITE_TOKEN ? 'configured' : 'NOT configured') + ' (org: ' + CONFIG.EVENTBRITE_ORG_ID + ')');
 }
