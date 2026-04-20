@@ -4798,8 +4798,18 @@ function tcZoomToReservation(id) {
       const stewardRecord = stewarded.find(s => String(s.treeId) === treeId);
       const missingRecord = missing.find(m => String(m.treeId) === treeId);
 
+      // Check if tree is in PLANTINGS_DATA (LES Ecology Center plantings)
+      const plantingRecord = PLANTINGS_DATA.find(p =>
+        p.street.toUpperCase() === (tree.address || '').split(',')[0].toUpperCase().trim()
+      );
+
       // Build care activity HTML
       let activitiesHTML = '<div style="margin-bottom:16px"><h3 style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:6px">';
+
+      // NYC Plantings Data
+      if (plantingRecord) {
+        activitiesHTML += `<div style="background:#e0f2fe;border-left:3px solid #0284c7;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#0c4a6e">🌱 LES Ecology Center Planting</div><div style="font-size:11px;color:#164e63">Planted ${plantingRecord.planted} · ${plantingRecord.season}<br>Guard: ${plantingRecord.guard}</div></div>`;
+      }
 
       if (reservation) {
         activitiesHTML += `<div style="background:#f3e8ff;border-left:3px solid #7b3fa0;padding:8px 10px;border-radius:4px"><div style="font-size:12px;font-weight:600;color:#5b21b6">📅 Reserved for Care</div><div style="font-size:11px;color:#6b21a8">${reservation.date} by ${reservation.name}</div></div>`;
