@@ -5328,7 +5328,7 @@ function switchViewById(view) {
 window.addEventListener('load', async () => {
   // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
   console.log('Loading data from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad(), careNeededLoad(), stewardedLoad()]);
+  await Promise.all([reservationLoad(), treeGuardsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
