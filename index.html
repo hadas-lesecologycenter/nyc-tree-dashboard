@@ -3598,19 +3598,36 @@ function tcSimplify(pts) {
 
 // ========== TREE RESERVATIONS ==========
 
-// GitHub sync config for reservations
-const RESERVATIONS_REPO = 'hadas-lesecologycenter/nyc-tree-dashboard';
-const RESERVATIONS_PATH = 'data/reservations.csv';
-const RESERVATIONS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + RESERVATIONS_PATH;
+// Google Apps Script URL for tree care data sync.
+// Deploy apps-script/TreeCareData.gs as a web app (Execute as: Me, Access: Anyone)
+// and paste the deployment URL here.
+const TREE_CARE_SCRIPT_URL = '';
 
-// Shared community write token — set this once so ALL visitors can save data
-// without needing their own GitHub PAT. Use a fine-grained PAT scoped to
-// contents:write on this repo only (Settings → Developer settings → Fine-grained tokens).
-// Leave empty to fall back to each user's personal token stored in localStorage.
-const COMMUNITY_WRITE_TOKEN = '';
+async function sheetsRead(sheetName) {
+  if (!TREE_CARE_SCRIPT_URL) return null;
+  try {
+    const res = await fetch(TREE_CARE_SCRIPT_URL + '?sheet=' + sheetName);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.data || json.data.length < 2) return [];
+    const [headers, ...rows] = json.data;
+    return rows.map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = row[i] === undefined ? '' : String(row[i]); });
+      return obj;
+    });
+  } catch(e) { return null; }
+}
 
-function getWriteToken() {
-  return COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok') || null;
+async function sheetsWrite(sheetName, headers, items, rowFn) {
+  if (!TREE_CARE_SCRIPT_URL) return;
+  try {
+    const rows = [headers, ...items.map(rowFn)];
+    await fetch(TREE_CARE_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ sheet: sheetName, rows })
+    });
+  } catch(e) { console.error('Sheets write error:', e); }
 }
 
 // Pending action to run after token is saved via the setup modal
@@ -3644,36 +3661,17 @@ function saveTokenFromModal() {
 
 // Load from both localStorage and GitHub
 async function reservationLoad() {
-  // Try GitHub first (synced copy)
-  try {
-    const res = await fetch(RESERVATIONS_CSV_URL);
-    if (res.ok) {
-      const csv = await res.text();
-      const reservations = [];
-      const lines = csv.trim().split('\n');
-      lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const [id, treeId, name, date, lat, lng, species, address, health, dbh, planted, priority, nta, note, createdAt] =
-          tcParseCSVLine(line);
-        if (id) {
-          reservations.push({
-            id, treeId, name, date,
-            lat: lat ? parseFloat(lat) : null,
-            lng: lng ? parseFloat(lng) : null,
-            species, address, health, dbh, planted,
-            priority: priority ? parseInt(priority) : 0,
-            nta, note, createdAt
-          });
-        }
-      });
-      // Cache in localStorage
-      localStorage.setItem('tc_reservations', JSON.stringify(reservations));
-      return reservations;
-    }
-  } catch (e) {
-    console.log('Could not fetch reservations from GitHub, using localStorage');
+  const rows = await sheetsRead('Reservations');
+  if (rows !== null) {
+    const reservations = rows.filter(r => r.id).map(r => ({
+      ...r,
+      lat: r.lat ? parseFloat(r.lat) : null,
+      lng: r.lng ? parseFloat(r.lng) : null,
+      priority: r.priority ? parseInt(r.priority) : 0
+    }));
+    localStorage.setItem('tc_reservations', JSON.stringify(reservations));
+    return reservations;
   }
-  // Fallback to localStorage
   try { return JSON.parse(localStorage.getItem('tc_reservations') || '[]'); }
   catch(e) { return []; }
 }
@@ -3693,25 +3691,13 @@ function getCareNeededTreeIds() {
 
 // ========== TREE GUARDS (user-marked) ==========
 const TREE_GUARDS_PATH = 'data/tree-guards.csv';
-const TREE_GUARDS_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + TREE_GUARDS_PATH;
 
 async function treeGuardsLoad() {
-  try {
-    const res = await fetch(TREE_GUARDS_CSV_URL);
-    if (res.ok) {
-      const csv = await res.text();
-      const guards = [];
-      const lines = csv.trim().split('\n');
-      lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const [treeId, markedBy, guardType, markedAt, note] = tcParseCSVLine(line);
-        if (treeId) guards.push({ treeId, markedBy, guardType, markedAt, note });
-      });
-      localStorage.setItem('tc_tree_guards', JSON.stringify(guards));
-      return guards;
-    }
-  } catch (e) {
-    console.log('Could not fetch tree guards from GitHub, using localStorage');
+  const rows = await sheetsRead('TreeGuards');
+  if (rows !== null) {
+    const guards = rows.filter(r => r.treeId);
+    localStorage.setItem('tc_tree_guards', JSON.stringify(guards));
+    return guards;
   }
   try { return JSON.parse(localStorage.getItem('tc_tree_guards') || '[]'); }
   catch(e) { return []; }
@@ -3740,44 +3726,11 @@ function treeGuardsSave(guards) {
 }
 
 async function treeGuardsSyncToGitHub(guards) {
-  const token = getWriteToken();
-  if (!token) return;
-  try {
-    const escapeCSV = (v) => {
-      if (!v) return '';
-      v = String(v).replace(/"/g, '""');
-      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
-      return v;
-    };
-    const header = 'treeId,markedBy,guardType,markedAt,note\n';
-    const rows = guards.map(g =>
-      [g.treeId, escapeCSV(g.markedBy), g.guardType || 'standard', g.markedAt, escapeCSV(g.note || '')].join(',')
-    ).join('\n');
-    const csv = header + rows;
-
-    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + TREE_GUARDS_PATH;
-    const headers = {
-      'Authorization': 'token ' + token,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'nyc-tree-dashboard'
-    };
-    let sha = null;
-    try {
-      const getRes = await fetch(apiUrl, { headers });
-      if (getRes.ok) sha = (await getRes.json()).sha;
-    } catch (e) {}
-    await fetch(apiUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: '🛡 Sync tree guards',
-        content: btoa(csv),
-        sha: sha || undefined
-      })
-    });
-  } catch (e) {
-    console.error('Tree guards GitHub sync error:', e);
-  }
+  await sheetsWrite('TreeGuards',
+    ['treeId','markedBy','guardType','markedAt','note'],
+    guards,
+    g => [g.treeId, g.markedBy||'', g.guardType||'standard', g.markedAt, g.note||'']
+  );
 }
 
 // Toggle a tree's "has guard" status (called from tree detail card)
@@ -3886,24 +3839,14 @@ function updateTreeGuardButton(tree) {
 
 // ========== NEEDS CARE (separate from reservations) ==========
 const CARE_NEEDED_PATH = 'data/care-needed.csv';
-const CARE_NEEDED_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + CARE_NEEDED_PATH;
 
 async function careNeededLoad() {
-  try {
-    const res = await fetch(CARE_NEEDED_CSV_URL);
-    if (res.ok) {
-      const csv = await res.text();
-      const items = [];
-      const lines = csv.trim().split('\n');
-      lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const [treeId, careNeeds, markedAt, markedBy] = tcParseCSVLine(line);
-        if (treeId) items.push({ treeId, careNeeds, markedAt, markedBy });
-      });
-      localStorage.setItem('tc_care_needed', JSON.stringify(items));
-      return items;
-    }
-  } catch (e) {}
+  const rows = await sheetsRead('CareNeeded');
+  if (rows !== null) {
+    const items = rows.filter(r => r.treeId);
+    localStorage.setItem('tc_care_needed', JSON.stringify(items));
+    return items;
+  }
   try { return JSON.parse(localStorage.getItem('tc_care_needed') || '[]'); }
   catch(e) { return []; }
 }
@@ -3919,44 +3862,11 @@ function careNeededSave(items) {
 }
 
 async function careNeededSyncToGitHub(items) {
-  const token = getWriteToken();
-  if (!token) return;
-  try {
-    const escapeCSV = (v) => {
-      if (!v) return '';
-      v = String(v).replace(/"/g, '""');
-      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
-      return v;
-    };
-    const header = 'treeId,careNeeds,markedAt,markedBy\n';
-    const rows = items.map(i =>
-      [i.treeId, escapeCSV(i.careNeeds), i.markedAt, escapeCSV(i.markedBy || '')].join(',')
-    ).join('\n');
-    const csv = header + rows;
-
-    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + CARE_NEEDED_PATH;
-    const headers = {
-      'Authorization': 'token ' + token,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'nyc-tree-dashboard'
-    };
-    let sha = null;
-    try {
-      const getRes = await fetch(apiUrl, { headers });
-      if (getRes.ok) sha = (await getRes.json()).sha;
-    } catch (e) {}
-    await fetch(apiUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: '🔧 Sync care needed',
-        content: btoa(csv),
-        sha: sha || undefined
-      })
-    });
-  } catch (e) {
-    console.error('Care needed GitHub sync error:', e);
-  }
+  await sheetsWrite('CareNeeded',
+    ['treeId','careNeeds','markedAt','markedBy'],
+    items,
+    i => [i.treeId, i.careNeeds||'', i.markedAt, i.markedBy||'']
+  );
 }
 
 let _pendingNeedsCareTree = null;
@@ -4057,24 +3967,14 @@ function updateNeedsCareButton(tree) {
 
 // ========== COMMUNITY STEWARDED ==========
 const STEWARDED_PATH = 'data/community-stewarded.csv';
-const STEWARDED_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + STEWARDED_PATH;
 
 async function stewardedLoad() {
-  try {
-    const res = await fetch(STEWARDED_CSV_URL);
-    if (res.ok) {
-      const csv = await res.text();
-      const items = [];
-      const lines = csv.trim().split('\n');
-      lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const [treeId, caretaker, activities, markedAt] = tcParseCSVLine(line);
-        if (treeId) items.push({ treeId, caretaker, activities, markedAt });
-      });
-      localStorage.setItem('tc_stewarded', JSON.stringify(items));
-      return items;
-    }
-  } catch (e) {}
+  const rows = await sheetsRead('CommunityStewardship');
+  if (rows !== null) {
+    const items = rows.filter(r => r.treeId);
+    localStorage.setItem('tc_stewarded', JSON.stringify(items));
+    return items;
+  }
   try { return JSON.parse(localStorage.getItem('tc_stewarded') || '[]'); }
   catch(e) { return []; }
 }
@@ -4090,44 +3990,11 @@ function stewardedSave(items) {
 }
 
 async function stewardedSyncToGitHub(items) {
-  const token = getWriteToken();
-  if (!token) return;
-  try {
-    const escapeCSV = (v) => {
-      if (!v) return '';
-      v = String(v).replace(/"/g, '""');
-      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
-      return v;
-    };
-    const header = 'treeId,caretaker,activities,markedAt\n';
-    const rows = items.map(i =>
-      [i.treeId, escapeCSV(i.caretaker), escapeCSV(i.activities), i.markedAt].join(',')
-    ).join('\n');
-    const csv = header + rows;
-
-    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + STEWARDED_PATH;
-    const headers = {
-      'Authorization': 'token ' + token,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'nyc-tree-dashboard'
-    };
-    let sha = null;
-    try {
-      const getRes = await fetch(apiUrl, { headers });
-      if (getRes.ok) sha = (await getRes.json()).sha;
-    } catch (e) {}
-    await fetch(apiUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: '🌱 Sync community stewarded',
-        content: btoa(csv),
-        sha: sha || undefined
-      })
-    });
-  } catch (e) {
-    console.error('Stewarded GitHub sync error:', e);
-  }
+  await sheetsWrite('CommunityStewardship',
+    ['treeId','caretaker','activities','markedAt'],
+    items,
+    i => [i.treeId, i.caretaker||'', i.activities||'', i.markedAt]
+  );
 }
 
 let _pendingStewardedTree = null;
@@ -4202,24 +4069,14 @@ function updateStewardedButton(tree) {
 
 // ========== MISSING TREES (dead, stump, empty bed) ==========
 const MISSING_PATH = 'data/missing-trees.csv';
-const MISSING_CSV_URL = 'https://raw.githubusercontent.com/' + RESERVATIONS_REPO + '/main/' + MISSING_PATH;
 
 async function missingLoad() {
-  try {
-    const res = await fetch(MISSING_CSV_URL);
-    if (res.ok) {
-      const csv = await res.text();
-      const items = [];
-      const lines = csv.trim().split('\n');
-      lines.slice(1).forEach(line => {
-        if (!line.trim()) return;
-        const [treeId, type, note, markedAt] = tcParseCSVLine(line);
-        if (treeId) items.push({ treeId, type, note, markedAt });
-      });
-      localStorage.setItem('tc_missing', JSON.stringify(items));
-      return items;
-    }
-  } catch (e) {}
+  const rows = await sheetsRead('MissingTrees');
+  if (rows !== null) {
+    const items = rows.filter(r => r.treeId);
+    localStorage.setItem('tc_missing', JSON.stringify(items));
+    return items;
+  }
   try { return JSON.parse(localStorage.getItem('tc_missing') || '[]'); }
   catch(e) { return []; }
 }
@@ -4235,44 +4092,11 @@ function missingSave(items) {
 }
 
 async function missingSyncToGitHub(items) {
-  const token = getWriteToken();
-  if (!token) return;
-  try {
-    const escapeCSV = (v) => {
-      if (!v) return '';
-      v = String(v).replace(/"/g, '""');
-      if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
-      return v;
-    };
-    const header = 'treeId,type,note,markedAt\n';
-    const rows = items.map(i =>
-      [i.treeId, escapeCSV(i.type), escapeCSV(i.note), i.markedAt].join(',')
-    ).join('\n');
-    const csv = header + rows;
-
-    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + MISSING_PATH;
-    const headers = {
-      'Authorization': 'token ' + token,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'nyc-tree-dashboard'
-    };
-    let sha = null;
-    try {
-      const getRes = await fetch(apiUrl, { headers });
-      if (getRes.ok) sha = (await getRes.json()).sha;
-    } catch (e) {}
-    await fetch(apiUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: '⚠️ Sync missing trees',
-        content: btoa(csv),
-        sha: sha || undefined
-      })
-    });
-  } catch (e) {
-    console.error('Missing trees GitHub sync error:', e);
-  }
+  await sheetsWrite('MissingTrees',
+    ['treeId','type','note','markedAt'],
+    items,
+    i => [i.treeId, i.type||'', i.note||'', i.markedAt]
+  );
 }
 
 function getMissingTreeIds() {
@@ -4388,63 +4212,11 @@ function reservationSave(reservations) {
 }
 
 async function reservationSyncToGitHub(reservations) {
-  const token = getWriteToken();
-  if (!token) return; // User hasn't authenticated yet
-
-  try {
-    // Convert to CSV
-    const header = 'id,treeId,name,date,lat,lng,species,address,health,dbh,planted,priority,nta,note,createdAt\n';
-    const rows = reservations.map(r => {
-      const escapeCSV = (v) => {
-        if (!v) return '';
-        v = String(v).replace(/"/g, '""');
-        if (v.includes(',') || v.includes('"') || v.includes('\n')) return '"' + v + '"';
-        return v;
-      };
-      return [
-        r.id, r.treeId, escapeCSV(r.name), r.date,
-        r.lat || '', r.lng || '', escapeCSV(r.species), escapeCSV(r.address),
-        escapeCSV(r.health), escapeCSV(r.dbh), escapeCSV(r.planted),
-        r.priority || 0, escapeCSV(r.nta), escapeCSV(r.note), r.createdAt
-      ].map(escapeCSV).join(',');
-    }).join('\n');
-
-    const csv = header + rows;
-
-    // Get current file SHA for update
-    const apiUrl = 'https://api.github.com/repos/' + RESERVATIONS_REPO + '/contents/' + RESERVATIONS_PATH;
-    const headers = {
-      'Authorization': 'token ' + token,
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'nyc-tree-dashboard'
-    };
-
-    let sha = null;
-    try {
-      const getRes = await fetch(apiUrl, { headers });
-      if (getRes.ok) {
-        const data = await getRes.json();
-        sha = data.sha;
-      }
-    } catch (e) {}
-
-    // Push to GitHub
-    const pushRes = await fetch(apiUrl, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({
-        message: '📅 Sync reservations',
-        content: btoa(csv),
-        sha: sha || undefined
-      })
-    });
-
-    if (!pushRes.ok) {
-      console.error('Failed to sync reservations to GitHub:', pushRes.statusText);
-    }
-  } catch (e) {
-    console.error('Reservation GitHub sync error:', e);
-  }
+  await sheetsWrite('Reservations',
+    ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt'],
+    reservations,
+    r => [r.id, r.treeId, r.name||'', r.date, r.lat||'', r.lng||'', r.species||'', r.address||'', r.health||'', r.dbh||'', r.planted||'', r.priority||0, r.nta||'', r.note||'', r.createdAt]
+  );
 }
 function reservationRemove(id) {
   reservationSave(reservationLoadSync().filter(r => r.id !== id));
