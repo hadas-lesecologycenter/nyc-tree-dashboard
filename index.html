@@ -1519,7 +1519,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🔧 Mark as Needs Care</h2>
-        <button onclick="closeNeedsCareModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+        <button type="button" onclick="closeNeedsCareModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="needs-care-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:16px">
@@ -1540,8 +1540,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
       <div style="display:flex;gap:8px">
-        <button onclick="closeNeedsCareModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-        <button onclick="confirmNeedsCare()" style="flex:2;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Mark as Needs Care</button>
+        <button type="button" onclick="closeNeedsCareModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="confirmNeedsCare()" style="flex:2;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark as Needs Care</button>
       </div>
     </div>
   </div>
@@ -1551,7 +1551,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🌱 Community Stewarded</h2>
-        <button onclick="closeStewardedModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+        <button type="button" onclick="closeStewardedModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="stewarded-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:16px">
@@ -1565,8 +1565,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:80px"></textarea>
       </div>
       <div style="display:flex;gap:8px">
-        <button onclick="closeStewardedModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-        <button onclick="confirmStewardship()" style="flex:2;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Mark as Stewarded</button>
+        <button type="button" onclick="closeStewardedModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="confirmStewardship()" style="flex:2;padding:10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark as Stewarded</button>
       </div>
     </div>
   </div>
