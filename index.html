@@ -4760,10 +4760,8 @@ function renderCareNeededQueue() {
 function openTreeDetailCard(tree) {
   if (!tree) return;
   const dashboardContent = document.getElementById('myblock-dashboard-content');
-  const noSelection = document.getElementById('myblock-no-selection');
-  if (!dashboardContent || !noSelection) return;
+  if (!dashboardContent) return;
 
-  noSelection.style.display = 'none';
   dashboardContent.style.display = 'block';
 
   const treeId = String(tree.tree_id || (tree.latitude + '_' + tree.longitude));
@@ -4946,9 +4944,7 @@ function tcZoomToReservation(id) {
 
 function closeTreeCareDetail() {
   const dashboardContent = document.getElementById('myblock-dashboard-content');
-  const noSelection = document.getElementById('myblock-no-selection');
-  if (dashboardContent && noSelection) {
-    noSelection.style.display = 'flex';
+  if (dashboardContent) {
     dashboardContent.style.display = 'none';
   }
 }
