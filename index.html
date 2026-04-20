@@ -5175,10 +5175,26 @@ function tcSelectArea(id) {
       const tid = String(area._treeId);
       let coords = _tcTreeCoords[tid];
       let tree = null;
+
+      // Try to find tree in allTrees first
       if (typeof allTrees !== 'undefined') {
         tree = allTrees.find(t => String(t.tree_id) === tid);
         if (tree && tree.latitude && tree.longitude) coords = { lat: parseFloat(tree.latitude), lng: parseFloat(tree.longitude) };
       }
+
+      // If still no tree, create minimal object from coordinates
+      if (!tree && coords) {
+        tree = {
+          tree_id: tid,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          spc_common: area.addressNote || 'Tree',
+          address: area.addressNote || 'Unknown location',
+          health: 'Unknown',
+          _priority: 0
+        };
+      }
+
       if (coords && coords.lat && coords.lng) {
         tcCareMap.setView([coords.lat, coords.lng], 17);
         // Add yellow marker to highlight selected tree
@@ -5192,12 +5208,9 @@ function tcSelectArea(id) {
           fillOpacity: 0.8
         }).addTo(tcCareMap);
       }
+
       if (tree) {
         openTreeDetailCard(tree);
-      } else if (coords) {
-        // Show area detail panel if tree data not available
-        const dashboardContent = document.getElementById('myblock-dashboard-content');
-        if (dashboardContent) dashboardContent.style.display = 'block';
       }
     }
   }
