@@ -458,6 +458,11 @@ details[open] summary{border-bottom-color:#40916c}
 <label>Event Brief Folder ID (Google Drive)</label>
 <input id="folder-id" placeholder="From drive.google.com/drive/folders/XXXXX">
 </div>
+<div class="form-group">
+<label>Post-Event Report Response Sheet ID</label>
+<input id="response-sheet-id" placeholder="From Google Form Responses sheet" value="1RqQl5Wx-DUhMDQwTk2APz0VulodV3FaS51Y9WGuYwAs">
+<p style="font-size:12px;color:#52796f;margin-top:4px">Optional: Paste the Sheet ID to track post-event report submissions. The dashboard will check this sheet to show "Report submitted ✓" badges.</p>
+</div>
 <button class="btn btn-primary" onclick="saveSetup()">Save Settings</button>
 
 <h3 style="margin-top:24px">Apps Script Code</h3>
@@ -595,13 +600,15 @@ function loadSetup() {
   if (s.appsScriptUrl) document.getElementById('apps-script-url').value = s.appsScriptUrl;
   if (s.sheetId) document.getElementById('sheet-id').value = s.sheetId;
   if (s.folderId) document.getElementById('folder-id').value = s.folderId;
+  if (s.responseSheetId) document.getElementById('response-sheet-id').value = s.responseSheetId;
   return s;
 }
 function saveSetup() {
   const s = {
     appsScriptUrl: document.getElementById('apps-script-url').value.trim(),
     sheetId: document.getElementById('sheet-id').value.trim(),
-    folderId: document.getElementById('folder-id').value.trim()
+    folderId: document.getElementById('folder-id').value.trim(),
+    responseSheetId: document.getElementById('response-sheet-id').value.trim()
   };
   localStorage.setItem('les_setup', JSON.stringify(s));
   toast('Settings saved!');
@@ -912,9 +919,10 @@ function renderEvents() {
     const t = ev.tracker || {};
     const fields = [['briefCreated','Brief'],['eventbriteCreated','Eventbrite'],['calendarCreated','Calendar'],['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Reminder'],['activityReport','Report'],['treeMapDone','Tree Map'],['thankYouSent','Thank You']];
     const checks = fields.map(([k,l]) => '<label><input type="checkbox" '+(t[k]?'checked':'')+' onchange="event.stopPropagation();toggleTracker('+ev.id+',\''+k+'\')"> '+l+'</label>').join('');
+    const formUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSftVFR0w5zrNKr_T00DxueKDp3S5bM919cQ3paHQn9igpvUfw/viewform?usp=pp_url&entry.2077906898=' + encodeURIComponent(ev.owner||'') + '&entry.775101325=' + encodeURIComponent(fmtDate(ev.date)) + '&entry.1505955813=' + encodeURIComponent(ev.location||'') + '&entry.1659762902=' + encodeURIComponent(ev.type||'');
     return '<div class="event-card '+(ev.status||'confirmed')+'" onclick="loadEventOutputs('+ev.id+')">' +
       '<div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div>' +
-      '<div><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\''+formUrl+'\',\'_blank\')">Report</button> <button class="btn btn-sm btn-copy" onclick="event.stopPropagation();window.open(\'https://photos.google.com/share/AF1QipP_n-l0r0Q5x5XK_-SC6HvS_RKvhj3E21JOjKTknZa5M6F6US8-7MI-fo85AWpCWg\',\'_blank\')">Photos</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div>' +
       '<div class="event-card-meta">'+fmtDate(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+' &middot; '+ev.type+'</div>' +
       '<div class="tracker-checks">'+checks+'</div></div>';
   }).join('');
