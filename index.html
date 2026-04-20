@@ -2179,6 +2179,11 @@ function initMap() {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
+  // Stop Leaflet from intercepting touches on panels overlaid on the map
+  ['map-tree-panel', 'priority-sidebar', 'mobile-tab-nav'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { L.DomEvent.disableClickPropagation(el); L.DomEvent.disableScrollPropagation(el); }
+  });
   initToolStorageLayer();
 }
 
