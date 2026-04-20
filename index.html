@@ -1236,15 +1236,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-badge" style="margin-bottom:12px"></div>
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
-        <button id="mtp-reserve-btn" onclick="handleMapReserveBtn()"
+        <button type="button" id="mtp-reserve-btn" onclick="handleMapReserveBtn()"
           style="margin-top:14px;width:100%;padding:11px;background:#7b3fa0;background-color:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
           📅 Reserve for Care
         </button>
-        <button id="mtp-needs-care-btn" onclick="handleMapNeedsCareBtn()"
+        <button type="button" id="mtp-needs-care-btn" onclick="handleMapNeedsCareBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#e07b00;background-color:#e07b00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(224,123,0,0.35)">
           🔧 Needs Care
         </button>
-        <button id="mtp-stewarded-btn" onclick="handleMapStewardedBtn()"
+        <button type="button" id="mtp-stewarded-btn" onclick="handleMapStewardedBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
           🌱 Community Stewarded
         </button>
@@ -1587,7 +1587,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📅 Reserve Tree for Care</h2>
-        <button onclick="closeReserveModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px">✕</button>
+        <button type="button" onclick="closeReserveModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="reserve-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:12px">
@@ -1606,8 +1606,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
       </div>
       <div style="display:flex;gap:8px">
-        <button onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
-        <button onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Reserve Tree</button>
+        <button type="button" onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Reserve Tree</button>
       </div>
     </div>
   </div>
