@@ -1537,7 +1537,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="care-health" style="width:16px;height:16px;cursor:pointer;accent-color:#d97706">
             🩺 Health inspection
           </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="checkbox" id="care-other" style="width:16px;height:16px;cursor:pointer;accent-color:#d97706" onchange="toggleCareNoteField()">
+            ⚠️ Other
+          </label>
         </div>
+      </div>
+      <div id="care-note-section" style="margin-bottom:16px;display:none">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Describe other care needed</label>
+        <textarea id="care-note-input" placeholder="e.g., storm damage, pest infestation, soil compaction, etc."
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
       </div>
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeNeedsCareModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
@@ -3879,6 +3888,9 @@ function openNeedsCareModal(tree) {
   document.getElementById('care-mulch').checked = false;
   document.getElementById('care-prune').checked = false;
   document.getElementById('care-health').checked = false;
+  document.getElementById('care-other').checked = false;
+  document.getElementById('care-note-input').value = '';
+  document.getElementById('care-note-section').style.display = 'none';
   modal.style.display = 'flex';
 }
 
@@ -3887,14 +3899,28 @@ function closeNeedsCareModal() {
   _pendingNeedsCareTree = null;
 }
 
+function toggleCareNoteField() {
+  const isOther = document.getElementById('care-other').checked;
+  const noteSection = document.getElementById('care-note-section');
+  if (noteSection) noteSection.style.display = isOther ? 'block' : 'none';
+}
+
 function confirmNeedsCare() {
   const tree = _pendingNeedsCareTree;
   if (!tree) return;
   const careMulch = document.getElementById('care-mulch').checked;
   const carePrune = document.getElementById('care-prune').checked;
   const careHealth = document.getElementById('care-health').checked;
-  if (!careMulch && !carePrune && !careHealth) {
+  const careOther = document.getElementById('care-other').checked;
+  const careOtherNote = careOther ? (document.getElementById('care-note-input').value || '').trim() : '';
+
+  if (!careMulch && !carePrune && !careHealth && !careOther) {
     alert('Please select at least one care need');
+    return;
+  }
+  if (careOther && !careOtherNote) {
+    alert('Please describe the other care needed');
+    document.getElementById('care-note-input').focus();
     return;
   }
 
@@ -3907,6 +3933,7 @@ function confirmNeedsCare() {
   if (careMulch) careNeeds.push('mulch');
   if (carePrune) careNeeds.push('prune');
   if (careHealth) careNeeds.push('health');
+  if (careOther) careNeeds.push('other:' + careOtherNote);
 
   items.push({
     treeId,
