@@ -4760,7 +4760,62 @@ function renderCareNeededQueue() {
 function tcZoomToReservation(id) {
   const res = reservationLoadSync().find(r => r.id === id);
   if (!res) return;
+
+  // Zoom the care map to this location
   if (tcCareMap) tcCareMap.setView([res.lat, res.lng], 17);
+
+  // Find the full tree object from allTrees using treeId
+  const treeId = String(res.treeId);
+  const tree = allTrees.find(t => String(t.tree_id || (t.latitude + '_' + t.longitude)) === treeId);
+
+  if (tree) {
+    // Open the tree detail panel
+    const dashboardContent = document.getElementById('myblock-dashboard-content');
+    const noSelection = document.getElementById('myblock-no-selection');
+    if (dashboardContent && noSelection) {
+      noSelection.style.display = 'none';
+      dashboardContent.style.display = 'block';
+
+      // Build tree detail HTML
+      const pm = getPriorityMeta(tree._priority || 0);
+      const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+      const address = tree.address || 'Unknown location';
+      const health = (tree.health || '').toLowerCase();
+      const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[health] || 'var(--text3)';
+      const dbh = tree.tree_dbh ? tree.tree_dbh + '"' : 'N/A';
+
+      dashboardContent.innerHTML = `
+        <div style="padding:20px;max-width:100%">
+          <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="background:${pm.color};color:white;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">Tier ${pm.label} / 4</span>
+            ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">${tree.health}</span>` : ''}
+          </div>
+          <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+              <span style="font-size:16px">📍</span>
+              <div><div style="font-weight:700;color:var(--text)">${address}</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">
+              ${dbh && dbh !== 'N/A' ? `<span style="color:var(--text3)">Trunk DBH:</span><span style="color:var(--text)">${dbh}</span>` : ''}
+              ${tree.nta_name ? `<span style="color:var(--text3)">Neighborhood:</span><span style="color:var(--text)">${tree.nta_name}</span>` : ''}
+              ${tree.spc_latin ? `<span style="color:var(--text3)">Scientific:</span><span style="color:var(--text);font-style:italic">${tree.spc_latin}</span>` : ''}
+            </div>
+          </div>
+          <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:10px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function closeTreeCareDetail() {
+  const dashboardContent = document.getElementById('myblock-dashboard-content');
+  const noSelection = document.getElementById('myblock-no-selection');
+  if (dashboardContent && noSelection) {
+    noSelection.style.display = 'flex';
+    dashboardContent.style.display = 'none';
+  }
 }
 
 // ── Map overlays ──────────────────────────────────────────────
