@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LES Ecology Center - Google Site Preview</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #fff;
+  color: #202124;
+}
+
+/* Google Sites style header */
+header.site-header {
+  background: linear-gradient(135deg, #1a3c2a 0%, #2d6a4f 100%);
+  color: white;
+  padding: 32px 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header.site-header h1 {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+header.site-header p {
+  font-size: 14px;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+.site-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.nav-bar {
+  background: #f8f9fa;
+  border-bottom: 1px solid #dadce0;
+  padding: 0;
+  display: flex;
+  gap: 0;
+}
+
+.nav-bar a {
+  color: #202124;
+  text-decoration: none;
+  padding: 16px 24px;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all .2s;
+  cursor: pointer;
+}
+
+.nav-bar a:hover {
+  color: #2d6a4f;
+  background: #f0f0f0;
+}
+
+.nav-bar a.active {
+  color: #2d6a4f;
+  border-bottom-color: #2d6a4f;
+}
+
+.content-area {
+  padding: 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.breadcrumb {
+  font-size: 12px;
+  color: #5f6368;
+  margin-bottom: 16px;
+  padding: 0 24px;
+  padding-top: 16px;
+}
+
+.breadcrumb a {
+  color: #1967d2;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+footer {
+  background: #f8f9fa;
+  border-top: 1px solid #dadce0;
+  padding: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: #5f6368;
+  margin-top: 40px;
+}
+
+.side-nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 256px;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid #dadce0;
+  padding: 16px 0;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.side-nav a {
+  display: block;
+  padding: 12px 24px;
+  color: #202124;
+  text-decoration: none;
+  font-size: 14px;
+  border-left: 4px solid transparent;
+  transition: all .2s;
+}
+
+.side-nav a:hover {
+  background: #f0f0f0;
+  color: #2d6a4f;
+}
+
+.side-nav a.active {
+  background: #e8f0fe;
+  color: #2d6a4f;
+  border-left-color: #2d6a4f;
+  font-weight: 500;
+}
+
+.dashboard-wrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  padding: 0;
+  overflow: hidden;
+}
+
+.dashboard-wrapper iframe {
+  width: 100%;
+  height: 1200px;
+  border: none;
+  display: block;
+}
+
+.info-box {
+  background: #e8f0fe;
+  border-left: 4px solid #1967d2;
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.info-box strong {
+  color: #1967d2;
+}
+
+@media (max-width: 768px) {
+  header.site-header { padding: 24px 16px; }
+  header.site-header h1 { font-size: 20px; }
+  .nav-bar { flex-wrap: wrap; }
+  .nav-bar a { padding: 12px 16px; font-size: 12px; }
+  .content-area { padding: 16px; }
+  .dashboard-wrapper iframe { height: 800px; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-container">
+    <h1>Lower East Side Ecology Center</h1>
+    <p>Community-focused environmental education & street tree care</p>
+  </div>
+</header>
+
+<div class="nav-bar">
+  <a href="#" class="active">Event Dashboard</a>
+  <a href="#">Programs</a>
+  <a href="#">Get Involved</a>
+  <a href="#">Contact</a>
+</div>
+
+<div class="site-container">
+  <div class="breadcrumb">
+    <a href="#">Home</a> / Event Dashboard
+  </div>
+
+  <div class="content-area">
+    <div class="info-box">
+      <strong>📋 Street Tree Care Event Workflow Dashboard</strong><br>
+      Plan events once, auto-generate briefs, tracker rows, task timelines, and integrate with Google Workspace.
+      <a href="#" style="color: #1967d2; text-decoration: none;">Learn more →</a>
+    </div>
+
+    <div class="dashboard-wrapper">
+      <!-- This is where the Apps Script dashboard will be embedded -->
+      <div style="padding: 40px; text-align: center; background: #f8f9fa; min-height: 400px;">
+        <h2 style="color: #2d6a4f; margin-bottom: 16px;">📊 Event Dashboard Loading</h2>
+        <p style="color: #5f6368; margin-bottom: 24px;">
+          Once you deploy the Apps Script as a web app, the full dashboard will appear here.
+        </p>
+
+        <div style="background: white; padding: 24px; border-radius: 8px; text-align: left; max-width: 600px; margin: 0 auto; border: 1px solid #dadce0;">
+          <h3 style="color: #202124; margin-bottom: 16px; font-size: 16px;">To deploy the dashboard:</h3>
+          <ol style="margin-left: 20px; line-height: 2;">
+            <li>Go to <a href="https://script.google.com" target="_blank" style="color: #1967d2;">script.google.com</a></li>
+            <li>Create a <strong>New Project</strong></li>
+            <li>Add <strong>Code.gs</strong> and <strong>Index.html</strong> from the repository</li>
+            <li>Click <strong>Deploy → New deployment → Web app</strong></li>
+            <li>Set <strong>Execute as: Me</strong>, <strong>Access: Anyone in your org</strong></li>
+            <li>Copy the deployment URL</li>
+            <li>Replace the iframe src below with your URL</li>
+          </ol>
+        </div>
+
+        <div style="margin-top: 24px; padding: 16px; background: #fef3cd; border-radius: 4px; border-left: 4px solid #f4a261;">
+          <strong style="color: #6b6358;">💡 Next step:</strong><br>
+          <code style="font-family: monospace; color: #2d6a4f; font-size: 12px;">
+            &lt;iframe src="[YOUR_APPS_SCRIPT_URL]" style="width:100%; height:1200px; border:none;"&gt;&lt;/iframe&gt;
+          </code>
+        </div>
+      </div>
+
+      <!-- Uncomment and update with your Apps Script URL when ready:
+      <iframe
+        src="https://script.google.com/macros/d/[YOUR_ID]/userweb"
+        style="width: 100%; height: 1200px; border: none; display: block;"
+        allow="camera; microphone; clipboard-read; clipboard-write"
+      ></iframe>
+      -->
+    </div>
+
+    <div style="margin-top: 40px; padding: 24px; background: #f0fdf4; border-radius: 8px; border-left: 4px solid #40916c;">
+      <h3 style="color: #1b4332; margin-bottom: 12px;">✅ What's Included</h3>
+      <ul style="margin-left: 20px; line-height: 2; color: #2d6a4f;">
+        <li><strong>Calendar view</strong> — Plan events month-by-month</li>
+        <li><strong>Event form</strong> — Create events with full brief details</li>
+        <li><strong>Auto-generated outputs</strong> — Event briefs, tracker rows, task lists</li>
+        <li><strong>Tasks tab</strong> — Filter by staff member, due date, status</li>
+        <li><strong>Integration buttons</strong> — Post-event reports, photo sharing, Eventbrite</li>
+        <li><strong>Google integration</strong> — Auto-fill Sheets, Docs, Calendar, Tasks, Chat</li>
+        <li><strong>Demo events</strong> — See how it all works with sample data</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="site-container">
+    <p>&copy; 2026 Lower East Side Ecology Center. All rights reserved.</p>
+    <p style="font-size: 11px; margin-top: 8px; color: #9aa0a6;">
+      Event Dashboard v1.0 | Built with Google Workspace integration
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
