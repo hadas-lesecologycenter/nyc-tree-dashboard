@@ -1,5 +1,5 @@
 /**
- * Tree Care Data — Google Apps Script
+ * Tree Care Data - Google Apps Script
  * =====================================
  * SETUP:
  *   1. Go to https://script.google.com -> New Project
