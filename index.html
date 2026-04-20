@@ -1481,7 +1481,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <div style="font-size:12px;color:var(--text3);line-height:1.6">Use the bookmarklet (in the About tab) to sync care activities. To reserve trees for future care, use the <strong style="color:#7b3fa0">Map tab</strong>.</div>
             </div>
           </div>
-          <div id="myblock-dashboard-content" style="display:none;position:absolute;inset:0;padding:24px;max-width:760px;overflow-y:auto"></div>
+          <div id="myblock-dashboard-content" style="display:none;position:absolute;right:0;top:0;bottom:0;width:380px;padding:20px;overflow-y:auto;background:var(--bg);border-left:1px solid var(--border);box-shadow:-2px 0 12px rgba(0,0,0,0.1);z-index:100"></div>
         </div>
 
       </div>
@@ -4794,7 +4794,7 @@ function openTreeDetailCard(tree) {
   const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[health] || 'var(--text3)';
   const dbh = tree.tree_dbh ? tree.tree_dbh + '"' : 'N/A';
 
-  let activitiesHTML = '<div style="margin-bottom:16px"><h3 style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:6px">';
+  let activitiesHTML = '<div style="margin-bottom:12px"><h3 style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Care Activities</h3><div style="display:flex;flex-direction:column;gap:4px">';
 
   // NYC Plantings Data
   if (plantingRecord) {
@@ -4906,25 +4906,24 @@ function openTreeDetailCard(tree) {
   activitiesHTML += '</div></div>';
 
   dashboardContent.innerHTML = `
-    <div style="padding:20px;max-width:100%;overflow-y:auto;max-height:calc(100% - 40px)">
-      <h2 style="font-family:'Lora',serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <span style="background:${pm.color};color:white;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">Tier ${pm.label} / 4</span>
-        ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700">${tree.health}</span>` : ''}
+    <div style="padding:0;max-width:100%;overflow-y:auto;max-height:100%">
+      <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">Tier ${pm.label} / 4</span>
+        ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">${tree.health}</span>` : ''}
       </div>
-      <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-          <span style="font-size:16px">📍</span>
-          <div><div style="font-weight:700;color:var(--text)">${address}</div></div>
+      <div style="background:var(--bg2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--text2)">
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+          <span style="font-size:14px;flex-shrink:0">📍</span>
+          <div><div style="font-weight:700;color:var(--text);font-size:12px">${address}</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px">
-          ${dbh && dbh !== 'N/A' ? `<span style="color:var(--text3)">Trunk DBH:</span><span style="color:var(--text)">${dbh}</span>` : ''}
-          ${tree.nta_name ? `<span style="color:var(--text3)">Neighborhood:</span><span style="color:var(--text)">${tree.nta_name}</span>` : ''}
-          ${tree.spc_latin ? `<span style="color:var(--text3)">Scientific:</span><span style="color:var(--text);font-style:italic">${tree.spc_latin}</span>` : ''}
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11px">
+          ${dbh && dbh !== 'N/A' ? `<span style="color:var(--text3)">DBH:</span><span style="color:var(--text)">${dbh}</span>` : ''}
+          ${tree.nta_name ? `<span style="color:var(--text3)">Area:</span><span style="color:var(--text)">${tree.nta_name}</span>` : ''}
         </div>
       </div>
       ${activitiesHTML}
-      <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:10px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
+      <button type="button" onclick="closeTreeCareDetail()" style="width:100%;padding:8px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none;margin-top:8px">Close</button>
     </div>
   `;
 }
