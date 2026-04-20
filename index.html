@@ -5179,8 +5179,26 @@ function tcSelectArea(id) {
         tree = allTrees.find(t => String(t.tree_id) === tid);
         if (tree && tree.latitude && tree.longitude) coords = { lat: parseFloat(tree.latitude), lng: parseFloat(tree.longitude) };
       }
-      if (coords && coords.lat && coords.lng) tcCareMap.setView([coords.lat, coords.lng], 17);
-      if (tree) openTreeDetailCard(tree);
+      if (coords && coords.lat && coords.lng) {
+        tcCareMap.setView([coords.lat, coords.lng], 17);
+        // Add yellow marker to highlight selected tree
+        if (tcSelectedTreeMarker) tcSelectedTreeMarker.remove();
+        tcSelectedTreeMarker = L.circleMarker([coords.lat, coords.lng], {
+          radius: 12,
+          fillColor: '#fbbf24',
+          color: '#f59e0b',
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).addTo(tcCareMap);
+      }
+      if (tree) {
+        openTreeDetailCard(tree);
+      } else if (coords) {
+        // Show area detail panel if tree data not available
+        const dashboardContent = document.getElementById('myblock-dashboard-content');
+        if (dashboardContent) dashboardContent.style.display = 'block';
+      }
     }
   }
 }
