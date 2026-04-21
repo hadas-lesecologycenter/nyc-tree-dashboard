@@ -3644,6 +3644,10 @@ async function sheetsWrite(sheetName, headers, items, rowFn) {
   } catch(e) { console.error('Sheets write error:', e); }
 }
 
+// Fine-grained PAT scoped to contents:write on this repo only. Leave empty
+// to fall back to each user's personal token stored in localStorage.
+const COMMUNITY_WRITE_TOKEN = '';
+
 // Pending action to run after token is saved via the setup modal
 let _pendingPostTokenAction = null;
 
