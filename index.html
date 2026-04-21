@@ -3647,6 +3647,10 @@ async function sheetsWrite(sheetName, headers, items, rowFn) {
 // Pending action to run after token is saved via the setup modal
 let _pendingPostTokenAction = null;
 
+function getWriteToken() {
+  return COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok') || null;
+}
+
 function showTokenSetupModal(onSaved) {
   if (COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok')) {
     if (onSaved) onSaved();
