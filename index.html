@@ -2751,6 +2751,12 @@ function switchView(view, evt) {
       renderClaimedBlocksSidebar();
       tcUpdateProgress();
       setTimeout(tcRenderCareMap, 100);
+      Promise.all([tcLoadTreeCoords(), tcSyncScrapedActivities()]).then(() => {
+        renderClaimedBlocksSidebar();
+        tcUpdateProgress();
+        tcRenderCareMap();
+        updateMap();
+      });
     }
     console.log('switchView completed for:', view);
   } catch(err) {
@@ -3112,7 +3118,7 @@ function tcRenderCareMap() {
       }
       return L.latLngBounds([40.710, -74.010], [40.730, -73.968]);
     })();
-    tcCareMap = L.map('tc-care-map').fitBounds(cb3Bounds);
+    tcCareMap = L.map('tc-care-map', { rotateControl: false }).fitBounds(cb3Bounds);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
@@ -3365,7 +3371,7 @@ async function tcFetchFromProxy() {
 
 // Fetch activities from the fallback CSV on GitHub/jsDelivr.
 async function tcFetchFromCSV() {
-  const res = await fetch(TC_SCRAPED_SHEET_CSV_URL);
+  const res = await fetch(TC_SCRAPED_SHEET_CSV_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error('CSV HTTP ' + res.status);
   const text = await res.text();
   const lines = text.trim().split('\n');
