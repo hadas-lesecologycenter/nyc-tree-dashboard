@@ -1242,7 +1242,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </button>
         <button type="button" id="mtp-needs-care-btn" onclick="handleMapNeedsCareBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#e07b00;background-color:#e07b00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(224,123,0,0.35)">
-          🔧 Needs Care
+          🔧 Advanced Care
         </button>
         <button type="button" id="mtp-stewarded-btn" onclick="handleMapStewardedBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
@@ -1535,7 +1535,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div id="needs-care-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.25);position:relative;padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🔧 Mark as Needs Care</h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">🔧 Advanced Care</h2>
         <button type="button" onclick="closeNeedsCareModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="needs-care-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -1567,7 +1567,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeNeedsCareModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
-        <button type="button" onclick="confirmNeedsCare()" style="flex:2;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark as Needs Care</button>
+        <button type="button" onclick="confirmNeedsCare()" style="flex:2;padding:10px;background:#d97706;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Mark as Advanced Care</button>
       </div>
     </div>
   </div>
@@ -1586,9 +1586,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
       </div>
       <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Care Activities <span style="font-weight:400;color:var(--text3)">(describe what's been done)</span></label>
-        <textarea id="stewarded-note-input" placeholder="e.g., weekly watering, mulch added summer 2025, pruned dead branches"
-          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:80px"></textarea>
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Stewardship Type</label>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="stewarded-type" value="plantings" id="stewarded-plantings" style="width:16px;height:16px;cursor:pointer;accent-color:#0f9e6e" checked>
+            Plantings
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="stewarded-type" value="pest-control" id="stewarded-pest" style="width:16px;height:16px;cursor:pointer;accent-color:#0f9e6e">
+            Pest Control
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="stewarded-type" value="signage" id="stewarded-signage" style="width:16px;height:16px;cursor:pointer;accent-color:#0f9e6e">
+            Signage
+          </label>
+        </div>
       </div>
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeStewardedModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
@@ -3983,7 +3995,7 @@ function updateNeedsCareButton(tree) {
     btn.style.backgroundColor = '#7d3500';
     btn.style.boxShadow = '0 2px 6px rgba(125,53,0,0.35)';
   } else {
-    btn.textContent = '🔧 Needs Care';
+    btn.textContent = '🔧 Advanced Care';
     btn.style.background = '#e07b00';
     btn.style.backgroundColor = '#e07b00';
     btn.style.boxShadow = '0 2px 6px rgba(224,123,0,0.35)';
@@ -4038,7 +4050,8 @@ function openStewardedModal(tree) {
       (tree.address ? '<br><span style="font-size:11px;color:var(--text3)">' + tree.address + '</span>' : '');
   }
   document.getElementById('stewarded-name-input').value = '';
-  document.getElementById('stewarded-note-input').value = '';
+  const defaultRadio = document.getElementById('stewarded-plantings');
+  if (defaultRadio) defaultRadio.checked = true;
   modal.style.display = 'flex';
   setTimeout(() => document.getElementById('stewarded-name-input').focus(), 100);
 }
@@ -4052,9 +4065,8 @@ function confirmStewardship() {
   const tree = _pendingStewardedTree;
   if (!tree) return;
   const caretaker = (document.getElementById('stewarded-name-input').value || '').trim();
-  const activities = (document.getElementById('stewarded-note-input').value || '').trim();
+  const activities = document.querySelector('input[name="stewarded-type"]:checked')?.value || 'plantings';
   if (!caretaker) { document.getElementById('stewarded-name-input').focus(); return; }
-  if (!activities) { document.getElementById('stewarded-note-input').focus(); return; }
 
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const items = stewardedLoadSync();
@@ -4078,9 +4090,11 @@ function updateStewardedButton(tree) {
   const btn = document.getElementById('mtp-stewarded-btn');
   if (!btn || !tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
-  const has = stewardedLoadSync().some(i => String(i.treeId) === treeId);
+  const record = stewardedLoadSync().find(i => String(i.treeId) === treeId);
+  const has = !!record;
   if (has) {
-    btn.textContent = '🌱 Remove Stewardship';
+    const typeLabel = record.activities ? ' · ' + record.activities : '';
+    btn.textContent = '🌱 Stewarded ✓' + typeLabel;
     btn.style.background = '#0b7a55';
     btn.style.backgroundColor = '#0b7a55';
     btn.style.boxShadow = '0 2px 6px rgba(11,122,85,0.35)';
