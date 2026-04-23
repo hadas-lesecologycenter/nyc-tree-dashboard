@@ -1888,6 +1888,7 @@ let emptyBeds = [];
 let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
+let geolocationWatcher = null;
 
 // ========== LESEC PROGRAM DATA ==========
 const LESEC_TOOL_STORAGE = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98623112196117, 40.70984670353943]}, "properties": {"fid": 1, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.979572548085, 40.724745436610114]}, "properties": {"fid": 2, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98948618305218, 40.71459411209329]}, "properties": {"fid": 3, "Tree ID": null, "Zipcode": null, "Notes": null}}]};
@@ -2238,6 +2239,8 @@ function initMap() {
   const treePanel = document.getElementById('map-tree-panel');
   if (treePanel) { L.DomEvent.disableScrollPropagation(treePanel); }
   initToolStorageLayer();
+  // Auto-start geolocation tracking on load
+  requestUserLocation();
 }
 
 // ========== GEOLOCATION ==========
@@ -2248,54 +2251,68 @@ function requestUserLocation() {
     return;
   }
 
+  // Stop existing watcher if running
+  if (geolocationWatcher !== null) {
+    navigator.geolocation.clearWatch(geolocationWatcher);
+    geolocationWatcher = null;
+    if (btn) btn.textContent = '⊕';
+    return; // Toggle off
+  }
+
   if (btn) btn.disabled = true;
-  if (btn) btn.textContent = '⊕';
+  if (btn) btn.textContent = '⊗';
 
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const accuracy = position.coords.accuracy;
+  const updateLocation = function(position) {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const accuracy = position.coords.accuracy;
 
-      // Center map on user location
-      mapInstance.setView([lat, lng], 17);
+    // Center map on user location (only on first location)
+    if (!userLocationMarker) mapInstance.setView([lat, lng], 17);
 
-      // Remove old marker and accuracy circle
-      if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
-      if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
+    // Remove old marker and accuracy circle
+    if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
+    if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
 
-      // Add accuracy circle first (renders below the dot)
-      userAccuracyCircle = L.circle([lat, lng], {
-        radius: accuracy,
-        fillColor: '#007bff',
-        color: '#007bff',
-        weight: 1,
-        opacity: 0.2,
-        fillOpacity: 0.1,
-        interactive: false
-      }).addTo(mapInstance);
+    // Add accuracy circle first (renders below the dot)
+    userAccuracyCircle = L.circle([lat, lng], {
+      radius: accuracy,
+      fillColor: '#007bff',
+      color: '#007bff',
+      weight: 1,
+      opacity: 0.2,
+      fillOpacity: 0.1,
+      interactive: false
+    }).addTo(mapInstance);
 
-      // Add location dot on top
-      userLocationMarker = L.circleMarker([lat, lng], {
-        radius: 8,
-        fillColor: '#007bff',
-        color: '#fff',
-        weight: 3,
-        opacity: 1,
-        fillOpacity: 0.8
-      }).addTo(mapInstance);
+    // Add location dot on top
+    userLocationMarker = L.circleMarker([lat, lng], {
+      radius: 8,
+      fillColor: '#007bff',
+      color: '#fff',
+      weight: 3,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).addTo(mapInstance);
 
-      userLocationMarker.bindPopup(`<div style="font-size:12px"><strong>Your Location</strong><br>Accuracy: ±${Math.round(accuracy)}m</div>`);
+    userLocationMarker.bindPopup(`<div style="font-size:12px"><strong>Your Location</strong><br>Accuracy: ±${Math.round(accuracy)}m</div>`);
 
-      if (btn) btn.disabled = false;
-      if (btn) btn.textContent = '⊕';
-    },
+    if (btn) btn.disabled = false;
+    if (btn) btn.textContent = '⊗';
+  };
+
+  geolocationWatcher = navigator.geolocation.watchPosition(
+    updateLocation,
     function(error) {
       let msg = 'Location request denied';
       if (error.code === error.PERMISSION_DENIED) msg = 'Location permission denied';
       else if (error.code === error.POSITION_UNAVAILABLE) msg = 'Location not available';
       else if (error.code === error.TIMEOUT) msg = 'Location request timed out';
       alert(msg);
+      if (geolocationWatcher !== null) {
+        navigator.geolocation.clearWatch(geolocationWatcher);
+        geolocationWatcher = null;
+      }
       if (btn) btn.disabled = false;
       if (btn) btn.textContent = '⊕';
     },
