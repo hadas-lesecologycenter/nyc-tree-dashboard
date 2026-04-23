@@ -1351,10 +1351,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
           </label>
-          <label class="cp-chk">
-            <input type="checkbox" id="f-reserved" onchange="applyFilters()">
-            📅 Reserved for Care
-          </label>
+          <div style="margin-bottom:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📅 Reserved for Care</div>
+            <label class="cp-chk" style="margin-left:8px">
+              <input type="checkbox" id="f-reserved-person" onchange="applyFilters()">
+              🧑 For Person
+            </label>
+            <label class="cp-chk" style="margin-left:8px">
+              <input type="checkbox" id="f-reserved-event" onchange="applyFilters()">
+              🎉 For Event
+            </label>
+          </div>
           <label class="cp-chk">
             <input type="checkbox" id="f-stewarded" onchange="applyFilters()">
             🌱 Community Stewarded
@@ -2157,7 +2164,8 @@ function applyFilters(reload = false) {
   const selAge = filterSel.age;
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
-  const reservedOnly = document.getElementById('f-reserved')?.checked || false;
+  const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
+  const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
   const stewardedOnly = document.getElementById('f-stewarded')?.checked || false;
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
@@ -2179,8 +2187,8 @@ function applyFilters(reload = false) {
     const guardedIds = getTreeGuardIds();
     base = base.filter(t => guardedIds.has(String(t.tree_id)));
   }
-  if (reservedOnly) {
-    const reservedIds = getReservationTreeIds();
+  if (reservedPersonOnly || reservedEventOnly) {
+    const reservedIds = getReservationTreeIds(reservedPersonOnly, reservedEventOnly);
     base = base.filter(t => reservedIds.has(String(t.tree_id)));
   }
   if (stewardedOnly) {
@@ -2203,7 +2211,8 @@ function clearAllFilters() {
   document.getElementById('f-health').value = '';
   document.getElementById('f-care-needed').checked = false;
   document.getElementById('f-tree-guards').checked = false;
-  document.getElementById('f-reserved').checked = false;
+  document.getElementById('f-reserved-person').checked = false;
+  document.getElementById('f-reserved-event').checked = false;
   document.getElementById('f-stewarded').checked = false;
   document.getElementById('f-missing').checked = false;
   filterSel.species.clear();
@@ -3779,8 +3788,15 @@ function getTreeGuardIds() {
   return new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
 }
 
-function getReservationTreeIds() {
-  return new Set(reservationLoadSync().map(r => String(r.treeId)));
+function getReservationTreeIds(personOnly = false, eventOnly = false) {
+  const reservations = reservationLoadSync();
+  let filtered = reservations;
+  if (personOnly && !eventOnly) {
+    filtered = reservations.filter(r => r.reserveType !== 'event');
+  } else if (eventOnly && !personOnly) {
+    filtered = reservations.filter(r => r.reserveType === 'event');
+  }
+  return new Set(filtered.map(r => String(r.treeId)));
 }
 
 function getStewardedTreeIds() {
