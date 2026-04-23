@@ -3789,11 +3789,6 @@ function handleMapTreeGuardBtn() {
 function openTreeGuardModal(tree) {
   _pendingTreeGuardTree = tree;
 
-  if (!getWriteToken()) {
-    showTokenSetupModal(() => openTreeGuardModal(tree));
-    return;
-  }
-
   const modal = document.getElementById('tree-guard-modal');
   if (!modal) return;
   const info = document.getElementById('tree-guard-info');
@@ -3912,7 +3907,6 @@ async function careNeededSyncToGitHub(items) {
 let _pendingNeedsCareTree = null;
 
 function openNeedsCareModal(tree) {
-  if (!getWriteToken()) { showTokenSetupModal(() => openNeedsCareModal(tree)); return; }
   _pendingNeedsCareTree = tree;
   const modal = document.getElementById('needs-care-modal');
   const info = document.getElementById('needs-care-info');
@@ -4040,7 +4034,6 @@ async function stewardedSyncToGitHub(items) {
 let _pendingStewardedTree = null;
 
 function openStewardedModal(tree) {
-  if (!getWriteToken()) { showTokenSetupModal(() => openStewardedModal(tree)); return; }
   _pendingStewardedTree = tree;
   const modal = document.getElementById('stewarded-modal');
   const info = document.getElementById('stewarded-info');
@@ -4165,11 +4158,6 @@ function handleMapMissingBtn() {
 
 function openMissingModal(tree) {
   _pendingMissingTree = tree;
-
-  if (!getWriteToken()) {
-    showTokenSetupModal(() => openMissingModal(tree));
-    return;
-  }
 
   const modal = document.getElementById('missing-modal');
   if (!modal) return;
@@ -4337,11 +4325,6 @@ let _pendingReserveTree = null;
 
 function openReserveModal(tree) {
   _pendingReserveTree = tree;
-
-  if (!getWriteToken()) {
-    showTokenSetupModal(() => openReserveModal(tree));
-    return;
-  }
 
   const modal = document.getElementById('reserve-tree-modal');
   if (!modal) return;
