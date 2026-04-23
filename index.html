@@ -2270,11 +2270,24 @@ function requestUserLocation() {
     // Center map on user location (only on first location)
     if (!userLocationMarker) mapInstance.setView([lat, lng], 17);
 
-    // Remove old marker and accuracy circle
-    if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
-    if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
+    if (userLocationMarker) {
+      // Smooth update: move existing marker instead of removing/re-adding
+      userLocationMarker.setLatLng([lat, lng]);
+    } else {
+      // Create marker on first location
+      userLocationMarker = L.circleMarker([lat, lng], {
+        radius: 8,
+        fillColor: '#007bff',
+        color: '#fff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.8
+      }).addTo(mapInstance);
+      userLocationMarker.bindPopup(`<div style="font-size:12px"><strong>Your Location</strong><br>Accuracy: ±${Math.round(accuracy)}m</div>`);
+    }
 
-    // Add accuracy circle first (renders below the dot)
+    // Update accuracy circle (remove old and add new)
+    if (userAccuracyCircle) mapInstance.removeLayer(userAccuracyCircle);
     userAccuracyCircle = L.circle([lat, lng], {
       radius: accuracy,
       fillColor: '#007bff',
@@ -2284,18 +2297,6 @@ function requestUserLocation() {
       fillOpacity: 0.1,
       interactive: false
     }).addTo(mapInstance);
-
-    // Add location dot on top
-    userLocationMarker = L.circleMarker([lat, lng], {
-      radius: 8,
-      fillColor: '#007bff',
-      color: '#fff',
-      weight: 3,
-      opacity: 1,
-      fillOpacity: 0.8
-    }).addTo(mapInstance);
-
-    userLocationMarker.bindPopup(`<div style="font-size:12px"><strong>Your Location</strong><br>Accuracy: ±${Math.round(accuracy)}m</div>`);
 
     if (btn) btn.disabled = false;
     if (btn) btn.textContent = '⊗';
