@@ -1902,6 +1902,12 @@ const PLANTINGS_DATA = [{"num": "331", "street": "EAST 10 STREET", "species": "S
 let allTrees = [];
 let filteredTrees = [];
 
+// Parse a date string as local noon so timezone offsets never shift the displayed
+// date to the previous day. Works with both 'YYYY-MM-DD' and full ISO timestamps.
+function localDate(str) {
+  return new Date((str || '').slice(0, 10) + 'T12:00:00');
+}
+
 let mapInstance = null;
 let markersLayer = null;
 let priorityMode = true;
@@ -3504,7 +3510,7 @@ function tcBuildScrapedAreas(rows, treeById) {
       .map(a => TC_ACTIVITY_TYPE_MAP[a])
       .filter(Boolean);
 
-    const event = { date: new Date(rawDate).toISOString(), activities, note: '', _fromScraper: true };
+    const event = { date: String(rawDate).slice(0, 10), activities, note: '', _fromScraper: true };
     if (!byTreeId[tid]) byTreeId[tid] = { address, species, treeId: tid, events: [] };
     else if (!byTreeId[tid].address || byTreeId[tid].address.startsWith('Tree #')) {
       byTreeId[tid].address = address; // prefer a real address over "Tree #id"
@@ -4885,7 +4891,7 @@ function openTreeDetailCard(tree) {
     if (events2026.length > 0) {
       careLog += '<div style="font-size:10px;font-weight:700;color:#c62828;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #c6282844;margin-top:6px">2026</div>';
       events2026.forEach(ev => {
-        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        const d = localDate(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
         const badges = (ev.activities || []).map(aid => {
           const a = TC_ACTIVITIES.find(x => x.id === aid);
           return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
@@ -4896,7 +4902,7 @@ function openTreeDetailCard(tree) {
     if (events2025.length > 0) {
       careLog += '<div style="font-size:10px;font-weight:700;color:#e65100;text-transform:uppercase;letter-spacing:0.07em;padding:6px 0 3px;border-top:1px solid #e6510044;margin-top:6px">2025</div>';
       events2025.forEach(ev => {
-        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        const d = localDate(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
         const badges = (ev.activities || []).map(aid => {
           const a = TC_ACTIVITIES.find(x => x.id === aid);
           return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
@@ -4907,7 +4913,7 @@ function openTreeDetailCard(tree) {
     if (eventsPre.length > 0) {
       careLog += '<details style="margin-top:6px"><summary style="font-size:10px;color:var(--text3);cursor:pointer;padding:2px 0">Earlier visits (' + eventsPre.length + ')</summary>';
       eventsPre.forEach(ev => {
-        const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+        const d = localDate(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
         const badges = (ev.activities || []).map(aid => {
           const a = TC_ACTIVITIES.find(x => x.id === aid);
           return a ? `<span style="display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1px 6px;font-size:10px;margin-right:3px">${a.emoji}</span>` : '';
@@ -5144,7 +5150,7 @@ function renderClaimedBlocksSidebar() {
     const year = (latest.date || '').slice(0, 4);
     const yearColor = tcYearColor(year);
     const dateStr = latest.date
-      ? new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      ? localDate(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : '';
 
     // Aggregate unique activity emojis across ALL care events
@@ -5333,7 +5339,7 @@ function tcOpenDashboard(id) {
 
   // Build care event rows, grouped by year
   function buildCareEventRow(ev, i) {
-    const d = new Date(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    const d = localDate(ev.date).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
     const badges = (ev.activities || []).map(aid => {
       const a = TC_ACTIVITIES.find(x => x.id === aid);
       return a ? '<span style="display:inline-flex;align-items:center;gap:3px;background:var(--bg3);' +
@@ -5381,7 +5387,7 @@ function tcOpenDashboard(id) {
   }
 
   const isScrapedArea = !!area._fromScraper;
-  const firstCareDate = new Date(area.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const firstCareDate = localDate(area.createdAt).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
   const totalVisits = (area.careEvents || []).length;
 
   content.innerHTML =
