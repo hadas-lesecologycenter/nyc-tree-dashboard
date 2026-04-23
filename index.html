@@ -1302,6 +1302,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="radio" name="view-mode" id="view-mode-species" value="species" onchange="setViewMode('species')">
             🎨 Species colors
           </label>
+          <label class="cp-radio">
+            <input type="radio" name="view-mode" id="view-mode-none" value="none" onchange="setViewMode('none')">
+            🗺️ Program layers only
+          </label>
         </div>
 
         <div class="cp-section" id="cp-priority-info">
@@ -1375,13 +1379,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
             🛡 Tree Guard present
           </label>
           <div style="margin-bottom:8px">
-            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">📅 Reserved for Care</div>
+            <label class="cp-chk">
+              <input type="checkbox" id="f-reserved" onchange="toggleReservedFilter()">
+              📅 Reserved for Care
+            </label>
             <label class="cp-chk" style="margin-left:8px">
-              <input type="checkbox" id="f-reserved-person" onchange="applyFilters()">
+              <input type="checkbox" id="f-reserved-person" onchange="updateReservedParent();applyFilters()">
               🧑 For Person
             </label>
             <label class="cp-chk" style="margin-left:8px">
-              <input type="checkbox" id="f-reserved-event" onchange="applyFilters()">
+              <input type="checkbox" id="f-reserved-event" onchange="updateReservedParent();applyFilters()">
               🎉 For Event
             </label>
           </div>
@@ -1911,6 +1918,7 @@ function localDate(str) {
 let mapInstance = null;
 let markersLayer = null;
 let priorityMode = true;
+let _viewModeNone = false;
 let emptyBedsVisible = false;
 let emptyBedsLayer = null;
 let emptyBeds = [];
@@ -2241,10 +2249,32 @@ function applyFilters(reload = false) {
   updateStats();
 }
 
+function toggleReservedFilter() {
+  const parentChk = document.getElementById('f-reserved');
+  const personChk = document.getElementById('f-reserved-person');
+  const eventChk = document.getElementById('f-reserved-event');
+  if (parentChk.checked) {
+    personChk.checked = true;
+    eventChk.checked = true;
+  } else {
+    personChk.checked = false;
+    eventChk.checked = false;
+  }
+  applyFilters();
+}
+
+function updateReservedParent() {
+  const parentChk = document.getElementById('f-reserved');
+  const personChk = document.getElementById('f-reserved-person');
+  const eventChk = document.getElementById('f-reserved-event');
+  parentChk.checked = personChk.checked || eventChk.checked;
+}
+
 function clearAllFilters() {
   document.getElementById('f-health').value = '';
   document.getElementById('f-care-needed').checked = false;
   document.getElementById('f-tree-guards').checked = false;
+  document.getElementById('f-reserved').checked = false;
   document.getElementById('f-reserved-person').checked = false;
   document.getElementById('f-reserved-event').checked = false;
   document.getElementById('f-stewarded').checked = false;
@@ -2480,6 +2510,9 @@ function updateMap() {
   if (!mapInstance) return;
   markersLayer.clearLayers();
 
+  // Skip rendering tree markers if in "program layers only" mode
+  if (window._viewModeNone) return;
+
   const caredFor = getCaredForTreeIds();
   // Canvas renderer draws all markers as a single canvas element instead of
   // individual DOM nodes — handles 15k+ markers without lag.
@@ -2557,17 +2590,20 @@ function toggleControlsPanel() {
 function togglePrioritySidebar() { toggleControlsPanel(); }
 
 function setViewMode(mode) {
-  // mode: 'priority' | 'species'
+  // mode: 'priority' | 'species' | 'none'
   priorityMode = (mode === 'priority');
+  window._viewModeNone = (mode === 'none');
 
   const priInfo = document.getElementById('cp-priority-info');
-  if (priInfo) priInfo.style.display = priorityMode ? '' : 'none';
+  if (priInfo) priInfo.style.display = (mode === 'priority') ? '' : 'none';
 
   // Keep radios in sync
   const pr = document.getElementById('view-mode-priority');
   const sp = document.getElementById('view-mode-species');
-  if (pr) pr.checked = priorityMode;
-  if (sp) sp.checked = !priorityMode;
+  const no = document.getElementById('view-mode-none');
+  if (pr) pr.checked = (mode === 'priority');
+  if (sp) sp.checked = (mode === 'species');
+  if (no) no.checked = (mode === 'none');
 
   updateMap();
 }
