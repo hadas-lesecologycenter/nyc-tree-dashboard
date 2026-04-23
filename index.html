@@ -1703,7 +1703,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--bg2)">
             <input type="radio" name="reserve-mode" value="person" id="reserve-mode-person" style="cursor:pointer;accent-color:#7b3fa0" checked onchange="toggleReserveMode()">
-            👤 Person
+            🧑 Person
           </label>
           <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--bg2)">
             <input type="radio" name="reserve-mode" value="event" id="reserve-mode-event" style="cursor:pointer;accent-color:#7b3fa0" onchange="toggleReserveMode()">
@@ -4526,7 +4526,7 @@ function renderReservationQueue() {
             : '') +
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
             '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
-            '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '👤') + ' ' + res.name + '</span>' +
+            '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>' +
           '</div>' +
           (res.note ? '<div style="font-size:10px;color:var(--text2);margin-top:3px;font-style:italic">' + res.note + '</div>' : '') +
         '</div>' +
@@ -4595,7 +4595,7 @@ function renderCareNeededQueue() {
         '<div style="margin-bottom:4px">' + needsTags + '</div>' +
         '<div style="display:flex;align-items:center;gap:6px">' +
           '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
-          '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '👤') + ' ' + res.name + '</span>' +
+          '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>' +
         '</div>' +
       '</div>';
     section.appendChild(row);
@@ -4835,7 +4835,7 @@ function tcRenderReservationsOnMainMap() {
     .bindTooltip(
       '<strong>' + (res.address || res.species || 'Tree') + '</strong>' +
       '<br><span style="font-size:10px;color:' + color + '">📅 ' + dateStr + '</span>' +
-      '<br><span style="font-size:10px;color:#888">' + (res.reserveType === 'event' ? '🎉' : '👤') + ' ' + res.name + '</span>',
+      '<br><span style="font-size:10px;color:#888">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>',
       { sticky: true }
     )
     .on('click', (e) => { L.DomEvent.stopPropagation(e); openReservationDetail(res); })
@@ -4874,14 +4874,14 @@ function tcRenderReservationsOnCareMap() {
       .bindTooltip(
         '<strong>' + (res.address || res.species || 'Tree') + '</strong>' +
         '<br><span style="font-size:10px;color:' + color + '">📅 ' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
-        '<br><span style="font-size:10px;color:#888">' + (res.reserveType === 'event' ? '🎉' : '👤') + ' ' + res.name + '</span>',
+        '<br><span style="font-size:10px;color:#888">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>',
         { sticky: true }
       )
       .bindPopup(
         '<div style="font-family:\'Nunito\',sans-serif;min-width:160px">' +
         '<div style="font-weight:700;font-size:13px;margin-bottom:2px">' + (res.address || res.species || 'Tree') + '</div>' +
         (res.species && res.address ? '<div style="font-size:11px;color:#666;margin-bottom:4px">' + res.species + '</div>' : '') +
-        '<div style="font-size:11px;color:#888;margin-bottom:6px">' + (res.reserveType === 'event' ? '🎉 Event' : '👤 Reserved by') + ' <strong>' + res.name + '</strong></div>' +
+        '<div style="font-size:11px;color:#888;margin-bottom:6px">' + (res.reserveType === 'event' ? '🎉 Event' : '🧑 Reserved by') + ' <strong>' + res.name + '</strong></div>' +
         '<div style="font-size:11px;font-weight:600;color:' + color + ';margin-bottom:10px">📅 ' + dateStr +
         (isToday ? ' · Today!' : isPast ? ' · Past' : '') + '</div>' +
         '<button onclick="reservationRemove(\'' + res.id + '\');if(tcCareMap)tcCareMap.closePopup();" ' +
