@@ -4496,16 +4496,54 @@ function renderReservationQueue() {
   const section = document.createElement('div');
   section.id = 'res-queue-section';
 
+  const sortMode = localStorage.getItem('res-sort-mode') || 'date';
+  const headerContainer = document.createElement('div');
+  headerContainer.style.cssText = 'background:var(--bg2);border-bottom:1px solid var(--border)';
+
   const header = document.createElement('div');
   header.style.cssText = 'padding:8px 14px 6px;font-size:10px;font-weight:700;color:#7b3fa0;' +
-    'text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);background:var(--bg2)';
+    'text-transform:uppercase;letter-spacing:0.07em';
   header.textContent = '📅 Reservations';
-  section.appendChild(header);
+  headerContainer.appendChild(header);
+
+  const toggles = document.createElement('div');
+  toggles.style.cssText = 'display:flex;gap:6px;padding:0 14px 8px;flex-wrap:wrap';
+  ['date', 'person'].forEach(mode => {
+    const btn = document.createElement('button');
+    const isActive = sortMode === mode;
+    btn.textContent = mode === 'date' ? '📅 By Date' : '🧑 By Person';
+    btn.style.cssText = 'padding:5px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;' +
+      'border:1px solid var(--border);background:' + (isActive ? '#7b3fa0' : 'var(--bg)') + ';' +
+      'color:' + (isActive ? '#fff' : 'var(--text2)') + ';transition:all 0.2s';
+    btn.onclick = () => { localStorage.setItem('res-sort-mode', mode); renderReservationQueue(); };
+    toggles.appendChild(btn);
+  });
+  headerContainer.appendChild(toggles);
+  section.appendChild(headerContainer);
 
   const today = new Date().toISOString().slice(0, 10);
-  const sorted = [...reservations].sort((a, b) => a.date > b.date ? 1 : -1);
+  let sorted = [...reservations];
+  if (sortMode === 'person') {
+    sorted.sort((a, b) => {
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      return nameA.localeCompare(nameB) || (a.date > b.date ? 1 : -1);
+    });
+  } else {
+    sorted.sort((a, b) => a.date > b.date ? 1 : -1);
+  }
 
+  let lastPerson = null;
   sorted.forEach(res => {
+    if (sortMode === 'person' && res.name !== lastPerson) {
+      const personHeader = document.createElement('div');
+      personHeader.style.cssText = 'padding:8px 14px 4px;font-size:10px;font-weight:600;color:var(--text2);' +
+        'text-transform:uppercase;letter-spacing:0.05em;background:var(--bg3);border-bottom:1px solid var(--border);margin-top:4px';
+      personHeader.textContent = (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name;
+      section.appendChild(personHeader);
+      lastPerson = res.name;
+    }
+
     const dateObj = new Date(res.date + 'T12:00:00');
     const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const isPast = res.date < today;
@@ -4526,7 +4564,7 @@ function renderReservationQueue() {
             : '') +
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
             '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
-            '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>' +
+            (sortMode === 'date' ? '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>' : '') +
           '</div>' +
           (res.note ? '<div style="font-size:10px;color:var(--text2);margin-top:3px;font-style:italic">' + res.note + '</div>' : '') +
         '</div>' +
