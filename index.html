@@ -1185,6 +1185,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #geoLocation-btn:active {
       transform: scale(0.92);
     }
+    #compass-btn {
+      width: 48px; height: 48px; border-radius: 50%; border: none;
+      background: white; color: #333; font-size: 22px; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.3s ease; padding: 0; flex-shrink: 0;
+    }
+    #compass-btn.active { background: #007bff; color: #fff; box-shadow: 0 2px 12px rgba(0,123,255,0.4); }
+    #compass-btn:active { transform: scale(0.92); }
+  }
+
+  /* Selected tree ring — always present so it works on both maps */
+  .selected-tree-ring {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid #FFC107;
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.35);
+    animation: tree-ring-pulse 1.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes tree-ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.35); opacity: 0.5; }
   }
 
   @media (max-width: 480px) {
@@ -1226,6 +1248,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
+      <button id="compass-btn" title="Rotate map to face your direction" onclick="toggleCompassRotation()">🧭</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1889,6 +1912,10 @@ let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 let geolocationWatcher = null;
+let compassActive = false;
+let compassHandler = null;
+let selectedTreeHighlight = null;
+let tcSelectedHighlight = null;
 
 // ========== LESEC PROGRAM DATA ==========
 const LESEC_TOOL_STORAGE = {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98623112196117, 40.70984670353943]}, "properties": {"fid": 1, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.979572548085, 40.724745436610114]}, "properties": {"fid": 2, "Tree ID": null, "Zipcode": null, "Notes": null}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [-73.98948618305218, 40.71459411209329]}, "properties": {"fid": 3, "Tree ID": null, "Zipcode": null, "Notes": null}}]};
@@ -2224,7 +2251,7 @@ function clearAllFilters() {
 
 // ========== MAP ==========
 function initMap() {
-  mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } });
+  mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, touchRotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
@@ -2323,6 +2350,79 @@ function requestUserLocation() {
       maximumAge: 0
     }
   );
+}
+
+function toggleCompassRotation() {
+  const btn = document.getElementById('compass-btn');
+  if (compassActive) {
+    if (compassHandler) {
+      window.removeEventListener('deviceorientationabsolute', compassHandler, true);
+      window.removeEventListener('deviceorientation', compassHandler, true);
+      compassHandler = null;
+    }
+    compassActive = false;
+    if (mapInstance) mapInstance.setBearing(0);
+    if (btn) btn.classList.remove('active');
+    return;
+  }
+
+  function handleOrientation(e) {
+    let heading;
+    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+      heading = e.webkitCompassHeading; // iOS absolute heading
+    } else if (e.alpha !== null && e.alpha !== undefined) {
+      heading = (360 - e.alpha) % 360; // Android
+    }
+    if (heading !== undefined && !isNaN(heading) && mapInstance) {
+      mapInstance.setBearing(heading);
+    }
+  }
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') {
+        compassHandler = handleOrientation;
+        window.addEventListener('deviceorientationabsolute', compassHandler, true);
+        window.addEventListener('deviceorientation', compassHandler, true);
+        compassActive = true;
+        if (btn) btn.classList.add('active');
+      } else {
+        alert('Compass access was denied. Allow motion & orientation in Settings.');
+      }
+    }).catch(() => alert('Compass not available on this device.'));
+  } else if (typeof DeviceOrientationEvent !== 'undefined') {
+    compassHandler = handleOrientation;
+    window.addEventListener('deviceorientationabsolute', compassHandler, true);
+    window.addEventListener('deviceorientation', compassHandler, true);
+    compassActive = true;
+    if (btn) btn.classList.add('active');
+  } else {
+    alert('Device orientation is not supported by this browser.');
+  }
+}
+
+function highlightSelectedTree(lat, lng, targetMap) {
+  // Clear highlights on both maps
+  if (selectedTreeHighlight && mapInstance) {
+    mapInstance.removeLayer(selectedTreeHighlight);
+    selectedTreeHighlight = null;
+  }
+  if (tcSelectedHighlight && typeof tcCareMap !== 'undefined' && tcCareMap) {
+    tcCareMap.removeLayer(tcSelectedHighlight);
+    tcSelectedHighlight = null;
+  }
+  if (!lat || !lng || !targetMap) return;
+
+  const icon = L.divIcon({
+    className: '',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    html: '<div class="selected-tree-ring"></div>'
+  });
+  const marker = L.marker([lat, lng], { icon, interactive: false, zIndexOffset: 1000 });
+  marker.addTo(targetMap);
+  if (targetMap === mapInstance) selectedTreeHighlight = marker;
+  else tcSelectedHighlight = marker;
 }
 
 const PCOLORS = { Critical: '#c0392b', High: '#d35400', Medium: '#d4ac0d', Low: '#3a7d44' };
@@ -2835,6 +2935,9 @@ function openMapTreeDetail(tree) {
   if (!panel) return;
   window._currentMapDetailTree = tree;
   window._currentMapDetailReservation = null;
+  const _hlat = parseFloat(tree.latitude || tree.lat);
+  const _hlng = parseFloat(tree.longitude || tree.lng || tree.lon);
+  highlightSelectedTree(_hlat, _hlng, mapInstance);
   panel.style.display = 'block';
   document.getElementById('map-view').classList.add('tree-panel-open');
 
@@ -2931,6 +3034,10 @@ function closeMapTreeDetail() {
   if (panel) panel.style.display = 'none';
   document.getElementById('map-view').classList.remove('tree-panel-open');
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  if (selectedTreeHighlight && mapInstance) {
+    mapInstance.removeLayer(selectedTreeHighlight);
+    selectedTreeHighlight = null;
+  }
 }
 
 function openReservationDetail(res) {
@@ -4850,8 +4957,11 @@ function tcZoomToReservation(id) {
   const res = reservationLoadSync().find(r => r.id === id);
   if (!res) return;
 
-  // Zoom the care map to this location
-  if (tcCareMap) tcCareMap.setView([res.lat, res.lng], 17);
+  // Zoom the care map to this location and highlight the tree
+  if (tcCareMap) {
+    tcCareMap.setView([res.lat, res.lng], 17);
+    highlightSelectedTree(res.lat, res.lng, tcCareMap);
+  }
 
   // Find the full tree object from allTrees using treeId
   const treeId = String(res.treeId);
@@ -4866,6 +4976,10 @@ function closeTreeCareDetail() {
   const dashboardContent = document.getElementById('myblock-dashboard-content');
   if (dashboardContent) {
     dashboardContent.style.display = 'none';
+  }
+  if (tcSelectedHighlight && typeof tcCareMap !== 'undefined' && tcCareMap) {
+    tcCareMap.removeLayer(tcSelectedHighlight);
+    tcSelectedHighlight = null;
   }
 }
 
