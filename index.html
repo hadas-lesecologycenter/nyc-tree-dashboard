@@ -1699,9 +1699,36 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div id="reserve-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:12px">
-        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Staff Name</label>
-        <input id="reserve-name-input" type="text" placeholder="e.g., Jane, John Smith, Team A"
-          style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Reserve for</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--bg2)">
+            <input type="radio" name="reserve-mode" value="person" id="reserve-mode-person" style="cursor:pointer;accent-color:#7b3fa0" checked onchange="toggleReserveMode()">
+            👤 Person
+          </label>
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--bg2)">
+            <input type="radio" name="reserve-mode" value="event" id="reserve-mode-event" style="cursor:pointer;accent-color:#7b3fa0" onchange="toggleReserveMode()">
+            🎉 Event
+          </label>
+        </div>
+        <div id="reserve-person-section" style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="reserve-person" value="Gretel" id="reserve-person-gretel" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0" checked>
+            Gretel
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="reserve-person" value="Maddy" id="reserve-person-maddy" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
+            Maddy
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
+            <input type="radio" name="reserve-person" value="Hadas" id="reserve-person-hadas" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0">
+            Hadas
+          </label>
+        </div>
+        <div id="reserve-event-section" style="display:none">
+          <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Event name</label>
+          <input id="reserve-event-name-input" type="text" placeholder="e.g., Spring Mulch Party"
+            style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+        </div>
       </div>
       <div style="margin-bottom:20px">
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
@@ -4356,8 +4383,11 @@ function openReserveModal(tree) {
   }
   const dateInput = document.getElementById('reserve-date-input');
   if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
+  // Reset to person mode each time
+  const personRadio = document.getElementById('reserve-mode-person');
+  if (personRadio) personRadio.checked = true;
+  toggleReserveMode();
   modal.style.display = 'flex';
-  setTimeout(() => { const ni = document.getElementById('reserve-name-input'); if (ni) ni.focus(); }, 100);
 }
 
 function closeReserveModal() {
@@ -4366,13 +4396,27 @@ function closeReserveModal() {
   _pendingReserveTree = null;
 }
 
+function toggleReserveMode() {
+  const isEvent = document.getElementById('reserve-mode-event').checked;
+  document.getElementById('reserve-person-section').style.display = isEvent ? 'none' : 'flex';
+  document.getElementById('reserve-event-section').style.display = isEvent ? 'block' : 'none';
+}
+
 function confirmReserveTree() {
   const tree = _pendingReserveTree;
   if (!tree) return;
-  const name = (document.getElementById('reserve-name-input').value || '').trim();
+  const isEvent = document.getElementById('reserve-mode-event').checked;
+  let name;
+  if (isEvent) {
+    name = (document.getElementById('reserve-event-name-input').value || '').trim();
+    if (!name) { document.getElementById('reserve-event-name-input').focus(); return; }
+  } else {
+    const personRadio = document.querySelector('input[name="reserve-person"]:checked');
+    name = personRadio ? personRadio.value : '';
+    if (!name) return;
+  }
   const date = document.getElementById('reserve-date-input').value;
   const note = (document.getElementById('reserve-note-input').value || '').trim();
-  if (!name) { document.getElementById('reserve-name-input').focus(); return; }
   if (!date) { document.getElementById('reserve-date-input').focus(); return; }
 
   const all = reservationLoadSync();
@@ -4388,6 +4432,7 @@ function confirmReserveTree() {
     name,
     note,
     date,
+    reserveType: isEvent ? 'event' : 'person',
     lat: parseFloat(tree.latitude || tree.lat),
     lng: parseFloat(tree.longitude || tree.lng),
     species: tree.spc_common || '',
@@ -4402,7 +4447,8 @@ function confirmReserveTree() {
   all.push(reservation);
   reservationSave(all);
 
-  document.getElementById('reserve-name-input').value = '';
+  const eventInput = document.getElementById('reserve-event-name-input');
+  if (eventInput) eventInput.value = '';
   document.getElementById('reserve-note-input').value = '';
   closeReserveModal();
   closeMapTreeDetail();
