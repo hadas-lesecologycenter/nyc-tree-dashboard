@@ -1198,15 +1198,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   /* Selected tree ring — always present so it works on both maps */
   .selected-tree-ring {
-    width: 36px; height: 36px; border-radius: 50%;
-    border: 3px solid #FFC107;
-    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.35);
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2.5px solid #FFC107;
+    box-shadow: 0 0 0 1.5px rgba(255, 193, 7, 0.4);
     animation: tree-ring-pulse 1.6s ease-in-out infinite;
     pointer-events: none;
   }
   @keyframes tree-ring-pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.35); opacity: 0.5; }
+    50% { transform: scale(1.5); opacity: 0.4; }
   }
 
   @media (max-width: 480px) {
@@ -2421,8 +2421,8 @@ function highlightSelectedTree(lat, lng, targetMap) {
 
   const icon = L.divIcon({
     className: '',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
     html: '<div class="selected-tree-ring"></div>'
   });
   const marker = L.marker([lat, lng], { icon, interactive: false, zIndexOffset: 1000 });
@@ -5237,16 +5237,7 @@ function tcSelectArea(id) {
 
       if (coords && coords.lat && coords.lng) {
         tcCareMap.setView([coords.lat, coords.lng], 17);
-        // Add yellow marker to highlight selected tree
-        if (tcSelectedTreeMarker) tcSelectedTreeMarker.remove();
-        tcSelectedTreeMarker = L.circleMarker([coords.lat, coords.lng], {
-          radius: 12,
-          fillColor: '#fbbf24',
-          color: '#f59e0b',
-          weight: 3,
-          opacity: 1,
-          fillOpacity: 0.8
-        }).addTo(tcCareMap);
+        highlightSelectedTree(coords.lat, coords.lng, tcCareMap);
       }
 
       if (tree) {
