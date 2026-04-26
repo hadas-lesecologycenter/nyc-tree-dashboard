@@ -9,7 +9,7 @@ required fields.
 Run manually or via the update-census GitHub Action.
 """
 
-import csv, io, json, sys, urllib.request, urllib.parse, os, time
+import csv, io, json, sys, urllib.request, urllib.parse, os, time, math
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -309,6 +309,79 @@ def fetch_census_2015():
     return filter_to_cb3(rows)
 
 
+# ── Spatial enrichment from 2015 census ───────────────────────────────────────
+# The Forestry Tree Points dataset lacks guard/sidewalk fields — pull them from
+# the 2015 census by matching each forestry tree to its nearest census tree.
+
+ENRICH_FIELDS   = ('guards', 'sidewalk')
+MATCH_THRESHOLD = 20   # metres — trees closer than this are the same physical tree
+GRID_SIZE       = 0.002  # ~220 m grid cells for spatial index
+
+
+def _haversine_m(lat1, lng1, lat2, lng2):
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1) * math.cos(math.radians((lat1 + lat2) / 2))
+    return 6_371_000 * math.sqrt(dlat * dlat + dlng * dlng)
+
+
+def enrich_from_census_2015(trees):
+    """Copy guards/sidewalk from 2015 census into forestry trees via spatial join."""
+    print('Fetching 2015 census to enrich guards/sidewalk fields…')
+    try:
+        census_rows = fetch_census_2015()
+    except Exception as e:
+        print(f'  Could not fetch 2015 census for enrichment: {e}')
+        return trees
+
+    # Build a grid index of census trees that actually have enrichable values.
+    grid = {}
+    for row in census_rows:
+        values = {f: row.get(f, '') for f in ENRICH_FIELDS}
+        if not any(values.values()):
+            continue
+        try:
+            lat = float(row.get('latitude') or 0)
+            lng = float(row.get('longitude') or 0)
+        except (ValueError, TypeError):
+            continue
+        if not lat:
+            continue
+        cell = (int(lat / GRID_SIZE), int(lng / GRID_SIZE))
+        grid.setdefault(cell, []).append((lat, lng, values))
+
+    enriched = 0
+    for tree in trees:
+        try:
+            tlat = float(tree.get('latitude') or 0)
+            tlng = float(tree.get('longitude') or 0)
+        except (ValueError, TypeError):
+            continue
+        if not tlat:
+            continue
+
+        cell_lat = int(tlat / GRID_SIZE)
+        cell_lng = int(tlng / GRID_SIZE)
+        best_dist = float('inf')
+        best_vals = {}
+
+        for dlat in (-1, 0, 1):
+            for dlng in (-1, 0, 1):
+                for (clat, clng, cvals) in grid.get((cell_lat + dlat, cell_lng + dlng), []):
+                    d = _haversine_m(tlat, tlng, clat, clng)
+                    if d < best_dist:
+                        best_dist = d
+                        best_vals = cvals
+
+        if best_dist <= MATCH_THRESHOLD:
+            for field, value in best_vals.items():
+                if value:
+                    tree[field] = value
+            enriched += 1
+
+    print(f'  Matched {enriched} of {len(trees)} forestry trees to a 2015 census record')
+    return trees
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -318,6 +391,8 @@ def main():
         trees = fetch_forestry()
         print(f'  Forestry Tree Points: {len(trees)} CB3 trees')
         source = 'Forestry Tree Points (live)'
+        # Forestry dataset lacks guards/sidewalk — enrich from 2015 census spatially.
+        trees = enrich_from_census_2015(trees)
     except Exception as e:
         print(f'  Forestry fetch failed: {e}')
         print('  Falling back to 2015 census…')
