@@ -3944,7 +3944,9 @@ function treeGuardsLoadSync() {
 }
 
 function getTreeGuardIds() {
-  return new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
+  const ids = new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
+  allTrees.forEach(t => { if (t.guards) ids.add(String(t.tree_id)); });
+  return ids;
 }
 
 function getReservationTreeIds(personOnly = false, eventOnly = false, generalOnly = false) {
@@ -3998,11 +4000,15 @@ function openTreeGuardModal(tree) {
   if (info) {
     const species = tree.spc_common || tree.spc_latin || 'Unknown species';
     const address = tree.address || 'Unknown location';
+    const censusLine = tree.guards
+      ? '<div style="font-size:11px;color:#4a7a9b;margin-top:4px">Census: guard is <strong>' + tree.guards.toLowerCase() + '</strong></div>'
+      : '';
     info.innerHTML =
       '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' +
         species +
       '</div>' +
-      '<div style="font-size:11px;color:var(--text2)">' + address + '</div>';
+      '<div style="font-size:11px;color:var(--text2)">' + address + '</div>' +
+      censusLine;
   }
   document.getElementById('guard-standard').checked = true;
   document.getElementById('guard-nonstandard').checked = false;
@@ -4060,15 +4066,21 @@ function updateTreeGuardButton(tree) {
   const btn = document.getElementById('mtp-guard-btn');
   if (!btn || !tree) return;
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
-  const guards = treeGuardsLoadSync();
-  const guardRecord = guards.find(g => String(g.treeId) === treeId);
-  const has = !!guardRecord;
-  const guardType = guardRecord ? (guardRecord.guardType || 'standard') : '';
-  const label = has ? ('🛡 Guard ✓ ' + guardType) : '🛡 Tree Guard?';
+  const guardRecord = treeGuardsLoadSync().find(g => String(g.treeId) === treeId);
+  const censusGuard = tree.guards || '';
+  let label, bg;
+  if (guardRecord) {
+    label = '🛡 Guard ✓ ' + (guardRecord.guardType || 'standard');
+    bg = '#2d5180';
+  } else if (censusGuard) {
+    label = '🛡 Guard (census: ' + censusGuard + ')';
+    bg = '#4a7a9b';
+  } else {
+    label = '🛡 Tree Guard?';
+    bg = '#3d6b9e';
+  }
   btn.textContent = label;
-  const bg = has ? '#2d5180' : '#3d6b9e';
-  btn.style.background = bg;
-  btn.style.backgroundColor = bg;
+  btn.style.background = btn.style.backgroundColor = bg;
   btn.style.color = '#fff';
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
