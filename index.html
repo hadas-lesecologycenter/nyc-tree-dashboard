@@ -1746,6 +1746,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="radio" name="reserve-mode" value="event" id="reserve-mode-event" style="cursor:pointer;accent-color:#7b3fa0" onchange="toggleReserveMode()">
             🎉 Event
           </label>
+          <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);background:var(--bg2)">
+            <input type="radio" name="reserve-mode" value="pool" id="reserve-mode-pool" style="cursor:pointer;accent-color:#7b3fa0" onchange="toggleReserveMode()">
+            🌊 Pool
+          </label>
         </div>
         <div id="reserve-person-section" style="display:flex;flex-direction:column;gap:6px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text)">
@@ -3099,9 +3103,10 @@ function openReservationDetail(res) {
   document.getElementById('mtp-badge').innerHTML =
     '<span style="background:' + color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">📅 Reserved</span>';
 
+  const label = res.reserveType === 'event' ? 'Event' : res.reserveType === 'pool' ? 'Pool' : 'Person';
   const rows = [
     ['Date',    dateLabel],
-    [res.reserveType === 'event' ? 'Event' : 'Person',   res.name],
+    [label,   res.name],
     res.note    ? ['Note', '<em>' + res.note + '</em>'] : null,
     res.address ? ['Address', res.address] : null,
     res.health  ? ['Health',  res.health]  : null,
@@ -4580,23 +4585,29 @@ function closeReserveModal() {
 }
 
 function toggleReserveMode() {
-  const isEvent = document.getElementById('reserve-mode-event').checked;
-  document.getElementById('reserve-person-section').style.display = isEvent ? 'none' : 'flex';
-  document.getElementById('reserve-event-section').style.display = isEvent ? 'block' : 'none';
+  const mode = document.querySelector('input[name="reserve-mode"]:checked')?.value;
+  document.getElementById('reserve-person-section').style.display = mode === 'person' ? 'flex' : 'none';
+  document.getElementById('reserve-event-section').style.display = mode === 'event' ? 'block' : 'none';
 }
 
 function confirmReserveTree() {
   const tree = _pendingReserveTree;
   if (!tree) return;
-  const isEvent = document.getElementById('reserve-mode-event').checked;
-  let name;
-  if (isEvent) {
+  const mode = document.querySelector('input[name="reserve-mode"]:checked')?.value;
+  let name, reserveType;
+
+  if (mode === 'event') {
     name = (document.getElementById('reserve-event-name-input').value || '').trim();
     if (!name) { document.getElementById('reserve-event-name-input').focus(); return; }
+    reserveType = 'event';
+  } else if (mode === 'pool') {
+    name = 'Community Pool';
+    reserveType = 'pool';
   } else {
     const personRadio = document.querySelector('input[name="reserve-person"]:checked');
     name = personRadio ? personRadio.value : '';
     if (!name) return;
+    reserveType = 'person';
   }
   const date = document.getElementById('reserve-date-input').value;
   const note = (document.getElementById('reserve-note-input').value || '').trim();
@@ -4615,7 +4626,7 @@ function confirmReserveTree() {
     name,
     note,
     date,
-    reserveType: isEvent ? 'event' : 'person',
+    reserveType,
     lat: parseFloat(tree.latitude || tree.lat),
     lng: parseFloat(tree.longitude || tree.lng),
     species: tree.spc_common || '',
@@ -4722,7 +4733,8 @@ function renderReservationQueue() {
       const personHeader = document.createElement('div');
       personHeader.style.cssText = 'padding:8px 14px 4px;font-size:10px;font-weight:600;color:var(--text2);' +
         'text-transform:uppercase;letter-spacing:0.05em;background:var(--bg3);border-bottom:1px solid var(--border);margin-top:4px';
-      personHeader.textContent = (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name;
+      const icon = res.reserveType === 'event' ? '🎉' : res.reserveType === 'pool' ? '🌊' : '🧑';
+      personHeader.textContent = icon + ' ' + res.name;
       section.appendChild(personHeader);
       lastPerson = res.name;
     }
@@ -4747,7 +4759,7 @@ function renderReservationQueue() {
             : '') +
           '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
             '<span style="font-size:10px;color:' + dateColor + ';font-weight:600">' + dateStr + (isToday ? ' · Today' : isPast ? ' · Past' : '') + '</span>' +
-            (sortMode === 'date' ? '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : '🧑') + ' ' + res.name + '</span>' : '') +
+            (sortMode === 'date' ? '<span style="font-size:10px;color:var(--text3)">' + (res.reserveType === 'event' ? '🎉' : res.reserveType === 'pool' ? '🌊' : '🧑') + ' ' + res.name + '</span>' : '') +
           '</div>' +
           (res.note ? '<div style="font-size:10px;color:var(--text2);margin-top:3px;font-style:italic">' + res.note + '</div>' : '') +
         '</div>' +
