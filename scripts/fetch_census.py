@@ -314,7 +314,7 @@ def fetch_census_2015():
 # the 2015 census by matching each forestry tree to its nearest census tree.
 
 ENRICH_FIELDS   = ('guards', 'sidewalk')
-MATCH_THRESHOLD = 20   # metres — trees closer than this are the same physical tree
+MATCH_THRESHOLD = 10   # metres — trees closer than this are the same physical tree
 GRID_SIZE       = 0.002  # ~220 m grid cells for spatial index
 
 
