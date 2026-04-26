@@ -1385,6 +1385,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <input type="checkbox" id="f-reserved-event" onchange="updateReservedParent();applyFilters()">
               🎉 For Event
             </label>
+            <label class="cp-chk" style="margin-left:8px">
+              <input type="checkbox" id="f-reserved-general" onchange="updateReservedParent();applyFilters()">
+              👥 General
+            </label>
           </div>
           <label class="cp-chk">
             <input type="checkbox" id="f-stewarded" onchange="applyFilters()">
@@ -2204,6 +2208,7 @@ function applyFilters(reload = false) {
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
+  const reservedGeneralOnly = document.getElementById('f-reserved-general')?.checked || false;
   const stewardedOnly = document.getElementById('f-stewarded')?.checked || false;
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
@@ -2225,8 +2230,8 @@ function applyFilters(reload = false) {
     const guardedIds = getTreeGuardIds();
     base = base.filter(t => guardedIds.has(String(t.tree_id)));
   }
-  if (reservedPersonOnly || reservedEventOnly) {
-    const reservedIds = getReservationTreeIds(reservedPersonOnly, reservedEventOnly);
+  if (reservedPersonOnly || reservedEventOnly || reservedGeneralOnly) {
+    const reservedIds = getReservationTreeIds(reservedPersonOnly, reservedEventOnly, reservedGeneralOnly);
     base = base.filter(t => reservedIds.has(String(t.tree_id)));
   }
   if (stewardedOnly) {
@@ -2249,12 +2254,15 @@ function toggleReservedFilter() {
   const parentChk = document.getElementById('f-reserved');
   const personChk = document.getElementById('f-reserved-person');
   const eventChk = document.getElementById('f-reserved-event');
+  const generalChk = document.getElementById('f-reserved-general');
   if (parentChk.checked) {
     personChk.checked = true;
     eventChk.checked = true;
+    generalChk.checked = true;
   } else {
     personChk.checked = false;
     eventChk.checked = false;
+    generalChk.checked = false;
   }
   applyFilters();
 }
@@ -2263,7 +2271,8 @@ function updateReservedParent() {
   const parentChk = document.getElementById('f-reserved');
   const personChk = document.getElementById('f-reserved-person');
   const eventChk = document.getElementById('f-reserved-event');
-  parentChk.checked = personChk.checked || eventChk.checked;
+  const generalChk = document.getElementById('f-reserved-general');
+  parentChk.checked = personChk.checked || eventChk.checked || (generalChk?.checked || false);
 }
 
 function clearAllFilters() {
@@ -2273,6 +2282,7 @@ function clearAllFilters() {
   document.getElementById('f-reserved').checked = false;
   document.getElementById('f-reserved-person').checked = false;
   document.getElementById('f-reserved-event').checked = false;
+  document.getElementById('f-reserved-general').checked = false;
   document.getElementById('f-stewarded').checked = false;
   document.getElementById('f-missing').checked = false;
   filterSel.species.clear();
@@ -3937,15 +3947,16 @@ function getTreeGuardIds() {
   return new Set(treeGuardsLoadSync().map(g => String(g.treeId)));
 }
 
-function getReservationTreeIds(personOnly = false, eventOnly = false) {
+function getReservationTreeIds(personOnly = false, eventOnly = false, generalOnly = false) {
   const reservations = reservationLoadSync();
-  let filtered = reservations;
-  if (personOnly && !eventOnly) {
-    filtered = reservations.filter(r => r.reserveType !== 'event');
-  } else if (eventOnly && !personOnly) {
-    filtered = reservations.filter(r => r.reserveType === 'event');
+  if (personOnly || eventOnly || generalOnly) {
+    const types = new Set();
+    if (personOnly) types.add('person');
+    if (eventOnly) types.add('event');
+    if (generalOnly) types.add('general');
+    return new Set(reservations.filter(r => types.has(r.reserveType || 'person')).map(r => String(r.treeId)));
   }
-  return new Set(filtered.map(r => String(r.treeId)));
+  return new Set(reservations.map(r => String(r.treeId)));
 }
 
 function getStewardedTreeIds() {
@@ -5036,17 +5047,18 @@ function tcRenderReservationsOnMainMap() {
   // Only show reservations if the filter is enabled
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
-  if (!reservedPersonOnly && !reservedEventOnly) return;
+  const reservedGeneralOnly = document.getElementById('f-reserved-general')?.checked || false;
+  if (!reservedPersonOnly && !reservedEventOnly && !reservedGeneralOnly) return;
 
   const reservations = reservationLoadSync();
   if (!reservations.length) return;
 
   // Filter by type if needed
-  const filtered = reservations.filter(res => {
-    if (reservedPersonOnly && res.reserveType === 'event') return false;
-    if (reservedEventOnly && res.reserveType === 'person') return false;
-    return true;
-  });
+  const activeTypes = new Set();
+  if (reservedPersonOnly) activeTypes.add('person');
+  if (reservedEventOnly) activeTypes.add('event');
+  if (reservedGeneralOnly) activeTypes.add('general');
+  const filtered = reservations.filter(res => activeTypes.has(res.reserveType || 'person'));
 
   const today = new Date().toISOString().slice(0, 10);
 
