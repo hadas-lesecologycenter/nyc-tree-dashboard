@@ -1185,15 +1185,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #geoLocation-btn:active {
       transform: scale(0.92);
     }
-    #compass-btn {
-      width: 48px; height: 48px; border-radius: 50%; border: none;
-      background: white; color: #333; font-size: 22px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.3s ease; padding: 0; flex-shrink: 0;
-    }
-    #compass-btn.active { background: #007bff; color: #fff; box-shadow: 0 2px 12px rgba(0,123,255,0.4); }
-    #compass-btn:active { transform: scale(0.92); }
   }
 
   /* Selected tree ring — always present so it works on both maps */
@@ -1248,7 +1239,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Geolocation buttons (mobile) -->
     <div class="geo-button-container">
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
-      <button id="compass-btn" title="Rotate map to face your direction" onclick="toggleCompassRotation()">🧭</button>
     </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -1934,8 +1924,6 @@ let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
 let geolocationWatcher = null;
-let compassActive = false;
-let compassHandler = null;
 let selectedTreeHighlight = null;
 let tcSelectedHighlight = null;
 
@@ -2396,55 +2384,6 @@ function requestUserLocation() {
   );
 }
 
-function toggleCompassRotation() {
-  const btn = document.getElementById('compass-btn');
-  if (compassActive) {
-    if (compassHandler) {
-      window.removeEventListener('deviceorientationabsolute', compassHandler, true);
-      window.removeEventListener('deviceorientation', compassHandler, true);
-      compassHandler = null;
-    }
-    compassActive = false;
-    if (mapInstance) mapInstance.setBearing(0);
-    if (btn) btn.classList.remove('active');
-    return;
-  }
-
-  function handleOrientation(e) {
-    let heading;
-    if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
-      heading = e.webkitCompassHeading; // iOS absolute heading
-    } else if (e.alpha !== null && e.alpha !== undefined) {
-      heading = (360 - e.alpha) % 360; // Android
-    }
-    if (heading !== undefined && !isNaN(heading) && mapInstance) {
-      mapInstance.setBearing(heading);
-    }
-  }
-
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission().then(state => {
-      if (state === 'granted') {
-        compassHandler = handleOrientation;
-        window.addEventListener('deviceorientationabsolute', compassHandler, true);
-        window.addEventListener('deviceorientation', compassHandler, true);
-        compassActive = true;
-        if (btn) btn.classList.add('active');
-      } else {
-        alert('Compass access was denied. Allow motion & orientation in Settings.');
-      }
-    }).catch(() => alert('Compass not available on this device.'));
-  } else if (typeof DeviceOrientationEvent !== 'undefined') {
-    compassHandler = handleOrientation;
-    window.addEventListener('deviceorientationabsolute', compassHandler, true);
-    window.addEventListener('deviceorientation', compassHandler, true);
-    compassActive = true;
-    if (btn) btn.classList.add('active');
-  } else {
-    alert('Device orientation is not supported by this browser.');
-  }
-}
-
 function highlightSelectedTree(lat, lng, targetMap) {
   // Clear highlights on both maps
   if (selectedTreeHighlight && mapInstance) {
@@ -2488,16 +2427,17 @@ function getSpeciesColor(species) {
   return speciesColorMap[species];
 }
 
+// Rebuilt once per updateMap() call in category mode — avoids 15k JSON.parse calls.
+let _resIndexForMap = null;
+
 function getReservationCategoryColor(tree) {
-  // Returns color based on reservation category (person/event/general)
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
-  const reservations = reservationLoadSync();
-  const res = reservations.find(r => String(r.treeId) === treeId);
-  if (!res) return '#999999'; // gray for unreserved
-  if (res.reserveType === 'person') return '#7b3fa0'; // purple for person
-  if (res.reserveType === 'event') return '#e67e22'; // orange for event
-  if (res.reserveType === 'general') return '#27ae60'; // green for general
-  return '#999999';
+  const res = _resIndexForMap ? _resIndexForMap.get(treeId) : null;
+  if (!res) return '#cccccc'; // light gray for unreserved
+  if (res.reserveType === 'person') return '#7b3fa0'; // purple
+  if (res.reserveType === 'event') return '#e67e22'; // orange
+  if (res.reserveType === 'general') return '#27ae60'; // green
+  return '#cccccc';
 }
 
 function getMarkerColor(tree) {
@@ -2535,6 +2475,11 @@ function updateMap() {
 
   // Skip rendering tree markers if in "program layers only" mode
   if (window._viewModeNone) return;
+
+  // Pre-build reservation index once so getReservationCategoryColor is O(1) per tree
+  _resIndexForMap = window._viewModeCategory
+    ? new Map(reservationLoadSync().map(r => [String(r.treeId), r]))
+    : null;
 
   const caredFor = getCaredForTreeIds();
   // Canvas renderer draws all markers as a single canvas element instead of
