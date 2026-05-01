@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CB3 Tree 311 Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --lime:   #8CC63F;
+      --forest: #2D5F2B;
+      --sage:   #7A9A6D;
+      --tan:    #D4C5A0;
+      --cream:  #F5F1E8;
+      --text:   #2c3e2b;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--forest);
+      color: #fff;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.22);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .logo-circle {
+      width: 42px; height: 42px;
+      background: var(--lime);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Lexend', sans-serif;
+      font-weight: 700; font-size: 13px;
+      color: var(--forest);
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .header-text h1 {
+      font-family: 'Lexend', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 0.75rem;
+      opacity: .75;
+      font-weight: 300;
+    }
+
+    /* ── Status bar ── */
+    #status-bar {
+      background: var(--forest);
+      color: rgba(255,255,255,.65);
+      font-size: 0.72rem;
+      padding: 0.3rem 1.5rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+
+    #status-bar span { color: var(--lime); font-weight: 600; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 2rem;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      border-left: 4px solid var(--tan);
+    }
+
+    .stat-card.open-card   { border-left-color: var(--lime); }
+    .stat-card.closed-card { border-left-color: var(--sage); }
+    .stat-card.recent-card { border-left-color: var(--forest); }
+
+    .stat-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--sage);
+      font-weight: 500;
+      margin-bottom: 0.2rem;
+    }
+
+    .stat-value {
+      font-family: 'Lexend', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1;
+    }
+
+    .recent-card .stat-value { font-size: 0.9rem; line-height: 1.35; }
+
+    /* ── Filters ── */
+    .filters {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.9rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: flex-end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .filter-group label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--sage);
+      font-weight: 500;
+    }
+
+    select, input[type="date"] {
+      padding: 0.42rem 0.7rem;
+      border: 1.5px solid var(--tan);
+      border-radius: 6px;
+      background: var(--cream);
+      color: var(--text);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color .2s;
+      width: 100%;
+    }
+
+    select:focus, input[type="date"]:focus { border-color: var(--lime); }
+
+    .btn-row { display: flex; gap: 0.5rem; align-items: flex-end; }
+
+    .btn {
+      padding: 0.45rem 1.1rem;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary  { background: var(--lime);  color: var(--forest); }
+    .btn-primary:hover  { background: #7ab535; }
+    .btn-secondary { background: var(--tan); color: var(--text); }
+    .btn-secondary:hover { background: #c5b591; }
+
+    /* ── Main grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 330px;
+      gap: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+
+    /* ── Map ── */
+    .map-panel {
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      position: relative;
+    }
+
+    #map { height: 500px; width: 100%; }
+
+    /* ── Side panel ── */
+    .side-panel { display: flex; flex-direction: column; gap: 0.9rem; }
+
+    .panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .panel-title {
+      font-family: 'Lexend', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--forest);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 0.7rem;
+    }
+
+    /* ── Legend ── */
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      margin-bottom: 0.38rem;
+      color: var(--text);
+    }
+
+    .legend-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1.5px solid rgba(0,0,0,.12);
+    }
+
+    /* ── Chart ── */
+    #chart-container { position: relative; min-height: 220px; }
+
+    /* ── Table ── */
+    .table-panel {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 340px;
+      overflow-y: auto;
+      margin-top: 0.75rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    th {
+      background: var(--forest);
+      color: #fff;
+      padding: 0.48rem 0.75rem;
+      text-align: left;
+      font-family: 'Lexend', sans-serif;
+      font-weight: 500;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    td { padding: 0.42rem 0.75rem; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) td { background: #faf9f5; }
+    tr:hover td { background: #eef5e4; }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.12rem 0.55rem;
+      border-radius: 20px;
+      font-size: 0.69rem;
+      font-weight: 600;
+    }
+
+    .pill-open   { background: #e7f5d5; color: #2D5F2B; }
+    .pill-closed { background: #e8e8e8; color: #555; }
+    .pill-other  { background: #fff3d4; color: #7a5800; }
+
+    /* ── Loading ── */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(245,241,232,.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      z-index: 500;
+      border-radius: 10px;
+    }
+
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid var(--tan);
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading-text {
+      font-size: 0.8rem;
+      color: var(--sage);
+      font-weight: 500;
+    }
+
+    /* ── Utility ── */
+    .hidden { display: none !important; }
+
+    /* ── Responsive ── */
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-panel { flex-direction: row; flex-wrap: wrap; }
+      .side-panel .panel { flex: 1; min-width: 200px; }
+    }
+
+    @media (max-width: 640px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .filters { flex-direction: column; }
+      .side-panel { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-circle">LES</div>
+  <div class="header-text">
+    <h1>CB3 Tree 311 Dashboard</h1>
+    <p>Community Board 3 Manhattan &mdash; Tree-Related Service Requests</p>
+  </div>
+</header>
+
+<div id="status-bar">Initializing&hellip;</div>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-row" style="margin-top:.9rem">
+    <div class="stat-card">
+      <div class="stat-label">Total Calls</div>
+      <div class="stat-value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card open-card">
+      <div class="stat-label">Open</div>
+      <div class="stat-value" id="stat-open">—</div>
+    </div>
+    <div class="stat-card closed-card">
+      <div class="stat-label">Closed</div>
+      <div class="stat-value" id="stat-closed">—</div>
+    </div>
+    <div class="stat-card recent-card">
+      <div class="stat-label">Most Recent</div>
+      <div class="stat-value" id="stat-recent">—</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="filter-type">Complaint Type</label>
+      <select id="filter-type">
+        <option value="">All Types</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="filter-status">Status</label>
+      <select id="filter-status">
+        <option value="">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="Closed">Closed</option>
+        <option value="Other">Other / In Progress</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="filter-from">From Date</label>
+      <input type="date" id="filter-from">
+    </div>
+    <div class="filter-group">
+      <label for="filter-to">To Date</label>
+      <input type="date" id="filter-to">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary"   id="btn-apply">Apply</button>
+      <button class="btn btn-secondary" id="btn-reset">Reset</button>
+    </div>
+  </div>
+
+  <!-- Map + Side panel -->
+  <div class="main-grid">
+    <div class="map-panel">
+      <div id="map"></div>
+      <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Loading…</div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel">
+        <div class="panel-title">Map Legend</div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#4CAF50"></div>
+          Open
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#9E9E9E"></div>
+          Closed
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#FFC107"></div>
+          Other / In Progress
+        </div>
+      </div>
+
+      <div class="panel" style="flex:1">
+        <div class="panel-title">Calls by Complaint Type</div>
+        <div id="chart-container">
+          <canvas id="type-chart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-panel">
+    <div class="table-header">
+      <div class="panel-title" style="margin-bottom:0">Service Requests</div>
+      <button class="btn btn-secondary" id="btn-toggle-table"
+              style="font-size:.75rem;padding:.32rem .8rem">
+        Show Table
+      </button>
+    </div>
+    <div id="table-wrapper" class="table-wrapper hidden">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Complaint Type</th>
+            <th>Descriptor</th>
+            <th>Address</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- .container -->
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const API_URL    = 'https://data.cityofnewyork.us/resource/erm2-nwe9.json';
+const PAGE_LIMIT = 1000;
+const MAX_RECS   = 20000;
+
+const DOT_COLOR = { Open: '#4CAF50', Closed: '#9E9E9E', Other: '#FFC107' };
+const LIME      = '#8CC63F';
+const SAGE      = '#7A9A6D';
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let allRecords      = [];
+let filteredRecords = [];
+let map, markerLayer, barChart;
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  initMap();
+  await fetchAllPages();
+  hideLoading();
+  buildTypeDropdown();
+  applyFilters();
+  wireEvents();
+});
+
+// ─── Map ─────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map').setView([40.7195, -73.9843], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+}
+
+// ─── Fetch ───────────────────────────────────────────────────────────────────
+async function fetchAllPages() {
+  let offset = 0;
+
+  while (allRecords.length < MAX_RECS) {
+    setStatus(`Fetching records ${offset + 1}–${offset + PAGE_LIMIT}…`);
+    setLoadingText(`Loaded ${allRecords.length.toLocaleString()} records…`);
+
+    const where = encodeURIComponent(
+      `community_board='03 MANHATTAN' AND ` +
+      `(upper(complaint_type) LIKE '%TREE%' OR upper(descriptor) LIKE '%TREE%')`
+    );
+    const url = `${API_URL}?$where=${where}&$limit=${PAGE_LIMIT}&$offset=${offset}&$order=created_date DESC`;
+
+    let page;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      page = await res.json();
+    } catch (err) {
+      setStatus(`Error fetching data: ${err.message}. Showing ${allRecords.length.toLocaleString()} records loaded so far.`);
+      break;
+    }
+
+    if (!page.length) break;
+    allRecords = allRecords.concat(page);
+    if (page.length < PAGE_LIMIT) break;
+    offset += PAGE_LIMIT;
+  }
+
+  setStatus(
+    `Showing <span>${allRecords.length.toLocaleString()}</span> tree-related 311 calls ` +
+    `for Community Board 3 Manhattan`
+  );
+}
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+function buildTypeDropdown() {
+  const types = [...new Set(allRecords.map(r => r.complaint_type).filter(Boolean))].sort();
+  const sel   = document.getElementById('filter-type');
+  types.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+}
+
+function applyFilters() {
+  const type   = document.getElementById('filter-type').value;
+  const status = document.getElementById('filter-status').value;
+  const from   = document.getElementById('filter-from').value;
+  const to     = document.getElementById('filter-to').value;
+
+  filteredRecords = allRecords.filter(r => {
+    if (type && r.complaint_type !== type) return false;
+    if (status) {
+      if (statusCategory(r.status) !== status) return false;
+    }
+    const d = (r.created_date || '').slice(0, 10);
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+
+  renderStats();
+  renderMap();
+  renderChart();
+  renderTable();
+}
+
+function statusCategory(s) {
+  if (!s) return 'Other';
+  const u = s.trim().toUpperCase();
+  if (u === 'OPEN')   return 'Open';
+  if (u === 'CLOSED') return 'Closed';
+  return 'Other';
+}
+
+// ─── Stats ───────────────────────────────────────────────────────────────────
+function renderStats() {
+  const open   = filteredRecords.filter(r => statusCategory(r.status) === 'Open').length;
+  const closed = filteredRecords.filter(r => statusCategory(r.status) === 'Closed').length;
+
+  const latest = filteredRecords
+    .map(r => (r.created_date || '').slice(0, 10))
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  document.getElementById('stat-total').textContent  = filteredRecords.length.toLocaleString();
+  document.getElementById('stat-open').textContent   = open.toLocaleString();
+  document.getElementById('stat-closed').textContent = closed.toLocaleString();
+  document.getElementById('stat-recent').textContent = latest
+    ? new Date(latest + 'T12:00:00').toLocaleDateString('en-US',
+        { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—';
+}
+
+// ─── Map ─────────────────────────────────────────────────────────────────────
+function renderMap() {
+  markerLayer.clearLayers();
+
+  filteredRecords.forEach(r => {
+    const lat = parseFloat(r.latitude);
+    const lng = parseFloat(r.longitude);
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+
+    const cat   = statusCategory(r.status);
+    const color = DOT_COLOR[cat];
+    const date  = r.created_date
+      ? new Date(r.created_date).toLocaleDateString('en-US',
+          { month: 'short', day: 'numeric', year: 'numeric' })
+      : '—';
+
+    const m = L.circleMarker([lat, lng], {
+      radius: 5.5,
+      fillColor: color,
+      color: 'rgba(255,255,255,0.8)',
+      weight: 1,
+      fillOpacity: 0.82
+    });
+
+    m.bindPopup(`
+      <div style="font-family:'Poppins',sans-serif;font-size:12px;min-width:190px">
+        <strong style="font-size:13px;color:#2D5F2B">${r.complaint_type || '—'}</strong><br>
+        <em style="color:#7A9A6D">${r.descriptor || ''}</em><br>
+        <span style="color:#555">${r.incident_address || '—'}</span><br>
+        <span style="margin-top:4px;display:inline-block">
+          Status: <strong>${r.status || '—'}</strong> &bull; ${date}
+        </span>
+        ${r.resolution_description
+          ? `<br><small style="color:#888;display:block;margin-top:4px">${r.resolution_description.slice(0, 120)}…</small>`
+          : ''}
+      </div>
+    `);
+
+    markerLayer.addLayer(m);
+  });
+}
+
+// ─── Chart ───────────────────────────────────────────────────────────────────
+function renderChart() {
+  const counts = {};
+  filteredRecords.forEach(r => {
+    const t = r.complaint_type || 'Unknown';
+    counts[t] = (counts[t] || 0) + 1;
+  });
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const labels = sorted.map(([k]) => k);
+  const values = sorted.map(([, v]) => v);
+  const colors = labels.map((_, i) => i % 2 === 0 ? LIME : SAGE);
+
+  if (barChart) barChart.destroy();
+
+  barChart = new Chart(
+    document.getElementById('type-chart').getContext('2d'),
+    {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: colors, borderRadius: 3, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: ctx => ` ${ctx.parsed.x.toLocaleString()} calls`
+        }}},
+        scales: {
+          x: {
+            ticks: { font: { family: 'Poppins', size: 10 }, color: '#666' },
+            grid: { color: '#eee' }
+          },
+          y: {
+            ticks: {
+              font: { family: 'Poppins', size: 10 },
+              color: '#2D5F2B',
+              callback(v) {
+                const l = this.getLabelForValue(v);
+                return l.length > 24 ? l.slice(0, 24) + '…' : l;
+              }
+            },
+            grid: { display: false }
+          }
+        }
+      }
+    }
+  );
+}
+
+// ─── Table ───────────────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  filteredRecords.slice(0, 500).forEach((r, i) => {
+    const date = r.created_date
+      ? new Date(r.created_date).toLocaleDateString('en-US',
+          { month: 'short', day: 'numeric', year: 'numeric' })
+      : '—';
+    const cat   = statusCategory(r.status);
+    const klass = cat === 'Open' ? 'pill-open' : cat === 'Closed' ? 'pill-closed' : 'pill-other';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:#999">${i + 1}</td>
+      <td style="white-space:nowrap">${date}</td>
+      <td>${r.complaint_type || '—'}</td>
+      <td>${r.descriptor || '—'}</td>
+      <td>${r.incident_address || '—'}</td>
+      <td><span class="status-pill ${klass}">${r.status || '—'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── UI events ───────────────────────────────────────────────────────────────
+function wireEvents() {
+  document.getElementById('btn-apply').addEventListener('click', applyFilters);
+
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    ['filter-type', 'filter-status', 'filter-from', 'filter-to']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    applyFilters();
+  });
+
+  document.getElementById('btn-toggle-table').addEventListener('click', () => {
+    const wrap = document.getElementById('table-wrapper');
+    const btn  = document.getElementById('btn-toggle-table');
+    wrap.classList.toggle('hidden');
+    btn.textContent = wrap.classList.contains('hidden') ? 'Show Table' : 'Hide Table';
+  });
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function setStatus(html)     { document.getElementById('status-bar').innerHTML = html; }
+function setLoadingText(txt) { document.getElementById('loading-text').textContent = txt; }
+function hideLoading()       { document.getElementById('loading-overlay').classList.add('hidden'); }
+</script>
+
+</body>
+</html>
