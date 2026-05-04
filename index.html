@@ -1479,6 +1479,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
       <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
       <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
+      <button class="mobile-tab" onclick="switchMyBlockTab('calls',this)">📞 311 Calls</button>
     </div>
     <div class="myblock-inner" style="display:flex;height:100%;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
@@ -1520,6 +1521,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div id="myblock-dashboard-content" style="display:none;position:absolute;right:0;top:0;bottom:0;width:380px;padding:20px;overflow-y:auto;background:var(--bg);border-left:1px solid var(--border);box-shadow:-2px 0 12px rgba(0,0,0,0.1);z-index:100"></div>
         </div>
 
+      </div>
+      <div id="myblock-311-calls" style="flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)">
+        <div style="padding:20px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
+            <div style="display:flex;align-items:center;gap:6px">
+            <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
+              <option value="3">Last 3 months</option>
+              <option value="12" selected>Last 12 months</option>
+              <option value="36">Last 3 years</option>
+              <option value="all">All time</option>
+            </select>
+            <button onclick="load311Calls()" title="Refresh" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;line-height:1">↻</button>
+            </div>
+          </div>
+          <p style="margin:6px 0 0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
+        </div>
+        <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
+          <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
+            <div style="font-size:32px;margin-bottom:12px">📞</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div>
+            <div style="font-size:11px">Fetching recent tree-related complaints from your area</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -5798,19 +5823,131 @@ function toggleMobileFilters() {
   toggleControlsPanel();
 }
 
+let calls311Map = null;
+let calls311Markers = null;
+
+function load311Calls() {
+  const container = document.getElementById('calls-map-container');
+  const listContainer = document.getElementById('calls-list-container');
+  if (!container) return;
+
+  listContainer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div></div>';
+
+  const treeComplaintTypes = [
+    'Tree Damage',
+    'Tree Services',
+    'Street Tree',
+    'Tree Plant',
+    'Root/Sewer/Sidewalk Condition'
+  ];
+
+  const rangeMonths = document.getElementById('calls-date-range')?.value ?? '12';
+  let dateClause = '';
+  if (rangeMonths !== 'all') {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - parseInt(rangeMonths, 10));
+    dateClause = ` AND created_date >= '${cutoff.toISOString()}'`;
+  }
+
+  const typeConditions = treeComplaintTypes.map(t => `complaint_type='${t}'`).join(' OR ');
+  const params = new URLSearchParams({
+    '$limit': '5000',
+    '$order': 'created_date DESC',
+    '$where': `community_board='03 MANHATTAN' AND (${typeConditions})${dateClause}`
+  });
+  const sodaUrl = `https://data.cityofnewyork.us/resource/erm2-nwe9.json?${params}`;
+
+  fetch(sodaUrl)
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(rows => {
+      // Filter to only include rows with valid coordinates
+      const validRows = rows.filter(r => r.latitude && r.longitude && parseFloat(r.latitude) && parseFloat(r.longitude));
+
+      if (!validRows.length) {
+        listContainer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">✨</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">No recent tree calls</div><div style="font-size:11px">No tree-related complaints found for CB3</div></div>';
+        return;
+      }
+
+      const lats = validRows.map(r => parseFloat(r.latitude)).filter(Boolean);
+      const lngs = validRows.map(r => parseFloat(r.longitude)).filter(Boolean);
+      const bounds = L.latLngBounds(
+        [Math.min(...lats), Math.min(...lngs)],
+        [Math.max(...lats), Math.max(...lngs)]
+      ).pad(0.05);
+
+      // Init map on first load; just invalidate size on subsequent calls
+      if (!calls311Map) {
+        calls311Map = L.map('calls-map-container', { rotateControl: false, zoomControl: true }).fitBounds(bounds);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+        }).addTo(calls311Map);
+        calls311Markers = L.layerGroup().addTo(calls311Map);
+      } else {
+        calls311Map.fitBounds(bounds);
+      }
+
+      // Clear old markers
+      calls311Markers.clearLayers();
+
+      // Add markers for each call
+      validRows.forEach(call => {
+        const lat = parseFloat(call.latitude);
+        const lng = parseFloat(call.longitude);
+        const status = call.status || 'Open';
+        const markerColor = status === 'Closed' ? '#888888' : '#ef4444';
+
+        const popup = `
+          <div style="font-family:'Nunito',sans-serif;font-size:12px;width:220px">
+            <div style="font-weight:600;margin-bottom:4px;color:#000">${call.complaint_type || 'Tree Issue'}</div>
+            <div style="font-size:11px;color:#666;margin-bottom:6px">${call.descriptor || ''}</div>
+            <div style="font-size:11px;color:#666;margin-bottom:4px">📍 ${call.incident_address || 'Location unknown'}</div>
+            <div style="font-size:10px;color:#999;margin-bottom:4px">${new Date(call.created_date).toLocaleDateString('en-US')}</div>
+            <div style="font-size:11px;font-weight:600;color:${status === 'Closed' ? '#888' : '#ef4444'}">${status}</div>
+          </div>
+        `;
+
+        L.circleMarker([lat, lng], {
+          radius: 6,
+          fillColor: markerColor,
+          color: markerColor,
+          weight: 2,
+          opacity: 0.8,
+          fillOpacity: 0.7
+        })
+          .bindPopup(popup)
+          .addTo(calls311Markers);
+      });
+
+      // Show count
+      listContainer.innerHTML = `<div style="padding:12px 16px;background:rgba(0,0,0,0.05);font-size:11px;color:var(--text2)">📊 ${validRows.length} tree-related 311 calls found • Click markers for details</div>`;
+    })
+    .catch(err => {
+      console.error('Error loading 311 calls:', err);
+      listContainer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Could not load 311 calls</div><div style="font-size:11px">Please try again later</div></div>';
+    });
+}
+
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
   const dashboard = document.getElementById('myblock-dashboard');
+  const callsPanel = document.getElementById('myblock-311-calls');
   document.querySelectorAll('#myblock-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (tab === 'sidebar') {
     if (sidebar) sidebar.classList.remove('mobile-hidden');
     if (dashboard) dashboard.classList.add('mobile-hidden');
-  } else {
+    if (callsPanel) callsPanel.style.display = 'none';
+  } else if (tab === 'map') {
     if (sidebar) sidebar.classList.add('mobile-hidden');
     if (dashboard) dashboard.classList.remove('mobile-hidden');
+    if (callsPanel) callsPanel.style.display = 'none';
     // Trigger care map resize after container becomes visible
     setTimeout(() => { if (tcCareMap) tcCareMap.invalidateSize(); }, 100);
+  } else if (tab === 'calls') {
+    if (sidebar) sidebar.classList.add('mobile-hidden');
+    if (dashboard) dashboard.classList.add('mobile-hidden');
+    if (callsPanel) callsPanel.style.display = 'flex';
+    load311Calls();
   }
 }
 
