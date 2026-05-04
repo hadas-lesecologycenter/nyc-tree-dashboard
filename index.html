@@ -5953,9 +5953,9 @@ function load311Calls() {
     dateClause = ` AND created_date >= '${cutoff.toISOString().slice(0, 19)}'`;
   }
 
-  // Broad LIKE filter catches all tree-related types: Tree Damage, Dead/Dying Tree,
-  // Fallen Tree/Branch, Street Tree, Tree Services, Root/Sewer/Sidewalk Condition, etc.
-  const treeFilter = "(complaint_type LIKE '%Tree%' OR complaint_type LIKE '%tree%' OR complaint_type LIKE '%Branch%' OR complaint_type LIKE '%Root/Sewer%' OR complaint_type LIKE '%Forestry%')";
+  // Word-boundary matching: 'Tree' must start the value or be preceded by a space.
+  // This avoids false matches like "Street" (which contains "tree" as a substring).
+  const treeFilter = "(complaint_type LIKE 'Tree%' OR complaint_type LIKE '% Tree%' OR complaint_type LIKE '%Branch%' OR complaint_type LIKE '%Root/Sewer%' OR complaint_type LIKE '%Forestry%')";
   const params = new URLSearchParams({
     '$limit': '5000',
     '$order': 'created_date DESC',
