@@ -1535,6 +1535,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div style="display:flex;align-items:center;gap:6px">
             <button id="calls-view-map-btn" class="toggle-btn on" onclick="switchCallsView('map')">🗺 Map</button>
             <button id="calls-view-table-btn" class="toggle-btn" onclick="switchCallsView('table')">☰ Table</button>
+            <button id="calls-view-stats-btn" class="toggle-btn" onclick="switchCallsView('stats')">📊 Stats</button>
             <button onclick="load311Calls()" title="Refresh" class="toggle-btn" style="padding:7px 12px">↻</button>
           </div>
         </div>
@@ -1563,6 +1564,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <tbody id="calls-table-body"></tbody>
           </table>
         </div>
+      </div>
+      <div id="calls-stats-container" style="flex:1;overflow:auto;display:none;padding:20px;background:var(--bg)">
+        <!-- Stats will be rendered here -->
       </div>
     </div>
   </div>
@@ -5935,21 +5939,33 @@ function toggleOpenOnlyFilter() {
 function switchCallsView(mode) {
   const mapEl = document.getElementById('calls-map-container');
   const tableEl = document.getElementById('calls-table-container');
+  const statsEl = document.getElementById('calls-stats-container');
   const mapBtn = document.getElementById('calls-view-map-btn');
   const tableBtn = document.getElementById('calls-view-table-btn');
+  const statsBtn = document.getElementById('calls-view-stats-btn');
   const legendEl = document.getElementById('calls-map-legend');
+
   if (mode === 'map') {
     mapEl.style.display = '';
     tableEl.style.display = 'none';
+    statsEl.style.display = 'none';
     if (legendEl) legendEl.style.display = 'block';
-    mapBtn.classList.add('on'); tableBtn.classList.remove('on');
+    mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
     if (calls311Map) calls311Map.invalidateSize();
-  } else {
+  } else if (mode === 'table') {
     mapEl.style.display = 'none';
     tableEl.style.display = 'flex';
+    statsEl.style.display = 'none';
     if (legendEl) legendEl.style.display = 'none';
-    tableBtn.classList.add('on'); mapBtn.classList.remove('on');
+    tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
     renderCallsTable(getFilteredCalls());
+  } else if (mode === 'stats') {
+    mapEl.style.display = 'none';
+    tableEl.style.display = 'none';
+    statsEl.style.display = 'block';
+    if (legendEl) legendEl.style.display = 'none';
+    statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
+    renderCallsStats(calls311Data);
   }
 }
 
@@ -5973,6 +5989,116 @@ function renderCallsTable(rows) {
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:${statusColor};white-space:nowrap">${status}</td>
     </tr>`;
   }).join('');
+}
+
+function renderCallsStats(rows) {
+  const statsEl = document.getElementById('calls-stats-container');
+  if (!statsEl || !rows.length) {
+    statsEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">No data available</div>';
+    return;
+  }
+
+  // Status breakdown
+  const statusCounts = {};
+  rows.forEach(r => {
+    const s = r.status || 'Open';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  });
+  const totalCalls = rows.length;
+  const statusRows = Object.entries(CALLS_STATUS_COLORS)
+    .filter(([s]) => statusCounts[s])
+    .map(([status, color]) => {
+      const count = statusCounts[status];
+      const pct = ((count / totalCalls) * 100).toFixed(1);
+      return `
+        <div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></span>
+            <span style="font-weight:600;flex:1">${status}</span>
+            <span style="color:var(--text3);font-size:12px">${count} (${pct}%)</span>
+          </div>
+          <div style="background:var(--bg2);height:6px;border-radius:3px;overflow:hidden">
+            <div style="background:${color};height:100%;width:${pct}%;border-radius:3px"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+  // Complaint type breakdown
+  const typeCounts = {};
+  rows.forEach(r => {
+    const t = r.complaint_type || 'Unspecified';
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+  const topTypes = Object.entries(typeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  const typeRows = topTypes.map(([type, count]) => {
+    const pct = ((count / totalCalls) * 100).toFixed(1);
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--text2);flex:1">${type}</span>
+        <span style="color:var(--text3);min-width:60px;text-align:right">${count} (${pct}%)</span>
+      </div>`;
+  }).join('');
+
+  // Response time analysis (for active calls)
+  const activeCalls = rows.filter(r => CALLS_ACTIVE_STATUSES.has(r.status || 'Open'));
+  let responseTimeHtml = '';
+  if (activeCalls.length > 0) {
+    const today = new Date();
+    const daysSinceDates = activeCalls
+      .map(r => {
+        if (!r.created_date) return null;
+        const created = new Date(r.created_date);
+        const days = Math.floor((today - created) / (1000 * 60 * 60 * 24));
+        return days;
+      })
+      .filter(d => d !== null)
+      .sort((a, b) => a - b);
+
+    if (daysSinceDates.length > 0) {
+      const avgDays = (daysSinceDates.reduce((a, b) => a + b, 0) / daysSinceDates.length).toFixed(1);
+      const medianDays = daysSinceDates[Math.floor(daysSinceDates.length / 2)];
+      const maxDays = daysSinceDates[daysSinceDates.length - 1];
+      responseTimeHtml = `
+        <div style="background:var(--bg2);border-radius:8px;padding:12px;margin-bottom:20px">
+          <div style="font-weight:700;margin-bottom:10px;font-size:12px;color:#333">Response Time (Active Calls)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px">
+            <div style="text-align:center;padding:8px;background:var(--bg);border-radius:6px">
+              <div style="font-weight:600;color:var(--text);">${avgDays}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Avg days</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--bg);border-radius:6px">
+              <div style="font-weight:600;color:var(--text);">${medianDays}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Median days</div>
+            </div>
+            <div style="text-align:center;padding:8px;background:var(--bg);border-radius:6px">
+              <div style="font-weight:600;color:var(--text);">${maxDays}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">Max days</div>
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+
+  statsEl.innerHTML = `
+    <div style="max-width:600px;margin:0 auto">
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-weight:700;margin-bottom:10px;font-size:12px;color:#333">Status Breakdown</div>
+        <div style="font-size:13px">${statusRows}</div>
+      </div>
+
+      ${responseTimeHtml}
+
+      <div style="background:var(--bg2);border-radius:8px;padding:14px;margin-bottom:20px">
+        <div style="font-weight:700;margin-bottom:10px;font-size:12px;color:#333">Complaint Type (Top 10)</div>
+        <div style="font-size:12px">${typeRows}</div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);text-align:center;padding:10px 0">
+        Total calls: ${totalCalls} • Active: ${activeCalls.length} • Closed/Cancelled: ${totalCalls - activeCalls.length}
+      </div>
+    </div>`;
 }
 
 function load311Calls() {
