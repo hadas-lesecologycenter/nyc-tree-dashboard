@@ -5905,11 +5905,12 @@ function load311Calls() {
         const markerColor = status === 'Closed' ? '#888888' : '#ef4444';
 
         const popup = `
-          <div style="font-family:'Nunito',sans-serif;font-size:12px;width:220px">
-            <div style="font-weight:600;margin-bottom:4px;color:#000">${call.complaint_type || 'Tree Issue'}</div>
-            <div style="font-size:11px;color:#666;margin-bottom:6px">${call.descriptor || ''}</div>
-            <div style="font-size:11px;color:#666;margin-bottom:4px">📍 ${call.incident_address || 'Location unknown'}</div>
-            <div style="font-size:10px;color:#999;margin-bottom:4px">${new Date(call.created_date).toLocaleDateString('en-US')}</div>
+          <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
+            <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
+            ${call.descriptor ? `<div style="font-size:11px;color:#555;margin-bottom:8px;font-weight:500">${call.descriptor}</div>` : ''}
+            ${call.additional_details ? `<div style="font-size:11px;color:#666;margin-bottom:8px;padding:8px;background:#f9f9f9;border-radius:4px">${call.additional_details}</div>` : ''}
+            <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
+            <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
             <div style="font-size:11px;font-weight:600;color:${status === 'Closed' ? '#888' : '#ef4444'}">${status}</div>
           </div>
         `;
