@@ -1479,6 +1479,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
       <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
       <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
+      <button class="mobile-tab" onclick="switchMyBlockTab('calls',this)">📞 311 Calls</button>
     </div>
     <div class="myblock-inner" style="display:flex;height:100%;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
@@ -1520,6 +1521,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div id="myblock-dashboard-content" style="display:none;position:absolute;right:0;top:0;bottom:0;width:380px;padding:20px;overflow-y:auto;background:var(--bg);border-left:1px solid var(--border);box-shadow:-2px 0 12px rgba(0,0,0,0.1);z-index:100"></div>
         </div>
 
+      </div>
+      <div id="myblock-311-calls" style="flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)">
+        <div style="padding:20px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <h3 style="margin:0 0 8px;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
+          <p style="margin:0;font-size:12px;color:var(--text3)">Recent non-emergency requests in your neighborhood</p>
+        </div>
+        <div id="calls-list-container" style="flex:1;overflow-y:auto;padding:16px">
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
+            <div style="font-size:32px;margin-bottom:12px">📞</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div>
+            <div style="font-size:11px">Fetching recent tree-related complaints from your area</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -5798,19 +5812,78 @@ function toggleMobileFilters() {
   toggleControlsPanel();
 }
 
+function load311Calls() {
+  const container = document.getElementById('calls-list-container');
+  if (!container) return;
+
+  // Show loading state
+  container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div></div>';
+
+  // Fetch 311 calls from NYC Open Data
+  // Using Socrata API for NYC 311 Service Requests
+  const sodaUrl = 'https://data.cityofnewyork.us/api/views/a2nx-4u46/rows.json?$limit=50&$where=created_date > now() - 30d AND complaint_type LIKE "%Tree%"';
+
+  fetch(sodaUrl)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.data || data.data.length === 0) {
+        container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">✨</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">No recent 311 calls</div><div style="font-size:11px">No tree-related complaints in the last 30 days</div></div>';
+        return;
+      }
+
+      const calls = data.data.slice(0, 50).map(row => ({
+        id: row[0],
+        type: row[2],
+        status: row[13],
+        date: row[14],
+        location: row[9],
+        descriptor: row[3]
+      }));
+
+      let html = '';
+      calls.forEach(call => {
+        const date = new Date(call.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+        const statusColor = call.status === 'Closed' ? 'var(--text3)' : 'var(--accent)';
+        html += `
+          <div style="margin-bottom:12px;padding:12px;background:var(--bg2);border-radius:8px;border-left:3px solid ${statusColor}">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${date}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${(call.type || 'Tree Issue').substring(0, 50)}</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${call.descriptor || ''}</div>
+            <div style="font-size:11px;color:var(--text3)">📍 ${call.location || 'Location unknown'}</div>
+            <div style="font-size:10px;color:${statusColor};margin-top:4px;font-weight:600">${call.status || 'Pending'}</div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text3)">No calls available</div>';
+    })
+    .catch(err => {
+      console.error('Error loading 311 calls:', err);
+      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Could not load 311 calls</div><div style="font-size:11px">Please try again later</div></div>';
+    });
+}
+
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
   const dashboard = document.getElementById('myblock-dashboard');
+  const callsPanel = document.getElementById('myblock-311-calls');
   document.querySelectorAll('#myblock-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (tab === 'sidebar') {
     if (sidebar) sidebar.classList.remove('mobile-hidden');
     if (dashboard) dashboard.classList.add('mobile-hidden');
-  } else {
+    if (callsPanel) callsPanel.style.display = 'none';
+  } else if (tab === 'map') {
     if (sidebar) sidebar.classList.add('mobile-hidden');
     if (dashboard) dashboard.classList.remove('mobile-hidden');
+    if (callsPanel) callsPanel.style.display = 'none';
     // Trigger care map resize after container becomes visible
     setTimeout(() => { if (tcCareMap) tcCareMap.invalidateSize(); }, 100);
+  } else if (tab === 'calls') {
+    if (sidebar) sidebar.classList.add('mobile-hidden');
+    if (dashboard) dashboard.classList.add('mobile-hidden');
+    if (callsPanel) callsPanel.style.display = 'flex';
+    load311Calls();
   }
 }
 
