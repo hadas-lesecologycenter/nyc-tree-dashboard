@@ -5841,14 +5841,6 @@ function load311Calls() {
 
   listContainer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div></div>';
 
-  const treeComplaintTypes = [
-    'Tree Damage',
-    'Tree Services',
-    'Street Tree',
-    'Tree Plant',
-    'Root/Sewer/Sidewalk Condition'
-  ];
-
   const rangeMonths = document.getElementById('calls-date-range')?.value ?? '12';
   let dateClause = '';
   if (rangeMonths !== 'all') {
@@ -5857,11 +5849,13 @@ function load311Calls() {
     dateClause = ` AND created_date >= '${cutoff.toISOString().slice(0, 19)}'`;
   }
 
-  const typeConditions = treeComplaintTypes.map(t => `complaint_type='${t}'`).join(' OR ');
+  // Broad LIKE filter catches all tree-related types: Tree Damage, Dead/Dying Tree,
+  // Fallen Tree/Branch, Street Tree, Tree Services, Root/Sewer/Sidewalk Condition, etc.
+  const treeFilter = "(complaint_type LIKE '%Tree%' OR complaint_type LIKE '%tree%' OR complaint_type LIKE '%Branch%' OR complaint_type LIKE '%Root/Sewer%' OR complaint_type LIKE '%Forestry%')";
   const params = new URLSearchParams({
     '$limit': '5000',
     '$order': 'created_date DESC',
-    '$where': `community_board='03 MANHATTAN' AND (${typeConditions})${dateClause}`
+    '$where': `community_board='03 MANHATTAN' AND ${treeFilter}${dateClause}`
   });
   const sodaUrl = `https://data.cityofnewyork.us/resource/erm2-nwe9.json?${params}`;
 
