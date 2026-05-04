@@ -5816,46 +5816,45 @@ function load311Calls() {
   const container = document.getElementById('calls-list-container');
   if (!container) return;
 
-  // Show loading state
   container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div></div>';
 
-  // Fetch 311 calls from NYC Open Data
-  // Using Socrata API for NYC 311 Service Requests
-  const sodaUrl = 'https://data.cityofnewyork.us/api/views/a2nx-4u46/rows.json?$limit=50&$where=created_date > now() - 30d AND complaint_type LIKE "%Tree%"';
+  // Socrata SODA API — dataset erm2-nwe9 (311 Service Requests 2020–present)
+  // Filtered to CB3 Manhattan and tree-related complaint types, newest first
+  const params = new URLSearchParams({
+    '$limit': '50',
+    '$order': 'created_date DESC',
+    '$where': "community_board='03 MANHATTAN' AND (complaint_type LIKE '%Tree%' OR complaint_type LIKE '%tree%')"
+  });
+  const sodaUrl = `https://data.cityofnewyork.us/resource/erm2-nwe9.json?${params}`;
 
   fetch(sodaUrl)
-    .then(r => r.json())
-    .then(data => {
-      if (!data.data || data.data.length === 0) {
-        container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">✨</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">No recent 311 calls</div><div style="font-size:11px">No tree-related complaints in the last 30 days</div></div>';
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(rows => {
+      if (!rows.length) {
+        container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">✨</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">No recent 311 calls</div><div style="font-size:11px">No tree-related complaints found for CB3</div></div>';
         return;
       }
 
-      const calls = data.data.slice(0, 50).map(row => ({
-        id: row[0],
-        type: row[2],
-        status: row[13],
-        date: row[14],
-        location: row[9],
-        descriptor: row[3]
-      }));
-
       let html = '';
-      calls.forEach(call => {
-        const date = new Date(call.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-        const statusColor = call.status === 'Closed' ? 'var(--text3)' : 'var(--accent)';
+      rows.forEach(call => {
+        const date = call.created_date
+          ? new Date(call.created_date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'})
+          : '—';
+        const status = call.status || 'Open';
+        const statusColor = status === 'Closed' ? 'var(--text3)' : 'var(--accent)';
+        const address = call.incident_address || call.intersection_street_1 || 'Location unknown';
         html += `
           <div style="margin-bottom:12px;padding:12px;background:var(--bg2);border-radius:8px;border-left:3px solid ${statusColor}">
             <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${date}</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${(call.type || 'Tree Issue').substring(0, 50)}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${call.complaint_type || 'Tree Issue'}</div>
             <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${call.descriptor || ''}</div>
-            <div style="font-size:11px;color:var(--text3)">📍 ${call.location || 'Location unknown'}</div>
-            <div style="font-size:10px;color:${statusColor};margin-top:4px;font-weight:600">${call.status || 'Pending'}</div>
+            <div style="font-size:11px;color:var(--text3)">📍 ${address}</div>
+            <div style="font-size:10px;color:${statusColor};margin-top:4px;font-weight:600">${status}</div>
           </div>
         `;
       });
 
-      container.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text3)">No calls available</div>';
+      container.innerHTML = html;
     })
     .catch(err => {
       console.error('Error loading 311 calls:', err);
