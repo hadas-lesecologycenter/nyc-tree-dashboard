@@ -1113,6 +1113,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #claimed-blocks-list { max-height: none !important; }
 
     /* Bottom navigation bar - Google Maps style */
+    @media (min-width: 769px) { #mobile-tab-nav { display: none !important; } }
     #mobile-tab-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
       height: calc(48px + env(safe-area-inset-bottom, 0px));
@@ -5994,6 +5995,7 @@ window.addEventListener('hashchange', function() {
 
   // View-specific initialization
   if (hash === 'stats-view') { updateStats(); }
+  if (hash === 'calls-view') { setTimeout(() => { load311Calls(); if (calls311Map) calls311Map.invalidateSize(); }, 100); }
   if (hash === 'myblock-view') {
     renderClaimedBlocksSidebar();
     tcUpdateProgress();
