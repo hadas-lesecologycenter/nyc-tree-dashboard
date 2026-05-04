@@ -1540,22 +1540,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
       <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
-        <!-- floating legend/filter panel matching the care map style -->
-        <div id="calls-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:500;pointer-events:auto;min-width:160px">
-          <div style="font-weight:700;margin-bottom:7px;font-size:11px;color:#333">Filters</div>
-          <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;margin-bottom:6px">
-            <input type="checkbox" id="calls-open-only" onchange="toggleOpenOnlyFilter()" style="margin:0;cursor:pointer">
-            <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#ef4444;flex-shrink:0"></span>
-            Open only
-          </label>
-          <div style="border-top:1px solid #e8e8e8;margin-bottom:7px;padding-top:7px;font-size:11px;color:#333;font-weight:600">Period</div>
-          <select id="calls-date-range" onchange="load311Calls()" style="width:100%;background:#f5f5f5;border:1px solid #ddd;color:#333;padding:4px 8px;border-radius:5px;font-size:11px;font-family:'Nunito',sans-serif;cursor:pointer;outline:none">
-            <option value="3">Last 3 months</option>
-            <option value="12" selected>Last 12 months</option>
-            <option value="36">Last 3 years</option>
-            <option value="all">All time</option>
-          </select>
-        </div>
+        <!-- floating legend/filter panel — populated by renderCallsMarkers() -->
+        <div id="calls-map-legend" style="position:absolute;bottom:16px;left:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);z-index:500;pointer-events:auto;min-width:160px;display:none"></div>
         <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
           <div style="font-size:32px;margin-bottom:12px">📞</div>
           <div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div>
@@ -5860,6 +5846,22 @@ let calls311Map = null;
 let calls311Markers = null;
 let calls311Data = [];
 
+const CALLS_STATUS_COLORS = {
+  'Open':        '#ef4444', // red
+  'In Progress': '#f97316', // orange
+  'Assigned':    '#3b82f6', // blue
+  'Started':     '#eab308', // yellow
+  'Pending':     '#a855f7', // purple
+  'Closed':      '#9ca3af', // gray
+  'Cancelled':   '#d1d5db', // light gray
+  'Unspecified': '#6b7280', // dark gray
+};
+const CALLS_ACTIVE_STATUSES = new Set(['Open', 'In Progress', 'Assigned', 'Started', 'Pending']);
+
+function callStatusColor(status) {
+  return CALLS_STATUS_COLORS[status] || '#6b7280';
+}
+
 function renderCallsMarkers(rows) {
   if (!calls311Map || !calls311Markers) return;
   calls311Markers.clearLayers();
@@ -5868,7 +5870,7 @@ function renderCallsMarkers(rows) {
       const lat = parseFloat(call.latitude);
       const lng = parseFloat(call.longitude);
       const status = call.status || 'Open';
-      const markerColor = status === 'Closed' ? '#888888' : '#ef4444';
+      const color = callStatusColor(status);
       const popup = `
         <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
           <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
@@ -5876,16 +5878,51 @@ function renderCallsMarkers(rows) {
           ${call.additional_details ? `<div style="font-size:11px;color:#666;margin-bottom:8px;padding:8px;background:#f9f9f9;border-radius:4px">${call.additional_details}</div>` : ''}
           <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
           <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
-          <div style="font-size:11px;font-weight:600;color:${status === 'Closed' ? '#888' : '#ef4444'}">${status}</div>
+          <div style="font-size:11px;font-weight:600;color:${color}">${status}</div>
         </div>`;
-      L.circleMarker([lat, lng], { radius: 6, fillColor: markerColor, color: markerColor, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
+      L.circleMarker([lat, lng], { radius: 6, fillColor: color, color: color, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
         .bindPopup(popup).addTo(calls311Markers);
     });
+
+  // Update legend with counts per status
+  const legendEl = document.getElementById('calls-map-legend');
+  if (!legendEl) return;
+  const prevRange = document.getElementById('calls-date-range')?.value || '12';
+  const prevOpenOnly = document.getElementById('calls-open-only')?.checked || false;
+  legendEl.style.display = 'block';
+  const counts = {};
+  rows.forEach(r => { const s = r.status || 'Open'; counts[s] = (counts[s] || 0) + 1; });
+  const legendRows = Object.entries(CALLS_STATUS_COLORS)
+    .filter(([s]) => counts[s])
+    .map(([s, c]) => `<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:4px">
+      <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${c};flex-shrink:0"></span>
+      <span>${s} <span style="color:#999">(${counts[s]})</span></span>
+    </div>`).join('');
+  legendEl.innerHTML = `
+    <div style="font-weight:700;margin-bottom:7px;font-size:11px;color:#333">Status</div>
+    ${legendRows}
+    <div style="border-top:1px solid #e8e8e8;margin:8px 0 7px;padding-top:0"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;margin-bottom:6px">
+      <input type="checkbox" id="calls-open-only" onchange="toggleOpenOnlyFilter()" style="margin:0;cursor:pointer">
+      Active only
+    </label>
+    <div style="font-size:11px;color:#333;font-weight:600;margin-bottom:4px">Period</div>
+    <select id="calls-date-range" onchange="load311Calls()" style="width:100%;background:#f5f5f5;border:1px solid #ddd;color:#333;padding:4px 8px;border-radius:5px;font-size:11px;font-family:'Nunito',sans-serif;cursor:pointer;outline:none">
+      <option value="3">Last 3 months</option>
+      <option value="12">Last 12 months</option>
+      <option value="36">Last 3 years</option>
+      <option value="all">All time</option>
+    </select>`;
+  // Restore previous selections after DOM rebuild
+  const rangeEl = document.getElementById('calls-date-range');
+  if (rangeEl) rangeEl.value = prevRange;
+  const openEl = document.getElementById('calls-open-only');
+  if (openEl) openEl.checked = prevOpenOnly;
 }
 
 function getFilteredCalls() {
   const openOnly = document.getElementById('calls-open-only')?.checked;
-  return openOnly ? calls311Data.filter(r => (r.status || 'Open') !== 'Closed') : calls311Data;
+  return openOnly ? calls311Data.filter(r => CALLS_ACTIVE_STATUSES.has(r.status || 'Open')) : calls311Data;
 }
 
 function toggleOpenOnlyFilter() {
