@@ -1027,7 +1027,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .tree-count { display: none; }
 
     /* Body padding for bottom tab bar */
-    body { padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+    /* Removed - mobile nav is hidden, no padding needed */
 
     /* Stats view - responsive grids */
     #stats-view { padding: 14px; gap: 14px; }
@@ -1113,6 +1113,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #claimed-blocks-list { max-height: none !important; }
 
     /* Bottom navigation bar - Google Maps style */
+    @media (max-width: 768px) { #mobile-tab-nav { display: none !important; } }
     @media (min-width: 769px) { #mobile-tab-nav { display: none !important; } }
     #mobile-tab-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -6185,9 +6186,7 @@ function switchMyBlockTab(tab, btn) {
 // Run mobile init on load and resize
 function checkAndInitMobileUI() {
   console.log('checkAndInitMobileUI: width=', window.innerWidth);
-  if (window.innerWidth <= 768) {
-    initMobileUI();
-  }
+  // Mobile nav buttons hidden - only show main map on mobile
 }
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   setTimeout(checkAndInitMobileUI, 50);
