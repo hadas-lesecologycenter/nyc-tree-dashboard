@@ -1524,8 +1524,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div id="myblock-311-calls" style="flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)">
         <div style="padding:20px;border-bottom:1px solid var(--border);flex-shrink:0">
-          <h3 style="margin:0 0 8px;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
-          <p style="margin:0;font-size:12px;color:var(--text3)">Recent non-emergency tree service requests in CB3</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
+            <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
+              <option value="3">Last 3 months</option>
+              <option value="12" selected>Last 12 months</option>
+              <option value="36">Last 3 years</option>
+              <option value="all">All time</option>
+            </select>
+          </div>
+          <p style="margin:6px 0 0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
         </div>
         <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
           <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
@@ -5822,7 +5830,6 @@ function load311Calls() {
 
   listContainer.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)"><div style="font-size:32px;margin-bottom:12px">📞</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div></div>';
 
-  // SODA query: filter to tree-related complaint types
   const treeComplaintTypes = [
     'Tree Damage',
     'Tree Services',
@@ -5831,12 +5838,19 @@ function load311Calls() {
     'Root/Sewer/Sidewalk Condition'
   ];
 
-  // Build WHERE clause: community_board='03 MANHATTAN' AND (complaint_type=X OR complaint_type=Y...)
+  const rangeMonths = document.getElementById('calls-date-range')?.value ?? '12';
+  let dateClause = '';
+  if (rangeMonths !== 'all') {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - parseInt(rangeMonths, 10));
+    dateClause = ` AND created_date >= '${cutoff.toISOString()}'`;
+  }
+
   const typeConditions = treeComplaintTypes.map(t => `complaint_type='${t}'`).join(' OR ');
   const params = new URLSearchParams({
-    '$limit': '100',
+    '$limit': '5000',
     '$order': 'created_date DESC',
-    '$where': `community_board='03 MANHATTAN' AND (${typeConditions})`
+    '$where': `community_board='03 MANHATTAN' AND (${typeConditions})${dateClause}`
   });
   const sodaUrl = `https://data.cityofnewyork.us/resource/erm2-nwe9.json?${params}`;
 
@@ -5851,22 +5865,22 @@ function load311Calls() {
         return;
       }
 
-      // Init map if needed
-      if (!calls311Map) {
-        // Calculate bounds from call locations
-        const lats = validRows.map(r => parseFloat(r.latitude)).filter(Boolean);
-        const lngs = validRows.map(r => parseFloat(r.longitude)).filter(Boolean);
-        const bounds = L.latLngBounds(
-          [Math.min(...lats), Math.min(...lngs)],
-          [Math.max(...lats), Math.max(...lngs)]
-        ).pad(0.05);
+      const lats = validRows.map(r => parseFloat(r.latitude)).filter(Boolean);
+      const lngs = validRows.map(r => parseFloat(r.longitude)).filter(Boolean);
+      const bounds = L.latLngBounds(
+        [Math.min(...lats), Math.min(...lngs)],
+        [Math.max(...lats), Math.max(...lngs)]
+      ).pad(0.05);
 
+      // Init map on first load; just invalidate size on subsequent calls
+      if (!calls311Map) {
         calls311Map = L.map('calls-map-container', { rotateControl: false, zoomControl: true }).fitBounds(bounds);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
           attribution: '© OpenStreetMap © CARTO', maxZoom: 19
         }).addTo(calls311Map);
-
         calls311Markers = L.layerGroup().addTo(calls311Map);
+      } else {
+        calls311Map.fitBounds(bounds);
       }
 
       // Clear old markers
