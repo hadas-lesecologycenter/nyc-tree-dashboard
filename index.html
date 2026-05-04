@@ -1529,29 +1529,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- 311 CALLS VIEW -->
   <div id="calls-view" class="view">
     <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <div>
-            <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0 0 2px">📞 311 Tree-Related Calls</h2>
-            <p style="margin:0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
-          </div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <div style="display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden">
-              <button id="calls-view-map-btn" onclick="switchCallsView('map')" style="padding:4px 10px;font-size:11px;border:none;background:var(--accent);color:#fff;cursor:pointer">🗺 Map</button>
-              <button id="calls-view-table-btn" onclick="switchCallsView('table')" style="padding:4px 10px;font-size:11px;border:none;background:var(--bg);color:var(--text);cursor:pointer">☰ Table</button>
-            </div>
-            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap">
-              <input type="checkbox" id="calls-open-only" onchange="applyCallsFilter()" style="cursor:pointer"> Open only
-            </label>
-            <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
-              <option value="3">Last 3 months</option>
-              <option value="12" selected>Last 12 months</option>
-              <option value="36">Last 3 years</option>
-              <option value="all">All time</option>
-            </select>
-            <button onclick="load311Calls()" title="Refresh" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;line-height:1">↻</button>
-          </div>
-        </div>
+      <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">📞 311 Tree-Related Calls</h2>
+      </div>
+      <div class="filter-bar">
+        <button id="calls-view-map-btn" class="toggle-btn on" onclick="switchCallsView('map')">🗺 Map</button>
+        <button id="calls-view-table-btn" class="toggle-btn" onclick="switchCallsView('table')">☰ Table</button>
+        <div class="filter-sep"></div>
+        <button id="calls-open-only-btn" class="toggle-btn" onclick="toggleOpenOnlyFilter(this)">Open only</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Period</span>
+        <select id="calls-date-range" onchange="load311Calls()" class="filter-bar-select" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:5px;font-size:11px;font-family:'Nunito',sans-serif;cursor:pointer;outline:none">
+          <option value="3">Last 3 months</option>
+          <option value="12" selected>Last 12 months</option>
+          <option value="36">Last 3 years</option>
+          <option value="all">All time</option>
+        </select>
+        <button onclick="load311Calls()" title="Refresh" class="toggle-btn" style="padding:7px 12px">↻</button>
       </div>
       <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
         <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
@@ -5882,11 +5876,12 @@ function renderCallsMarkers(rows) {
 }
 
 function getFilteredCalls() {
-  const openOnly = document.getElementById('calls-open-only')?.checked;
+  const openOnly = document.getElementById('calls-open-only-btn')?.classList.contains('on');
   return openOnly ? calls311Data.filter(r => (r.status || 'Open') !== 'Closed') : calls311Data;
 }
 
-function applyCallsFilter() {
+function toggleOpenOnlyFilter(btn) {
+  btn.classList.toggle('on');
   const filtered = getFilteredCalls();
   const tableVisible = document.getElementById('calls-table-container')?.style.display === 'flex';
   if (tableVisible) renderCallsTable(filtered);
@@ -5901,14 +5896,12 @@ function switchCallsView(mode) {
   if (mode === 'map') {
     mapEl.style.display = '';
     tableEl.style.display = 'none';
-    mapBtn.style.background = 'var(--accent)'; mapBtn.style.color = '#fff';
-    tableBtn.style.background = 'var(--bg)'; tableBtn.style.color = 'var(--text)';
+    mapBtn.classList.add('on'); tableBtn.classList.remove('on');
     if (calls311Map) calls311Map.invalidateSize();
   } else {
     mapEl.style.display = 'none';
     tableEl.style.display = 'flex';
-    tableBtn.style.background = 'var(--accent)'; tableBtn.style.color = '#fff';
-    mapBtn.style.background = 'var(--bg)'; mapBtn.style.color = 'var(--text)';
+    tableBtn.classList.add('on'); mapBtn.classList.remove('on');
     renderCallsTable(getFilteredCalls());
   }
 }
