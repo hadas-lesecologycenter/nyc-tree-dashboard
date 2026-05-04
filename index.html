@@ -1158,14 +1158,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #map-view.tree-panel-open .geo-button-container {
       bottom: calc(50vh + 64px);
     }
-    #geoLocation-btn {
+    #geoLocation-btn,
+    #controls-toggle {
       width: 48px;
       height: 48px;
       border-radius: 50%;
       border: none;
       background: white;
       color: #333;
-      font-size: 24px;
+      font-size: 20px;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       display: flex;
@@ -1175,7 +1176,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       padding: 0;
       flex-shrink: 0;
     }
-    #geoLocation-btn:hover {
+    #geoLocation-btn:hover,
+    #controls-toggle:hover {
       background: white;
       box-shadow: 0 4px 16px rgba(0,0,0,0.2);
       transform: scale(1.08);
@@ -1184,8 +1186,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    #geoLocation-btn:active {
+    #geoLocation-btn:active,
+    #controls-toggle:active {
       transform: scale(0.92);
+    }
+    #controls-toggle.on {
+      background: #7b3fa0;
+      color: white;
     }
   }
 
@@ -1275,7 +1282,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
     </div>
     <div class="map-overlay">
-      <button class="toggle-btn" id="controls-toggle" onclick="toggleControlsPanel()">🔍 Filters</button>
+      <button id="controls-toggle" onclick="toggleControlsPanel()">🔍</button>
     </div>
     <!-- Unified controls panel overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
