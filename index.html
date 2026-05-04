@@ -1526,12 +1526,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div style="padding:20px;border-bottom:1px solid var(--border);flex-shrink:0">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
             <h3 style="margin:0;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
+            <div style="display:flex;align-items:center;gap:6px">
             <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
               <option value="3">Last 3 months</option>
               <option value="12" selected>Last 12 months</option>
               <option value="36">Last 3 years</option>
               <option value="all">All time</option>
             </select>
+            <button onclick="load311Calls()" title="Refresh" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;line-height:1">↻</button>
+            </div>
           </div>
           <p style="margin:6px 0 0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
         </div>
