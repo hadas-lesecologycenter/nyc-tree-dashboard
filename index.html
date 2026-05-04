@@ -1219,6 +1219,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button class="nav-btn active" onclick="switchView('map',event)">🗺 Map</button>
     <button class="nav-btn" onclick="switchView('stats',event)">📊 Stats</button>
 <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
+    <button class="nav-btn" onclick="switchView('calls',event)">📞 311 Calls</button>
     <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
 
@@ -1476,10 +1477,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
-    <div id="myblock-mobile-tabs" class="mobile-tab-bar">
+    <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
       <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
       <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
-      <button class="mobile-tab" onclick="switchMyBlockTab('calls',this)">📞 311 Calls</button>
     </div>
     <div class="myblock-inner" style="display:flex;height:100%;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
@@ -1522,11 +1522,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
 
       </div>
-      <div id="myblock-311-calls" style="flex:1;display:none;flex-direction:column;overflow:hidden;background:var(--bg)">
-        <div style="padding:20px;border-bottom:1px solid var(--border);flex-shrink:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <h3 style="margin:0;font-size:14px;font-weight:700">311 Tree-Related Calls</h3>
-            <div style="display:flex;align-items:center;gap:6px">
+    </div>
+  </div>
+
+  <!-- 311 CALLS VIEW -->
+  <div id="calls-view" class="view">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div>
+            <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0 0 2px">📞 311 Tree-Related Calls</h2>
+            <p style="margin:0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
             <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
               <option value="3">Last 3 months</option>
               <option value="12" selected>Last 12 months</option>
@@ -1534,16 +1542,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <option value="all">All time</option>
             </select>
             <button onclick="load311Calls()" title="Refresh" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer;font-size:13px;line-height:1">↻</button>
-            </div>
           </div>
-          <p style="margin:6px 0 0;font-size:12px;color:var(--text3)">Tree service requests in CB3 · click markers for details</p>
         </div>
-        <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
-          <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
-            <div style="font-size:32px;margin-bottom:12px">📞</div>
-            <div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div>
-            <div style="font-size:11px">Fetching recent tree-related complaints from your area</div>
-          </div>
+      </div>
+      <div id="calls-map-container" style="flex:1;overflow:hidden;position:relative;background:#f5f5f5">
+        <div id="calls-list-container" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;color:var(--text3)">
+          <div style="font-size:32px;margin-bottom:12px">📞</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">Loading 311 calls...</div>
+          <div style="font-size:11px">Fetching recent tree-related complaints from your area</div>
         </div>
       </div>
     </div>
@@ -2961,6 +2967,7 @@ function switchView(view, evt) {
     if (target) target.classList.add('active');
     if (view === 'map' && mapInstance) setTimeout(() => mapInstance.invalidateSize(), 50);
     if (view === 'stats') updateStats();
+    if (view === 'calls') { setTimeout(() => { load311Calls(); if (calls311Map) calls311Map.invalidateSize(); }, 100); }
     if (view === 'myblock') {
       renderClaimedBlocksSidebar();
       tcUpdateProgress();
@@ -5749,6 +5756,7 @@ function initMobileUI() {
       { view: 'map',     icon: '🗺',  label: 'Map',    action: 'switch', active: true },
       { view: 'stats',   icon: '📊', label: 'Stats',  action: 'switch' },
       { view: 'myblock', icon: '🌿', label: 'Care',   action: 'switch' },
+      { view: 'calls',   icon: '📞', label: '311',    action: 'switch' },
       { view: null,      icon: '⚙️', label: 'Filter', action: 'filter', id: 'filter-toggle-btn' },
       { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
     ];
@@ -5930,24 +5938,15 @@ function load311Calls() {
 function switchMyBlockTab(tab, btn) {
   const sidebar = document.getElementById('myblock-sidebar');
   const dashboard = document.getElementById('myblock-dashboard');
-  const callsPanel = document.getElementById('myblock-311-calls');
   document.querySelectorAll('#myblock-mobile-tabs .mobile-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (tab === 'sidebar') {
     if (sidebar) sidebar.classList.remove('mobile-hidden');
     if (dashboard) dashboard.classList.add('mobile-hidden');
-    if (callsPanel) callsPanel.style.display = 'none';
-  } else if (tab === 'map') {
+  } else {
     if (sidebar) sidebar.classList.add('mobile-hidden');
     if (dashboard) dashboard.classList.remove('mobile-hidden');
-    if (callsPanel) callsPanel.style.display = 'none';
-    // Trigger care map resize after container becomes visible
     setTimeout(() => { if (tcCareMap) tcCareMap.invalidateSize(); }, 100);
-  } else if (tab === 'calls') {
-    if (sidebar) sidebar.classList.add('mobile-hidden');
-    if (dashboard) dashboard.classList.add('mobile-hidden');
-    if (callsPanel) callsPanel.style.display = 'flex';
-    load311Calls();
   }
 }
 
