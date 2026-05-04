@@ -1540,6 +1540,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <button id="calls-view-map-btn" onclick="switchCallsView('map')" style="padding:4px 10px;font-size:11px;border:none;background:var(--accent);color:#fff;cursor:pointer">🗺 Map</button>
               <button id="calls-view-table-btn" onclick="switchCallsView('table')" style="padding:4px 10px;font-size:11px;border:none;background:var(--bg);color:var(--text);cursor:pointer">☰ Table</button>
             </div>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap">
+              <input type="checkbox" id="calls-open-only" onchange="applyCallsFilter()" style="cursor:pointer"> Open only
+            </label>
             <select id="calls-date-range" onchange="load311Calls()" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);cursor:pointer">
               <option value="3">Last 3 months</option>
               <option value="12" selected>Last 12 months</option>
@@ -5855,6 +5858,41 @@ let calls311Map = null;
 let calls311Markers = null;
 let calls311Data = [];
 
+function renderCallsMarkers(rows) {
+  if (!calls311Map || !calls311Markers) return;
+  calls311Markers.clearLayers();
+  rows.filter(r => r.latitude && r.longitude && parseFloat(r.latitude) && parseFloat(r.longitude))
+    .forEach(call => {
+      const lat = parseFloat(call.latitude);
+      const lng = parseFloat(call.longitude);
+      const status = call.status || 'Open';
+      const markerColor = status === 'Closed' ? '#888888' : '#ef4444';
+      const popup = `
+        <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
+          <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
+          ${call.descriptor ? `<div style="font-size:11px;color:#555;margin-bottom:8px;font-weight:500">${call.descriptor}</div>` : ''}
+          ${call.additional_details ? `<div style="font-size:11px;color:#666;margin-bottom:8px;padding:8px;background:#f9f9f9;border-radius:4px">${call.additional_details}</div>` : ''}
+          <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
+          <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
+          <div style="font-size:11px;font-weight:600;color:${status === 'Closed' ? '#888' : '#ef4444'}">${status}</div>
+        </div>`;
+      L.circleMarker([lat, lng], { radius: 6, fillColor: markerColor, color: markerColor, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
+        .bindPopup(popup).addTo(calls311Markers);
+    });
+}
+
+function getFilteredCalls() {
+  const openOnly = document.getElementById('calls-open-only')?.checked;
+  return openOnly ? calls311Data.filter(r => (r.status || 'Open') !== 'Closed') : calls311Data;
+}
+
+function applyCallsFilter() {
+  const filtered = getFilteredCalls();
+  const tableVisible = document.getElementById('calls-table-container')?.style.display === 'flex';
+  if (tableVisible) renderCallsTable(filtered);
+  else renderCallsMarkers(filtered);
+}
+
 function switchCallsView(mode) {
   const mapEl = document.getElementById('calls-map-container');
   const tableEl = document.getElementById('calls-table-container');
@@ -5871,7 +5909,7 @@ function switchCallsView(mode) {
     tableEl.style.display = 'flex';
     tableBtn.style.background = 'var(--accent)'; tableBtn.style.color = '#fff';
     mapBtn.style.background = 'var(--bg)'; mapBtn.style.color = 'var(--text)';
-    renderCallsTable(calls311Data);
+    renderCallsTable(getFilteredCalls());
   }
 }
 
@@ -5951,41 +5989,11 @@ function load311Calls() {
         calls311Map.fitBounds(bounds);
       }
 
-      // Clear old markers
-      calls311Markers.clearLayers();
-
-      // Add markers for each call
-      validRows.forEach(call => {
-        const lat = parseFloat(call.latitude);
-        const lng = parseFloat(call.longitude);
-        const status = call.status || 'Open';
-        const markerColor = status === 'Closed' ? '#888888' : '#ef4444';
-
-        const popup = `
-          <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
-            <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
-            ${call.descriptor ? `<div style="font-size:11px;color:#555;margin-bottom:8px;font-weight:500">${call.descriptor}</div>` : ''}
-            ${call.additional_details ? `<div style="font-size:11px;color:#666;margin-bottom:8px;padding:8px;background:#f9f9f9;border-radius:4px">${call.additional_details}</div>` : ''}
-            <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
-            <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
-            <div style="font-size:11px;font-weight:600;color:${status === 'Closed' ? '#888' : '#ef4444'}">${status}</div>
-          </div>
-        `;
-
-        L.circleMarker([lat, lng], {
-          radius: 6,
-          fillColor: markerColor,
-          color: markerColor,
-          weight: 2,
-          opacity: 0.8,
-          fillOpacity: 0.7
-        })
-          .bindPopup(popup)
-          .addTo(calls311Markers);
-      });
+      renderCallsMarkers(getFilteredCalls());
 
       // Show count
-      listContainer.innerHTML = `<div style="padding:12px 16px;background:rgba(0,0,0,0.05);font-size:11px;color:var(--text2)">📊 ${rows.length} tree-related 311 calls found (${validRows.length} mapped) • Click markers for details</div>`;
+      const listContainer2 = document.getElementById('calls-list-container');
+      if (listContainer2) listContainer2.innerHTML = `<div style="padding:12px 16px;background:rgba(0,0,0,0.05);font-size:11px;color:var(--text2)">📊 ${rows.length} calls found • Click markers for details</div>`;
     })
     .catch(err => {
       console.error('Error loading 311 calls:', err);
