@@ -3215,24 +3215,36 @@ function initTreeGuardsLayer() {
 
 function initCoolestBlocksLayer() {
   coolestBlocksLayer = L.layerGroup();
+
+  function extendLine(coords, factor = 2) {
+    if (coords.length < 2) return coords;
+    const [p1, p2] = [coords[0], coords[coords.length - 1]];
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const start = [p1[0] - dx * (factor - 1), p1[1] - dy * (factor - 1)];
+    const end = [p2[0] + dx * (factor - 1), p2[1] + dy * (factor - 1)];
+    return [start, end];
+  }
+
   LESEC_COOLEST_RESIDENTS.features.forEach(f => {
     if (!f.geometry.coordinates.length) return;
     const coords = f.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-    const midpoint = [(coords[0][0] + coords[coords.length - 1][0]) / 2, (coords[0][1] + coords[coords.length - 1][1]) / 2];
+    const extendedCoords = extendLine(coords, 2.5);
     const p = f.properties;
-    L.circleMarker(midpoint, { radius: 8, fillColor: '#e8b84b', color: '#d4a235', weight: 2, opacity: 0.9, fillOpacity: 0.8 })
+    L.polyline(extendedCoords, { color: '#e8b84b', weight: 5, opacity: 0.85 })
       .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
         <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🏆 Coolest Block — Resident</div>
         <div style="font-size:12px;font-weight:600;margin:4px 0">${p['Group'] || ''}</div>
         ${p['Category'] ? `<div style="font-size:11px;color:#6b6456">${p['Category']}</div>` : ''}
       </div>`).addTo(coolestBlocksLayer);
   });
+
   LESEC_COOLEST_YOUTH.features.forEach(f => {
     if (!f.geometry.coordinates.length) return;
     const coords = f.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-    const midpoint = [(coords[0][0] + coords[coords.length - 1][0]) / 2, (coords[0][1] + coords[coords.length - 1][1]) / 2];
+    const extendedCoords = extendLine(coords, 2.5);
     const p = f.properties;
-    L.circleMarker(midpoint, { radius: 8, fillColor: '#c94fa5', color: '#a63a7f', weight: 2, opacity: 0.9, fillOpacity: 0.8 })
+    L.polyline(extendedCoords, { color: '#c94fa5', weight: 5, opacity: 0.85 })
       .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
         <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🏆 Coolest Block — Youth</div>
         <div style="font-size:12px;font-weight:600;margin:4px 0">${p['Group'] || ''}</div>
