@@ -3400,7 +3400,7 @@ function tcRenderCareMap() {
       return L.latLngBounds([40.710, -74.010], [40.730, -73.968]);
     })();
     tcCareMap = L.map('tc-care-map', { rotateControl: false }).fitBounds(cb3Bounds);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
@@ -6173,7 +6173,7 @@ function load311Calls() {
       // Init map on first load; just invalidate size on subsequent calls
       if (!calls311Map) {
         calls311Map = L.map('calls-map-container', { rotateControl: false, zoomControl: true }).fitBounds(bounds);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
           attribution: '© OpenStreetMap © CARTO', maxZoom: 19
         }).addTo(calls311Map);
         calls311Markers = L.layerGroup().addTo(calls311Map);
