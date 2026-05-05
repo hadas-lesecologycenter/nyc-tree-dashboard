@@ -2361,7 +2361,7 @@ function clearAllFilters() {
 // ========== MAP ==========
 function initMap() {
   mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, bearing: 0, rotateControl: false });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
@@ -3400,7 +3400,7 @@ function tcRenderCareMap() {
       return L.latLngBounds([40.710, -74.010], [40.730, -73.968]);
     })();
     tcCareMap = L.map('tc-care-map', { rotateControl: false }).fitBounds(cb3Bounds);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
