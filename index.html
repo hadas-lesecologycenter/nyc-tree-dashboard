@@ -1251,6 +1251,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <button id="controls-toggle" onclick="toggleControlsPanel()" title="Map Controls">🔍</button>
       <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
     </div>
+    <!-- Coolest Blocks Legend -->
+    <div id="coolest-blocks-legend" style="position:absolute;bottom:16px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:160px">
+      <div style="font-weight:700;margin-bottom:8px;font-size:12px;color:#333">🏆 Coolest Blocks</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:12px;height:2px;background:#e8b84b"></div>
+          <span>Resident</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="width:12px;height:2px;background:#c94fa5"></div>
+          <span>Youth</span>
+        </div>
+      </div>
+    </div>
     <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3278,6 +3292,8 @@ function toggleCoolestBlocks() {
   else coolestBlocksLayer.remove();
   const cb = document.getElementById('layer-coolest-blocks');
   if (cb) cb.checked = coolestBlocksVisible;
+  const legend = document.getElementById('coolest-blocks-legend');
+  if (legend) legend.style.display = coolestBlocksVisible ? 'block' : 'none';
 }
 
 function toggleCoolestBlocksFromPanel() {
@@ -3288,6 +3304,8 @@ function toggleCoolestBlocksFromPanel() {
   coolestBlocksVisible = shouldShow;
   if (coolestBlocksVisible) coolestBlocksLayer.addTo(mapInstance);
   else coolestBlocksLayer.remove();
+  const legend = document.getElementById('coolest-blocks-legend');
+  if (legend) legend.style.display = coolestBlocksVisible ? 'block' : 'none';
 }
 
 // ========== EMPTY BEDS LAYER ==========
