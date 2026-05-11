@@ -1171,16 +1171,64 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .mob-nav-btn .mob-label { display: none; pointer-events: none; }
     .mob-nav-btn.active { color: var(--accent); }
 
-    /* Floating action buttons - Google Maps style */
-    .geo-button-container {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+  }
+
+  /* Floating action buttons - Google Maps style (desktop + mobile) */
+  .geo-button-container {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 999;
+    transition: bottom 0.25s ease;
+  }
+  #geoLocation-btn,
+  #controls-toggle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    color: #333;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  #geoLocation-btn:hover,
+  #controls-toggle:hover {
+    background: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    transform: scale(1.08);
+  }
+  #geoLocation-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  #geoLocation-btn:active,
+  #controls-toggle:active {
+    transform: scale(0.92);
+  }
+  #controls-toggle.on {
+    background: #7b3fa0;
+    color: white;
+  }
+  @media (max-width: 768px) {
+    #geoLocation-btn,
+    #controls-toggle {
+      width: 48px;
+      height: 48px;
       z-index: 2999;
-      transition: bottom 0.25s ease;
+    }
+    .geo-button-container {
+      z-index: 2999;
     }
     /* Push geo button above the filter panel when it's open */
     #map-view.filters-open .geo-button-container {
@@ -1189,42 +1237,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     /* Push geo button above the tree detail panel when it's open */
     #map-view.tree-panel-open .geo-button-container {
       bottom: calc(50vh + 64px);
-    }
-    #geoLocation-btn,
-    #controls-toggle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: none;
-      background: white;
-      color: #333;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-      padding: 0;
-      flex-shrink: 0;
-    }
-    #geoLocation-btn:hover,
-    #controls-toggle:hover {
-      background: white;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-      transform: scale(1.08);
-    }
-    #geoLocation-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    #geoLocation-btn:active,
-    #controls-toggle:active {
-      transform: scale(0.92);
-    }
-    #controls-toggle.on {
-      background: #7b3fa0;
-      color: white;
     }
   }
 
@@ -1344,11 +1356,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <!-- Unified controls panel overlaid on map -->
     <div id="priority-sidebar" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1000;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.08)">
       <div style="padding:18px 20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700">🔍 Map Controls</h2>
-          <button onclick="toggleControlsPanel()" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px">✕</button>
-        </div>
-
         <div class="cp-section">
           <div class="cp-label">View Mode</div>
           <label class="cp-radio">
