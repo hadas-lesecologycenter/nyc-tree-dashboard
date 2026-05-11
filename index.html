@@ -2440,6 +2440,8 @@ function initMap() {
   if (treePanel) { L.DomEvent.disableScrollPropagation(treePanel); }
   initToolStorageLayer();
   initMapControlsSidebar();
+  // Force Leaflet to recalculate container size after initialization
+  setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 100);
   // Auto-start geolocation tracking on load
   requestUserLocation();
 }
