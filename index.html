@@ -1011,6 +1011,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .leaflet-popup-tip { background: var(--bg2); }
   .leaflet-popup-content { margin: 12px 14px; }
 
+  /* Map controls sidebar - default (desktop) */
+  .map-sidebar-close-btn { display: none; }
+  .map-sidebar-backdrop { display: none; }
+  /* Hide controls toggle button on desktop (sidebar is always visible) */
+  @media (min-width: 769px) {
+    #controls-toggle { display: none !important; }
+  }
+
   /* ===== MOBILE RESPONSIVE ===== */
   @media (max-width: 768px) {
     /* Compact header - bottom tab bar replaces nav */
@@ -1019,6 +1027,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .brand-name { font-size: 13px; }
     /* brand-long/brand-short visibility is set by initMobileUI() in JS */
     nav { display: none; }
+
+    /* Map controls sidebar — slide-in overlay on mobile */
+    .map-controls-sidebar {
+      position: absolute !important;
+      top: 0; left: 0; bottom: 0;
+      width: 85% !important;
+      max-width: 320px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      z-index: 2000 !important;
+      box-shadow: 2px 0 16px rgba(0,0,0,0.2);
+    }
+    .map-controls-sidebar.open { transform: translateX(0); }
+    .map-sidebar-close-btn { display: inline-flex !important; align-items: center; justify-content: center; }
+    .map-sidebar-backdrop {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1999;
+    }
+    .map-sidebar-backdrop.open { display: block; }
+    /* Show the floating filter button on mobile to open sidebar */
+    #controls-toggle { display: flex !important; }
 
     /* Filter bar - hidden on mobile */
     .filter-bar { display: none; }
@@ -1247,19 +1279,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div id="map-view" class="view active">
     <div style="display:flex;height:100%;overflow:hidden">
       <!-- Controls Sidebar -->
-      <div id="map-controls-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:999">
+      <div id="map-controls-sidebar" class="map-controls-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:999">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">🔍 Map Controls</h2>
-          <button onclick="toggleMapControlsSidebar()" style="display:none;background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px" id="map-sidebar-close">✕</button>
+          <button onclick="toggleMapControlsSidebar()" class="map-sidebar-close-btn" style="background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px" id="map-sidebar-close">✕</button>
         </div>
         <div id="map-controls-content" style="flex:1;overflow-y:auto;padding:16px"></div>
       </div>
+      <!-- Sidebar backdrop overlay (mobile) -->
+      <div id="map-sidebar-backdrop" class="map-sidebar-backdrop" onclick="toggleMapControlsSidebar()"></div>
       <!-- Map -->
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
         <div id="map" style="flex:1;position:relative"></div>
         <!-- Geolocation buttons -->
         <div class="geo-button-container">
-          <button id="controls-toggle" onclick="toggleControlsPanel()" title="Map Controls" style="display:none">🔍</button>
+          <button id="controls-toggle" onclick="toggleControlsPanel()" title="Map Controls">🔍</button>
           <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
         </div>
         <!-- Coolest Blocks Legend -->
@@ -2643,13 +2677,22 @@ function updatePriorityTierCounts() {
 
 function toggleMapControlsSidebar() {
   const sidebar = document.getElementById('map-controls-sidebar');
+  const backdrop = document.getElementById('map-sidebar-backdrop');
   if (!sidebar) return;
-  const visible = sidebar.style.width !== '0px' && sidebar.style.width !== '0';
-  sidebar.style.width = visible ? '0' : '320px';
-  sidebar.style.overflow = visible ? 'hidden' : 'visible';
-  const btn = document.getElementById('controls-toggle');
-  if (btn) btn.classList.toggle('on', !visible);
-  if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    const isOpen = sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', !isOpen);
+    if (backdrop) backdrop.classList.toggle('open', !isOpen);
+    const btn = document.getElementById('controls-toggle');
+    if (btn) btn.classList.toggle('on', !isOpen);
+  } else {
+    const visible = sidebar.style.display !== 'none';
+    sidebar.style.display = visible ? 'none' : 'flex';
+    const btn = document.getElementById('controls-toggle');
+    if (btn) btn.classList.toggle('on', !visible);
+    if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
+  }
 }
 
 function toggleControlsPanel() {
