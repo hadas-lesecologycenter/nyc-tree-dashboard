@@ -748,11 +748,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .tree-count { font-family: 'Nunito', sans-serif; font-size: 11px; color: var(--text3); margin-left: auto; white-space: nowrap; }
 
   /* MAIN */
-  main { flex: 1; min-height: 0; overflow: hidden; position: relative; }
-  .view { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; }
+  main { flex: 1; overflow: hidden; position: relative; }
+  .view { display: none; height: 100%; overflow: hidden; }
   .view.active { display: flex; flex-direction: column; }
   #map-view { flex-direction: column; }
-  #about-view.active { display: block; overflow-y: auto; }
 
 
   /* LOADING */
@@ -1290,7 +1289,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <main>
   <!-- MAP VIEW -->
   <div id="map-view" class="view active">
-    <div style="display:flex;flex:1;min-height:0;overflow:hidden;width:100%">
+    <div style="display:flex;height:100%;overflow:hidden">
       <!-- Controls Sidebar -->
       <div id="map-controls-sidebar" class="map-controls-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:999">
         <div style="padding:20px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
@@ -1500,6 +1499,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="cp-count" id="tree-count">—</div>
       </div>
     </div>
+      </div>
+    </div>
   </div>
 
   <!-- STATS VIEW -->
@@ -1601,7 +1602,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- 311 CALLS VIEW -->
   <div id="calls-view" class="view">
-    <div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;width:100%">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
       <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">📞 311 Tree-Related Calls</h2>
@@ -1908,7 +1909,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- ABOUT VIEW -->
   <div id="about-view" class="view">
-    <div style="max-width:680px;margin:0 auto;padding:40px 24px;font-family:'Nunito',sans-serif;width:100%;box-sizing:border-box">
+    <div style="max-width:680px;margin:0 auto;padding:40px 24px;font-family:'Nunito',sans-serif;overflow-y:auto;height:100%">
 
       <h1 style="font-family:'Lora',serif;font-size:24px;font-weight:700;margin-bottom:6px;color:var(--text)">LES Ecology Center Street Tree Care Map</h1>
 
