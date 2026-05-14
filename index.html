@@ -4624,7 +4624,14 @@ function updateCareButton(tree) {
   btn.style.display = 'block';
   btn.style.color = '#fff';
   btn.style.pointerEvents = 'auto';
+  btn.style.cursor = 'pointer';
+  btn.style.position = 'relative';
+  btn.style.zIndex = '10';
   btn.disabled = false;
+  btn.onclick = function(e) {
+    e.stopPropagation();
+    handleMapReportCareBtn();
+  };
 }
 
 function updateMissingButton(tree) {
