@@ -3168,6 +3168,7 @@ function openMapTreeDetail(tree) {
   updateStewardedButton(tree);
   updateTreeGuardButton(tree);
   updateMissingButton(tree);
+  updateCareButton(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -4615,6 +4616,15 @@ function confirmMissing() {
   updateMissingButton(tree);
   applyFilters();
   tcShowSyncStatus('⚠️ Tree reported as ' + type);
+}
+
+function updateCareButton(tree) {
+  const btn = document.getElementById('mtp-care-btn');
+  if (!btn || !tree) return;
+  btn.style.display = 'block';
+  btn.style.color = '#fff';
+  btn.style.pointerEvents = 'auto';
+  btn.disabled = false;
 }
 
 function updateMissingButton(tree) {
