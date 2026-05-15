@@ -4729,10 +4729,20 @@ async function confirmManualCare() {
   const address = tree.address || '';
   const species = tree.spc_common || tree.spc_latin || '';
 
+  const recentKey = '_recent_care_' + treeId + '_' + date;
+  const lastSave = parseInt(localStorage.getItem(recentKey) || '0', 10);
+  if (lastSave && (Date.now() - lastSave) < 5 * 60 * 1000) {
+    if (!confirm('You just reported care for this tree on ' + date + '. Save again anyway?')) return;
+  }
+
+  const submitBtn = document.querySelector('#manual-care-modal button[onclick="confirmManualCare()"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; submitBtn.style.cursor = 'not-allowed'; }
+
   const label = activities.length === 1 ? 'activity' : 'activities';
   try {
     tcShowSyncStatus('⏳ Saving care ' + label + '…', true);
     await saveManualCareToGitHub(treeId, date, activities, duration, address, species);
+    localStorage.setItem(recentKey, String(Date.now()));
     closeManualCareModal();
     tcShowSyncStatus('✅ ' + activities.length + ' care ' + label + ' saved', false);
 
@@ -4741,6 +4751,8 @@ async function confirmManualCare() {
     }, 1000);
   } catch (err) {
     tcShowSyncStatus('❌ Failed to save: ' + err.message, true);
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; submitBtn.style.cursor = ''; }
   }
 }
 
