@@ -1848,16 +1848,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div id="manual-care-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
       <div style="margin-bottom:16px">
-        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Care Activity</label>
-        <select id="manual-care-activity" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
-          <option value="watered">💧 Watered</option>
-          <option value="pruning">✂️ Pruned</option>
-          <option value="weeding">🌿 Weeded</option>
-          <option value="compost">🍂 Mulched/Composted</option>
-          <option value="litter">🗑️ Cleared Litter</option>
-          <option value="aeration">⚒️ Aerated Soil</option>
-          <option value="planting">🌱 Planted Flowers</option>
-        </select>
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:8px">Care Activities <span style="font-weight:400;color:var(--text3)">(select one or more)</span></label>
+        <div id="manual-care-activities" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+          <button type="button" class="care-activity-chip" data-activity="watering" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">💧 Watered</button>
+          <button type="button" class="care-activity-chip" data-activity="pruning" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">✂️ Pruned</button>
+          <button type="button" class="care-activity-chip" data-activity="weeding" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">🌿 Weeded</button>
+          <button type="button" class="care-activity-chip" data-activity="compost" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">🍂 Mulched/Composted</button>
+          <button type="button" class="care-activity-chip" data-activity="litter" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">🗑️ Cleared Litter</button>
+          <button type="button" class="care-activity-chip" data-activity="aeration" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">⚒️ Aerated Soil</button>
+          <button type="button" class="care-activity-chip" data-activity="planting" data-selected="false" onclick="toggleCareActivity(this)" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;font-family:'Nunito',sans-serif;cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none">🌱 Planted Flowers</button>
+        </div>
       </div>
       <div style="margin-bottom:16px">
         <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
@@ -4677,9 +4677,32 @@ function handleMapReportCareBtn() {
   }
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('manual-care-date').value = today;
-  document.getElementById('manual-care-activity').value = 'watered';
+  document.querySelectorAll('#manual-care-activities .care-activity-chip').forEach(b => {
+    b.dataset.selected = 'false';
+    b.style.background = 'var(--bg)';
+    b.style.color = 'var(--text)';
+    b.style.borderColor = 'var(--border)';
+    b.style.fontWeight = '400';
+  });
   document.getElementById('manual-care-duration').value = '';
   modal.style.display = 'flex';
+}
+
+function toggleCareActivity(btn) {
+  const isSelected = btn.dataset.selected === 'true';
+  if (isSelected) {
+    btn.dataset.selected = 'false';
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.fontWeight = '400';
+  } else {
+    btn.dataset.selected = 'true';
+    btn.style.background = '#06b6d4';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#06b6d4';
+    btn.style.fontWeight = '700';
+  }
 }
 
 function closeManualCareModal() {
@@ -4692,7 +4715,13 @@ async function confirmManualCare() {
   const tree = _pendingCareTree;
   if (!tree) return;
 
-  const activity = document.getElementById('manual-care-activity').value || 'watered';
+  const activities = Array.from(
+    document.querySelectorAll('#manual-care-activities .care-activity-chip[data-selected="true"]')
+  ).map(b => b.dataset.activity);
+  if (!activities.length) {
+    tcShowSyncStatus('⚠️ Please select at least one care activity', true);
+    return;
+  }
   const date = document.getElementById('manual-care-date').value || new Date().toISOString().split('T')[0];
   const duration = document.getElementById('manual-care-duration').value || '';
 
@@ -4700,11 +4729,12 @@ async function confirmManualCare() {
   const address = tree.address || '';
   const species = tree.spc_common || tree.spc_latin || '';
 
+  const label = activities.length === 1 ? 'activity' : 'activities';
   try {
-    tcShowSyncStatus('⏳ Saving care activity…', true);
-    await saveManualCareToGitHub(treeId, date, activity, duration, address, species);
+    tcShowSyncStatus('⏳ Saving care ' + label + '…', true);
+    await saveManualCareToGitHub(treeId, date, activities, duration, address, species);
     closeManualCareModal();
-    tcShowSyncStatus('✅ Care activity saved', false);
+    tcShowSyncStatus('✅ ' + activities.length + ' care ' + label + ' saved', false);
 
     setTimeout(() => {
       tcRefreshCareTab();
@@ -4714,7 +4744,7 @@ async function confirmManualCare() {
   }
 }
 
-async function saveManualCareToGitHub(treeId, date, activity, duration, address, species) {
+async function saveManualCareToGitHub(treeId, date, activities, duration, address, species) {
   const REPO = 'hadas-lesecologycenter/nyc-tree-dashboard';
   const ACT_PATH = 'data/activities.csv';
 
@@ -4737,19 +4767,13 @@ async function saveManualCareToGitHub(treeId, date, activity, duration, address,
     'User-Agent': 'nyc-tree-dashboard'
   };
 
-  const activityId = 'manual-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
   const today = new Date().toISOString().split('T')[0];
-
-  const actRow = [
-    activityId,
-    date,
-    treeId,
-    species,
-    address,
-    activity,
-    duration,
-    today
-  ].map(f => {
+  const activitiesLabel = activities.map(id => {
+    const t = TC_ACTIVITIES.find(x => x.id === id);
+    return t ? t.label : id;
+  }).join('; ');
+  const activityId = 'manual-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  const actRow = [activityId, date, treeId, species, address, activitiesLabel, duration, today].map(f => {
     f = String(f == null ? '' : f);
     return /[,"\n]/.test(f) ? '"' + f.replace(/"/g, '""') + '"' : f;
   }).join(',');
@@ -4767,7 +4791,7 @@ async function saveManualCareToGitHub(treeId, date, activity, duration, address,
   const sha = fileRes.sha;
 
   const body = {
-    message: 'Manual care ' + today,
+    message: 'Manual care ' + today + ' (' + activities.length + ')',
     content: btoa(unescape(encodeURIComponent(newCSV))),
     sha: sha
   };
