@@ -5115,11 +5115,11 @@ function renderReservationQueue() {
     const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const isPast = res.date < today;
     const isToday = res.date === today;
-    const dateColor = isPast ? 'var(--text3)' : isToday ? '#c62828' : '#7b3fa0';
+    const dateColor = '#7b3fa0';
 
     const row = document.createElement('div');
     row.style.cssText = 'padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;' +
-      'border-left:3px solid ' + (isPast ? 'var(--border)' : '#7b3fa0');
+      'border-left:3px solid #7b3fa0';
     row.onclick = () => tcZoomToReservation(res.id);
     const treeTitle = res.species || ('Tree #' + res.treeId);
     row.innerHTML =
@@ -5484,7 +5484,7 @@ function tcRenderReservationsOnCareMap() {
     if (!res.lat || !res.lng) return;
     const isPast = res.date < today;
     const isToday = res.date === today;
-    const color = isPast ? '#78909c' : isToday ? '#c62828' : '#7b3fa0';
+    const color = '#7b3fa0';
     const dateStr = new Date(res.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
     const icon = L.divIcon({
