@@ -6784,7 +6784,7 @@ let raAssessments = [];
 let _raCurrentTree = null;
 let _raInitialized = false;
 
-// Trees south of 14th St AND west of the Bowery are outside the service area
+// Keep only trees within the service area: south of 14th St AND east of the Bowery
 const RA_BOUNDS_LAT = 40.7337;  // 14th Street
 const RA_BOUNDS_LNG = -73.9912; // The Bowery
 
@@ -6795,7 +6795,7 @@ function raGetYoungTrees() {
     if (yr !== 2024 && yr !== 2025) return false;
     const lat = parseFloat(t.latitude);
     const lng = parseFloat(t.longitude);
-    if (lat < RA_BOUNDS_LAT && lng < RA_BOUNDS_LNG) return false;
+    if (lat > RA_BOUNDS_LAT || lng < RA_BOUNDS_LNG) return false;
     return true;
   });
 }
