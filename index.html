@@ -2166,24 +2166,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <!-- Indicators -->
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Risk Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each)</span></div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🏗️ Structural / Physical Damage</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🪵 Structural / Physical Damage</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Broken or hanging branches · trunk wounds, cracks, or cavities · leaning trunk (&gt;15°) · root damage or heaving · missing or stripped bark</div>
           <div class="ra-rating-group" data-field="structural">
             <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
             <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
             <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
           </div>
         </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🐛 Pest &amp; Disease Signs</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🐛 Pest &amp; Disease Signs</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Visible insects, larvae, or egg masses · fungal growth, mushrooms, or conks · unusual leaf spots or discoloration · wilting or premature leaf drop · galls or cankers</div>
           <div class="ra-rating-group" data-field="pestDisease">
             <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
             <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
             <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
           </div>
         </div>
-        <div style="margin-bottom:10px">
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🌍 Soil &amp; Site Conditions</div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🌍 Soil &amp; Site Conditions</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Soil compaction or crusted surface · poor drainage or standing water · inadequate pit size · nearby construction activity · mulch volcano or improper mulching</div>
           <div class="ra-rating-group" data-field="soilSite">
             <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
             <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
@@ -2191,7 +2194,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🌿 Growth &amp; Vitality</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🌿 Growth &amp; Vitality</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Canopy fullness vs. expected for species · new growth present this season · leaf-out completeness · leaf color and size · dead or dying branches (dieback)</div>
           <div class="ra-rating-group" data-field="growthVitality">
             <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
             <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
@@ -6976,7 +6980,7 @@ function raRenderPanelHistory(tid) {
   }
 
   const IND = {
-    structural:    '🏗️ Structural',
+    structural:    '🪵 Structural',
     pestDisease:   '🐛 Pest & Disease',
     soilSite:      '🌍 Soil & Site',
     growthVitality:'🌿 Growth & Vitality'
