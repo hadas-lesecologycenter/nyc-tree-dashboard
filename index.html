@@ -6786,7 +6786,7 @@ let _raInitialized = false;
 
 // Keep only trees within the service area: south of 14th St AND east of the Bowery
 const RA_BOUNDS_LAT = 40.7337;  // 14th Street
-const RA_BOUNDS_LNG = -73.9912; // The Bowery
+const RA_BOUNDS_LNG = -73.9980; // West of the Bowery (Chatham Square, its southernmost point ~-73.9977)
 
 function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
