@@ -2060,17 +2060,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div style="flex:1;overflow-y:auto;padding:16px">
           <!-- Year filter -->
           <div style="margin-bottom:16px">
-            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Tree Cohort</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Tree Cohort <span style="font-weight:400;color:var(--text3);text-transform:none">(ring color)</span></div>
             <div style="display:flex;flex-direction:column;gap:7px">
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
                 <input type="checkbox" id="ra-show-2024" checked onchange="raRenderMap()">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>
+                <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #f59e0b;flex-shrink:0"></span>
                 2024 trees
                 <span id="ra-count-2024" style="margin-left:auto;font-size:10px;font-weight:700;color:#f59e0b"></span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
                 <input type="checkbox" id="ra-show-2025" checked onchange="raRenderMap()">
-                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>
+                <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #06b6d4;flex-shrink:0"></span>
                 2025 trees
                 <span id="ra-count-2025" style="margin-left:auto;font-size:10px;font-weight:700;color:#06b6d4"></span>
               </label>
@@ -2078,27 +2078,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <!-- Risk legend -->
           <div style="margin-bottom:16px">
-            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment Status</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Fill = Risk Level</div>
             <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text2)">
               <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:10px;height:10px;border-radius:2px;background:#dc2626;flex-shrink:0"></div>
-                <span>High risk</span>
-                <span id="ra-stat-high" style="margin-left:auto;font-weight:700;color:#dc2626"></span>
+                <div style="width:11px;height:11px;border-radius:50%;background:#9ca3af;flex-shrink:0;opacity:0.5"></div>
+                <span>Not yet assessed</span>
+                <span id="ra-stat-none" style="margin-left:auto;font-weight:600;color:var(--text3)"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:10px;height:10px;border-radius:2px;background:#f59e0b;flex-shrink:0"></div>
-                <span>Medium risk</span>
-                <span id="ra-stat-med" style="margin-left:auto;font-weight:700;color:#f59e0b"></span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:10px;height:10px;border-radius:2px;background:#22c55e;flex-shrink:0"></div>
+                <div style="width:11px;height:11px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
                 <span>Low risk</span>
                 <span id="ra-stat-low" style="margin-left:auto;font-weight:700;color:#22c55e"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:10px;height:10px;border-radius:2px;background:var(--border);flex-shrink:0"></div>
-                <span>Not yet assessed</span>
-                <span id="ra-stat-none" style="margin-left:auto;font-weight:600;color:var(--text3)"></span>
+                <div style="width:11px;height:11px;border-radius:50%;background:#f59e0b;flex-shrink:0"></div>
+                <span>Medium risk</span>
+                <span id="ra-stat-med" style="margin-left:auto;font-weight:700;color:#f59e0b"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:11px;height:11px;border-radius:50%;background:#dc2626;flex-shrink:0"></div>
+                <span>High risk</span>
+                <span id="ra-stat-high" style="margin-left:auto;font-weight:700;color:#dc2626"></span>
               </div>
             </div>
           </div>
@@ -6862,12 +6862,12 @@ function raUpdateStats() {
 function raMakeMarker(tree, yearColor) {
   const tid = raTreeId(tree);
   const latest = raLatestAssessment(tid);
-  const fillColor = latest ? (raRiskColor(latest.overallRisk) || yearColor) : yearColor;
-  const opacity = latest ? 1 : 0.65;
-  const radius = latest ? 7 : 5;
+  const fillColor = latest ? (raRiskColor(latest.overallRisk) || '#9ca3af') : '#9ca3af';
+  const fillOpacity = latest ? 0.9 : 0.45;
+  const radius = 6;
   const marker = L.circleMarker(
     [parseFloat(tree.latitude), parseFloat(tree.longitude)],
-    { radius, fillColor, color: '#fff', weight: 1.5, fillOpacity: opacity }
+    { radius, fillColor, color: yearColor, weight: 2, fillOpacity }
   );
   marker.on('click', (e) => { L.DomEvent.stopPropagation(e); raOpenPanel(tree); });
   return marker;
