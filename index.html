@@ -4101,7 +4101,7 @@ function saveTokenFromModal() {
 // Load from both localStorage and GitHub
 async function reservationLoad() {
   const rows = await sheetsRead('Reservations');
-  if (rows !== null) {
+  if (rows !== null && rows.length > 0) {
     const reservations = rows.filter(r => r.id).map(r => ({
       ...r,
       lat: r.lat ? parseFloat(r.lat) : null,
@@ -4821,18 +4821,21 @@ async function saveManualCareToGitHub(treeId, date, activities, duration, addres
 }
 
 function reservationSave(reservations) {
-  // Save to localStorage immediately
   localStorage.setItem('tc_reservations', JSON.stringify(reservations));
-  // Sync to GitHub in background
-  reservationSyncToGitHub(reservations);
+  reservationSyncToSheets(reservations);
 }
 
-async function reservationSyncToGitHub(reservations) {
-  await sheetsWrite('Reservations',
-    ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt'],
-    reservations,
-    r => [r.id, r.treeId, r.name||'', r.date, r.lat||'', r.lng||'', r.species||'', r.address||'', r.health||'', r.dbh||'', r.planted||'', r.priority||0, r.nta||'', r.note||'', r.createdAt]
-  );
+async function reservationSyncToSheets(reservations) {
+  try {
+    await sheetsWrite('Reservations',
+      ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt','reserveType'],
+      reservations,
+      r => [r.id, r.treeId, r.name||'', r.date, r.lat||'', r.lng||'', r.species||'', r.address||'', r.health||'', r.dbh||'', r.planted||'', r.priority||0, r.nta||'', r.note||'', r.createdAt, r.reserveType||'person']
+    );
+    tcShowSyncStatus('✓ Reservation synced');
+  } catch(e) {
+    tcShowSyncStatus('⚠ Reservation saved locally — could not sync to shared data', true);
+  }
 }
 function reservationRemove(id) {
   reservationSave(reservationLoadSync().filter(r => r.id !== id));
