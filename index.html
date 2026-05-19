@@ -1256,6 +1256,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
   @media (max-width: 480px) {
     .summary-row { grid-template-columns: 1fr; }
   }
+
+  /* Risk Assessment Tab */
+  .ra-rating-group { display:flex; gap:6px; }
+  .ra-rating-btn {
+    flex:1; padding:7px 0; border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--text2); font-size:12px;
+    font-family:'Nunito',sans-serif; cursor:pointer; font-weight:500;
+    -webkit-appearance:none; appearance:none;
+  }
+  .ra-rating-btn.selected[data-val="low"]    { background:#22c55e; border-color:#22c55e; color:#fff; font-weight:700; }
+  .ra-rating-btn.selected[data-val="medium"] { background:#f59e0b; border-color:#f59e0b; color:#fff; font-weight:700; }
+  .ra-rating-btn.selected[data-val="high"]   { background:#dc2626; border-color:#dc2626; color:#fff; font-weight:700; }
+  .ra-overall .ra-rating-btn { padding:10px 0; font-weight:600; font-size:13px; }
 </style>
 </head>
 <body>
@@ -1274,6 +1287,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
     <button class="nav-btn" onclick="switchView('calls',event)">📞 311 Calls</button>
     <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
+    <button class="nav-btn" onclick="switchView('risk',event)">🔍 Risk Assessment</button>
   </nav>
 
 </header>
@@ -2034,6 +2048,178 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
+  <!-- RISK ASSESSMENT VIEW -->
+  <div id="risk-view" class="view">
+    <div style="display:flex;height:100%;overflow:hidden">
+      <!-- Sidebar -->
+      <div id="ra-sidebar" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
+        <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0;color:var(--text)">🔍 Young Trees Risk Assessment</h2>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">2024 &amp; 2025 plantings</div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px">
+          <!-- Year filter -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Tree Cohort</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-2024" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>
+                2024 trees
+                <span id="ra-count-2024" style="margin-left:auto;font-size:10px;font-weight:700;color:#f59e0b"></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-2025" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>
+                2025 trees
+                <span id="ra-count-2025" style="margin-left:auto;font-size:10px;font-weight:700;color:#06b6d4"></span>
+              </label>
+            </div>
+          </div>
+          <!-- Risk legend -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment Status</div>
+            <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text2)">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:10px;border-radius:2px;background:#dc2626;flex-shrink:0"></div>
+                <span>High risk</span>
+                <span id="ra-stat-high" style="margin-left:auto;font-weight:700;color:#dc2626"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:10px;border-radius:2px;background:#f59e0b;flex-shrink:0"></div>
+                <span>Medium risk</span>
+                <span id="ra-stat-med" style="margin-left:auto;font-weight:700;color:#f59e0b"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:10px;border-radius:2px;background:#22c55e;flex-shrink:0"></div>
+                <span>Low risk</span>
+                <span id="ra-stat-low" style="margin-left:auto;font-weight:700;color:#22c55e"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:10px;border-radius:2px;background:var(--border);flex-shrink:0"></div>
+                <span>Not yet assessed</span>
+                <span id="ra-stat-none" style="margin-left:auto;font-weight:600;color:var(--text3)"></span>
+              </div>
+            </div>
+          </div>
+          <!-- Progress -->
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:11px;color:var(--text2)">
+            <div style="font-weight:700;color:var(--text);margin-bottom:6px">Assessment Progress</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span>Assessed</span>
+              <span id="ra-stat-assessed" style="font-weight:700;color:var(--text)">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span>Total visible</span>
+              <span id="ra-stat-total" style="font-weight:700;color:var(--text)">—</span>
+            </div>
+            <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div id="ra-progress-bar" style="height:100%;background:#7b3fa0;width:0%;transition:width 0.4s"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Map + detail panel -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
+        <div id="ra-map" style="flex:1;position:relative"></div>
+        <!-- Tree detail panel -->
+        <div id="ra-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif">
+          <div style="padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div id="ra-panel-title" style="font-family:'Lora',serif;font-size:15px;font-weight:700;line-height:1.3;padding-right:8px"></div>
+              <button onclick="raClosePanel()" style="background:none;border:1px solid var(--border);color:var(--text2);min-width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0">✕</button>
+            </div>
+            <div id="ra-panel-badge" style="margin-bottom:10px"></div>
+            <div id="ra-panel-fields" style="margin-bottom:14px"></div>
+            <button type="button" onclick="raHandleAssessBtn()"
+              style="width:100%;padding:11px;background:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
+              📋 Add Assessment
+            </button>
+            <div id="ra-panel-history" style="margin-top:14px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RISK ASSESSMENT MODAL -->
+  <div id="ra-assess-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25);padding:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Risk Assessment</h2>
+        <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+      <!-- Assessor + Date -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Assessor Name</label>
+          <input id="ra-assessor" type="text" placeholder="Your name"
+            style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Date</label>
+          <input id="ra-date" type="date"
+            style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+        </div>
+      </div>
+      <!-- Indicators -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Risk Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each)</span></div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🏗️ Structural / Physical Damage</div>
+          <div class="ra-rating-group" data-field="structural">
+            <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
+            <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
+            <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🐛 Pest &amp; Disease Signs</div>
+          <div class="ra-rating-group" data-field="pestDisease">
+            <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
+            <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
+            <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
+          </div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🌍 Soil &amp; Site Conditions</div>
+          <div class="ra-rating-group" data-field="soilSite">
+            <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
+            <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
+            <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">🌿 Growth &amp; Vitality</div>
+          <div class="ra-rating-group" data-field="growthVitality">
+            <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Low</button>
+            <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Medium</button>
+            <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">High</button>
+          </div>
+        </div>
+      </div>
+      <!-- Overall -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Overall Risk Rating</div>
+        <div class="ra-rating-group ra-overall" data-field="overall">
+          <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">🟢 Low</button>
+          <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">🟡 Medium</button>
+          <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">🔴 High</button>
+        </div>
+      </div>
+      <!-- Notes -->
+      <div style="margin-bottom:20px">
+        <label style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <textarea id="ra-notes" rows="3" placeholder="Observations, follow-up needed, etc."
+          style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" onclick="raSubmitAssessment()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
+      </div>
+    </div>
+  </div>
 
 </main>
 
@@ -3135,6 +3321,7 @@ function switchView(view, evt) {
         updateMap();
       });
     }
+    if (view === 'risk') { setTimeout(raInit, 50); }
     console.log('switchView completed for:', view);
   } catch(err) {
     console.error('switchView error:', err);
@@ -6110,6 +6297,7 @@ function initMobileUI() {
       { view: 'calls',   icon: '📞', label: '311',    action: 'switch' },
       { view: null,      icon: '⚙️', label: 'Filter', action: 'filter', id: 'filter-toggle-btn' },
       { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
+      { view: 'risk',    icon: '🔍', label: 'Risk',   action: 'switch' },
     ];
 
     navItems.forEach(item => {
@@ -6569,6 +6757,7 @@ window.addEventListener('hashchange', function() {
   if (hash === 'map-view' && mapInstance) {
     setTimeout(() => mapInstance.invalidateSize(), 50);
   }
+  if (hash === 'risk-view') { setTimeout(raInit, 50); }
 });
 
 // Initialize on load
@@ -6578,6 +6767,337 @@ window.addEventListener('load', function() {
     else window.dispatchEvent(new Event('hashchange'));
   }, 100);
 });
+
+// ============================================================
+// RISK ASSESSMENT TAB
+// ============================================================
+let raMap = null;
+let raMarkers = [];
+let raAssessments = [];
+let _raCurrentTree = null;
+let _raInitialized = false;
+
+function raGetYoungTrees() {
+  if (typeof allTrees === 'undefined') return [];
+  return allTrees.filter(t => {
+    const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
+    return yr === 2024 || yr === 2025;
+  });
+}
+
+function raGetPlantingRecord(tree) {
+  const addr = (tree.address || '').split(',')[0].toUpperCase().trim();
+  return PLANTINGS_DATA.find(p => p.street.toUpperCase() === addr) || null;
+}
+
+function raTreeId(tree) {
+  return String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+}
+
+function raRiskColor(risk) {
+  if (risk === 'high')   return '#dc2626';
+  if (risk === 'medium') return '#f59e0b';
+  if (risk === 'low')    return '#22c55e';
+  return null;
+}
+
+function raLatestAssessment(treeId) {
+  const forTree = raAssessments.filter(a => a.treeId === treeId);
+  if (!forTree.length) return null;
+  return forTree.sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1))[0];
+}
+
+async function raLoadAssessments() {
+  const rows = await sheetsRead('RiskAssessments');
+  if (rows) raAssessments = rows;
+  raRenderMap();
+}
+
+function raUpdateStats() {
+  const trees = raGetYoungTrees();
+  const show2024 = document.getElementById('ra-show-2024') ? document.getElementById('ra-show-2024').checked : true;
+  const show2025 = document.getElementById('ra-show-2025') ? document.getElementById('ra-show-2025').checked : true;
+
+  const t2024 = trees.filter(t => parseInt(t.tree_cen_date || t.planteddate) === 2024);
+  const t2025 = trees.filter(t => parseInt(t.tree_cen_date || t.planteddate) === 2025);
+  const c2024 = document.getElementById('ra-count-2024');
+  const c2025 = document.getElementById('ra-count-2025');
+  if (c2024) c2024.textContent = t2024.length;
+  if (c2025) c2025.textContent = t2025.length;
+
+  const visible = trees.filter(t => {
+    const yr = parseInt(t.tree_cen_date || t.planteddate);
+    return (yr === 2024 && show2024) || (yr === 2025 && show2025);
+  });
+
+  let high = 0, med = 0, low = 0, none = 0;
+  visible.forEach(t => {
+    const a = raLatestAssessment(raTreeId(t));
+    if (!a) { none++; return; }
+    if (a.overallRisk === 'high') high++;
+    else if (a.overallRisk === 'medium') med++;
+    else low++;
+  });
+
+  const assessed = high + med + low;
+  const total = visible.length;
+  const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  s('ra-stat-high', high || '');
+  s('ra-stat-med', med || '');
+  s('ra-stat-low', low || '');
+  s('ra-stat-none', none || '');
+  s('ra-stat-assessed', assessed);
+  s('ra-stat-total', total);
+  const bar = document.getElementById('ra-progress-bar');
+  if (bar && total) bar.style.width = Math.round(assessed / total * 100) + '%';
+}
+
+function raMakeMarker(tree, yearColor) {
+  const tid = raTreeId(tree);
+  const latest = raLatestAssessment(tid);
+  const fillColor = latest ? (raRiskColor(latest.overallRisk) || yearColor) : yearColor;
+  const opacity = latest ? 1 : 0.65;
+  const radius = latest ? 7 : 5;
+  const marker = L.circleMarker(
+    [parseFloat(tree.latitude), parseFloat(tree.longitude)],
+    { radius, fillColor, color: '#fff', weight: 1.5, fillOpacity: opacity }
+  );
+  marker.on('click', (e) => { L.DomEvent.stopPropagation(e); raOpenPanel(tree); });
+  return marker;
+}
+
+function raRenderMap() {
+  if (!raMap) return;
+  raMarkers.forEach(m => raMap.removeLayer(m));
+  raMarkers = [];
+
+  const show2024 = document.getElementById('ra-show-2024') ? document.getElementById('ra-show-2024').checked : true;
+  const show2025 = document.getElementById('ra-show-2025') ? document.getElementById('ra-show-2025').checked : true;
+  const trees = raGetYoungTrees();
+
+  trees.forEach(t => {
+    const yr = parseInt(t.tree_cen_date || t.planteddate);
+    const lat = parseFloat(t.latitude);
+    const lng = parseFloat(t.longitude);
+    if (!lat || !lng) return;
+    if (yr === 2024 && !show2024) return;
+    if (yr === 2025 && !show2025) return;
+    const yearColor = yr === 2024 ? '#f59e0b' : '#06b6d4';
+    const m = raMakeMarker(t, yearColor);
+    m.addTo(raMap);
+    raMarkers.push(m);
+  });
+
+  raUpdateStats();
+}
+
+function raInit() {
+  if (_raInitialized && raMap) {
+    setTimeout(() => raMap.invalidateSize(), 50);
+    raLoadAssessments();
+    return;
+  }
+  const mapEl = document.getElementById('ra-map');
+  if (!mapEl) return;
+
+  raMap = L.map('ra-map', { zoomControl: true }).setView([40.7208, -73.9841], 14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(raMap);
+  _raInitialized = true;
+
+  if (typeof allTrees !== 'undefined' && allTrees.length) {
+    raRenderMap();
+    raLoadAssessments();
+  } else {
+    const poll = setInterval(() => {
+      if (typeof allTrees !== 'undefined' && allTrees.length) {
+        clearInterval(poll);
+        raRenderMap();
+        raLoadAssessments();
+      }
+    }, 600);
+  }
+}
+
+function raOpenPanel(tree) {
+  _raCurrentTree = tree;
+  const panel = document.getElementById('ra-tree-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+
+  const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
+  const yearColor = yr === 2025 ? '#06b6d4' : '#f59e0b';
+  const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+  document.getElementById('ra-panel-title').textContent = species;
+
+  const tid = raTreeId(tree);
+  const latest = raLatestAssessment(tid);
+  let badgeHTML = '<span style="background:' + yearColor + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (yr || '?') + ' Planting</span>';
+  if (latest) {
+    const rc = raRiskColor(latest.overallRisk) || '#888';
+    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk || '').toUpperCase() + ' RISK</span>';
+  }
+  document.getElementById('ra-panel-badge').innerHTML = badgeHTML;
+
+  const plantRec = raGetPlantingRecord(tree);
+  const rows = [
+    tree.address          ? ['Address',    tree.address]                             : null,
+    yr                    ? ['Plant Year', yr]                                        : null,
+    plantRec              ? ['Season',     plantRec.season]                          : null,
+    tree.spc_latin        ? ['Scientific', '<em>' + tree.spc_latin + '</em>']        : null,
+    tree.tree_dbh         ? ['Trunk DBH',  tree.tree_dbh + '"']                      : null,
+    tree.health           ? ['Health',     tree.health]                              : null,
+    tree.tree_id          ? ['Tree ID',    tree.tree_id]                             : null,
+  ].filter(Boolean);
+
+  document.getElementById('ra-panel-fields').innerHTML = rows.map(r =>
+    '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">' +
+    '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
+    '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>'
+  ).join('');
+
+  raRenderPanelHistory(tid);
+  if (raMap) setTimeout(() => raMap.invalidateSize(), 100);
+}
+
+function raRenderPanelHistory(tid) {
+  const forTree = raAssessments
+    .filter(a => a.treeId === tid)
+    .sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
+
+  const hist = document.getElementById('ra-panel-history');
+  if (!hist) return;
+
+  if (!forTree.length) {
+    hist.innerHTML = '<div style="font-size:11px;color:var(--text3);font-style:italic">No assessments yet.</div>';
+    return;
+  }
+
+  const IND = {
+    structural:    '🏗️ Structural',
+    pestDisease:   '🐛 Pest & Disease',
+    soilSite:      '🌍 Soil & Site',
+    growthVitality:'🌿 Growth & Vitality'
+  };
+
+  hist.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment History</div>' +
+    forTree.map(a => {
+      const rc = raRiskColor(a.overallRisk) || '#888';
+      const indRows = Object.keys(IND).map(f => {
+        const val = a[f] || '—';
+        const c = raRiskColor(val) || 'var(--text3)';
+        return '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0">' +
+          '<span style="color:var(--text3)">' + IND[f] + '</span>' +
+          '<span style="font-weight:600;color:' + c + '">' + val.charAt(0).toUpperCase() + val.slice(1) + '</span></div>';
+      }).join('');
+      return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk || '').toUpperCase() + ' RISK</span>' +
+          '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
+        '</div>' +
+        '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>' +
+        indRows +
+        (a.notes ? '<div style="font-size:10px;color:var(--text2);margin-top:6px;font-style:italic">' + a.notes + '</div>' : '') +
+      '</div>';
+    }).join('');
+}
+
+function raClosePanel() {
+  const panel = document.getElementById('ra-tree-panel');
+  if (panel) panel.style.display = 'none';
+  _raCurrentTree = null;
+}
+
+function raHandleAssessBtn() {
+  const tree = _raCurrentTree;
+  if (!tree) return;
+  const info = document.getElementById('ra-modal-tree-info');
+  if (info) {
+    const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+    const address = tree.address || 'Unknown location';
+    const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
+    info.innerHTML =
+      '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:2px;color:var(--text)">' + species + '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + address + (yr ? ' · ' + yr + ' planting' : '') + '</div>';
+  }
+  document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('ra-assessor').value = localStorage.getItem('_ra_assessor') || '';
+  document.getElementById('ra-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ra-notes').value = '';
+  document.getElementById('ra-assess-modal').style.display = 'flex';
+}
+
+function raSelectRating(btn) {
+  const group = btn.closest('.ra-rating-group');
+  if (!group) return;
+  group.querySelectorAll('.ra-rating-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function raCloseAssessModal() {
+  document.getElementById('ra-assess-modal').style.display = 'none';
+}
+
+async function raSubmitAssessment() {
+  const tree = _raCurrentTree;
+  if (!tree) return;
+
+  const getRating = field => {
+    const group = document.querySelector('.ra-rating-group[data-field="' + field + '"]');
+    if (!group) return '';
+    const sel = group.querySelector('.ra-rating-btn.selected');
+    return sel ? sel.dataset.val : '';
+  };
+
+  const structural     = getRating('structural');
+  const pestDisease    = getRating('pestDisease');
+  const soilSite       = getRating('soilSite');
+  const growthVitality = getRating('growthVitality');
+  const overallRisk    = getRating('overall');
+
+  if (!structural || !pestDisease || !soilSite || !growthVitality || !overallRisk) {
+    alert('Please rate all four indicators and the overall risk before submitting.');
+    return;
+  }
+
+  const assessorName = document.getElementById('ra-assessor').value.trim();
+  if (!assessorName) { alert('Please enter your name.'); return; }
+
+  const date  = document.getElementById('ra-date').value;
+  const notes = document.getElementById('ra-notes').value.trim();
+  localStorage.setItem('_ra_assessor', assessorName);
+
+  const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
+  const plantRec = raGetPlantingRecord(tree);
+  const timestamp = new Date().toISOString();
+  const treeId = raTreeId(tree);
+
+  const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
+
+  const record = {
+    timestamp, treeId,
+    address: tree.address || '',
+    species: tree.spc_common || tree.spc_latin || '',
+    season: plantRec ? plantRec.season : String(yr),
+    plantYear: String(yr),
+    assessorName, date,
+    structural, pestDisease, soilSite, growthVitality, overallRisk, notes
+  };
+
+  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
+  await sheetsWrite('RiskAssessments', headers, [record], r => headers.map(h => r[h] || ''));
+
+  raAssessments.push(record);
+  raCloseAssessModal();
+  raOpenPanel(tree);
+  raRenderMap();
+
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+}
 </script>
 </body>
 </html>
