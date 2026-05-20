@@ -6784,24 +6784,11 @@ let raAssessments = [];
 let _raCurrentTree = null;
 let _raInitialized = false;
 
-// Service area boundaries:
-// North: 14th Street; West: Bowery above Chatham Square, Brooklyn Bridge below it
-const RA_BOUNDS_LAT   = 40.7337;  // 14th Street (north limit)
-const RA_CHATHAM_LAT  = 40.7145;  // Chatham Square (where the Bowery ends)
-const RA_BOWERY_LNG   = -73.9980; // Bowery western limit (north of Chatham Square)
-const RA_BKLYN_BR_LNG = -74.0050; // Brooklyn Bridge western limit (south of Chatham Square)
-
 function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
   return allTrees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
-    if (yr !== 2024 && yr !== 2025) return false;
-    const lat = parseFloat(t.latitude);
-    const lng = parseFloat(t.longitude);
-    if (lat > RA_BOUNDS_LAT) return false;
-    const westLimit = lat > RA_CHATHAM_LAT ? RA_BOWERY_LNG : RA_BKLYN_BR_LNG;
-    if (lng < westLimit) return false;
-    return true;
+    return yr === 2024 || yr === 2025;
   });
 }
 
