@@ -7211,7 +7211,8 @@ async function raSubmitAssessment() {
   };
 
   const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
-  await sheetsWrite('RiskAssessments', headers, [record], r => headers.map(h => r[h] || ''));
+  const allRecords = [...raAssessments, record];
+  await sheetsWrite('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
 
   raAssessments.push(record);
   raCloseAssessModal();
