@@ -24,11 +24,14 @@ jobs:
           SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
         run: python3 scripts/fetch_census.py
 
+      - name: Fetch CB3 boundary polygon
+        run: python3 scripts/fetch_cb3_boundary.py
+
       - name: Commit if data changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/census.json
+          git add data/census.json data/cb3-boundary.json
           if git diff --staged --quiet; then
             echo "No changes to census data."
           else

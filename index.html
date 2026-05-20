@@ -2262,6 +2262,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </script>
 <script>
 const CENSUS_DATA_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json';
+const CB3_BOUNDARY_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/cb3-boundary.json';
 let CENSUS_DATA = []; // loaded dynamically at startup
 
 
@@ -6226,9 +6227,16 @@ window.addEventListener('load', async () => {
   if (countEl) countEl.textContent = 'Loading trees…';
 
   try {
-    const res = await fetch(CENSUS_DATA_URL);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    CENSUS_DATA = await res.json();
+    const [censusRes, boundaryRes] = await Promise.all([
+      fetch(CENSUS_DATA_URL),
+      fetch(CB3_BOUNDARY_URL),
+    ]);
+    if (!censusRes.ok) throw new Error('HTTP ' + censusRes.status);
+    CENSUS_DATA = await censusRes.json();
+    if (boundaryRes.ok) {
+      const ring = await boundaryRes.json();
+      if (Array.isArray(ring) && ring.length > 3) _cb3OfficialPolygon = ring;
+    }
   } catch (e) {
     console.warn('Could not load census.json:', e);
     // App still works — map will be empty until data loads
@@ -6792,10 +6800,11 @@ let raAssessments = [];
 let _raCurrentTree = null;
 let _raInitialized = false;
 
-// CB3 Manhattan boundary polygon — [lng, lat] pairs
-// East Village + Lower East Side + Two Bridges
-// Western edge: 3rd Ave/Bowery (north) → Allen/Chrystie St (mid) → Catherine St/Two Bridges (south)
-const CB3_POLYGON = [
+// Loaded from data/cb3-boundary.json at startup; falls back to hand-drawn approximation.
+let _cb3OfficialPolygon = null;
+
+// Fallback: hand-drawn approximation of the CB3 boundary [lng, lat]
+const CB3_POLYGON_FALLBACK = [
   [-73.9930, 40.7365],
   [-73.9715, 40.7365],
   [-73.9715, 40.7073],
@@ -6809,18 +6818,23 @@ const CB3_POLYGON = [
   [-73.9930, 40.7365],
 ];
 
-function cb3Contains(lat, lng) {
+function _pipTest(lat, lng, poly) {
   let inside = false;
-  const n = CB3_POLYGON.length;
+  const n = poly.length;
   let j = n - 1;
   for (let i = 0; i < n; i++) {
-    const xi = CB3_POLYGON[i][0], yi = CB3_POLYGON[i][1];
-    const xj = CB3_POLYGON[j][0], yj = CB3_POLYGON[j][1];
+    const xi = poly[i][0], yi = poly[i][1];
+    const xj = poly[j][0], yj = poly[j][1];
     if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi))
       inside = !inside;
     j = i;
   }
   return inside;
+}
+
+function cb3Contains(lat, lng) {
+  const poly = _cb3OfficialPolygon || CB3_POLYGON_FALLBACK;
+  return _pipTest(lat, lng, poly);
 }
 
 function raGetYoungTrees() {
