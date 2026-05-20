@@ -1270,6 +1270,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .ra-rating-btn.selected[data-val="high"]   { background:#dc2626; border-color:#dc2626; color:#fff; font-weight:700; }
   .ra-rating-btn.selected[data-val="dead"]   { background:#111; border-color:#111; color:#fff; font-weight:700; }
   .ra-overall .ra-rating-btn { padding:10px 0; font-weight:600; font-size:13px; }
+  .ra-dead-mode .ra-indicators-section { opacity:0.35; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -2137,7 +2138,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </div>
             <div id="ra-panel-badge" style="margin-bottom:10px"></div>
             <div id="ra-panel-fields" style="margin-bottom:14px"></div>
-            <button type="button" onclick="raHandleAssessBtn()"
+            <button type="button" id="ra-assess-btn" onclick="raHandleAssessBtn()"
               style="width:100%;padding:11px;background:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
               📋 Add Assessment
             </button>
@@ -2170,8 +2171,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
       </div>
       <!-- Indicators -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Risk Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each)</span></div>
+      <div class="ra-indicators-section" style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Risk Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each — optional if Dead)</span></div>
         <div style="margin-bottom:12px">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🪵 Structural / Physical Damage</div>
           <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Broken or hanging branches · trunk wounds, cracks, or cavities · leaning trunk (&gt;15°) · root damage · missing or stripped bark</div>
@@ -7007,6 +7008,11 @@ function raOpenPanel(tree) {
     '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>'
   ).join('');
 
+  const assessBtn = document.getElementById('ra-assess-btn');
+  if (assessBtn) {
+    const hasExisting = !!raLatestAssessment(tid);
+    assessBtn.textContent = hasExisting ? '✏️ Edit Assessment' : '📋 Add Assessment';
+  }
   raRenderPanelHistory(tid);
   if (raMap) setTimeout(() => raMap.invalidateSize(), 100);
 }
@@ -7072,11 +7078,32 @@ function raHandleAssessBtn() {
       '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:2px;color:var(--text)">' + species + '</div>' +
       '<div style="font-size:11px;color:var(--text2)">' + address + (yr ? ' · ' + yr + ' planting' : '') + '</div>';
   }
+
+  const modal = document.getElementById('ra-assess-modal');
+  modal.classList.remove('ra-dead-mode');
   document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('ra-assessor').value = localStorage.getItem('_ra_assessor') || '';
-  document.getElementById('ra-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('ra-notes').value = '';
-  document.getElementById('ra-assess-modal').style.display = 'flex';
+
+  const existing = raLatestAssessment(raTreeId(tree));
+  if (existing) {
+    // Pre-fill with latest assessment values
+    const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
+    FIELDS.forEach(field => {
+      const val = field === 'overall' ? existing.overallRisk : existing[field];
+      if (!val) return;
+      const btn = document.querySelector('.ra-rating-group[data-field="' + field + '"] .ra-rating-btn[data-val="' + val + '"]');
+      if (btn) btn.classList.add('selected');
+    });
+    if (existing.overallRisk === 'dead') modal.classList.add('ra-dead-mode');
+    document.getElementById('ra-assessor').value = existing.assessorName || localStorage.getItem('_ra_assessor') || '';
+    document.getElementById('ra-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('ra-notes').value = existing.notes || '';
+  } else {
+    document.getElementById('ra-assessor').value = localStorage.getItem('_ra_assessor') || '';
+    document.getElementById('ra-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('ra-notes').value = '';
+  }
+
+  modal.style.display = 'flex';
 }
 
 function raSelectRating(btn) {
@@ -7084,6 +7111,10 @@ function raSelectRating(btn) {
   if (!group) return;
   group.querySelectorAll('.ra-rating-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
+  if (group.dataset.field === 'overall') {
+    const modal = document.getElementById('ra-assess-modal');
+    if (modal) modal.classList.toggle('ra-dead-mode', btn.dataset.val === 'dead');
+  }
 }
 
 function raCloseAssessModal() {
@@ -7107,8 +7138,12 @@ async function raSubmitAssessment() {
   const growthVitality = getRating('growthVitality');
   const overallRisk    = getRating('overall');
 
-  if (!structural || !pestDisease || !soilSite || !growthVitality || !overallRisk) {
-    alert('Please rate all four indicators and the overall risk before submitting.');
+  if (!overallRisk) {
+    alert('Please select an overall risk rating before submitting.');
+    return;
+  }
+  if (overallRisk !== 'dead' && (!structural || !pestDisease || !soilSite || !growthVitality)) {
+    alert('Please rate all four indicators before submitting, or mark the tree as Dead.');
     return;
   }
 
