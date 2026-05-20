@@ -6245,7 +6245,8 @@ window.addEventListener('load', async () => {
   // Split into active trees and empty planting beds
   const emptyStatuses = new Set(['Retired', 'Stump', 'Stump - Uprooted']);
   emptyBeds = CENSUS_DATA.filter(t => emptyStatuses.has(t.status));
-  allTrees = CENSUS_DATA.filter(t => !emptyStatuses.has(t.status))
+  allTrees = CENSUS_DATA.filter(t => !emptyStatuses.has(t.status) &&
+                                     cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude)))
                         .map(t => ({ ...t, _priority: calcPriority(t) }));
   populateSpeciesFilter();
   populatePlantingYearFilter();
