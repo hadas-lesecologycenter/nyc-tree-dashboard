@@ -1268,6 +1268,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .ra-rating-btn.selected[data-val="low"]    { background:#22c55e; border-color:#22c55e; color:#fff; font-weight:700; }
   .ra-rating-btn.selected[data-val="medium"] { background:#f59e0b; border-color:#f59e0b; color:#fff; font-weight:700; }
   .ra-rating-btn.selected[data-val="high"]   { background:#dc2626; border-color:#dc2626; color:#fff; font-weight:700; }
+  .ra-rating-btn.selected[data-val="dead"]   { background:#111; border-color:#111; color:#fff; font-weight:700; }
   .ra-overall .ra-rating-btn { padding:10px 0; font-weight:600; font-size:13px; }
 </style>
 </head>
@@ -2100,6 +2101,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <span>High risk</span>
                 <span id="ra-stat-high" style="margin-left:auto;font-weight:700;color:#dc2626"></span>
               </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:11px;height:11px;border-radius:50%;background:#111;flex-shrink:0"></div>
+                <span>Dead</span>
+                <span id="ra-stat-dead" style="margin-left:auto;font-weight:700;color:#111"></span>
+              </div>
             </div>
           </div>
           <!-- Progress -->
@@ -2210,6 +2216,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">🟢 Low</button>
           <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">🟡 Medium</button>
           <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">🔴 High</button>
+          <button type="button" class="ra-rating-btn" data-val="dead" onclick="raSelectRating(this)">⚫ Dead</button>
         </div>
       </div>
       <!-- Notes -->
@@ -6837,6 +6844,7 @@ function raRiskColor(risk) {
   if (risk === 'high')   return '#dc2626';
   if (risk === 'medium') return '#f59e0b';
   if (risk === 'low')    return '#22c55e';
+  if (risk === 'dead')   return '#111111';
   return null;
 }
 
@@ -6869,21 +6877,23 @@ function raUpdateStats() {
     return (yr === 2024 && show2024) || (yr === 2025 && show2025);
   });
 
-  let high = 0, med = 0, low = 0, none = 0;
+  let high = 0, med = 0, low = 0, dead = 0, none = 0;
   visible.forEach(t => {
     const a = raLatestAssessment(raTreeId(t));
     if (!a) { none++; return; }
     if (a.overallRisk === 'high') high++;
     else if (a.overallRisk === 'medium') med++;
+    else if (a.overallRisk === 'dead') dead++;
     else low++;
   });
 
-  const assessed = high + med + low;
+  const assessed = high + med + low + dead;
   const total = visible.length;
   const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   s('ra-stat-high', high || '');
   s('ra-stat-med', med || '');
   s('ra-stat-low', low || '');
+  s('ra-stat-dead', dead || '');
   s('ra-stat-none', none || '');
   s('ra-stat-assessed', assessed);
   s('ra-stat-total', total);
