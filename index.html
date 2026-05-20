@@ -7001,7 +7001,7 @@ function raOpenPanel(tree) {
   let badgeHTML = '<span style="background:' + yearColor + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (yr || '?') + ' Planting</span>';
   if (latest) {
     const rc = raRiskColor(latest.overallRisk) || '#888';
-    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk || '').toUpperCase() + ' RISK</span>';
+    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk === 'dead' ? 'DEAD' : (latest.overallRisk || '').toUpperCase() + ' RISK') + '</span>';
   }
   document.getElementById('ra-panel-badge').innerHTML = badgeHTML;
 
@@ -7064,7 +7064,7 @@ function raRenderPanelHistory(tid) {
       }).join('');
       return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk || '').toUpperCase() + ' RISK</span>' +
+          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : (a.overallRisk || '').toUpperCase() + ' RISK') + '</span>' +
           '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
         '</div>' +
         '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>' +
