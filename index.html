@@ -6784,11 +6784,43 @@ let raAssessments = [];
 let _raCurrentTree = null;
 let _raInitialized = false;
 
+// CB3 Manhattan boundary polygon — [lng, lat] pairs
+// East Village + Lower East Side + Two Bridges
+// Western edge: 3rd Ave/Bowery (north) → Allen/Chrystie St (mid) → Catherine St/Two Bridges (south)
+const CB3_POLYGON = [
+  [-73.9930, 40.7365],
+  [-73.9715, 40.7365],
+  [-73.9715, 40.7073],
+  [-73.9873, 40.7063],
+  [-73.9930, 40.7063],
+  [-73.9975, 40.7095],
+  [-73.9983, 40.7142],
+  [-73.9960, 40.7165],
+  [-73.9940, 40.7200],
+  [-73.9935, 40.7245],
+  [-73.9930, 40.7365],
+];
+
+function cb3Contains(lat, lng) {
+  let inside = false;
+  const n = CB3_POLYGON.length;
+  let j = n - 1;
+  for (let i = 0; i < n; i++) {
+    const xi = CB3_POLYGON[i][0], yi = CB3_POLYGON[i][1];
+    const xj = CB3_POLYGON[j][0], yj = CB3_POLYGON[j][1];
+    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi))
+      inside = !inside;
+    j = i;
+  }
+  return inside;
+}
+
 function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
   return allTrees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
-    return yr === 2024 || yr === 2025;
+    if (yr !== 2024 && yr !== 2025) return false;
+    return cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude));
   });
 }
 
