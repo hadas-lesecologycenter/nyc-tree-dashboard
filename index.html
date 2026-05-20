@@ -1169,34 +1169,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .mob-nav-btn .mob-label { display: none; pointer-events: none; }
     .mob-nav-btn.active { color: var(--accent); }
 
-    /* Risk Assessment view - mobile layout */
-    #risk-view { position: relative; }
-    #ra-sidebar {
-      position: absolute !important;
-      top: 0; left: 0; bottom: 0;
-      width: 85% !important;
-      max-width: 280px;
-      transform: translateX(-100%);
-      transition: transform 0.25s ease;
-      z-index: 2000 !important;
-      box-shadow: 2px 0 16px rgba(0,0,0,0.2);
-    }
-    #ra-sidebar.open { transform: translateX(0); }
-    #ra-tree-panel {
-      position: fixed !important;
-      top: auto !important; right: 0 !important; bottom: 48px !important; left: 0 !important;
-      width: 100% !important; height: auto !important; max-height: 55vh;
-      border-left: none !important; border-top: 1px solid var(--border);
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -6px 24px rgba(0,0,0,0.18) !important;
-      padding-top: 20px !important;
-    }
-    #ra-filter-toggle { display: flex !important; }
+    /* Bottom navigation bar - keep hidden on mobile (no mobile nav) */
+    @media (max-width: 768px) { #mobile-tab-nav { display: none !important; } }
+    @media (min-width: 769px) { #mobile-tab-nav { display: none !important; } }
 
   }
-
-  /* Hide mobile bottom nav on desktop */
-  @media (min-width: 769px) { #mobile-tab-nav { display: none !important; } }
 
   /* Floating action buttons - Google Maps style (desktop + mobile) */
   .geo-button-container {
@@ -1372,8 +1349,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-badge" style="margin-bottom:12px"></div>
         <div id="mtp-breakdown" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px"></div>
         <div id="mtp-fields"></div>
+        <button type="button" id="mtp-assess-btn" onclick="handleMapAssessBtn()"
+          style="display:none;margin-top:14px;width:100%;padding:11px;background:#7b3fa0;background-color:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
+          📋 Risk Assessment
+        </button>
         <button type="button" id="mtp-care-btn" onclick="handleMapReportCareBtn()"
-          style="margin-top:14px;width:100%;padding:11px;background:#06b6d4;background-color:#06b6d4;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(6,182,212,0.35)">
+          style="margin-top:8px;width:100%;padding:11px;background:#06b6d4;background-color:#06b6d4;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(6,182,212,0.35)">
           💧 Report Care Manually
         </button>
         <button type="button" id="mtp-reserve-btn" onclick="handleMapReserveBtn()"
@@ -2153,7 +2134,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <!-- Map + detail panel -->
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
-        <button id="ra-filter-toggle" onclick="raToggleSidebar()" title="Filters &amp; Stats" style="display:none;position:absolute;top:12px;left:12px;z-index:1500;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);color:var(--text)">☰ Filters</button>
         <div id="ra-map" style="flex:1;position:relative"></div>
         <!-- Tree detail panel -->
         <div id="ra-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif">
@@ -3395,6 +3375,7 @@ function openMapTreeDetail(tree) {
   updateTreeGuardButton(tree);
   updateMissingButton(tree);
   updateCareButton(tree);
+  updateMapAssessBtn(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -4881,6 +4862,22 @@ function updateMissingButton(tree) {
   btn.style.color = '#fff';
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
+}
+
+function updateMapAssessBtn(tree) {
+  const btn = document.getElementById('mtp-assess-btn');
+  if (!btn) return;
+  const yr = parseInt(tree && (tree.tree_cen_date || tree.planteddate) || 0);
+  btn.style.display = (yr === 2024 || yr === 2025) ? 'block' : 'none';
+  if (yr === 2024 || yr === 2025) btn.style.marginTop = '14px';
+}
+
+async function handleMapAssessBtn() {
+  const tree = window._currentMapDetailTree;
+  if (!tree) return;
+  if (!raAssessments.length) await raLoadAssessments();
+  _raCurrentTree = tree;
+  raHandleAssessBtn();
 }
 
 var _pendingCareTree = null;
@@ -6758,9 +6755,7 @@ function switchMyBlockTab(tab, btn) {
 // Run mobile init on load and resize
 function checkAndInitMobileUI() {
   console.log('checkAndInitMobileUI: width=', window.innerWidth);
-  if (window.innerWidth <= 768) {
-    initMobileUI();
-  }
+  // Mobile nav buttons hidden - only show main map on mobile
 }
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
   setTimeout(checkAndInitMobileUI, 50);
@@ -7014,27 +7009,11 @@ function raInit() {
   }
 }
 
-function raToggleSidebar() {
-  const sidebar = document.getElementById('ra-sidebar');
-  if (sidebar) sidebar.classList.toggle('open');
-}
-
 function raOpenPanel(tree) {
   _raCurrentTree = tree;
   const panel = document.getElementById('ra-tree-panel');
   if (!panel) return;
   panel.style.display = 'block';
-
-  if (window.innerWidth <= 768) {
-    if (!panel.querySelector('.panel-drag-handle')) {
-      const dragHandle = document.createElement('div');
-      dragHandle.className = 'panel-drag-handle';
-      dragHandle.onclick = () => raClosePanel();
-      panel.insertBefore(dragHandle, panel.firstChild);
-    }
-    const sidebar = document.getElementById('ra-sidebar');
-    if (sidebar) sidebar.classList.remove('open');
-  }
 
   const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
   const yearColor = yr === 2025 ? '#06b6d4' : '#f59e0b';
