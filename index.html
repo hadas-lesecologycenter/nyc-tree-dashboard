@@ -2210,6 +2210,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Soil</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Growth</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Notes</th>
+                <th style="padding:10px 12px;border-bottom:1px solid var(--border)"></th>
               </tr>
             </thead>
             <tbody id="ra-table-body"></tbody>
@@ -6598,7 +6599,7 @@ function renderRaTable() {
   const tbody = document.getElementById('ra-table-body');
   if (!tbody) return;
   if (!raAssessments.length) {
-    tbody.innerHTML = '<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
     return;
   }
   const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
@@ -6608,19 +6609,23 @@ function renderRaTable() {
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
     const oc = raRiskColor(a.overallRisk) || 'var(--text3)';
     const ol = a.overallRisk === 'dead' ? 'Dead' : a.overallRisk === 'empty' ? 'Empty Pit' : rl(a.overallRisk);
-    return `<tr style="background:${bg}">
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">${a.date || (a.timestamp||'').slice(0,10) || '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${a.assessorName || '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--text)">${a.species || '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${a.address || '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;color:var(--text3)">${a.plantYear || '—'}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:700;color:${oc};white-space:nowrap">${ol}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.structural)}">${rl(a.structural)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.pestDisease)}">${rl(a.pestDisease)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.soilSite)}">${rl(a.soilSite)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.growthVitality)}">${rl(a.growthVitality)}</td>
-      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-style:italic;max-width:200px">${a.notes || ''}</td>
-    </tr>`;
+    const ts = (a.timestamp || '').replace(/"/g, '&quot;');
+    return '<tr style="background:' + bg + '">' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">' + (a.date || (a.timestamp||'').slice(0,10) || '—') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">' + (a.assessorName || '—') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--text)">' + (a.species || '—') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">' + (a.address || '—') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;color:var(--text3)">' + (a.plantYear || '—') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:700;color:' + oc + ';white-space:nowrap">' + ol + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.structural) + '">' + rl(a.structural) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.pestDisease) + '">' + rl(a.pestDisease) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.soilSite) + '">' + rl(a.soilSite) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.growthVitality) + '">' + rl(a.growthVitality) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-style:italic;max-width:200px">' + (a.notes || '') + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">' +
+        '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--text2)">✏️ Edit</button>' +
+      '</td>' +
+    '</tr>';
   }).join('');
 }
 
@@ -7134,6 +7139,7 @@ let raMap = null;
 let raMarkers = [];
 let raAssessments = [];
 let _raCurrentTree = null;
+let _raEditingTimestamp = null;
 let _raInitialized = false;
 
 // Loaded from data/cb3-boundary.json at startup; falls back to hand-drawn approximation.
@@ -7400,10 +7406,14 @@ function raRenderPanelHistory(tid) {
           '<span style="color:var(--text3)">' + IND[f] + '</span>' +
           '<span style="font-weight:600;color:' + c + '">' + val.charAt(0).toUpperCase() + val.slice(1) + '</span></div>';
       }).join('');
+      const ts = (a.timestamp || '').replace(/'/g, "\\'");
       return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
           '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : a.overallRisk === 'empty' ? 'EMPTY PIT' : (a.overallRisk || '').toUpperCase() + ' RISK') + '</span>' +
-          '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
+            '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:10px;color:var(--text2)">✏️</button>' +
+          '</div>' +
         '</div>' +
         '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>' +
         indRows +
@@ -7418,7 +7428,42 @@ function raClosePanel() {
   _raCurrentTree = null;
 }
 
+function raEditAssessment(timestamp) {
+  const a = raAssessments.find(x => x.timestamp === timestamp);
+  if (!a) return;
+  _raEditingTimestamp = timestamp;
+
+  // Find the tree from the assessment's treeId so the modal has context
+  const modal = document.getElementById('ra-assess-modal');
+  const info = document.getElementById('ra-modal-tree-info');
+  if (info) {
+    info.innerHTML =
+      '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:2px;color:var(--text)">' + (a.species || 'Unknown species') + '</div>' +
+      '<div style="font-size:11px;color:var(--text2)">' + (a.address || '') + (a.plantYear ? ' · ' + a.plantYear + ' planting' : '') + '</div>';
+  }
+
+  modal.classList.remove('ra-dead-mode', 'ra-empty-mode');
+  document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
+
+  const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
+  FIELDS.forEach(field => {
+    const val = field === 'overall' ? a.overallRisk : a[field];
+    if (!val) return;
+    const btn = document.querySelector('.ra-rating-group[data-field="' + field + '"] .ra-rating-btn[data-val="' + val + '"]');
+    if (btn) btn.classList.add('selected');
+  });
+  if (a.overallRisk === 'dead')  modal.classList.add('ra-dead-mode');
+  if (a.overallRisk === 'empty') modal.classList.add('ra-empty-mode');
+
+  document.getElementById('ra-assessor').value = a.assessorName || '';
+  document.getElementById('ra-date').value = a.date || new Date().toISOString().split('T')[0];
+  document.getElementById('ra-notes').value = a.notes || '';
+
+  modal.style.display = 'flex';
+}
+
 function raHandleAssessBtn() {
+  _raEditingTimestamp = null;
   const tree = _raCurrentTree;
   if (!tree) return;
   const info = document.getElementById('ra-modal-tree-info');
@@ -7478,8 +7523,9 @@ function raCloseAssessModal() {
 }
 
 async function raSubmitAssessment() {
+  const isEdit = !!_raEditingTimestamp;
   const tree = _raCurrentTree;
-  if (!tree) return;
+  if (!isEdit && !tree) return;
 
   const getRating = field => {
     const group = document.querySelector('.ra-rating-group[data-field="' + field + '"]');
@@ -7510,32 +7556,49 @@ async function raSubmitAssessment() {
   const notes = document.getElementById('ra-notes').value.trim();
   localStorage.setItem('_ra_assessor', assessorName);
 
-  const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
-  const plantRec = raGetPlantingRecord(tree);
-  const timestamp = new Date().toISOString();
-  const treeId = raTreeId(tree);
-
   const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
 
-  const record = {
-    timestamp, treeId,
-    address: tree.address || '',
-    species: tree.spc_common || tree.spc_latin || '',
-    season: plantRec ? plantRec.season : String(yr),
-    plantYear: String(yr),
-    assessorName, date,
-    structural, pestDisease, soilSite, growthVitality, overallRisk, notes
-  };
-
   const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
-  const allRecords = [...raAssessments, record];
-  await sheetsWrite('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
 
-  raAssessments.push(record);
-  raCloseAssessModal();
-  raOpenPanel(tree);
-  raRenderMap();
+  if (isEdit) {
+    // Update existing record in-place
+    const idx = raAssessments.findIndex(x => x.timestamp === _raEditingTimestamp);
+    if (idx !== -1) {
+      raAssessments[idx] = Object.assign({}, raAssessments[idx], {
+        assessorName, date, notes,
+        structural, pestDisease, soilSite, growthVitality, overallRisk
+      });
+    }
+    await sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
+    _raEditingTimestamp = null;
+    raCloseAssessModal();
+    if (tree) { raOpenPanel(tree); raRenderMap(); }
+    else { renderRaTable(); renderRaStats(); }
+  } else {
+    const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
+    const plantRec = raGetPlantingRecord(tree);
+    const timestamp = new Date().toISOString();
+    const treeId = raTreeId(tree);
+
+    const record = {
+      timestamp, treeId,
+      address: tree.address || '',
+      species: tree.spc_common || tree.spc_latin || '',
+      season: plantRec ? plantRec.season : String(yr),
+      plantYear: String(yr),
+      assessorName, date,
+      structural, pestDisease, soilSite, growthVitality, overallRisk, notes
+    };
+
+    const allRecords = [...raAssessments, record];
+    await sheetsWrite('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
+
+    raAssessments.push(record);
+    raCloseAssessModal();
+    raOpenPanel(tree);
+    raRenderMap();
+  }
 
   if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
 }
