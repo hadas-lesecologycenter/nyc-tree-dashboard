@@ -7472,7 +7472,13 @@ function raEditAssessment(timestamp) {
   if (!a) return;
   _raEditingTimestamp = timestamp;
 
-  // Find the tree from the assessment's treeId so the modal has context
+  // Try to set _raCurrentTree so the panel can refresh after save
+  if (!_raCurrentTree && a.treeId) {
+    const trees = typeof raGetYoungTrees === 'function' ? raGetYoungTrees() : [];
+    const match = trees.find(t => raTreeId(t) === a.treeId);
+    if (match) _raCurrentTree = match;
+  }
+
   const modal = document.getElementById('ra-assess-modal');
   const info = document.getElementById('ra-modal-tree-info');
   if (info) {
@@ -7521,7 +7527,7 @@ function raHandleAssessBtn() {
 
   const existing = raLatestAssessment(raTreeId(tree));
   if (existing) {
-    // Pre-fill with latest assessment values
+    _raEditingTimestamp = existing.timestamp;
     const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
     FIELDS.forEach(field => {
       const val = field === 'overall' ? existing.overallRisk : existing[field];
@@ -7532,7 +7538,7 @@ function raHandleAssessBtn() {
     if (existing.overallRisk === 'dead')  modal.classList.add('ra-dead-mode');
     if (existing.overallRisk === 'empty') modal.classList.add('ra-empty-mode');
     document.getElementById('ra-assessor').value = existing.assessorName || localStorage.getItem('_ra_assessor') || '';
-    document.getElementById('ra-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('ra-date').value = existing.date || new Date().toISOString().split('T')[0];
     document.getElementById('ra-notes').value = existing.notes || '';
   } else {
     document.getElementById('ra-assessor').value = localStorage.getItem('_ra_assessor') || '';
