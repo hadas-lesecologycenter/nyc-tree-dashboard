@@ -1406,27 +1406,21 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
         <div class="cp-section" id="cp-priority-info">
           <div class="cp-label">Priority Tiers</div>
-          <p class="cp-hint">Trees ranked into 4 tiers by how young they are and how visible their location is.</p>
-          <p class="cp-hint" style="padding:8px;background:var(--bg3);border-radius:6px">🌱 <strong>Young</strong> = trunk diameter &lt; 6" <em>or</em> planted within the last 5 years</p>
+          <p class="cp-hint">Trees ranked into 3 tiers by planting year and trunk size.</p>
           <div id="priority-tier-list" style="display:flex;flex-direction:column;gap:5px;margin-top:10px">
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:10px;height:10px;border-radius:50%;background:#c0392b;flex-shrink:0"></div>
-              <span style="font-size:11px;color:var(--text2);flex:1">Tier 4 — Young · commercial corridor</span>
-              <span id="tier-count-4" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 3 — Planted 2023–2026</span>
+              <span id="tier-count-3" style="font-size:10px;font-weight:700;color:#c0392b;min-width:28px;text-align:right"></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:10px;height:10px;border-radius:50%;background:#e67e22;flex-shrink:0"></div>
-              <span style="font-size:11px;color:var(--text2);flex:1">Tier 3 — Young · high-traffic area</span>
-              <span id="tier-count-3" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:10px;height:10px;border-radius:50%;background:#7fb069;flex-shrink:0"></div>
-              <span style="font-size:11px;color:var(--text2);flex:1">Tier 2 — Mature · commercial corridor</span>
-              <span id="tier-count-2" style="font-size:10px;font-weight:700;color:#7fb069;min-width:28px;text-align:right"></span>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 2 — Planted 2020–2022 or DBH &lt; 6"</span>
+              <span id="tier-count-2" style="font-size:10px;font-weight:700;color:#e67e22;min-width:28px;text-align:right"></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:10px;height:10px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div>
-              <span style="font-size:11px;color:var(--text2);flex:1">Tier 1 — Mature · high-traffic area</span>
+              <span style="font-size:11px;color:var(--text2);flex:1">Tier 1 — DBH ≥ 6" or planted pre-2020</span>
               <span id="tier-count-1" style="font-size:10px;font-weight:700;color:#2e8b57;min-width:28px;text-align:right"></span>
             </div>
           </div>
@@ -2062,14 +2056,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Priority tiers explained</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px">Each tree is assigned one of 4 tiers based on two yes/no questions:</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:12px">Each tree is assigned one of 3 tiers based on planting year and trunk size:</p>
         <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#c0392b;flex-shrink:0"></div><span><strong>Tier 4</strong> — Young · commercial corridor</span></div>
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#e67e22;flex-shrink:0"></div><span><strong>Tier 3</strong> — Young · high foot-traffic area</span></div>
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#7fb069;flex-shrink:0"></div><span><strong>Tier 2</strong> — Mature · commercial corridor</span></div>
-          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div><span><strong>Tier 1</strong> — Mature · high foot-traffic area</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#c0392b;flex-shrink:0"></div><span><strong>Tier 3</strong> — Planted 2023–2026 (newest plantings, highest need)</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#e67e22;flex-shrink:0"></div><span><strong>Tier 2</strong> — Planted 2020–2022, or DBH &lt; 6" with no recorded planting year</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><div style="width:12px;height:12px;border-radius:50%;background:#2e8b57;flex-shrink:0"></div><span><strong>Tier 1</strong> — DBH ≥ 6" or planted before 2020 (established trees)</span></div>
         </div>
-        <p style="font-size:12px;color:var(--text3);margin-top:12px">A tree is "young" if its trunk diameter is under 6 inches, or if it was planted within the last 5 years. Young trees need the most attention in their first years to establish healthy root systems.</p>
+        <p style="font-size:12px;color:var(--text3);margin-top:12px">Newly planted trees need the most attention in their first years to establish healthy root systems. Tier 3 captures the most recent plantings.</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
@@ -2382,79 +2375,41 @@ let coolestBlocksVisible = false;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
-  // Fixed formula: 70 young + 30 visibility
   return { poor: 0, young: 70, traffic: 30 };
 }
 
-// Detect if a tree is young: DBH < 6" or planted within the last 5 years
-function isYoungTree(tree) {
-  const dbh = parseFloat(tree.tree_dbh || 0);
-  if (dbh > 0 && dbh < 6) return true;
-  const planted = parseInt(tree.tree_cen_date || tree.planteddate || tree.census_year || 0);
-  if (planted && (new Date().getFullYear() - planted) <= 5) return true;
-  return false;
-}
-
-// Detect visibility: commercial corridor or high-foot-traffic area
-// Uses address, nta_name, and cb_num context for CB3 blocks
-function isHighVisibility(tree) {
-  const addr = (tree.address || '').toLowerCase();
-  const nta = (tree.nta_name || '').toLowerCase();
-  const street = (tree.borocode || '') + (tree.boro_ct || '');
-
-  // Major commercial corridors in the CB3 area
-  const commercialStreets = [
-    'delancey', 'grand st', 'essex', 'orchard', 'ludlow', 'rivington',
-    'avenue a', 'avenue b', 'st marks', 'houston', 'bowery', 'broadway',
-    'canal', 'hester', 'elizabeth', 'mott', 'mulberry', 'spring',
-    'houston', 'allen', 'forsyth'
-  ];
-  if (commercialStreets.some(s => addr.includes(s))) return 'full';
-
-  // High-foot-traffic neighborhoods
-  const highTrafficNTA = ['chinatown', 'lower east side', 'east village'];
-  if (highTrafficNTA.some(n => nta.includes(n))) return 'partial';
-
-  // Forestry trees have no address/nta — use coordinates to detect major
-  // commercial corridors (enabling tier 4) or default to partial within CB3.
-  const lat = parseFloat(tree.latitude || 0);
-  const lng = parseFloat(tree.longitude || 0);
-  if (lat && lng) {
-    // Major E-W commercial streets (±0.0003° ≈ 33 m band)
-    const ewStreets = [40.7178, 40.7264, 40.7152, 40.7142]; // Delancey, Houston, Grand, Canal
-    if (ewStreets.some(s => Math.abs(lat - s) < 0.0003)) return 'full';
-    // Major N-S commercial corridors (±0.0003° ≈ 25 m band)
-    const nsCorridors = [-73.9912, -73.9883, -73.9812, -73.9847, -74.0000]; // Bowery, Allen/Orchard, Ave A, 1st Ave, Broadway
-    if (nsCorridors.some(c => Math.abs(lng - c) < 0.0003)) return 'full';
-    return 'partial';
-  }
-
-  return false;
+function getPlantYear(tree) {
+  return parseInt(tree.tree_cen_date || tree.planteddate || tree.census_year || 0);
 }
 
 function calcPriority(tree) {
-  const young = isYoungTree(tree);
-  const vis = isHighVisibility(tree);
-  if (young && vis === 'full')    return 4;
-  if (young && vis === 'partial') return 3;
-  if (vis === 'full')             return 2;
-  return 1;
+  const dbh = parseFloat(tree.tree_dbh || 0);
+  const yr = getPlantYear(tree);
+
+  // Tier 3 (red) — planted 2023–2026
+  if (yr >= 2023 && yr <= 2026) return 3;
+
+  // Tier 1 (green) — DBH ≥ 6" OR planted before 2020
+  if (dbh >= 6) return 1;
+  if (yr > 0 && yr < 2020) return 1;
+
+  // Tier 2 (orange) — planted 2020–2022, or DBH < 6" with no planting year
+  return 2;
 }
 
 function calcPriorityBreakdown(tree) {
-  const young = isYoungTree(tree);
-  const vis = isHighVisibility(tree);
+  const dbh = parseFloat(tree.tree_dbh || 0);
+  const yr = getPlantYear(tree);
   const tier = calcPriority(tree);
 
-  const youngLabel = young
-    ? (parseFloat(tree.tree_dbh||0) > 0 && parseFloat(tree.tree_dbh||0) < 6 ? `DBH = ${tree.tree_dbh}"` : 'Recently planted')
-    : 'Mature tree (DBH ≥ 6")';
+  let reason = '';
+  if (tier === 3) reason = 'Planted ' + yr + ' (2023–2026 cohort)';
+  else if (tier === 1 && dbh >= 6) reason = 'DBH = ' + tree.tree_dbh + '" (established tree)';
+  else if (tier === 1) reason = 'Planted ' + yr + ' (pre-2020)';
+  else if (yr >= 2020 && yr <= 2022) reason = 'Planted ' + yr + ' (2020–2022 cohort)';
+  else reason = 'DBH < 6" · no planting year recorded';
 
-  const visReason = vis === 'full' ? 'Commercial corridor'
-    : vis === 'partial' ? 'High foot-traffic neighborhood'
-    : 'Residential / low foot traffic';
-
-  return { tier, young, vis, youngLabel, visReason };
+  return { tier, dbh, yr, reason };
 }
 
 function onWeightChange(id) {
@@ -2466,10 +2421,9 @@ function onWeightChange(id) {
 }
 
 function getPriorityMeta(score) {
-  // 4-tier scale: red (highest need) → green (lowest)
-  if (score === 4) return { label: 'Tier 4', color: '#c0392b', bg: 'rgba(192,57,43,0.12)' };
-  if (score === 3) return { label: 'Tier 3', color: '#e67e22', bg: 'rgba(230,126,34,0.12)' };
-  if (score === 2) return { label: 'Tier 2', color: '#7fb069', bg: 'rgba(127,176,105,0.12)' };
+  // 3-tier scale: red (highest need) → green (lowest)
+  if (score === 3) return { label: 'Tier 3', color: '#c0392b', bg: 'rgba(192,57,43,0.12)' };
+  if (score === 2) return { label: 'Tier 2', color: '#e67e22', bg: 'rgba(230,126,34,0.12)' };
   return                 { label: 'Tier 1', color: '#2e8b57', bg: 'rgba(46,139,87,0.12)' };
 }
 
@@ -2991,12 +2945,12 @@ function updateMap() {
 
 function updatePriorityTierCounts() {
   const trees = (typeof filteredTrees !== 'undefined' ? filteredTrees : (typeof allTrees !== 'undefined' ? allTrees : []));
-  const counts = {1:0,2:0,3:0,4:0};
+  const counts = {1:0,2:0,3:0};
   trees.forEach(t => {
     const tier = t._priority || 0;
-    if (tier >= 1 && tier <= 6) counts[tier]++;
+    if (tier >= 1 && tier <= 3) counts[tier]++;
   });
-  for (let i = 1; i <= 4; i++) {
+  for (let i = 1; i <= 3; i++) {
     const el = document.getElementById('tier-count-' + i);
     if (el) el.textContent = counts[i].toLocaleString();
   }
@@ -3455,26 +3409,16 @@ function openMapTreeDetail(tree) {
   const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
   const reservations = reservationLoadSync();
   const res = reservations.find(r => String(r.treeId) === treeId);
-  let badgeHTML = '<span style="background:' + pm.color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + pm.label + ' / 4</span>';
+  let badgeHTML = '<span style="background:' + pm.color + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + pm.label + ' / 3</span>';
   if (res) {
     const icon = res.reserveType === 'event' ? '🎉' : res.reserveType === 'general' ? '👥' : '🧑';
     const catColor = res.reserveType === 'person' ? '#7b3fa0' : res.reserveType === 'event' ? '#e67e22' : '#27ae60';
     badgeHTML += '<span style="margin-left:6px;background:' + catColor + ';color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + icon + ' ' + res.name + '</span>';
   }
   document.getElementById('mtp-badge').innerHTML = badgeHTML;
-  const youngColor = bd.young ? 'var(--accent)' : 'var(--text3)';
-  const visColor = bd.vis !== false ? '#5dade2' : 'var(--text3)';
   document.getElementById('mtp-breakdown').innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-      '<span style="font-size:16px">' + (bd.young ? '✅' : '⬜') + '</span>' +
-      '<div><div style="font-size:11px;font-weight:600;color:' + youngColor + '">🌱 Young</div>' +
-      '<div style="font-size:10px;color:var(--text3)">' + bd.youngLabel + '</div></div>' +
-    '</div>' +
-    '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="font-size:16px">' + (bd.vis === 'full' ? '✅' : bd.vis === 'partial' ? '🔶' : '⬜') + '</span>' +
-      '<div><div style="font-size:11px;font-weight:600;color:' + visColor + '">👁 Visibility</div>' +
-      '<div style="font-size:10px;color:var(--text3)">' + bd.visReason + '</div></div>' +
-    '</div>';
+    '<div style="font-size:11px;color:' + pm.color + ';font-weight:600;margin-bottom:2px">' + pm.label + '</div>' +
+    '<div style="font-size:10px;color:var(--text3)">' + bd.reason + '</div>';
   const isForestryTree = !tree.block_id;
   const plantedRaw = tree.tree_cen_date || tree.planteddate;
   const plantedLabel = plantedRaw ? (parseInt(plantedRaw) || plantedRaw) : null;
@@ -5222,7 +5166,7 @@ function openReserveModal(tree) {
       tree.health    ? ['Health',        '<span style="color:' + healthColor + ';font-weight:600">' + tree.health + '</span>'] : null,
       tree.tree_dbh  ? ['Trunk DBH',    tree.tree_dbh + '"']                             : null,
       ageLabel       ? ['Age',           ageLabel]                                        : null,
-      pm && pm.label ? ['Priority',      '<span style="color:' + pm.color + ';font-weight:600">Tier ' + pm.label + ' / 4</span>'] : null,
+      pm && pm.label ? ['Priority',      '<span style="color:' + pm.color + ';font-weight:600">' + pm.label + ' / 3</span>'] : null,
       tree.nta_name  ? ['Neighborhood', tree.nta_name]                                   : null,
       tree.spc_latin ? ['Scientific',   '<em>' + tree.spc_latin + '</em>']               : null,
     ].filter(Boolean);
@@ -5656,7 +5600,7 @@ function openTreeDetailCard(tree) {
     <div style="padding:0;max-width:100%;overflow-y:auto;max-height:100%">
       <h2 style="font-family:'Lora',serif;font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text)">${species}</h2>
       <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-        <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">Tier ${pm.label} / 4</span>
+        <span style="background:${pm.color};color:white;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">${pm.label} / 3</span>
         ${health ? `<span style="background:${healthColor}20;color:${healthColor};border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700">${tree.health}</span>` : ''}
       </div>
       <div style="background:var(--bg2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:var(--text2)">
