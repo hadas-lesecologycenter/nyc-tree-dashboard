@@ -1587,6 +1587,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button id="tc-view-map-btn" class="toggle-btn on" onclick="switchTreeCareView('map')">🗺 Map</button>
           <button id="tc-view-table-btn" class="toggle-btn" onclick="switchTreeCareView('table')">☰ Table</button>
           <button id="tc-view-stats-btn" class="toggle-btn" onclick="switchTreeCareView('stats')">📊 Stats</button>
+          <button onclick="exportTableCSV('tc-table','tree-care.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="tc-export-btn">⬇ CSV</button>
         </div>
       </div>
     </div>
@@ -1667,6 +1668,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button id="calls-view-table-btn" class="toggle-btn" onclick="switchCallsView('table')">☰ Table</button>
             <button id="calls-view-stats-btn" class="toggle-btn" onclick="switchCallsView('stats')">📊 Stats</button>
             <button onclick="load311Calls()" title="Refresh" class="toggle-btn" style="padding:7px 12px">↻</button>
+            <button onclick="exportTableCSV('calls-table','311-calls.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="calls-export-btn">⬇ CSV</button>
           </div>
         </div>
       </div>
@@ -2096,6 +2098,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button id="ra-view-map-btn" class="toggle-btn on" onclick="switchRiskView('map')">🗺 Map</button>
             <button id="ra-view-table-btn" class="toggle-btn" onclick="switchRiskView('table')">☰ Table</button>
             <button id="ra-view-stats-btn" class="toggle-btn" onclick="switchRiskView('stats')">📊 Stats</button>
+            <button onclick="exportTableCSV('ra-table','risk-assessments.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="ra-export-btn">⬇ CSV</button>
           </div>
         </div>
       </div>
@@ -6573,6 +6576,30 @@ function toggleOpenOnlyFilter() {
   else renderCallsMarkers(filtered);
 }
 
+function exportTableCSV(tableId, filename) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+  const skipCols = headers.map(h => h === '');
+  const escape = v => {
+    const s = (v || '').replace(/\s+/g, ' ').trim();
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = [headers.filter((_, i) => !skipCols[i])];
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const cells = Array.from(tr.querySelectorAll('td'));
+    const row = cells
+      .filter((_, i) => !skipCols[i])
+      .map(td => escape(td.textContent));
+    if (row.some(c => c)) rows.push(row);
+  });
+  const csv = rows.map(r => r.join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = filename;
+  a.click();
+}
+
 function switchRiskView(mode) {
   const mapC   = document.getElementById('ra-map-container');
   const tableC = document.getElementById('ra-table-container');
@@ -6580,17 +6607,21 @@ function switchRiskView(mode) {
   const mapBtn   = document.getElementById('ra-view-map-btn');
   const tableBtn = document.getElementById('ra-view-table-btn');
   const statsBtn = document.getElementById('ra-view-stats-btn');
+  const expBtn   = document.getElementById('ra-export-btn');
   if (mode === 'map') {
     mapC.style.display = 'flex'; tableC.style.display = 'none'; statsC.style.display = 'none';
     mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = 'none';
     if (raMap) raMap.invalidateSize();
   } else if (mode === 'table') {
     mapC.style.display = 'none'; tableC.style.display = 'flex'; statsC.style.display = 'none';
     tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = '';
     renderRaTable();
   } else if (mode === 'stats') {
     mapC.style.display = 'none'; tableC.style.display = 'none'; statsC.style.display = 'block';
     statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = 'none';
     renderRaStats();
   }
 }
@@ -6711,17 +6742,21 @@ function switchTreeCareView(mode) {
   const mapBtn   = document.getElementById('tc-view-map-btn');
   const tableBtn = document.getElementById('tc-view-table-btn');
   const statsBtn = document.getElementById('tc-view-stats-btn');
+  const expBtn   = document.getElementById('tc-export-btn');
   if (mode === 'map') {
     mapC.style.display = 'flex'; tableC.style.display = 'none'; statsC.style.display = 'none';
     mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = 'none';
     if (typeof tcCareMap !== 'undefined' && tcCareMap) setTimeout(() => tcCareMap.invalidateSize(), 50);
   } else if (mode === 'table') {
     mapC.style.display = 'none'; tableC.style.display = 'flex'; statsC.style.display = 'none';
     tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = '';
     renderTcTable();
   } else if (mode === 'stats') {
     mapC.style.display = 'none'; tableC.style.display = 'none'; statsC.style.display = 'block';
     statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
+    if (expBtn) expBtn.style.display = 'none';
     renderTcStats();
   }
 }
@@ -6831,12 +6866,14 @@ function switchCallsView(mode) {
   const tableBtn = document.getElementById('calls-view-table-btn');
   const statsBtn = document.getElementById('calls-view-stats-btn');
   const legendEl = document.getElementById('calls-map-legend');
+  const expBtn = document.getElementById('calls-export-btn');
 
   if (mode === 'map') {
     mapEl.style.display = '';
     tableEl.style.display = 'none';
     statsEl.style.display = 'none';
     if (legendEl) legendEl.style.display = 'block';
+    if (expBtn) expBtn.style.display = 'none';
     mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
     if (calls311Map) calls311Map.invalidateSize();
   } else if (mode === 'table') {
@@ -6844,6 +6881,7 @@ function switchCallsView(mode) {
     tableEl.style.display = 'flex';
     statsEl.style.display = 'none';
     if (legendEl) legendEl.style.display = 'none';
+    if (expBtn) expBtn.style.display = '';
     tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
     renderCallsTable(getFilteredCalls());
   } else if (mode === 'stats') {
@@ -6851,6 +6889,7 @@ function switchCallsView(mode) {
     tableEl.style.display = 'none';
     statsEl.style.display = 'block';
     if (legendEl) legendEl.style.display = 'none';
+    if (expBtn) expBtn.style.display = 'none';
     statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
     renderCallsStats(calls311Data);
   }
