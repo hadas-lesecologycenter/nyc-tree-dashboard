@@ -1580,6 +1580,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 <!-- MY BLOCK VIEW -->
   <div id="myblock-view" class="view">
+    <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">🌿 Tree Care</h2>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button id="tc-view-map-btn" class="toggle-btn on" onclick="switchTreeCareView('map')">🗺 Map</button>
+          <button id="tc-view-table-btn" class="toggle-btn" onclick="switchTreeCareView('table')">☰ Table</button>
+          <button id="tc-view-stats-btn" class="toggle-btn" onclick="switchTreeCareView('stats')">📊 Stats</button>
+        </div>
+      </div>
+    </div>
+    <div id="tc-map-container" style="display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden">
     <div id="myblock-mobile-tabs" class="mobile-tab-bar" style="display:none">
       <button class="mobile-tab active" onclick="switchMyBlockTab('sidebar',this)">🌿 Activities</button>
       <button class="mobile-tab" onclick="switchMyBlockTab('map',this)">🗺 Care Map</button>
@@ -1626,6 +1637,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       </div>
     </div>
+    </div><!-- /tc-map-container -->
+    <div id="tc-table-container" style="flex:1;overflow:hidden;display:none;flex-direction:column">
+      <div style="overflow:auto;flex:1">
+        <table id="tc-table" style="width:100%;border-collapse:collapse;font-family:'Nunito',sans-serif;font-size:12px">
+          <thead>
+            <tr style="background:var(--bg2);position:sticky;top:0;z-index:1">
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Date</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Species</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Address</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Activities</th>
+            </tr>
+          </thead>
+          <tbody id="tc-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tc-stats-container" style="flex:1;overflow:auto;display:none;padding:20px;background:var(--bg)"></div>
   </div>
 
   <!-- 311 CALLS VIEW -->
@@ -2060,7 +2088,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <!-- RISK ASSESSMENT VIEW -->
   <div id="risk-view" class="view">
-    <div style="display:flex;height:100%;overflow:hidden">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+      <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">🔍 Young Trees Risk Assessment</h2>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button id="ra-view-map-btn" class="toggle-btn on" onclick="switchRiskView('map')">🗺 Map</button>
+            <button id="ra-view-table-btn" class="toggle-btn" onclick="switchRiskView('table')">☰ Table</button>
+            <button id="ra-view-stats-btn" class="toggle-btn" onclick="switchRiskView('stats')">📊 Stats</button>
+          </div>
+        </div>
+      </div>
+      <div id="ra-map-container" style="display:flex;flex:1;overflow:hidden">
       <!-- Sidebar -->
       <div id="ra-sidebar" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0">
@@ -2154,6 +2193,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
       </div>
+      </div><!-- /ra-map-container -->
+      <div id="ra-table-container" style="flex:1;overflow:hidden;display:none;flex-direction:column">
+        <div style="overflow:auto;flex:1">
+          <table id="ra-table" style="width:100%;border-collapse:collapse;font-family:'Nunito',sans-serif;font-size:12px">
+            <thead>
+              <tr style="background:var(--bg2);position:sticky;top:0;z-index:1">
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Date</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Assessor</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Species</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Address</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Year</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Overall</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Structural</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Pest</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Soil</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Growth</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="ra-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="ra-stats-container" style="flex:1;overflow:auto;display:none;padding:20px;background:var(--bg)"></div>
     </div>
   </div>
 
