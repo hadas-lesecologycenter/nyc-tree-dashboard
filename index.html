@@ -1292,8 +1292,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button class="nav-btn" onclick="switchView('stats',event)">📊 Stats</button>
 <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
     <button class="nav-btn" onclick="switchView('calls',event)">📞 311 Calls</button>
-    <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
     <button class="nav-btn" onclick="switchView('risk',event)">🔍 Risk Assessment</button>
+    <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
 
 </header>
@@ -2003,6 +2003,52 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h1 style="font-family:'Lora',serif;font-size:24px;font-weight:700;margin-bottom:6px;color:var(--text)">LES Ecology Center Street Tree Care Map</h1>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
+        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">What is this?</h2>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8">A planning tool for the LES Ecology Center's street tree stewardship program. It maps all ~11,000 active street trees in Community Board 3 — the area where LES Ecology Center works — and brings together tree care tracking, 311 call monitoring, and field risk assessments in one place. Every tree is ranked by care urgency based on planting year and trunk size.</p>
+      </div>
+
+      <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
+        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:14px">How to use it</h2>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;gap:14px">
+            <div style="font-size:20px;flex-shrink:0">🗺</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Map</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">All CB3 street trees colored by priority tier (red = newest/highest need, green = established). Click any tree to see details, reserve it for care, log care needs, mark a tree guard, flag it as community stewarded, or report it missing.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="font-size:20px;flex-shrink:0">📊</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Stats</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Summary statistics for the current filter: health breakdown, priority tier distribution, and top species.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="font-size:20px;flex-shrink:0">🌿</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Tree Care</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Track care activities (watering, weeding, mulching, pruning, etc.) logged by the team. View a map of activity, a full table, and stats. Sync care activities from the NYC Tree Map website using the bookmarklet below.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="font-size:20px;flex-shrink:0">📞</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">311 Calls</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">All tree-related 311 service requests in CB3 — mapped, tabulated, and summarized. Useful for spotting patterns in community concerns and NYC Parks response.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px">
+            <div style="font-size:20px;flex-shrink:0">🔍</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Risk Assessment</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2024 and 2025 plantings. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings. All assessments are saved to a shared database — visible across all devices.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Sync NYC Tree Map Activities</h2>
         <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:16px">Drag the button below to your browser's bookmarks bar. Then whenever you're on the NYC Tree Map site, click it to sync all your group's activities to this dashboard.</p>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -2015,43 +2061,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <span style="font-size:12px;color:var(--text3)">← drag this to your bookmarks bar</span>
         </div>
         <p style="font-size:12px;color:var(--text3);margin-top:12px;line-height:1.6">First click will ask for a GitHub token once. After that it's one click to sync.</p>
-      </div>
-
-      <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
-        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">What is this?</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8">This tool helps the LES Ecology Center's tree stewardship program prioritize which street trees need care. It covers the Community Board 3 area — the best geographic proxy for where LES Ecology Center works — mapping all ~11,000 active street trees in the CB3 area from the NYC Forestry live dataset, and ranks every tree by care urgency using a simple two-factor system.</p>
-      </div>
-
-      <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
-        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Who is it for?</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8">LES Ecology Center street tree care staff — to plan watering and care walks, identify where young trees are concentrated, and focus effort where it matters most.</p>
-      </div>
-
-      <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
-        <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:14px">How to use it</h2>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;gap:14px">
-            <div style="font-size:20px;flex-shrink:0">🗺</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Map & Filters</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">View all active street trees in the CB3 area. Dots are colored by priority tier (red = highest need, green = lowest). Use filters to show only specific categories: Care Needed, Reserved, Tree Guards, Community Stewarded, or Missing/Removed. Click "Clear All" to reset filters.</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:14px">
-            <div style="font-size:20px;flex-shrink:0">🌳</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Tree Actions</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Tap any tree to open details. You can: 📅 Reserve for Care, 🔧 Mark as Needs Care, 🛡 Mark Tree Guard, 🌱 Mark as Community Stewarded, or ⚠️ Report Missing. Each action stores your data and appears in the corresponding filter.</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:14px">
-            <div style="font-size:20px;flex-shrink:0">📊</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Stats</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">View summary statistics for the current filter: health breakdown, average priority tier, and the top 10 most common species.</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
@@ -6357,8 +6366,8 @@ function initMobileUI() {
       { view: 'myblock', icon: '🌿', label: 'Care',   action: 'switch' },
       { view: 'calls',   icon: '📞', label: '311',    action: 'switch' },
       { view: null,      icon: '⚙️', label: 'Filter', action: 'filter', id: 'filter-toggle-btn' },
-      { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
       { view: 'risk',    icon: '🔍', label: 'Risk',   action: 'switch' },
+      { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
     ];
 
     navItems.forEach(item => {
