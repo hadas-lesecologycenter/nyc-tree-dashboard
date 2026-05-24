@@ -7254,7 +7254,26 @@ function raLatestAssessment(treeId) {
 async function raLoadAssessments() {
   const rows = await sheetsRead('RiskAssessments');
   if (rows) raAssessments = rows;
+  const deduped = raDeduplicateAssessments(raAssessments);
+  if (deduped.length < raAssessments.length) {
+    raAssessments = deduped;
+    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
+    sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
+  }
   raRenderMap();
+}
+
+function raDeduplicateAssessments(list) {
+  // Remove duplicates created by the broken edit flow (same tree+assessor+all ratings = keep newest only)
+  const key = a => a.treeId + '|' + a.assessorName + '|' + a.overallRisk + '|' + a.structural + '|' + a.pestDisease + '|' + a.soilSite + '|' + a.growthVitality;
+  const sorted = [...list].sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
+  const seen = new Set();
+  return sorted.filter(a => {
+    const k = key(a);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 function raUpdateStats() {
