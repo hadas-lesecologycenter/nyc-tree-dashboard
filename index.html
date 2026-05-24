@@ -6572,6 +6572,252 @@ function toggleOpenOnlyFilter() {
   else renderCallsMarkers(filtered);
 }
 
+function switchRiskView(mode) {
+  const mapC   = document.getElementById('ra-map-container');
+  const tableC = document.getElementById('ra-table-container');
+  const statsC = document.getElementById('ra-stats-container');
+  const mapBtn   = document.getElementById('ra-view-map-btn');
+  const tableBtn = document.getElementById('ra-view-table-btn');
+  const statsBtn = document.getElementById('ra-view-stats-btn');
+  if (mode === 'map') {
+    mapC.style.display = 'flex'; tableC.style.display = 'none'; statsC.style.display = 'none';
+    mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (raMap) raMap.invalidateSize();
+  } else if (mode === 'table') {
+    mapC.style.display = 'none'; tableC.style.display = 'flex'; statsC.style.display = 'none';
+    tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    renderRaTable();
+  } else if (mode === 'stats') {
+    mapC.style.display = 'none'; tableC.style.display = 'none'; statsC.style.display = 'block';
+    statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
+    renderRaStats();
+  }
+}
+
+function renderRaTable() {
+  const tbody = document.getElementById('ra-table-body');
+  if (!tbody) return;
+  if (!raAssessments.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
+    return;
+  }
+  const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
+  const rl = v => ({ low:'Low', medium:'Med', high:'High', dead:'Dead', empty:'Empty', good:'Good', fair:'Fair', poor:'Poor' }[v] || v || '—');
+  const rc = v => raRiskColor(v) || ({ good:'#22c55e', fair:'#f59e0b', poor:'#dc2626' }[v] || 'var(--text3)');
+  tbody.innerHTML = sorted.map((a, i) => {
+    const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
+    const oc = raRiskColor(a.overallRisk) || 'var(--text3)';
+    const ol = a.overallRisk === 'dead' ? 'Dead' : a.overallRisk === 'empty' ? 'Empty Pit' : rl(a.overallRisk);
+    return `<tr style="background:${bg}">
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">${a.date || (a.timestamp||'').slice(0,10) || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${a.assessorName || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--text)">${a.species || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${a.address || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;color:var(--text3)">${a.plantYear || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:700;color:${oc};white-space:nowrap">${ol}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.structural)}">${rl(a.structural)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.pestDisease)}">${rl(a.pestDisease)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.soilSite)}">${rl(a.soilSite)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:${rc(a.growthVitality)}">${rl(a.growthVitality)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-style:italic;max-width:200px">${a.notes || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRaStats() {
+  const el = document.getElementById('ra-stats-container');
+  if (!el) return;
+  const trees = typeof raGetYoungTrees === 'function' ? raGetYoungTrees() : [];
+  const total = trees.length;
+  if (!total && !raAssessments.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">No data yet</div>';
+    return;
+  }
+  const counts = { high:0, medium:0, low:0, dead:0, empty:0, none:0 };
+  const by2024 = { assessed:0, total:0 };
+  const by2025 = { assessed:0, total:0 };
+  trees.forEach(t => {
+    const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
+    const b = yr === 2025 ? by2025 : by2024;
+    b.total++;
+    const a = raLatestAssessment(raTreeId(t));
+    if (!a) { counts.none++; return; }
+    counts[a.overallRisk] = (counts[a.overallRisk] || 0) + 1;
+    b.assessed++;
+  });
+  const assessed = total - counts.none;
+  const pct = total ? Math.round(assessed / total * 100) : 0;
+  const riskRows = [
+    { label:'Not assessed', color:'#9ca3af', count:counts.none },
+    { label:'Low risk',     color:'#22c55e', count:counts.low },
+    { label:'Medium risk',  color:'#f59e0b', count:counts.medium },
+    { label:'High risk',    color:'#dc2626', count:counts.high },
+    { label:'Dead',         color:'#111111', count:counts.dead },
+    { label:'Empty pit',    color:'#6b7280', count:counts.empty },
+  ].filter(r => r.count > 0);
+  el.innerHTML = `<div style="max-width:640px;margin:0 auto;font-family:'Nunito',sans-serif">
+    <div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Assessment Progress</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px">
+        <span>${assessed} of ${total} trees assessed</span>
+        <span style="font-weight:700;color:#7b3fa0">${pct}%</span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+        <div style="height:100%;background:#7b3fa0;width:${pct}%;border-radius:4px"></div>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Risk Breakdown</div>
+      ${riskRows.map(r => {
+        const p = total ? ((r.count/total)*100).toFixed(1) : 0;
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0"></span>
+            <span style="font-weight:600;flex:1;font-size:12px">${r.label}</span>
+            <span style="color:var(--text3);font-size:12px">${r.count} (${p}%)</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:${r.color};width:${p}%;border-radius:3px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:16px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">By Cohort</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        ${[{label:'2024 Plantings',color:'#f59e0b',d:by2024},{label:'2025 Plantings',color:'#06b6d4',d:by2025}].map(c=>`
+        <div style="background:var(--bg3);border-radius:8px;padding:14px;border-top:3px solid ${c.color}">
+          <div style="font-weight:700;font-size:12px;color:${c.color};margin-bottom:6px">${c.label}</div>
+          <div style="font-size:24px;font-weight:700;color:var(--text);line-height:1">${c.d.assessed}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">of ${c.d.total} assessed (${c.d.total?Math.round(c.d.assessed/c.d.total*100):0}%)</div>
+          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px">
+            <div style="height:100%;background:${c.color};width:${c.d.total?Math.round(c.d.assessed/c.d.total*100):0}%;border-radius:2px"></div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function switchTreeCareView(mode) {
+  const mapC   = document.getElementById('tc-map-container');
+  const tableC = document.getElementById('tc-table-container');
+  const statsC = document.getElementById('tc-stats-container');
+  const mapBtn   = document.getElementById('tc-view-map-btn');
+  const tableBtn = document.getElementById('tc-view-table-btn');
+  const statsBtn = document.getElementById('tc-view-stats-btn');
+  if (mode === 'map') {
+    mapC.style.display = 'flex'; tableC.style.display = 'none'; statsC.style.display = 'none';
+    mapBtn.classList.add('on'); tableBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    if (typeof tcCareMap !== 'undefined' && tcCareMap) setTimeout(() => tcCareMap.invalidateSize(), 50);
+  } else if (mode === 'table') {
+    mapC.style.display = 'none'; tableC.style.display = 'flex'; statsC.style.display = 'none';
+    tableBtn.classList.add('on'); mapBtn.classList.remove('on'); statsBtn.classList.remove('on');
+    renderTcTable();
+  } else if (mode === 'stats') {
+    mapC.style.display = 'none'; tableC.style.display = 'none'; statsC.style.display = 'block';
+    statsBtn.classList.add('on'); mapBtn.classList.remove('on'); tableBtn.classList.remove('on');
+    renderTcStats();
+  }
+}
+
+function renderTcTable() {
+  const tbody = document.getElementById('tc-table-body');
+  if (!tbody) return;
+  if (!_tcScrapedAreas || !_tcScrapedAreas.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--text3)">No care activities yet — sync via the bookmarklet in the About tab.</td></tr>';
+    return;
+  }
+  const actLabel = id => { const a = TC_ACTIVITIES.find(x => x.id === id); return a ? a.emoji + ' ' + a.label : id; };
+  const rows = [];
+  _tcScrapedAreas.forEach(area => {
+    (area.careEvents || []).forEach(ev => {
+      rows.push({ date: ev.date, species: area.addressNote || '', address: area.name || '', activities: ev.activities || [] });
+    });
+  });
+  rows.sort((a, b) => (b.date || '') > (a.date || '') ? 1 : -1);
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--text3)">No care events found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
+    const acts = r.activities.length ? r.activities.map(actLabel).join(', ') : '(activity logged)';
+    return `<tr style="background:${bg}">
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">${r.date || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--text)">${r.species || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${r.address || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${acts}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTcStats() {
+  const el = document.getElementById('tc-stats-container');
+  if (!el) return;
+  if (!_tcScrapedAreas || !_tcScrapedAreas.length) {
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">No care activities yet — sync via the bookmarklet in the About tab.</div>';
+    return;
+  }
+  const byYear = {};
+  const actCounts = {};
+  TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; });
+  let totalEvents = 0;
+  _tcScrapedAreas.forEach(area => {
+    (area.careEvents || []).forEach(ev => {
+      const yr = (ev.date || '').slice(0, 4) || 'Unknown';
+      byYear[yr] = (byYear[yr] || new Set());
+      byYear[yr].add(area._treeId || area.name);
+      totalEvents++;
+      (ev.activities || []).forEach(a => { actCounts[a] = (actCounts[a] || 0) + 1; });
+    });
+  });
+  const totalTrees2026 = (byYear['2026'] || new Set()).size;
+  const goalPct = Math.min(100, Math.round(totalTrees2026 / 1000 * 100));
+  const yearRows = Object.entries(byYear).sort((a,b) => b[0].localeCompare(a[0])).map(([yr, set]) => ({ year: yr, count: set.size }));
+  const actRows = TC_ACTIVITIES.filter(a => actCounts[a.id] > 0).sort((a,b) => actCounts[b.id] - actCounts[a.id]);
+  el.innerHTML = `<div style="max-width:640px;margin:0 auto;font-family:'Nunito',sans-serif">
+    <div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">🎯 2026 Goal: 1,000 Trees</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:6px">
+        <span>${totalTrees2026} unique trees cared for in 2026</span>
+        <span style="font-weight:700;color:var(--accent)">${goalPct}%</span>
+      </div>
+      <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden">
+        <div style="height:100%;background:var(--accent);width:${goalPct}%;border-radius:5px;transition:width 0.4s"></div>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Trees Cared For by Year</div>
+      ${yearRows.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px">
+          <span style="font-weight:700;color:var(--text);min-width:42px">${r.year}</span>
+          <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--accent);width:${Math.min(100,r.count/10)}%;border-radius:3px"></div>
+          </div>
+          <span style="color:var(--text3);min-width:32px;text-align:right">${r.count}</span>
+        </div>`).join('')}
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:16px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Activity Types (${totalEvents} total events)</div>
+      ${actRows.map(a => {
+        const maxCount = actRows[0] ? actCounts[actRows[0].id] : 1;
+        const pct = Math.round(actCounts[a.id] / maxCount * 100);
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:14px">${a.emoji}</span>
+            <span style="font-weight:600;flex:1;font-size:12px">${a.label}</span>
+            <span style="color:var(--text3);font-size:12px">${actCounts[a.id]}</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--accent);width:${pct}%;border-radius:3px"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
 function switchCallsView(mode) {
   const mapEl = document.getElementById('calls-map-container');
   const tableEl = document.getElementById('calls-table-container');
