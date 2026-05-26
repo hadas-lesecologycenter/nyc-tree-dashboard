@@ -1991,9 +1991,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <textarea id="reserve-note-input" placeholder="e.g., check for root damage, bring mulch"
           style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px"></textarea>
       </div>
+      <div id="reserve-block-section" style="display:none;margin-bottom:16px;padding:10px 12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="reserve-block-checkbox" style="width:16px;height:16px;cursor:pointer;accent-color:#7b3fa0" onchange="updateReserveBlockBtn()">
+          <span style="font-size:13px;color:var(--text)">Also reserve the whole block <span id="reserve-block-count" style="color:var(--text3);font-size:12px"></span></span>
+        </label>
+      </div>
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeReserveModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
-        <button type="button" onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📅 Reserve Tree</button>
+        <button type="button" id="reserve-confirm-btn" onclick="confirmReserveTree()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📅 Reserve Tree</button>
       </div>
     </div>
   </div>
@@ -5166,6 +5172,40 @@ function handleMapStewardedBtn() {
 
 let _pendingReserveTree = null;
 
+let _blockTreesCache = [];
+
+function getBlockTrees(tree) {
+  if (!tree || !tree.address) return [];
+  const parts = (tree.address || '').trim().split(/\s+/);
+  if (parts.length < 2) return [];
+  const num = parseInt(parts[0]);
+  if (!num) return [];
+  const street = parts.slice(1).join(' ').toUpperCase();
+  const block = Math.floor(num / 100) * 100;
+  const tid = String(tree.tree_id || '');
+  return (typeof allTrees !== 'undefined' ? allTrees : []).filter(t => {
+    if (String(t.tree_id) === tid) return false;
+    if (!t.address) return false;
+    const tp = (t.address || '').trim().split(/\s+/);
+    if (tp.length < 2) return false;
+    const tn = parseInt(tp[0]);
+    if (!tn) return false;
+    const ts = tp.slice(1).join(' ').toUpperCase();
+    return ts === street && Math.floor(tn / 100) * 100 === block;
+  });
+}
+
+function updateReserveBlockBtn() {
+  const checked = document.getElementById('reserve-block-checkbox')?.checked;
+  const btn = document.getElementById('reserve-confirm-btn');
+  if (!btn) return;
+  if (checked && _blockTreesCache.length) {
+    btn.textContent = '📅 Reserve Block (' + (_blockTreesCache.length + 1) + ' trees)';
+  } else {
+    btn.textContent = '📅 Reserve Tree';
+  }
+}
+
 function openReserveModal(tree) {
   _pendingReserveTree = tree;
 
@@ -5203,6 +5243,23 @@ function openReserveModal(tree) {
   const personRadio = document.getElementById('reserve-mode-person');
   if (personRadio) personRadio.checked = true;
   toggleReserveMode();
+
+  // Block reservation
+  _blockTreesCache = getBlockTrees(tree);
+  const blockSection = document.getElementById('reserve-block-section');
+  const blockCheckbox = document.getElementById('reserve-block-checkbox');
+  const blockCount = document.getElementById('reserve-block-count');
+  if (blockSection && blockCheckbox) {
+    blockCheckbox.checked = false;
+    if (_blockTreesCache.length > 0) {
+      blockSection.style.display = 'block';
+      if (blockCount) blockCount.textContent = '(' + _blockTreesCache.length + ' other trees on this block)';
+    } else {
+      blockSection.style.display = 'none';
+    }
+  }
+  updateReserveBlockBtn();
+
   modal.style.display = 'flex';
 }
 
@@ -5268,6 +5325,31 @@ function confirmReserveTree() {
     createdAt: new Date().toISOString(),
   };
   all.push(reservation);
+
+  // Block reservation
+  const reserveBlock = document.getElementById('reserve-block-checkbox')?.checked;
+  if (reserveBlock && _blockTreesCache.length) {
+    _blockTreesCache.forEach(bt => {
+      const btId = String(bt.tree_id || (parseFloat(bt.latitude) + '_' + parseFloat(bt.longitude)));
+      if (all.find(r => String(r.treeId) === btId)) return; // skip already-reserved
+      all.push({
+        id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        treeId: btId,
+        name, note, date, reserveType,
+        lat: parseFloat(bt.latitude || bt.lat),
+        lng: parseFloat(bt.longitude || bt.lng),
+        species: bt.spc_common || '',
+        address: bt.address || '',
+        health: bt.health || '',
+        dbh: bt.tree_dbh || '',
+        planted: bt.tree_cen_date || bt.planteddate || '',
+        priority: bt._priority || 0,
+        nta: bt.nta_name || '',
+        createdAt: new Date().toISOString(),
+      });
+    });
+  }
+
   reservationSave(all);
 
   const eventInput = document.getElementById('reserve-event-name-input');
@@ -5280,7 +5362,8 @@ function confirmReserveTree() {
   applyFilters();
   if (tcCareMap) tcRenderReservationsOnCareMap();
   if (mapInstance) tcRenderReservationsOnMainMap();
-  tcShowSyncStatus('📅 Reserved for ' + date);
+  const blockMsg = reserveBlock && _blockTreesCache.length ? ' · block of ' + (_blockTreesCache.length + 1) + ' trees' : '';
+  tcShowSyncStatus('📅 Reserved for ' + date + blockMsg);
 }
 
 function updateReservationCounter() {
