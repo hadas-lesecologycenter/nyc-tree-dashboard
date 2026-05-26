@@ -2704,7 +2704,7 @@ function initMapControlsSidebar() {
 }
 
 function initMap() {
-  mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, bearing: 0, rotateControl: false });
+  mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, bearing: 0, rotateControl: false, touchRotate: true });
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
