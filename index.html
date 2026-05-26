@@ -1547,6 +1547,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
     </div>
+    <div id="s-tier-breakdown" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
+      <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:12px">Trees Cared For by Priority Tier</div>
+      <div id="s-tier-rows"></div>
+    </div>
     <div class="charts-grid">
       <div class="chart-card full">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
@@ -3152,6 +3156,43 @@ function updateStats() {
   if (subEl)  subEl.textContent = goalTotal > 0
     ? areas2026.length + ' area' + (areas2026.length !== 1 ? 's' : '') + ' with care logged in 2026'
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
+
+  // ── Priority tier breakdown ───────────────────────────────────
+  const tierTotals = { 1: 0, 2: 0, 3: 0 };
+  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+    const tier = calcPriority(t);
+    if (tier >= 1 && tier <= 3) tierTotals[tier]++;
+  });
+  const tierCared = { 1: new Set(), 2: new Set(), 3: new Set() };
+  const _tcTreeById = {};
+  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => { _tcTreeById[String(t.tree_id)] = t; });
+  tcAreas.forEach(area => {
+    const tid = area._treeId;
+    if (!tid) return;
+    const t = _tcTreeById[String(tid)];
+    const tier = t ? calcPriority(t) : 0;
+    if (tier >= 1 && tier <= 3) tierCared[tier].add(String(tid));
+  });
+  const tierRowsEl = document.getElementById('s-tier-rows');
+  if (tierRowsEl) {
+    const tierLabels = { 3: 'Tier 3 — Planted 2023–2026', 2: 'Tier 2 — Planted 2020–2022 / DBH < 6"', 1: 'Tier 1 — DBH ≥ 6" or pre-2020' };
+    tierRowsEl.innerHTML = [3, 2, 1].map(tier => {
+      const meta = getPriorityMeta(tier);
+      const count = tierCared[tier].size;
+      const total = tierTotals[tier] || 1;
+      const pct = Math.round(count / total * 100);
+      return `<div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${meta.color};flex-shrink:0"></span>
+          <span style="font-size:12px;color:var(--text);flex:1">${tierLabels[tier]}</span>
+          <span style="font-weight:700;font-size:13px;color:${meta.color}">${count}</span><span style="font-size:11px;color:var(--text3)"> of ${total.toLocaleString()} (${pct}%)</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:${meta.color};width:${pct}%;border-radius:3px;transition:width 0.4s"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   // ── Build unified data structure for all charts ───────────────
   // For each care event, use its effective tree count (override or area default).
@@ -7044,7 +7085,7 @@ function renderTcStats() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
             <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${meta.color};flex-shrink:0"></span>
             <span style="font-size:12px;color:var(--text);flex:1">${labels[tier]}</span>
-            <span style="font-weight:700;font-size:13px;color:${meta.color}">${count}</span><span style="font-size:11px;color:var(--text3)"> of ${total.toLocaleString()}</span>
+            <span style="font-weight:700;font-size:13px;color:${meta.color}">${count}</span><span style="font-size:11px;color:var(--text3)"> of ${total.toLocaleString()} (${barPct}%)</span>
           </div>
           <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
             <div style="height:100%;background:${meta.color};width:${barPct}%;border-radius:3px;transition:width 0.4s"></div>
