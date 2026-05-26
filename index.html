@@ -1551,6 +1551,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;margin-bottom:12px">Trees Cared For by Priority Tier</div>
       <div id="s-tier-rows"></div>
     </div>
+    <div class="chart-card full" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div class="chart-title" style="margin:0">Care by Priority Tier</div>
+        <div id="s-tier-pie-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center">
+        <div style="position:relative;width:260px;height:260px;flex-shrink:0"><canvas id="tier-pie-chart"></canvas></div>
+        <div id="tier-pie-legend" style="margin-left:24px;font-family:'Nunito',sans-serif;font-size:12px"></div>
+      </div>
+    </div>
     <div class="charts-grid">
       <div class="chart-card full">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
@@ -3048,6 +3058,9 @@ function toggleSpeciesView() { setViewMode(priorityMode ? 'species' : 'priority'
 let activitiesChart = null;
 let monthlyTreesChart = null;
 let monthlyActivitiesChart = null;
+let tierPieChart = null;
+let _tierPieYear = 'all';
+let _tierPieData = {};  // { year: { 1: Set, 2: Set, 3: Set } }
 let _actChartByYear = {};          // { year: { actId: treeCount } }
 let _actChartYears  = [];          // all years with data, sorted desc
 let _actSelectedYears = ['2026'];  // default: 2026 only
@@ -3115,6 +3128,85 @@ function toggleActivityYear(year) {
   renderActivitiesChart();
 }
 
+function setTierPieYear(yr) {
+  _tierPieYear = yr;
+  renderTierPieChart();
+}
+
+function renderTierPieChart() {
+  const pillsEl = document.getElementById('s-tier-pie-pills');
+  const legendEl = document.getElementById('tier-pie-legend');
+  const canvas = document.getElementById('tier-pie-chart');
+  if (!canvas) return;
+
+  // Build pills from available years
+  const years = Object.keys(_tierPieData).filter(y => y !== 'all').sort().reverse();
+  if (pillsEl) {
+    const allYears = ['all', ...years];
+    pillsEl.innerHTML = allYears.map(yr => {
+      const label = yr === 'all' ? 'All' : yr;
+      const active = _tierPieYear === yr;
+      return `<button onclick="setTierPieYear('${yr}')" style="
+        padding:3px 10px;border-radius:12px;border:1px solid ${active ? 'var(--accent)' : 'var(--border)'};
+        background:${active ? 'var(--accent)' : 'transparent'};color:${active ? '#fff' : 'var(--text2)'};
+        font-size:11px;font-family:'Nunito',sans-serif;cursor:pointer;font-weight:${active ? '700' : '400'};
+        transition:all 0.15s">${label}</button>`;
+    }).join('');
+  }
+
+  const data = _tierPieData[_tierPieYear] || _tierPieData.all || { 1: new Set(), 2: new Set(), 3: new Set() };
+  const tierMeta = [3, 2, 1].map(t => ({ tier: t, meta: getPriorityMeta(t), count: (data[t] || new Set()).size }));
+  const total = tierMeta.reduce((s, r) => s + r.count, 0);
+
+  if (tierPieChart) { tierPieChart.destroy(); tierPieChart = null; }
+
+  if (total === 0) {
+    const ctx2d = canvas.getContext('2d');
+    ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    ctx2d.fillStyle = 'var(--text3)';
+    ctx2d.font = '12px Nunito, sans-serif';
+    ctx2d.textAlign = 'center';
+    ctx2d.fillText('No data for this year', canvas.offsetWidth / 2, 100);
+    if (legendEl) legendEl.innerHTML = '';
+    return;
+  }
+
+  tierPieChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: tierMeta.map(r => r.meta.label),
+      datasets: [{
+        data: tierMeta.map(r => r.count),
+        backgroundColor: tierMeta.map(r => r.meta.color + 'cc'),
+        borderColor: tierMeta.map(r => r.meta.color),
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString() + ' trees (' + Math.round(ctx.parsed / total * 100) + '%)' } }
+      },
+      maintainAspectRatio: false
+    }
+  });
+
+  if (legendEl) {
+    legendEl.innerHTML = tierMeta.map(r => {
+      const pct = Math.round(r.count / total * 100);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${r.meta.color};flex-shrink:0"></span>
+        <div>
+          <div style="font-weight:700;color:${r.meta.color}">${r.meta.label}</div>
+          <div style="color:var(--text2)">${r.count.toLocaleString()} trees <span style="color:var(--text3)">(${pct}%)</span></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
 function updateStats() {
   const trees = filteredTrees;
   const total = trees.length;
@@ -3157,7 +3249,7 @@ function updateStats() {
     ? areas2026.length + ' area' + (areas2026.length !== 1 ? 's' : '') + ' with care logged in 2026'
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
 
-  // ── Priority tier breakdown ───────────────────────────────────
+  // ── Priority tier breakdown + pie chart ───────────────────────
   const tierTotals = { 1: 0, 2: 0, 3: 0 };
   (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
     const tier = calcPriority(t);
@@ -3166,12 +3258,21 @@ function updateStats() {
   const tierCared = { 1: new Set(), 2: new Set(), 3: new Set() };
   const _tcTreeById = {};
   (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => { _tcTreeById[String(t.tree_id)] = t; });
+  // Build per-year tier data for the pie chart
+  _tierPieData = { all: { 1: new Set(), 2: new Set(), 3: new Set() } };
   tcAreas.forEach(area => {
     const tid = area._treeId;
     if (!tid) return;
     const t = _tcTreeById[String(tid)];
     const tier = t ? calcPriority(t) : 0;
-    if (tier >= 1 && tier <= 3) tierCared[tier].add(String(tid));
+    if (tier < 1 || tier > 3) return;
+    tierCared[tier].add(String(tid));
+    _tierPieData.all[tier].add(String(tid));
+    const years = new Set((area.careEvents || []).map(ev => (ev.date || '').slice(0, 4)).filter(Boolean));
+    years.forEach(yr => {
+      if (!_tierPieData[yr]) _tierPieData[yr] = { 1: new Set(), 2: new Set(), 3: new Set() };
+      _tierPieData[yr][tier].add(String(tid));
+    });
   });
   const tierRowsEl = document.getElementById('s-tier-rows');
   if (tierRowsEl) {
@@ -3193,6 +3294,7 @@ function updateStats() {
       </div>`;
     }).join('');
   }
+  renderTierPieChart();
 
   // ── Build unified data structure for all charts ───────────────
   // For each care event, use its effective tree count (override or area default).
