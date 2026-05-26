@@ -6981,11 +6981,22 @@ function renderTcStats() {
   const actCounts = {};
   TC_ACTIVITIES.forEach(a => { actCounts[a.id] = 0; });
   let totalEvents = 0;
+  // Build a lookup from tree_id → tree object for priority
+  const treeById = {};
+  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => { treeById[String(t.tree_id)] = t; });
+  // tier counts: unique trees cared for per tier (across all time)
+  const tierTreeIds = { 1: new Set(), 2: new Set(), 3: new Set() };
   _tcScrapedAreas.forEach(area => {
+    const tid = area._treeId;
+    if (tid) {
+      const tree = treeById[String(tid)];
+      const tier = tree ? calcPriority(tree) : 0;
+      if (tier >= 1 && tier <= 3) tierTreeIds[tier].add(String(tid));
+    }
     (area.careEvents || []).forEach(ev => {
       const yr = (ev.date || '').slice(0, 4) || 'Unknown';
       byYear[yr] = (byYear[yr] || new Set());
-      byYear[yr].add(area._treeId || area.name);
+      byYear[yr].add(tid || area.name);
       totalEvents++;
       (ev.activities || []).forEach(a => { actCounts[a] = (actCounts[a] || 0) + 1; });
     });
@@ -7015,6 +7026,26 @@ function renderTcStats() {
           </div>
           <span style="color:var(--text3);min-width:32px;text-align:right">${r.count}</span>
         </div>`).join('')}
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">
+      <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Trees Cared For by Priority Tier</div>
+      ${[3, 2, 1].map(tier => {
+        const meta = getPriorityMeta(tier);
+        const count = tierTreeIds[tier].size;
+        const labels = { 3: 'Tier 3 — Planted 2023–2026', 2: 'Tier 2 — Planted 2020–2022 / DBH < 6"', 1: 'Tier 1 — DBH ≥ 6" or pre-2020' };
+        const maxCount = Math.max(1, ...Object.values(tierTreeIds).map(s => s.size));
+        const barPct = Math.round(count / maxCount * 100);
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${meta.color};flex-shrink:0"></span>
+            <span style="font-size:12px;color:var(--text);flex:1">${labels[tier]}</span>
+            <span style="font-weight:700;font-size:13px;color:${meta.color}">${count}</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:${meta.color};width:${barPct}%;border-radius:3px;transition:width 0.4s"></div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>
     <div style="background:var(--bg2);border-radius:10px;padding:16px">
       <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;margin-bottom:12px">Activity Types (${totalEvents} total events)</div>
