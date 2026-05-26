@@ -5172,24 +5172,117 @@ let _pendingReserveTree = null;
 
 let _blockTreesCache = [];
 
-function getBlockTrees(tree) {
-  if (!tree || !tree.address) return [];
-  const parts = (tree.address || '').trim().split(/\s+/);
-  if (parts.length < 2) return [];
-  const num = parseInt(parts[0]);
-  if (!num) return [];
-  const street = parts.slice(1).join(' ').toUpperCase();
-  const block = Math.floor(num / 100) * 100;
+const _haversine = (() => {
+  const R = 6371000, toRad = d => d * Math.PI / 180;
+  return (lat1, lng1, lat2, lng2) => {
+    const dl = toRad(lat2 - lat1), dg = toRad(lng2 - lng1);
+    const a = Math.sin(dl/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dg/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+})();
+
+// Fallback: ~100m radius (typical NYC short block face)
+function getBlockTreesRadius(tree) {
+  const lat = parseFloat(tree.latitude || tree.lat || 0);
+  const lng = parseFloat(tree.longitude || tree.lng || 0);
+  if (!lat || !lng) return [];
   const tid = String(tree.tree_id || '');
   return (typeof allTrees !== 'undefined' ? allTrees : []).filter(t => {
     if (String(t.tree_id) === tid) return false;
-    if (!t.address) return false;
-    const tp = (t.address || '').trim().split(/\s+/);
-    if (tp.length < 2) return false;
-    const tn = parseInt(tp[0]);
-    if (!tn) return false;
-    const ts = tp.slice(1).join(' ').toUpperCase();
-    return ts === street && Math.floor(tn / 100) * 100 === block;
+    const tlat = parseFloat(t.latitude || 0), tlng = parseFloat(t.longitude || 0);
+    if (!tlat || !tlng) return false;
+    return _haversine(lat, lng, tlat, tlng) <= 100;
+  });
+}
+
+// Query Overpass for the nearest street segment; return endpoints of the block between
+// the two nearest intersections on either side of the given point.
+async function findBlockSegment(lat, lng) {
+  const query =
+    '[out:json][timeout:10];' +
+    'way(around:50,' + lat + ',' + lng + ')["highway"]["highway"!~"footway|path|cycleway|service|track|steps|pedestrian"];' +
+    '(._;>;);out body;';
+  const resp = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(query),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+  if (!resp.ok) throw new Error('Overpass HTTP ' + resp.status);
+  const data = await resp.json();
+
+  const nodes = {};
+  data.elements.filter(e => e.type === 'node').forEach(n => { nodes[n.id] = [n.lat, n.lon]; });
+  const ways = data.elements.filter(e => e.type === 'way' && e.nodes);
+
+  if (!ways.length) throw new Error('no ways');
+
+  // Count how many ways each node appears in (intersection = used by >1 way)
+  const nodeWayCount = {};
+  ways.forEach(w => w.nodes.forEach(nid => { nodeWayCount[nid] = (nodeWayCount[nid] || 0) + 1; }));
+  ways.forEach(w => {
+    // Also mark endpoints as intersections (they connect to something outside query)
+    const first = w.nodes[0], last = w.nodes[w.nodes.length - 1];
+    nodeWayCount[first] = Math.max(nodeWayCount[first] || 0, 2);
+    nodeWayCount[last]  = Math.max(nodeWayCount[last]  || 0, 2);
+  });
+
+  // Pick the way whose segment is closest to (lat,lng)
+  let bestWay = null, bestDist = Infinity;
+  ways.forEach(w => {
+    for (let i = 0; i < w.nodes.length - 1; i++) {
+      const [alat, alng] = nodes[w.nodes[i]]   || [0,0];
+      const [blat, blng] = nodes[w.nodes[i+1]] || [0,0];
+      const d = _haversine(lat, lng, (alat+blat)/2, (alng+blng)/2);
+      if (d < bestDist) { bestDist = d; bestWay = w; }
+    }
+  });
+  if (!bestWay) throw new Error('no best way');
+
+  const streetName = bestWay.tags && (bestWay.tags.name || bestWay.tags.ref) || '';
+
+  // Find the node on this way closest to (lat,lng)
+  let closestIdx = 0, closestD = Infinity;
+  bestWay.nodes.forEach((nid, i) => {
+    const [nlat, nlng] = nodes[nid] || [0,0];
+    const d = _haversine(lat, lng, nlat, nlng);
+    if (d < closestD) { closestD = d; closestIdx = i; }
+  });
+
+  // Walk forward from closestIdx to next intersection
+  let fwdIdx = closestIdx;
+  while (fwdIdx < bestWay.nodes.length - 1 && (nodeWayCount[bestWay.nodes[fwdIdx]] || 0) < 2) fwdIdx++;
+  // Walk backward from closestIdx to previous intersection
+  let bwdIdx = closestIdx;
+  while (bwdIdx > 0 && (nodeWayCount[bestWay.nodes[bwdIdx]] || 0) < 2) bwdIdx--;
+
+  const A = nodes[bestWay.nodes[bwdIdx]];
+  const B = nodes[bestWay.nodes[fwdIdx]];
+  if (!A || !B) throw new Error('missing endpoints');
+  return { A, B, streetName };
+}
+
+// Keep trees whose projection onto segment A→B falls within the segment and
+// are within 20m perpendicular distance (catches trees set back from curb).
+function treesInBlock(A, B, excludeId) {
+  const [alat, alng] = A, [blat, blng] = B;
+  // Use a flat approximation — good enough over ~100m
+  const metersPerDegLat = 111320;
+  const metersPerDegLng = 111320 * Math.cos(((alat + blat) / 2) * Math.PI / 180);
+  const ax = alng * metersPerDegLng, ay = alat * metersPerDegLat;
+  const bx = blng * metersPerDegLng, by = blat * metersPerDegLat;
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+
+  return (typeof allTrees !== 'undefined' ? allTrees : []).filter(t => {
+    if (String(t.tree_id) === String(excludeId)) return false;
+    const tlat = parseFloat(t.latitude || 0), tlng = parseFloat(t.longitude || 0);
+    if (!tlat || !tlng) return false;
+    const tx = tlng * metersPerDegLng, ty = tlat * metersPerDegLat;
+    const t_ = ((tx - ax) * dx + (ty - ay) * dy) / lenSq;
+    if (t_ < 0 || t_ > 1) return false;
+    const px = ax + t_ * dx, py = ay + t_ * dy;
+    const perp = Math.sqrt((tx - px) ** 2 + (ty - py) ** 2);
+    return perp <= 20;
   });
 }
 
@@ -5242,23 +5335,45 @@ function openReserveModal(tree) {
   if (personRadio) personRadio.checked = true;
   toggleReserveMode();
 
-  // Block reservation
-  _blockTreesCache = getBlockTrees(tree);
+  // Block reservation — async Overpass lookup with radius fallback
+  _blockTreesCache = [];
   const blockSection = document.getElementById('reserve-block-section');
   const blockCheckbox = document.getElementById('reserve-block-checkbox');
   const blockCount = document.getElementById('reserve-block-count');
   if (blockSection && blockCheckbox) {
     blockCheckbox.checked = false;
-    if (_blockTreesCache.length > 0) {
-      blockSection.style.display = 'block';
-      if (blockCount) blockCount.textContent = '(' + _blockTreesCache.length + ' other trees on this block)';
-    } else {
-      blockSection.style.display = 'none';
-    }
+    blockSection.style.display = 'block';
+    if (blockCount) blockCount.textContent = '(finding block…)';
   }
   updateReserveBlockBtn();
 
   modal.style.display = 'flex';
+
+  // Async: find segment via Overpass, fall back to radius
+  const treeLat = parseFloat(tree.latitude || tree.lat || 0);
+  const treeLng = parseFloat(tree.longitude || tree.lng || 0);
+  const treeId  = tree.tree_id;
+  if (treeLat && treeLng) {
+    findBlockSegment(treeLat, treeLng).then(({ A, B, streetName }) => {
+      _blockTreesCache = treesInBlock(A, B, treeId);
+      if (blockCount) {
+        const label = streetName ? 'on ' + streetName : 'on this block';
+        blockCount.textContent = _blockTreesCache.length > 0
+          ? '(' + _blockTreesCache.length + ' other trees ' + label + ')'
+          : '(no other trees found on block)';
+      }
+      updateReserveBlockBtn();
+    }).catch(() => {
+      // Overpass failed — fall back to radius
+      _blockTreesCache = getBlockTreesRadius(tree);
+      if (blockCount) blockCount.textContent = _blockTreesCache.length > 0
+        ? '(' + _blockTreesCache.length + ' nearby trees)'
+        : '(no nearby trees found)';
+      updateReserveBlockBtn();
+    });
+  } else {
+    if (blockSection) blockSection.style.display = 'none';
+  }
 }
 
 function closeReserveModal() {
