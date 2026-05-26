@@ -1272,9 +1272,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .ra-rating-btn.selected[data-val="high"]   { background:#dc2626; border-color:#dc2626; color:#fff; font-weight:700; }
   .ra-rating-btn.selected[data-val="dead"]   { background:#111; border-color:#111; color:#fff; font-weight:700; }
   .ra-rating-btn.selected[data-val="empty"]  { background:#6b7280; border-color:#6b7280; color:#fff; font-weight:700; }
+  .ra-rating-btn.selected[data-val="park"]   { background:#3b82f6; border-color:#3b82f6; color:#fff; font-weight:700; }
   .ra-overall .ra-rating-btn { padding:10px 0; font-weight:600; font-size:13px; }
   .ra-dead-mode .ra-indicators-section,
-  .ra-empty-mode .ra-indicators-section { opacity:0.35; pointer-events:none; }
+  .ra-empty-mode .ra-indicators-section,
+  .ra-park-mode .ra-indicators-section { opacity:0.35; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -2159,6 +2161,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <span>Dead</span>
                 <span id="ra-stat-dead" style="margin-left:auto;font-weight:700;color:#111"></span>
               </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:11px;height:11px;border-radius:50%;background:#3b82f6;flex-shrink:0"></div>
+                <span>Park / Playground</span>
+                <span id="ra-stat-park" style="margin-left:auto;font-weight:700;color:#3b82f6"></span>
+              </div>
             </div>
           </div>
           <!-- Progress -->
@@ -2296,6 +2303,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">🔴 High</button>
           <button type="button" class="ra-rating-btn" data-val="dead" onclick="raSelectRating(this)">⚫ Dead</button>
           <button type="button" class="ra-rating-btn" data-val="empty" onclick="raSelectRating(this)">🕳 Empty Pit</button>
+          <button type="button" class="ra-rating-btn" data-val="park" onclick="raSelectRating(this)">🏛 Park / Playground</button>
         </div>
       </div>
       <!-- Notes -->
@@ -6587,12 +6595,12 @@ function renderRaTable() {
     return;
   }
   const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
-  const rl = v => ({ low:'Low', medium:'Med', high:'High', dead:'Dead', empty:'Empty', good:'Good', fair:'Fair', poor:'Poor' }[v] || v || '—');
+  const rl = v => ({ low:'Low', medium:'Med', high:'High', dead:'Dead', empty:'Empty', park:'Park/Playground', good:'Good', fair:'Fair', poor:'Poor' }[v] || v || '—');
   const rc = v => raRiskColor(v) || ({ good:'#22c55e', fair:'#f59e0b', poor:'#dc2626' }[v] || 'var(--text3)');
   tbody.innerHTML = sorted.map((a, i) => {
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
     const oc = raRiskColor(a.overallRisk) || 'var(--text3)';
-    const ol = a.overallRisk === 'dead' ? 'Dead' : a.overallRisk === 'empty' ? 'Empty Pit' : rl(a.overallRisk);
+    const ol = a.overallRisk === 'dead' ? 'Dead' : a.overallRisk === 'empty' ? 'Empty Pit' : a.overallRisk === 'park' ? 'Park/Playground' : rl(a.overallRisk);
     const ts = (a.timestamp || '').replace(/"/g, '&quot;');
     return '<tr style="background:' + bg + '">' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">' + (a.date || (a.timestamp||'').slice(0,10) || '—') + '</td>' +
@@ -6626,7 +6634,7 @@ function renderRaStats() {
   const trees = yr === 'all' ? allTrees : allTrees.filter(t => String(parseInt(t.tree_cen_date || t.planteddate || 0)) === yr);
   const total = trees.length;
 
-  const counts = { high:0, medium:0, low:0, dead:0, empty:0, none:0 };
+  const counts = { high:0, medium:0, low:0, dead:0, empty:0, park:0, none:0 };
   const by2024 = { assessed:0, total:0 };
   const by2025 = { assessed:0, total:0 };
   allTrees.forEach(t => {
@@ -6650,7 +6658,8 @@ function renderRaStats() {
     { label:'Medium risk',  color:'#f59e0b', count:counts.medium },
     { label:'High risk',    color:'#dc2626', count:counts.high },
     { label:'Dead',         color:'#111111', count:counts.dead },
-    { label:'Empty pit',    color:'#6b7280', count:counts.empty },
+    { label:'Empty pit',         color:'#6b7280', count:counts.empty },
+    { label:'Park / Playground', color:'#3b82f6', count:counts.park },
   ].filter(r => r.count > 0);
 
   const pillStyle = (v) => 'cursor:pointer;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;border:2px solid ' +
@@ -7216,6 +7225,7 @@ function raRiskColor(risk) {
   if (risk === 'low')    return '#22c55e';
   if (risk === 'dead')   return '#111111';
   if (risk === 'empty')  return '#6b7280';
+  if (risk === 'park')   return '#3b82f6';
   return null;
 }
 
@@ -7267,7 +7277,7 @@ function raUpdateStats() {
     return (yr === 2024 && show2024) || (yr === 2025 && show2025);
   });
 
-  let high = 0, med = 0, low = 0, dead = 0, empty = 0, none = 0;
+  let high = 0, med = 0, low = 0, dead = 0, empty = 0, park = 0, none = 0;
   visible.forEach(t => {
     const a = raLatestAssessment(raTreeId(t));
     if (!a) { none++; return; }
@@ -7275,16 +7285,18 @@ function raUpdateStats() {
     else if (a.overallRisk === 'medium') med++;
     else if (a.overallRisk === 'dead') dead++;
     else if (a.overallRisk === 'empty') empty++;
+    else if (a.overallRisk === 'park') park++;
     else low++;
   });
 
-  const assessed = high + med + low + dead;
+  const assessed = high + med + low + dead + empty + park;
   const total = visible.length;
   const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   s('ra-stat-high', high || '');
   s('ra-stat-med', med || '');
   s('ra-stat-low', low || '');
   s('ra-stat-dead', dead || '');
+  s('ra-stat-park', park || '');
   s('ra-stat-none', none || '');
   s('ra-stat-assessed', assessed);
   s('ra-stat-total', total);
@@ -7377,7 +7389,7 @@ function raOpenPanel(tree) {
   let badgeHTML = '<span style="background:' + yearColor + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (yr || '?') + ' Planting</span>';
   if (latest) {
     const rc = raRiskColor(latest.overallRisk) || '#888';
-    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk === 'dead' ? 'DEAD' : latest.overallRisk === 'empty' ? 'EMPTY PIT' : (latest.overallRisk || '').toUpperCase() + ' RISK') + '</span>';
+    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk === 'dead' ? 'DEAD' : latest.overallRisk === 'empty' ? 'EMPTY PIT' : latest.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (latest.overallRisk || '').toUpperCase() + ' RISK') + '</span>';
   }
   document.getElementById('ra-panel-badge').innerHTML = badgeHTML;
 
@@ -7441,7 +7453,7 @@ function raRenderPanelHistory(tid) {
       const ts = (a.timestamp || '').replace(/'/g, "\\'");
       return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : a.overallRisk === 'empty' ? 'EMPTY PIT' : (a.overallRisk || '').toUpperCase() + ' RISK') + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : a.overallRisk === 'empty' ? 'EMPTY PIT' : a.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (a.overallRisk || '').toUpperCase() + ' RISK') + '</span>' +
           '<div style="display:flex;align-items:center;gap:6px">' +
             '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
             '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:10px;color:var(--text2)">✏️</button>' +
@@ -7480,7 +7492,7 @@ function raEditAssessment(timestamp) {
       '<div style="font-size:11px;color:var(--text2)">' + (a.address || '') + (a.plantYear ? ' · ' + a.plantYear + ' planting' : '') + '</div>';
   }
 
-  modal.classList.remove('ra-dead-mode', 'ra-empty-mode');
+  modal.classList.remove('ra-dead-mode', 'ra-empty-mode', 'ra-park-mode');
   document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
 
   const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
@@ -7530,6 +7542,7 @@ function raHandleAssessBtn() {
     });
     if (existing.overallRisk === 'dead')  modal.classList.add('ra-dead-mode');
     if (existing.overallRisk === 'empty') modal.classList.add('ra-empty-mode');
+    if (existing.overallRisk === 'park')  modal.classList.add('ra-park-mode');
     document.getElementById('ra-assessor').value = existing.assessorName || localStorage.getItem('_ra_assessor') || '';
     document.getElementById('ra-date').value = existing.date || new Date().toISOString().split('T')[0];
     document.getElementById('ra-notes').value = existing.notes || '';
@@ -7552,6 +7565,7 @@ function raSelectRating(btn) {
     if (modal) {
       modal.classList.toggle('ra-dead-mode',  btn.dataset.val === 'dead');
       modal.classList.toggle('ra-empty-mode', btn.dataset.val === 'empty');
+      modal.classList.toggle('ra-park-mode',  btn.dataset.val === 'park');
     }
   }
 }
@@ -7582,7 +7596,7 @@ async function raSubmitAssessment() {
     alert('Please select an overall risk rating before submitting.');
     return;
   }
-  if (overallRisk !== 'dead' && overallRisk !== 'empty' && (!structural || !pestDisease || !soilSite || !growthVitality)) {
+  if (overallRisk !== 'dead' && overallRisk !== 'empty' && overallRisk !== 'park' && (!structural || !pestDisease || !soilSite || !growthVitality)) {
     alert('Please rate all four indicators before submitting, or mark the tree as Dead.');
     return;
   }
