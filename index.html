@@ -5173,23 +5173,23 @@ let _pendingReserveTree = null;
 let _blockTreesCache = [];
 
 function getBlockTrees(tree) {
-  if (!tree || !tree.address) return [];
-  const parts = (tree.address || '').trim().split(/\s+/);
-  if (parts.length < 2) return [];
-  const num = parseInt(parts[0]);
-  if (!num) return [];
-  const street = parts.slice(1).join(' ').toUpperCase();
-  const block = Math.floor(num / 100) * 100;
+  // No address data available — use 100m radius (typical NYC short block)
+  const lat = parseFloat(tree.latitude || tree.lat || 0);
+  const lng = parseFloat(tree.longitude || tree.lng || 0);
+  if (!lat || !lng) return [];
   const tid = String(tree.tree_id || '');
+  const R = 6371000; // Earth radius in metres
+  const toRad = d => d * Math.PI / 180;
   return (typeof allTrees !== 'undefined' ? allTrees : []).filter(t => {
     if (String(t.tree_id) === tid) return false;
-    if (!t.address) return false;
-    const tp = (t.address || '').trim().split(/\s+/);
-    if (tp.length < 2) return false;
-    const tn = parseInt(tp[0]);
-    if (!tn) return false;
-    const ts = tp.slice(1).join(' ').toUpperCase();
-    return ts === street && Math.floor(tn / 100) * 100 === block;
+    const tlat = parseFloat(t.latitude || 0);
+    const tlng = parseFloat(t.longitude || 0);
+    if (!tlat || !tlng) return false;
+    const dlat = toRad(tlat - lat);
+    const dlng = toRad(tlng - lng);
+    const a = Math.sin(dlat/2)**2 + Math.cos(toRad(lat)) * Math.cos(toRad(tlat)) * Math.sin(dlng/2)**2;
+    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return dist <= 100;
   });
 }
 
