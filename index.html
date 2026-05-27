@@ -1530,12 +1530,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <!-- STATS VIEW -->
   <div id="stats-view" class="view">
     <div class="summary-row">
-      <div class="stat-card"><div class="stat-num" id="s-total" style="color:var(--accent)">—</div><div class="stat-lbl">Total Trees</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-trees-2026" style="color:var(--accent)">—</div><div class="stat-lbl">Trees Cared For in 2026</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-tier3-reached" style="color:#c0392b">—</div><div class="stat-lbl">Tier 3 Trees Reached</div></div>
       <div class="stat-card"><div class="stat-num" id="s-care-events" style="color:#2e8b57">—</div><div class="stat-lbl">Care Events Logged</div></div>
-
-      <div class="stat-card danger"><div class="stat-num" id="s-poor" style="color:var(--danger)">—</div><div class="stat-lbl">Poor Health</div></div>
-      <div class="stat-card warning"><div class="stat-num" id="s-good" style="color:var(--warning)">—</div><div class="stat-lbl">Good Health</div></div>
-      <div class="stat-card warning"><div class="stat-num" id="s-avg" style="color:var(--warning)">—</div><div class="stat-lbl">Avg Priority Tier</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-assessed" style="color:#7b3fa0">—</div><div class="stat-lbl">Trees Assessed</div></div>
+      <div class="stat-card"><div class="stat-num" id="s-alltime" style="color:#1a7fa8">—</div><div class="stat-lbl">Unique Trees Cared For</div></div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
@@ -1546,6 +1545,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="s-goal-fill" style="height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width 0.6s ease"></div>
       </div>
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
+    </div>
+    <div class="charts-grid" style="margin-bottom:20px">
+      <div class="chart-card" style="flex:1.6;min-width:260px">
+        <div class="chart-title">Trees Cared For — by Month</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="monthly-trees-chart"></canvas></div>
+      </div>
+      <div class="chart-card" style="flex:1;min-width:220px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="chart-title" style="margin:0">Activity Mix</span>
+          <select id="monthly-pie-month" onchange="updateStats()"
+            style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;cursor:pointer"></select>
+        </div>
+        <div class="chart-wrap" style="height:200px"><canvas id="monthly-activities-chart"></canvas></div>
+      </div>
     </div>
     <div id="s-tier-breakdown" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
@@ -1571,18 +1584,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div id="act-year-toggles" style="display:flex;gap:4px;flex-wrap:wrap"></div>
         </div>
         <div class="chart-wrap" style="height:220px"><canvas id="activities-chart"></canvas></div>
-      </div>
-      <div class="chart-card" style="flex:1.6;min-width:260px">
-        <div class="chart-title">Trees Cared For — by Month</div>
-        <div class="chart-wrap" style="height:200px"><canvas id="monthly-trees-chart"></canvas></div>
-      </div>
-      <div class="chart-card" style="flex:1;min-width:220px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span class="chart-title" style="margin:0">Activity Mix</span>
-          <select id="monthly-pie-month" onchange="updateStats()"
-            style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;cursor:pointer"></select>
-        </div>
-        <div class="chart-wrap" style="height:200px"><canvas id="monthly-activities-chart"></canvas></div>
       </div>
       <div class="chart-card full"><div class="chart-title">Top 10 Species in CB3 Area</div><div class="chart-wrap" style="height:260px"><canvas id="species-chart"></canvas></div></div>
     </div>
@@ -3276,11 +3277,7 @@ function updateStats() {
   const tcAreas = tcLoad(); // includes scraped NYC Tree Map activities
   const careEventsTotal = tcAreas.reduce((s, a) => s + (a.careEvents ? a.careEvents.length : 0), 0);
 
-  document.getElementById('s-total').textContent = total.toLocaleString();
   document.getElementById('s-care-events').textContent = careEventsTotal.toLocaleString();
-  document.getElementById('s-good').textContent = (byHealth.Good||0).toLocaleString();
-  document.getElementById('s-poor').textContent = (byHealth.Poor||0).toLocaleString();
-  document.getElementById('s-avg').textContent = total ? Math.round(totalPriority/total) : 0;
 
   // Goal progress — 2026 only, same logic as tcUpdateProgress
   const goalTotal = tcAreas.reduce((s, a) => {
@@ -3289,6 +3286,7 @@ function updateStats() {
     const maxCount = events2026.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
     return s + maxCount;
   }, 0);
+  document.getElementById('s-trees-2026').textContent = goalTotal.toLocaleString();
   const goalPct = Math.min(100, Math.round((goalTotal / 1000) * 100));
   const fillEl = document.getElementById('s-goal-fill');
   const textEl = document.getElementById('s-goal-text');
@@ -3325,6 +3323,15 @@ function updateStats() {
       _tierPieData[yr][tier].add(String(tid));
     });
   });
+  // Unique trees cared for all time = union of all tier sets
+  const alltimeCount = [1, 2, 3].reduce((s, t) => s + (_tierPieData.all[t] || new Set()).size, 0);
+  const tier3Count = (_tierPieData.all[3] || new Set()).size;
+  document.getElementById('s-tier3-reached').textContent = tier3Count.toLocaleString();
+  document.getElementById('s-alltime').textContent = alltimeCount.toLocaleString();
+  // Trees assessed = unique treeIds in raAssessments
+  const assessedCount = new Set((typeof raAssessments !== 'undefined' ? raAssessments : []).map(a => a.treeId).filter(Boolean)).size;
+  document.getElementById('s-assessed').textContent = assessedCount.toLocaleString();
+
   renderTierBreakdownRows();
   renderTierPieChart();
 
