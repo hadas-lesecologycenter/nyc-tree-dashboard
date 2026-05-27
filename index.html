@@ -5527,7 +5527,7 @@ function openReserveModal(tree) {
   if (personRadio) personRadio.checked = true;
   toggleReserveMode();
 
-  // Block reservation — async Overpass lookup with radius fallback
+  // Block reservation — grid cell approach (~100m × 100m, one NYC block)
   _blockTreesCache = [];
   const blockSection = document.getElementById('reserve-block-section');
   const blockCheckbox = document.getElementById('reserve-block-checkbox');
@@ -5541,28 +5541,23 @@ function openReserveModal(tree) {
 
   modal.style.display = 'flex';
 
-  // Async: find segment via Overpass, fall back to radius
+  // Grid-cell block lookup: round lat/lon to ~100m × 100m cell
   const treeLat = parseFloat(tree.latitude || tree.lat || 0);
   const treeLng = parseFloat(tree.longitude || tree.lng || 0);
-  const treeId  = tree.tree_id;
+  const treeId  = String(tree.tree_id || '');
   if (treeLat && treeLng) {
-    findBlockSegment(treeLat, treeLng).then(({ A, B, streetName }) => {
-      _blockTreesCache = treesInBlock(A, B, treeId);
-      if (blockCount) {
-        const label = streetName ? 'on ' + streetName : 'on this block';
-        blockCount.textContent = _blockTreesCache.length > 0
-          ? '(' + _blockTreesCache.length + ' other trees ' + label + ')'
-          : '(no other trees found on block)';
-      }
-      updateReserveBlockBtn();
-    }).catch(() => {
-      // Overpass failed — fall back to radius
-      _blockTreesCache = getBlockTreesRadius(tree);
-      if (blockCount) blockCount.textContent = _blockTreesCache.length > 0
-        ? '(' + _blockTreesCache.length + ' nearby trees)'
-        : '(no nearby trees found)';
-      updateReserveBlockBtn();
+    const cellLat = Math.round(treeLat / 0.0009) * 0.0009;
+    const cellLon = Math.round(treeLng / 0.0011) * 0.0011;
+    _blockTreesCache = (typeof allTrees !== 'undefined' ? allTrees : []).filter(t => {
+      if (String(t.tree_id) === treeId) return false;
+      const tlat = parseFloat(t.latitude || 0), tlng = parseFloat(t.longitude || 0);
+      if (!tlat || !tlng) return false;
+      return Math.round(tlat / 0.0009) * 0.0009 === cellLat &&
+             Math.round(tlng / 0.0011) * 0.0011 === cellLon;
     });
+    if (blockCount) blockCount.textContent = _blockTreesCache.length > 0
+      ? '(' + _blockTreesCache.length + ' other trees on this block)'
+      : '(no other trees found on block)';
   } else {
     if (blockSection) blockSection.style.display = 'none';
   }
