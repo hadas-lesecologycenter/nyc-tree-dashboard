@@ -1496,6 +1496,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-missing" onchange="applyFilters()">
             ⚠️ Missing/Removed
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-fire-hydrants" onchange="toggleFireHydrantsFromPanel()">
+            🚒 Fire Hydrants
+          </label>
           <button type="button" onclick="clearAllFilters()" style="width:100%;margin-top:12px;padding:8px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Clear All</button>
         </div>
 
@@ -2412,6 +2416,9 @@ let treeGuardsLayer = null;
 let treeGuardsVisible = false;
 let coolestBlocksLayer = null;
 let coolestBlocksVisible = false;
+let hydrantLayer = null;
+let hydrantVisible = false;
+let hydrantLoading = false;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -3847,6 +3854,66 @@ function toggleCoolestBlocksFromPanel() {
   else coolestBlocksLayer.remove();
   const legend = document.getElementById('coolest-blocks-legend');
   if (legend) legend.style.display = coolestBlocksVisible ? 'block' : 'none';
+}
+
+// ========== FIRE HYDRANTS LAYER ==========
+// Dataset: NYC Open Data "Fire Hydrants" (23d2-ttdp)
+
+async function initFireHydrantsLayer() {
+  // Fetch hydrants within CB3 bounding box, then filter to the actual polygon
+  const params = new URLSearchParams({
+    '$limit': '2000',
+    '$where': 'within_box(the_geom, 40.7063, -73.9983, 40.7365, -73.9715)'
+  });
+  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.json?${params}`);
+  if (!resp.ok) throw new Error(resp.status);
+  const data = await resp.json();
+
+  hydrantLayer = L.layerGroup();
+  data.forEach(h => {
+    let lat, lng;
+    if (h.latitude && h.longitude) {
+      lat = parseFloat(h.latitude);
+      lng = parseFloat(h.longitude);
+    } else if (h.the_geom?.coordinates) {
+      [lng, lat] = h.the_geom.coordinates;
+    }
+    if (!lat || !lng || !cb3Contains(lat, lng)) return;
+    L.circleMarker([lat, lng], {
+      radius: 5,
+      fillColor: '#e31c23',
+      color: '#b01015',
+      weight: 1.5,
+      opacity: 1,
+      fillOpacity: 0.85,
+      interactive: true
+    }).bindPopup(`<div style="font-family:'Nunito',sans-serif;font-size:12px">
+      <strong style="font-family:'Lora',serif">🚒 Fire Hydrant</strong>
+      ${h.unitid ? `<br>ID: ${h.unitid}` : ''}
+    </div>`).addTo(hydrantLayer);
+  });
+}
+
+function toggleFireHydrantsFromPanel() {
+  const cb = document.getElementById('layer-fire-hydrants');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === hydrantVisible) return;
+  hydrantVisible = shouldShow;
+  if (!hydrantVisible) {
+    if (hydrantLayer) hydrantLayer.remove();
+    return;
+  }
+  if (hydrantLayer) { hydrantLayer.addTo(mapInstance); return; }
+  if (hydrantLoading) return;
+  hydrantLoading = true;
+  initFireHydrantsLayer()
+    .then(() => { if (hydrantVisible) hydrantLayer.addTo(mapInstance); })
+    .catch(err => {
+      console.error('Fire hydrant load failed:', err);
+      if (cb) cb.checked = false;
+      hydrantVisible = false;
+    })
+    .finally(() => { hydrantLoading = false; });
 }
 
 // ========== EMPTY BEDS LAYER ==========
