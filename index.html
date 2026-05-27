@@ -3860,14 +3860,16 @@ function toggleCoolestBlocksFromPanel() {
 // Dataset: NYC Open Data "Fire Hydrants" (23d2-ttdp)
 
 async function initFireHydrantsLayer() {
-  // Fetch hydrants within CB3 bounding box, then filter to the actual polygon
+  // Fetch hydrants within CB3 bounding box, then filter to the actual polygon.
+  // Using explicit lat/lng range avoids within_box() column-name/order ambiguity.
   const params = new URLSearchParams({
     '$limit': '2000',
-    '$where': 'within_box(the_geom, 40.7063, -73.9983, 40.7365, -73.9715)'
+    '$where': 'latitude > 40.7063 AND latitude < 40.7365 AND longitude > -73.9983 AND longitude < -73.9715'
   });
   const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.json?${params}`);
-  if (!resp.ok) throw new Error(resp.status);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
   const data = await resp.json();
+  if (!Array.isArray(data)) throw new Error(data.message || 'Unexpected API response');
 
   hydrantLayer = L.layerGroup();
   data.forEach(h => {
@@ -3875,6 +3877,9 @@ async function initFireHydrantsLayer() {
     if (h.latitude && h.longitude) {
       lat = parseFloat(h.latitude);
       lng = parseFloat(h.longitude);
+    } else if (h.location?.latitude && h.location?.longitude) {
+      lat = parseFloat(h.location.latitude);
+      lng = parseFloat(h.location.longitude);
     } else if (h.the_geom?.coordinates) {
       [lng, lat] = h.the_geom.coordinates;
     }
