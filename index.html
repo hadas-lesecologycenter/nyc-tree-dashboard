@@ -6858,7 +6858,7 @@ function callStatusColor(status) {
 // Find nearest census tree to a lat/lng point within maxMeters.
 // Uses a bbox pre-filter for speed, then haversine for the finalists.
 function findNearestTree(lat, lng, maxMeters) {
-  maxMeters = maxMeters || 25;
+  maxMeters = maxMeters || 60;
   const degLat = maxMeters / 111320;
   const degLng = maxMeters / (111320 * Math.cos(lat * Math.PI / 180));
   let best = null, bestDist = Infinity;
@@ -6873,14 +6873,18 @@ function findNearestTree(lat, lng, maxMeters) {
 }
 
 function nearestTreeSnippet(call) {
-  const lat = parseFloat(call.latitude), lng = parseFloat(call.longitude);
-  if (!lat || !lng) return null;
-  const found = findNearestTree(lat, lng, 30);
-  if (!found) return null;
-  const { tree, dist } = found;
-  const pm = getPriorityMeta(calcPriority(tree));
-  const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health || '').toLowerCase()] || 'var(--text3)';
-  return { tree, dist, pm, healthColor };
+  try {
+    const lat = parseFloat(call.latitude), lng = parseFloat(call.longitude);
+    if (!lat || !lng) return null;
+    // 311 calls are geocoded to building addresses — use 60m to account for the
+    // full distance from building centroid, across sidewalk, to street tree.
+    const found = findNearestTree(lat, lng, 60);
+    if (!found) return null;
+    const { tree, dist } = found;
+    const pm = getPriorityMeta(calcPriority(tree));
+    const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health || '').toLowerCase()] || 'var(--text3)';
+    return { tree, dist, pm, healthColor };
+  } catch (e) { return null; }
 }
 
 function renderCallsMarkers(rows) {
