@@ -3329,8 +3329,17 @@ function updateStats() {
   document.getElementById('s-tier3-reached').textContent = tier3Count.toLocaleString();
   document.getElementById('s-alltime').textContent = alltimeCount.toLocaleString();
   // Trees assessed = unique treeIds in raAssessments
-  const assessedCount = new Set((typeof raAssessments !== 'undefined' ? raAssessments : []).map(a => a.treeId).filter(Boolean)).size;
-  document.getElementById('s-assessed').textContent = assessedCount.toLocaleString();
+  // raAssessments is only populated after visiting the Risk tab, so load it if needed
+  const _setAssessed = () => {
+    const assessedCount = new Set((typeof raAssessments !== 'undefined' ? raAssessments : []).map(a => a.treeId).filter(Boolean)).size;
+    const el = document.getElementById('s-assessed');
+    if (el) el.textContent = assessedCount.toLocaleString();
+  };
+  if (typeof raAssessments !== 'undefined' && raAssessments.length === 0) {
+    raLoadAssessments().then(_setAssessed);
+  } else {
+    _setAssessed();
+  }
 
   renderTierBreakdownRows();
   renderTierPieChart();
