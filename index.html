@@ -6858,7 +6858,7 @@ function callStatusColor(status) {
 // Find nearest census tree to a lat/lng point within maxMeters.
 // Uses a bbox pre-filter for speed, then haversine for the finalists.
 function findNearestTree(lat, lng, maxMeters) {
-  maxMeters = maxMeters || 60;
+  maxMeters = maxMeters || 30;
   const degLat = maxMeters / 111320;
   const degLng = maxMeters / (111320 * Math.cos(lat * Math.PI / 180));
   let best = null, bestDist = Infinity;
@@ -6872,13 +6872,10 @@ function findNearestTree(lat, lng, maxMeters) {
   return best && bestDist <= maxMeters ? { tree: best, dist: Math.round(bestDist) } : null;
 }
 
-function nearestTreeSnippet(call) {
+function nearestTreeSnippet(lat, lng) {
   try {
-    const lat = parseFloat(call.latitude), lng = parseFloat(call.longitude);
     if (!lat || !lng) return null;
-    // 311 calls are geocoded to building addresses — use 60m to account for the
-    // full distance from building centroid, across sidewalk, to street tree.
-    const found = findNearestTree(lat, lng, 60);
+    const found = findNearestTree(lat, lng, 30);
     if (!found) return null;
     const { tree, dist } = found;
     const pm = getPriorityMeta(calcPriority(tree));
@@ -6896,18 +6893,7 @@ function renderCallsMarkers(rows) {
       const lng = parseFloat(call.longitude);
       const status = call.status || 'Open';
       const color = callStatusColor(status);
-      const match = nearestTreeSnippet(call);
-      const treeSection = match ? `
-        <div style="margin-top:10px;padding:8px 10px;background:#f4f7f2;border-radius:6px;border-left:3px solid ${match.pm.color}">
-          <div style="font-size:10px;font-weight:700;color:${match.pm.color};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">🌳 Likely Tree (${match.dist}m away)</div>
-          <div style="font-weight:600;font-size:12px;color:#222;text-transform:capitalize">${match.tree.spc_common || 'Unknown species'}</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:11px;margin-top:4px">
-            <span style="color:#888">Health</span><span style="color:${match.healthColor};font-weight:600">${match.tree.health || '—'}</span>
-            <span style="color:#888">Priority</span><span style="color:${match.pm.color};font-weight:600">${match.pm.label}</span>
-            <span style="color:#888">DBH</span><span style="color:#444">${match.tree.tree_dbh ? match.tree.tree_dbh + '"' : '—'}</span>
-            <span style="color:#888">Tree ID</span><span style="color:#444">#${match.tree.tree_id}</span>
-          </div>
-        </div>` : '';
+      // Popup base — tree card injected lazily on open so allTrees is guaranteed loaded
       const popup = `
         <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
           <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
@@ -6916,10 +6902,30 @@ function renderCallsMarkers(rows) {
           <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
           <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
           <div style="font-size:11px;font-weight:600;color:${color}">${status}</div>
-          ${treeSection}
+          <div class="call-tree-slot"></div>
         </div>`;
-      L.circleMarker([lat, lng], { radius: 6, fillColor: color, color: color, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
-        .bindPopup(popup).addTo(calls311Markers);
+      const marker = L.circleMarker([lat, lng], { radius: 6, fillColor: color, color: color, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
+        .bindPopup(popup);
+      marker.on('popupopen', () => {
+        const slot = marker.getPopup().getElement()?.querySelector('.call-tree-slot');
+        if (!slot || slot.dataset.filled) return;
+        slot.dataset.filled = '1';
+        const match = nearestTreeSnippet(lat, lng);
+        if (!match) return;
+        slot.innerHTML = `
+          <div style="margin-top:10px;padding:8px 10px;background:#f4f7f2;border-radius:6px;border-left:3px solid ${match.pm.color}">
+            <div style="font-size:10px;font-weight:700;color:${match.pm.color};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">🌳 Likely Tree (${match.dist}m away)</div>
+            <div style="font-weight:600;font-size:12px;color:#222;text-transform:capitalize">${match.tree.spc_common || 'Unknown species'}</div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:11px;margin-top:4px">
+              <span style="color:#888">Health</span><span style="color:${match.healthColor};font-weight:600">${match.tree.health || '—'}</span>
+              <span style="color:#888">Priority</span><span style="color:${match.pm.color};font-weight:600">${match.pm.label}</span>
+              <span style="color:#888">DBH</span><span style="color:#444">${match.tree.tree_dbh ? match.tree.tree_dbh + '"' : '—'}</span>
+              <span style="color:#888">Tree ID</span><span style="color:#444">#${match.tree.tree_id}</span>
+            </div>
+          </div>`;
+        marker.getPopup().update();
+      });
+      marker.addTo(calls311Markers);
     });
 
   // Update legend with counts per status
