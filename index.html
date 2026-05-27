@@ -1496,6 +1496,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-missing" onchange="applyFilters()">
             ⚠️ Missing/Removed
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-fire-hydrants" onchange="toggleFireHydrantsFromPanel()">
+            🚒 Fire Hydrants
+          </label>
           <button type="button" onclick="clearAllFilters()" style="width:100%;margin-top:12px;padding:8px;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Clear All</button>
         </div>
 
@@ -1508,10 +1512,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label class="cp-chk">
             <input type="checkbox" id="layer-coolest-blocks" onchange="toggleCoolestBlocksFromPanel()">
             🏆 Coolest Block 2025
-          </label>
-          <label class="cp-chk">
-            <input type="checkbox" id="layer-fire-hydrants" onchange="toggleFireHydrantsFromPanel()">
-            🚒 Fire Hydrants
           </label>
         </div>
 
@@ -3860,12 +3860,10 @@ function toggleCoolestBlocksFromPanel() {
 // Dataset: NYC Open Data "Fire Hydrants" (23d2-ttdp)
 
 async function initFireHydrantsLayer() {
-  const bounds = mapInstance.getBounds();
-  const sw = bounds.getSouthWest();
-  const ne = bounds.getNorthEast();
+  // Fetch hydrants within CB3 bounding box, then filter to the actual polygon
   const params = new URLSearchParams({
     '$limit': '2000',
-    '$where': `within_box(the_geom, ${sw.lat}, ${sw.lng}, ${ne.lat}, ${ne.lng})`
+    '$where': 'within_box(the_geom, 40.7063, -73.9983, 40.7365, -73.9715)'
   });
   const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.json?${params}`);
   if (!resp.ok) throw new Error(resp.status);
@@ -3880,7 +3878,7 @@ async function initFireHydrantsLayer() {
     } else if (h.the_geom?.coordinates) {
       [lng, lat] = h.the_geom.coordinates;
     }
-    if (!lat || !lng) return;
+    if (!lat || !lng || !cb3Contains(lat, lng)) return;
     L.circleMarker([lat, lng], {
       radius: 5,
       fillColor: '#e31c23',
