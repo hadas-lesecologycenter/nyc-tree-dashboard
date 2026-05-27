@@ -1704,6 +1704,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Detail</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Address</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Status</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Likely Tree</th>
               </tr>
             </thead>
             <tbody id="calls-table-body"></tbody>
@@ -6854,6 +6855,34 @@ function callStatusColor(status) {
   return CALLS_STATUS_COLORS[status] || '#6b7280';
 }
 
+// Find nearest census tree to a lat/lng point within maxMeters.
+// Uses a bbox pre-filter for speed, then haversine for the finalists.
+function findNearestTree(lat, lng, maxMeters) {
+  maxMeters = maxMeters || 25;
+  const degLat = maxMeters / 111320;
+  const degLng = maxMeters / (111320 * Math.cos(lat * Math.PI / 180));
+  let best = null, bestDist = Infinity;
+  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+    const tlat = parseFloat(t.latitude || 0), tlng = parseFloat(t.longitude || 0);
+    if (!tlat || !tlng) return;
+    if (Math.abs(tlat - lat) > degLat || Math.abs(tlng - lng) > degLng) return;
+    const dist = _haversine(lat, lng, tlat, tlng);
+    if (dist < bestDist) { bestDist = dist; best = t; }
+  });
+  return best && bestDist <= maxMeters ? { tree: best, dist: Math.round(bestDist) } : null;
+}
+
+function nearestTreeSnippet(call) {
+  const lat = parseFloat(call.latitude), lng = parseFloat(call.longitude);
+  if (!lat || !lng) return null;
+  const found = findNearestTree(lat, lng, 30);
+  if (!found) return null;
+  const { tree, dist } = found;
+  const pm = getPriorityMeta(calcPriority(tree));
+  const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health || '').toLowerCase()] || 'var(--text3)';
+  return { tree, dist, pm, healthColor };
+}
+
 function renderCallsMarkers(rows) {
   if (!calls311Map || !calls311Markers) return;
   calls311Markers.clearLayers();
@@ -6863,6 +6892,18 @@ function renderCallsMarkers(rows) {
       const lng = parseFloat(call.longitude);
       const status = call.status || 'Open';
       const color = callStatusColor(status);
+      const match = nearestTreeSnippet(call);
+      const treeSection = match ? `
+        <div style="margin-top:10px;padding:8px 10px;background:#f4f7f2;border-radius:6px;border-left:3px solid ${match.pm.color}">
+          <div style="font-size:10px;font-weight:700;color:${match.pm.color};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">🌳 Likely Tree (${match.dist}m away)</div>
+          <div style="font-weight:600;font-size:12px;color:#222;text-transform:capitalize">${match.tree.spc_common || 'Unknown species'}</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:11px;margin-top:4px">
+            <span style="color:#888">Health</span><span style="color:${match.healthColor};font-weight:600">${match.tree.health || '—'}</span>
+            <span style="color:#888">Priority</span><span style="color:${match.pm.color};font-weight:600">${match.pm.label}</span>
+            <span style="color:#888">DBH</span><span style="color:#444">${match.tree.tree_dbh ? match.tree.tree_dbh + '"' : '—'}</span>
+            <span style="color:#888">Tree ID</span><span style="color:#444">#${match.tree.tree_id}</span>
+          </div>
+        </div>` : '';
       const popup = `
         <div style="font-family:'Nunito',sans-serif;font-size:12px;width:280px;max-height:400px;overflow-y:auto">
           <div style="font-weight:700;margin-bottom:6px;color:#000;font-size:13px">${call.complaint_type || 'Tree Issue'}</div>
@@ -6871,6 +6912,7 @@ function renderCallsMarkers(rows) {
           <div style="font-size:11px;color:#666;margin-bottom:6px">📍 ${call.incident_address || 'Location unknown'}</div>
           <div style="font-size:10px;color:#999;margin-bottom:6px">📅 ${new Date(call.created_date).toLocaleDateString('en-US')}</div>
           <div style="font-size:11px;font-weight:600;color:${color}">${status}</div>
+          ${treeSection}
         </div>`;
       L.circleMarker([lat, lng], { radius: 6, fillColor: color, color: color, weight: 2, opacity: 0.8, fillOpacity: 0.7 })
         .bindPopup(popup).addTo(calls311Markers);
@@ -7312,12 +7354,19 @@ function renderCallsTable(rows) {
     const status = call.status || 'Open';
     const statusColor = status === 'Closed' ? 'var(--text3)' : '#ef4444';
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
+    const match = nearestTreeSnippet(call);
+    const treeCell = match
+      ? `<span style="font-weight:600;text-transform:capitalize;color:var(--text)">${match.tree.spc_common || 'Unknown'}</span>
+         <div style="font-size:10px;color:${match.pm.color};font-weight:600">${match.pm.label}</div>
+         <div style="font-size:10px;color:var(--text3)">${match.dist}m · #${match.tree.tree_id}</div>`
+      : '<span style="color:var(--text3);font-size:11px">—</span>';
     return `<tr style="background:${bg}">
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;color:var(--text3)">${date}</td>
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--text)">${call.complaint_type || '—'}</td>
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${call.descriptor || ''}${call.additional_details ? `<div style="font-size:10px;color:var(--text3);margin-top:2px">${call.additional_details}</div>` : ''}</td>
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2)">${call.incident_address || '—'}</td>
       <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;color:${statusColor};white-space:nowrap">${status}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${treeCell}</td>
     </tr>`;
   }).join('');
 }
