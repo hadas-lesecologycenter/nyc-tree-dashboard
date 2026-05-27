@@ -8434,16 +8434,24 @@ function beRenderList() {
     return b.trees.length - a.trees.length;
   });
 
+  const individuallyReserved = new Set(reservationLoadSync()
+    .filter(r => !r.blockId)
+    .map(r => String(r.treeId)));
+
   el.innerHTML = blocks.map(block => {
     const res = beReservations[block.id];
     const isSelected = block.id === beSelectedBlockId;
+    const alreadyReserved = block.trees.filter(t =>
+      individuallyReserved.has(String(t.tree_id || (parseFloat(t.latitude) + '_' + parseFloat(t.longitude))))
+    ).length;
+    const reservedNote = alreadyReserved > 0 ? ` · ${alreadyReserved} individually reserved` : '';
     return `<div class="be-block-row${isSelected ? ' selected' : ''}${res ? ' reserved' : ''}"
       onclick="beSelectBlock('${block.id}')">
       <div class="be-base-dot" style="background:${block.baseColor}"></div>
       <div class="be-tree-badge">${block.trees.length}</div>
       <div class="be-block-info">
         <div class="be-block-name">${block.label}</div>
-        <div class="be-block-meta">${block.baseLabel.split('(')[1]?.replace(')','') || block.baseLabel} · ${Math.round(block.minDist)}m walk</div>
+        <div class="be-block-meta">${block.baseLabel.split('(')[1]?.replace(')','') || block.baseLabel} · ${Math.round(block.minDist)}m walk${reservedNote}</div>
         ${res ? `<div class="be-block-event">📅 ${res.eventDate}${res.eventName ? ' · ' + res.eventName : ''}</div>` : ''}
       </div>
       <button onclick="event.stopPropagation();beOpenModal('${block.id}')" class="be-btn ${res ? 'be-btn-ghost' : 'be-btn-primary'}" style="padding:5px 10px;font-size:11px;flex-shrink:0">
@@ -8544,6 +8552,46 @@ async function beSaveReservation() {
   };
 
   await beSaveToSheets();
+
+  // Sync tier-3 trees in this block into the shared tree reservation system
+  const block = beBlocks.find(b => b.id === blockId);
+  if (block) {
+    const all = reservationLoadSync();
+    // Remove any prior tree reservations from this block event
+    const filtered = all.filter(r => r.blockId !== blockId);
+    // Add one tree reservation per tier-3 tree in the block
+    const ts = Date.now();
+    block.trees.forEach((tree, i) => {
+      const treeId = String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+      // Don't overwrite an existing non-block reservation for this tree
+      if (filtered.find(r => String(r.treeId) === treeId)) return;
+      filtered.push({
+        id: 'res_' + (ts + i) + '_' + Math.random().toString(36).slice(2, 7),
+        treeId,
+        name: eventName || 'Block Event',
+        note: who ? 'Organized by: ' + who : '',
+        date: eventDate,
+        reserveType: 'event',
+        blockId,
+        lat: parseFloat(tree.latitude),
+        lng: parseFloat(tree.longitude),
+        species: tree.spc_common || '',
+        address: tree.address || '',
+        health: tree.health || '',
+        dbh: tree.tree_dbh || '',
+        planted: tree.planteddate || '',
+        priority: tree._priority || 3,
+        nta: tree.nta_name || '',
+        createdAt: new Date().toISOString(),
+      });
+    });
+    reservationSave(filtered);
+    renderReservationQueue();
+    updateReservationCounter();
+    if (typeof updateMap === 'function') updateMap();
+    if (typeof tcRenderReservationsOnMainMap === 'function') tcRenderReservationsOnMainMap();
+  }
+
   beCloseModal();
   beRenderList();
   beRenderMapMarkers();
@@ -8556,6 +8604,14 @@ async function beDeleteReservation() {
   if (!blockId || !beReservations[blockId]) { beCloseModal(); return; }
   delete beReservations[blockId];
   await beSaveToSheets();
+
+  // Remove all tree-level reservations that came from this block event
+  reservationSave(reservationLoadSync().filter(r => r.blockId !== blockId));
+  renderReservationQueue();
+  updateReservationCounter();
+  if (typeof updateMap === 'function') updateMap();
+  if (typeof tcRenderReservationsOnMainMap === 'function') tcRenderReservationsOnMainMap();
+
   beCloseModal();
   beRenderList();
   beRenderMapMarkers();
