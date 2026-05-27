@@ -3857,31 +3857,21 @@ function toggleCoolestBlocksFromPanel() {
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
-// Dataset: NYC Open Data "Fire Hydrants" (23d2-ttdp)
+// Source: OpenStreetMap via Overpass API (bbox: south,west,north,east)
 
 async function initFireHydrantsLayer() {
-  // within_box expects (col, nw_lat, w_lng, se_lat, e_lng) — NW corner first, SE corner second
-  const params = new URLSearchParams({
-    '$limit': '2000',
-    '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
+  const query = `[out:json][timeout:25];node["emergency"="fire_hydrant"](40.7063,-73.9983,40.7365,-73.9715);out body;`;
+  const resp = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: query
   });
-  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.json?${params}`);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const data = await resp.json();
-  if (!Array.isArray(data)) throw new Error(data.message || 'Unexpected API response');
+  const json = await resp.json();
+  if (!json.elements) throw new Error('Unexpected Overpass response');
 
   hydrantLayer = L.layerGroup();
-  data.forEach(h => {
-    let lat, lng;
-    if (h.the_geom?.coordinates) {
-      [lng, lat] = h.the_geom.coordinates;
-    } else if (h.latitude && h.longitude) {
-      lat = parseFloat(h.latitude);
-      lng = parseFloat(h.longitude);
-    } else if (h.location?.latitude && h.location?.longitude) {
-      lat = parseFloat(h.location.latitude);
-      lng = parseFloat(h.location.longitude);
-    }
+  json.elements.forEach(el => {
+    const lat = el.lat, lng = el.lon;
     if (!lat || !lng || !cb3Contains(lat, lng)) return;
     L.circleMarker([lat, lng], {
       radius: 5,
@@ -3893,7 +3883,7 @@ async function initFireHydrantsLayer() {
       interactive: true
     }).bindPopup(`<div style="font-family:'Nunito',sans-serif;font-size:12px">
       <strong style="font-family:'Lora',serif">🚒 Fire Hydrant</strong>
-      ${h.unitid ? `<br>ID: ${h.unitid}` : ''}
+      ${el.tags?.ref ? `<br>Ref: ${el.tags.ref}` : ''}
     </div>`).addTo(hydrantLayer);
   });
 }
