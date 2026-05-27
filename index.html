@@ -7526,12 +7526,15 @@ function load311Calls() {
 
       // Init map on first load; just invalidate size on subsequent calls
       if (!calls311Map) {
-        calls311Map = L.map('calls-map-container', { rotateControl: false, zoomControl: true }).fitBounds(bounds);
+        calls311Map = L.map('calls-map-container', { center: [40.7195, -73.9845], zoom: 14, rotateControl: false, zoomControl: true });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
           attribution: '© OpenStreetMap © CARTO', maxZoom: 19
         }).addTo(calls311Map);
         calls311Markers = L.layerGroup().addTo(calls311Map);
+        // Defer fitBounds until the container has real dimensions
+        setTimeout(() => { calls311Map.invalidateSize(); calls311Map.fitBounds(bounds); }, 80);
       } else {
+        calls311Map.invalidateSize();
         calls311Map.fitBounds(bounds);
       }
 
