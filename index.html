@@ -3857,22 +3857,24 @@ function toggleCoolestBlocksFromPanel() {
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
-// Source: OpenStreetMap via Overpass API (bbox: south,west,north,east)
+// Source: NYC Open Data 23d2-ttdp via Socrata GeoJSON endpoint
 
 async function initFireHydrantsLayer() {
-  const query = `[out:json][timeout:25];node["emergency"="fire_hydrant"](40.7063,-73.9983,40.7365,-73.9715);out body;`;
-  const resp = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: query
+  // Use .geojson endpoint — gives standard geometry.coordinates, no field name guessing
+  const params = new URLSearchParams({
+    '$limit': '2000',
+    '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
   });
+  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.geojson?${params}`);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const json = await resp.json();
-  if (!json.elements) throw new Error('Unexpected Overpass response');
+  const geojson = await resp.json();
+  if (!geojson.features) throw new Error(geojson.message || 'Unexpected API response');
 
   hydrantLayer = L.layerGroup();
-  json.elements.forEach(el => {
-    const lat = el.lat, lng = el.lon;
-    if (!lat || !lng || !cb3Contains(lat, lng)) return;
+  geojson.features.forEach(f => {
+    if (f.geometry?.type !== 'Point') return;
+    const [lng, lat] = f.geometry.coordinates;
+    if (!cb3Contains(lat, lng)) return;
     L.circleMarker([lat, lng], {
       radius: 5,
       fillColor: '#e31c23',
@@ -3883,7 +3885,7 @@ async function initFireHydrantsLayer() {
       interactive: true
     }).bindPopup(`<div style="font-family:'Nunito',sans-serif;font-size:12px">
       <strong style="font-family:'Lora',serif">🚒 Fire Hydrant</strong>
-      ${el.tags?.ref ? `<br>Ref: ${el.tags.ref}` : ''}
+      ${f.properties?.unitid ? `<br>ID: ${f.properties.unitid}` : ''}
     </div>`).addTo(hydrantLayer);
   });
 }
