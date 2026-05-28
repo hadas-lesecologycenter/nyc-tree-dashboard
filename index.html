@@ -3863,7 +3863,7 @@ async function initFireHydrantsLayer() {
   // Use .geojson endpoint — gives standard geometry.coordinates, no field name guessing
   const params = new URLSearchParams({
     '$limit': '2000',
-    '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
+    '$where': 'within_box(location, 40.7365, -73.9983, 40.7063, -73.9715)'
   });
   const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.geojson?${params}`);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
