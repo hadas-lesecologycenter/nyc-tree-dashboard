@@ -3857,32 +3857,24 @@ function toggleCoolestBlocksFromPanel() {
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
-// Dataset: NYC Open Data "Fire Hydrants" (23d2-ttdp)
+// Source: NYC Open Data 23d2-ttdp via Socrata GeoJSON endpoint
 
 async function initFireHydrantsLayer() {
-  // within_box expects (col, nw_lat, w_lng, se_lat, e_lng) — NW corner first, SE corner second
+  // Use .geojson endpoint — gives standard geometry.coordinates, no field name guessing
   const params = new URLSearchParams({
     '$limit': '2000',
     '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
   });
-  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.json?${params}`);
+  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.geojson?${params}`);
   if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const data = await resp.json();
-  if (!Array.isArray(data)) throw new Error(data.message || 'Unexpected API response');
+  const geojson = await resp.json();
+  if (!geojson.features) throw new Error(geojson.message || 'Unexpected API response');
 
   hydrantLayer = L.layerGroup();
-  data.forEach(h => {
-    let lat, lng;
-    if (h.the_geom?.coordinates) {
-      [lng, lat] = h.the_geom.coordinates;
-    } else if (h.latitude && h.longitude) {
-      lat = parseFloat(h.latitude);
-      lng = parseFloat(h.longitude);
-    } else if (h.location?.latitude && h.location?.longitude) {
-      lat = parseFloat(h.location.latitude);
-      lng = parseFloat(h.location.longitude);
-    }
-    if (!lat || !lng || !cb3Contains(lat, lng)) return;
+  geojson.features.forEach(f => {
+    if (f.geometry?.type !== 'Point') return;
+    const [lng, lat] = f.geometry.coordinates;
+    if (!cb3Contains(lat, lng)) return;
     L.circleMarker([lat, lng], {
       radius: 5,
       fillColor: '#e31c23',
@@ -3893,7 +3885,7 @@ async function initFireHydrantsLayer() {
       interactive: true
     }).bindPopup(`<div style="font-family:'Nunito',sans-serif;font-size:12px">
       <strong style="font-family:'Lora',serif">🚒 Fire Hydrant</strong>
-      ${h.unitid ? `<br>ID: ${h.unitid}` : ''}
+      ${f.properties?.unitid ? `<br>ID: ${f.properties.unitid}` : ''}
     </div>`).addTo(hydrantLayer);
   });
 }
