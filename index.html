@@ -3871,6 +3871,7 @@ async function initFireHydrantsLayer() {
   if (!json.elements) throw new Error('Unexpected Overpass response');
 
   hydrantLayer = L.layerGroup();
+  const inBbox = json.elements.length;
   json.elements.forEach(el => {
     if (!el.lat || !el.lon || !cb3Contains(el.lat, el.lon)) return;
     L.marker([el.lat, el.lon], {
@@ -3886,6 +3887,7 @@ async function initFireHydrantsLayer() {
       ${el.tags?.ref ? `<br>Ref: ${el.tags.ref}` : ''}
     </div>`).addTo(hydrantLayer);
   });
+  console.log(`Hydrants: ${hydrantLayer.getLayers().length} shown (${inBbox} in bbox, ${inBbox - hydrantLayer.getLayers().length} filtered by cb3Contains)`);
 }
 
 function toggleFireHydrantsFromPanel() {
