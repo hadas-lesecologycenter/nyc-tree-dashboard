@@ -3857,24 +3857,42 @@ function toggleCoolestBlocksFromPanel() {
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
-// Source: NYC Open Data 23d2-ttdp via Socrata GeoJSON endpoint
 
 async function initFireHydrantsLayer() {
-  const params = new URLSearchParams({
-    '$limit': '2000',
-    '$where': 'within_box(location, 40.7365, -73.9983, 40.7063, -73.9715)'
-  });
-  const resp = await fetch(`https://data.cityofnewyork.us/resource/23d2-ttdp.geojson?${params}`);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const geojson = await resp.json();
-  if (!geojson.features) throw new Error(geojson.message || 'Unexpected API response');
+  let hydrants = [];
+
+  // Try NYCDEP Citywide Hydrants (DEP manages water infrastructure — has geometry)
+  try {
+    const params = new URLSearchParams({
+      '$limit': '2000',
+      '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
+    });
+    const resp = await fetch(`https://data.cityofnewyork.us/resource/6pui-xhxz.geojson?${params}`);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const geojson = await resp.json();
+    if (!geojson.features?.length) throw new Error('empty');
+    hydrants = geojson.features
+      .filter(f => f.geometry?.type === 'Point')
+      .map(f => ({ lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: f.properties?.unitid || f.properties?.facilityid || '' }));
+    console.log(`Hydrants: ${hydrants.length} from NYC DEP Open Data`);
+  } catch (e) {
+    // Fall back to OpenStreetMap
+    console.warn('NYC DEP hydrant fetch failed (' + e.message + '), falling back to OSM');
+    const bbox = '40.7063,-73.9983,40.7365,-73.9715';
+    const resp = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: `[out:json][timeout:25];node["emergency"="fire_hydrant"](${bbox});out body;`
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const json = await resp.json();
+    if (!json.elements) throw new Error('Unexpected Overpass response');
+    hydrants = json.elements.map(el => ({ lat: el.lat, lng: el.lon, label: el.tags?.ref || '' }));
+    console.log(`Hydrants: ${hydrants.length} from OSM (fallback)`);
+  }
 
   hydrantLayer = L.layerGroup();
-  const inBbox = geojson.features.length;
-  geojson.features.forEach(f => {
-    if (f.geometry?.type !== 'Point') return;
-    const [lng, lat] = f.geometry.coordinates;
-    if (!cb3Contains(lat, lng)) return;
+  hydrants.forEach(({ lat, lng, label }) => {
+    if (!lat || !lng || !cb3Contains(lat, lng)) return;
     L.marker([lat, lng], {
       icon: L.divIcon({
         className: '',
@@ -3885,10 +3903,10 @@ async function initFireHydrantsLayer() {
       interactive: true
     }).bindPopup(`<div style="font-family:'Nunito',sans-serif;font-size:12px">
       <strong style="font-family:'Lora',serif">🚒 Fire Hydrant</strong>
-      ${f.properties?.unitid ? `<br>ID: ${f.properties.unitid}` : ''}
+      ${label ? `<br>ID: ${label}` : ''}
     </div>`).addTo(hydrantLayer);
   });
-  console.log(`Hydrants: ${hydrantLayer.getLayers().length} shown (${inBbox} in bbox, ${inBbox - hydrantLayer.getLayers().length} filtered by cb3Contains)`);
+  console.log(`Hydrants: ${hydrantLayer.getLayers().length} shown within CB3`);
 }
 
 function toggleFireHydrantsFromPanel() {
