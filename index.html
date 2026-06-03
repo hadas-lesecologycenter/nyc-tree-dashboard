@@ -3857,27 +3857,28 @@ function toggleCoolestBlocksFromPanel() {
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
+// Source: NYC Open Data "Hydrants" (5bgh-vtsn) — the queryable table behind
+// the NYCDEP Citywide Hydrants map. Geometry column is `the_geom`.
 
 async function initFireHydrantsLayer() {
   let hydrants = [];
 
-  // Try NYCDEP Citywide Hydrants (DEP manages water infrastructure — has geometry)
   try {
     const params = new URLSearchParams({
-      '$limit': '2000',
+      '$limit': '5000',
       '$where': 'within_box(the_geom, 40.7365, -73.9983, 40.7063, -73.9715)'
     });
-    const resp = await fetch(`https://data.cityofnewyork.us/resource/6pui-xhxz.geojson?${params}`);
+    const resp = await fetch(`https://data.cityofnewyork.us/resource/5bgh-vtsn.geojson?${params}`);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const geojson = await resp.json();
     if (!geojson.features?.length) throw new Error('empty');
     hydrants = geojson.features
       .filter(f => f.geometry?.type === 'Point')
-      .map(f => ({ lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: f.properties?.unitid || f.properties?.facilityid || '' }));
-    console.log(`Hydrants: ${hydrants.length} from NYC DEP Open Data`);
+      .map(f => ({ lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: f.properties?.unitid || '' }));
+    console.log(`Hydrants: ${hydrants.length} from NYC Open Data (5bgh-vtsn)`);
   } catch (e) {
-    // Fall back to OpenStreetMap
-    console.warn('NYC DEP hydrant fetch failed (' + e.message + '), falling back to OSM');
+    // Fall back to OpenStreetMap if the city API is unavailable
+    console.warn('NYC hydrant fetch failed (' + e.message + '), falling back to OSM');
     const bbox = '40.7063,-73.9983,40.7365,-73.9715';
     const resp = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
