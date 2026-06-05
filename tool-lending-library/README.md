@@ -85,11 +85,13 @@ This creates all five sheets: Dashboard, Tools Inventory, Loans, Borrowers, and 
 1. In Apps Script, click **Deploy → New Deployment**
 2. Click the gear icon next to "Select type" → choose **Web App**
 3. Set **Execute as: Me (your-email@...)**
-4. Set **Who has access: Anyone** (so borrowers don't need a Google account)
+4. Set **Who has access: Anyone with a Google account**
 5. Click **Deploy** — copy the URL shown
 6. Or run **🔧 Tool Library → 🌐 Get Web App URL** in the spreadsheet anytime
 
-> Every time you make code changes, you must create a **new deployment** (or redeploy the existing one) for borrowers to see the updates.
+> **Access:** Borrowers will be prompted to sign in with any Google account (personal Gmail works) before they can use the app. This prevents random public access while keeping it open to all members.
+
+> **Code changes:** Every time you edit the script, create a **new deployment** (or redeploy the existing one) for borrowers to see the updates.
 
 ### Step 8 — Create Google Forms (optional backup)
 

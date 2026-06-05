@@ -156,7 +156,7 @@ function showWebAppUrl() {
       '1. Click Deploy → New Deployment\n' +
       '2. Set type to Web App\n' +
       '3. Execute as: Me\n' +
-      '4. Who has access: Anyone\n' +
+      '4. Who has access: Anyone with a Google account\n' +
       '5. Click Deploy\n\n' +
       'Then run this menu item again to get the URL.',
       ui.ButtonSet.OK);
