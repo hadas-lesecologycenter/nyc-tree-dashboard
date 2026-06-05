@@ -64,6 +64,8 @@ function onOpen() {
     .addSeparator()
     .addItem('📧 Send Overdue Reminders Now',    'sendOverdueReminders')
     .addItem('⏰ Setup Daily Reminder Trigger',  'setupDailyTrigger')
+    .addSeparator()
+    .addItem('🌐 Get Web App URL',               'showWebAppUrl')
     .toUi();
 }
 

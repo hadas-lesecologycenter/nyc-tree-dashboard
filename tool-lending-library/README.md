@@ -17,6 +17,18 @@ A complete tool inventory and lending management system built on **Google Sheets
 
 ---
 
+## What borrowers see
+
+The web app is a mobile-friendly single-page site served directly by Google Apps Script — no hosting needed.
+
+| Page | What it shows |
+|---|---|
+| **Browse & Borrow** | Photo grid of all tools with condition/status badges, category filter, search. Available tools have a "Borrow This Tool" button. |
+| **Checkout modal** | Name, email, phone, return date. Sends a confirmation email automatically. |
+| **Return a Tool** | Borrower enters their name or email to look up active loans, picks condition, submits. |
+
+---
+
 ## Setup (one-time, ~10 minutes)
 
 ### Step 1 — Create a new Google Spreadsheet
@@ -31,16 +43,18 @@ A complete tool inventory and lending management system built on **Google Sheets
 
 ### Step 3 — Copy in the script files
 
-Delete the default content and create these files (use the **+** button to add new files):
+Delete the default content and create these files (use the **+** button to add new `.gs` files, and the **+** button → HTML to add the HTML file):
 
-| File name | Content |
-|---|---|
-| `Code.gs` | Copy from `src/Code.gs` |
-| `Setup.gs` | Copy from `src/Setup.gs` |
-| `Dashboard.gs` | Copy from `src/Dashboard.gs` |
-| `Forms.gs` | Copy from `src/Forms.gs` |
-| `Reminders.gs` | Copy from `src/Reminders.gs` |
-| `Admin.gs` | Copy from `src/Admin.gs` |
+| File name | Type | Content |
+|---|---|---|
+| `Code.gs` | Script | Copy from `src/Code.gs` |
+| `Setup.gs` | Script | Copy from `src/Setup.gs` |
+| `Dashboard.gs` | Script | Copy from `src/Dashboard.gs` |
+| `Forms.gs` | Script | Copy from `src/Forms.gs` |
+| `Reminders.gs` | Script | Copy from `src/Reminders.gs` |
+| `Admin.gs` | Script | Copy from `src/Admin.gs` |
+| `WebApp.gs` | Script | Copy from `src/WebApp.gs` |
+| `index` | HTML file | Copy from `src/index.html` |
 
 Then replace the contents of `appsscript.json` (click the gear icon ⚙️ to see it) with the contents of `src/appsscript.json`.
 
@@ -66,16 +80,22 @@ This creates all five sheets: Dashboard, Tools Inventory, Loans, Borrowers, and 
 3. Verify `adminEmail` is correct (this is where overdue summaries are sent)
 4. Adjust `loanPeriodDays` if you want a different default loan length
 
-### Step 7 — Create your forms
+### Step 7 — Deploy the Web App (borrower-facing site)
 
-1. Click **🔧 Tool Library → 📋 Create / Update Checkout Form**
-2. Copy the public URL shown in the popup and share it with borrowers
-3. Click **🔧 Tool Library → 📋 Create / Update Return Form**
-4. Copy and share that URL too
+1. In Apps Script, click **Deploy → New Deployment**
+2. Click the gear icon next to "Select type" → choose **Web App**
+3. Set **Execute as: Me (your-email@...)**
+4. Set **Who has access: Anyone** (so borrowers don't need a Google account)
+5. Click **Deploy** — copy the URL shown
+6. Or run **🔧 Tool Library → 🌐 Get Web App URL** in the spreadsheet anytime
 
-> **Tip:** Paste both URLs into your website, email newsletters, or print them as QR codes.
+> Every time you make code changes, you must create a **new deployment** (or redeploy the existing one) for borrowers to see the updates.
 
-### Step 8 — Enable daily overdue reminders
+### Step 8 — Create Google Forms (optional backup)
+
+The Google Forms are a simpler fallback if you prefer plain forms. Run **Create / Update Checkout Form** and **Create / Update Return Form** from the admin menu. They work independently of the web app.
+
+### Step 9 — Enable daily overdue reminders
 
 Click **🔧 Tool Library → ⏰ Setup Daily Reminder Trigger**
 
