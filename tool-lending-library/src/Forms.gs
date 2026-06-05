@@ -25,7 +25,11 @@ function createCheckoutForm() {
 
   // Tool dropdown — populated from current Available tools
   const tools = getAvailableTools();
-  const choices = tools.map(r => r[TC.NAME - 1] + ' [' + r[TC.ID - 1] + ']');
+  const choices = tools.map(r => {
+    const avail = getAvailableQty(r[TC.ID - 1]);
+    const total = parseInt(r[TC.QUANTITY - 1]) || 1;
+    return r[TC.NAME - 1] + ' [' + r[TC.ID - 1] + '] — ' + avail + '/' + total + ' available';
+  });
   if (choices.length === 0) choices.push('(No tools currently available — check back soon)');
 
   form.addListItem()

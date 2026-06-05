@@ -158,6 +158,9 @@
     .b-poor        { background: #FFF3E0; color: #BF360C; }
     .b-broken      { background: #FFEBEE; color: #C62828; }
     .b-cat         { background: #E3F2FD; color: #1565C0; }
+    .b-qty-ok      { background: #E8F5E9; color: #1B5E20; font-size: 12px; }
+    .b-qty-low     { background: #FFF8E1; color: #E65100; font-size: 12px; }
+    .b-qty-none    { background: #FFEBEE; color: #B71C1C; font-size: 12px; }
 
     .tool-detail {
       font-size: 12px;
@@ -415,6 +418,10 @@
       <label>Phone Number</label>
       <input class="input-field" type="tel" id="co-phone" placeholder="optional" autocomplete="tel">
     </div>
+    <div class="field" id="co-qty-wrap" style="display:none">
+      <label>Quantity <span id="co-qty-max" style="font-weight:400;text-transform:none"></span></label>
+      <input class="input-field" type="number" id="co-qty" min="1" value="1">
+    </div>
     <div class="field">
       <label>Return By *</label>
       <input class="input-field" type="date" id="co-due">
@@ -559,32 +566,45 @@ function gridHTML(html) {
 }
 
 function toolCardHTML(t) {
-  const avail   = t.status === 'Available';
-  const sCls    = 'b-' + t.status.toLowerCase().replace(/\s+/g, '-');
-  const cCls    = 'b-' + t.condition.toLowerCase();
-  const photoEl = t.photoUrl
+  const canBorrow = t.availQty > 0 && t.status !== 'Maintenance' && t.status !== 'Retired';
+  const sCls      = 'b-' + t.status.toLowerCase().replace(/\s+/g, '-');
+  const cCls      = 'b-' + t.condition.toLowerCase();
+  const photoEl   = t.photoUrl
     ? `<img src="${esc(t.photoUrl)}" alt="${esc(t.name)}" loading="lazy" onerror="this.parentElement.innerHTML='🔧'">`
     : '🔧';
-  const btnText = avail ? '📤 Borrow This Tool'
-                : t.status === 'Borrowed'    ? '⏳ Currently Borrowed'
+
+  // Quantity label
+  let qtyCls, qtyLabel;
+  if (t.status === 'Maintenance' || t.status === 'Retired') {
+    qtyCls = 'b-qty-none'; qtyLabel = t.status;
+  } else if (t.availQty === 0) {
+    qtyCls = 'b-qty-none'; qtyLabel = 'All borrowed';
+  } else if (t.availQty === 1) {
+    qtyCls = 'b-qty-low';  qtyLabel = 'Last one!';
+  } else {
+    qtyCls = 'b-qty-ok';   qtyLabel = t.availQty + ' of ' + t.totalQty + ' available';
+  }
+
+  const btnText = canBorrow ? '📤 Borrow This Tool'
+                : t.status === 'Borrowed' || t.availQty === 0 ? '⏳ All Units Borrowed'
                 : t.status === 'Maintenance' ? '🔨 In Maintenance'
                 : '🚫 Unavailable';
 
   return `
-    <div class="tool-card ${avail ? '' : 'dim'}">
+    <div class="tool-card ${canBorrow ? '' : 'dim'}">
       <div class="tool-photo">${photoEl}</div>
       <div class="tool-body">
         <div class="tool-name">${esc(t.name)}</div>
         <div class="badges">
-          <span class="badge ${sCls}">${t.status}</span>
+          <span class="badge ${qtyCls}">${qtyLabel}</span>
           <span class="badge ${cCls}">${t.condition}</span>
           <span class="badge b-cat">${esc(t.category)}</span>
         </div>
         ${t.location ? `<div class="tool-detail">📍 <span>${esc(t.location)}</span></div>` : ''}
         ${t.notes    ? `<div class="tool-detail">📝 <span>${esc(t.notes)}</span></div>`    : ''}
         <div class="spacer"></div>
-        <button class="btn btn-block ${avail ? 'btn-green' : ''}"
-                ${avail ? `onclick="openCheckout('${esc(t.id)}','${esc(t.name)}')"` : 'disabled'}>
+        <button class="btn btn-block ${canBorrow ? 'btn-green' : ''}"
+                ${canBorrow ? `onclick="openCheckout('${esc(t.id)}','${esc(t.name)}',${t.availQty})"` : 'disabled'}>
           ${btnText}
         </button>
       </div>
@@ -593,10 +613,24 @@ function toolCardHTML(t) {
 
 // ── Checkout ──────────────────────────────────────────────────────────────────
 
-function openCheckout(toolId, toolName) {
-  pendingTool = { id: toolId, name: toolName };
+function openCheckout(toolId, toolName, availQty) {
+  pendingTool = { id: toolId, name: toolName, availQty };
   document.getElementById('checkout-tool-label').textContent = toolName;
   ['co-name','co-email','co-phone'].forEach(id => document.getElementById(id).value = '');
+
+  // Show/hide qty field based on availability
+  const qtyWrap = document.getElementById('co-qty-wrap');
+  const qtyInput = document.getElementById('co-qty');
+  if (availQty > 1) {
+    qtyWrap.style.display = 'block';
+    qtyInput.max   = availQty;
+    qtyInput.value = 1;
+    document.getElementById('co-qty-max').textContent = availQty + ' available';
+  } else {
+    qtyWrap.style.display = 'none';
+    qtyInput.value = 1;
+  }
+
   const due = new Date(); due.setDate(due.getDate() + loanDays);
   document.getElementById('co-due').valueAsDate = due;
   openOverlay('checkout-overlay');
@@ -630,7 +664,10 @@ function submitCheckout() {
       setLoading(btn, false, 'Confirm Checkout');
       toast('❌ ' + err.message, 'error');
     })
-    .submitCheckoutRequest({ toolId: pendingTool.id, name, email, phone, dueDate: due });
+    .submitCheckoutRequest({
+      toolId: pendingTool.id, name, email, phone, dueDate: due,
+      qty: parseInt(document.getElementById('co-qty').value) || 1,
+    });
 }
 
 // ── Return ────────────────────────────────────────────────────────────────────
@@ -655,7 +692,7 @@ function lookupLoans() {
           <div class="loan-card">
             <div class="loan-info">
               <h3>${esc(l.toolName)}</h3>
-              <p>Borrowed: ${l.borrowDate} &nbsp;·&nbsp;
+              <p>Qty: ${l.qty} &nbsp;·&nbsp; Borrowed: ${l.borrowDate} &nbsp;·&nbsp;
                  <span class="${isOverdue ? 'loan-overdue' : ''}">Due: ${l.dueDate}${isOverdue ? ' ⚠️' : ''}</span>
               </p>
               <div class="loan-id">Loan ID: ${l.loanId}</div>

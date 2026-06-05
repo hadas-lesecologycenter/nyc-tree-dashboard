@@ -1,13 +1,9 @@
 /**
- * WebApp.gs — Serves the borrower-facing web app and exposes
- * the API endpoints called by the front end via google.script.run.
+ * WebApp.gs — Serves the borrower-facing web app.
  *
- * To publish:
- *   Apps Script editor → Deploy → New Deployment → Web App
+ * Deploy: Apps Script → Deploy → New Deployment → Web App
  *   Execute as: Me | Who has access: Anyone
  */
-
-// ── Entry point ───────────────────────────────────────────────────────────────
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
@@ -15,35 +11,48 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// ── Public API (called by google.script.run) ──────────────────────────────────
+// ── Public API ────────────────────────────────────────────────────────────────
 
-/** Returns all tools and org settings for the catalog page. */
 function getToolCatalog() {
   const settings = getSettings();
   const tools    = toolsSheet().getDataRange().getValues().slice(1).filter(r => r[TC.ID - 1]);
   return {
-    orgName:  settings['orgName']        || 'Tool Library',
+    orgName:  settings['orgName']               || 'Tool Library',
     loanDays: parseInt(settings['loanPeriodDays']) || 14,
-    tools: tools.map(r => ({
-      id:        r[TC.ID - 1],
-      name:      r[TC.NAME - 1],
-      category:  r[TC.CATEGORY - 1],
-      condition: r[TC.CONDITION - 1],
-      status:    r[TC.STATUS - 1],
-      location:  r[TC.LOCATION - 1],
-      photoUrl:  toDriveEmbedUrl(r[TC.PHOTO_URL - 1]),
-      notes:     r[TC.NOTES - 1],
-    })),
+    tools: tools.map(r => {
+      const toolId   = r[TC.ID - 1];
+      const total    = parseInt(r[TC.QUANTITY - 1]) || 1;
+      const avail    = getAvailableQty(toolId);
+      const status   = r[TC.STATUS - 1];
+      return {
+        id:        toolId,
+        name:      r[TC.NAME - 1],
+        category:  r[TC.CATEGORY - 1],
+        condition: r[TC.CONDITION - 1],
+        status,
+        totalQty:  total,
+        availQty:  avail,
+        location:  r[TC.LOCATION - 1],
+        photoUrl:  toDriveEmbedUrl(r[TC.PHOTO_URL - 1]),
+        notes:     r[TC.NOTES - 1],
+      };
+    }),
   };
 }
 
-/** Processes a checkout submitted from the web app. */
 function submitCheckoutRequest(data) {
   try {
     const settings = getSettings();
+    const qty      = Math.max(1, parseInt(data.qty) || 1);
     const tool     = getToolById(data.toolId);
     if (!tool) throw new Error('Tool not found');
-    if (tool.data[TC.STATUS - 1] !== 'Available') throw new Error('This tool is no longer available — someone may have just borrowed it');
+
+    const avail = getAvailableQty(data.toolId);
+    if (avail < qty) throw new Error(
+      avail === 0
+        ? 'Sorry — no units of this tool are currently available'
+        : `Only ${avail} available (you requested ${qty})`
+    );
 
     const borrowDate = new Date();
     let dueDate;
@@ -54,17 +63,18 @@ function submitCheckoutRequest(data) {
       dueDate.setDate(dueDate.getDate() + (parseInt(settings['loanPeriodDays']) || 14));
     }
 
-    const loanId = checkOutTool(data.toolId, data.name, data.email, data.phone || '', borrowDate, dueDate);
+    const loanId = checkOutTool(data.toolId, data.name, data.email, data.phone || '', borrowDate, dueDate, qty);
 
     if (data.email) {
       const dueFmt = Utilities.formatDate(dueDate, Session.getScriptTimeZone(), 'MMMM d, yyyy');
       sendEmail(data.email, '✅ Tool Checked Out: ' + tool.data[TC.NAME - 1],
         `Hi ${data.name},\n\nYour checkout is confirmed!\n\n` +
         `Tool:     ${tool.data[TC.NAME - 1]}\n` +
+        `Quantity: ${qty}\n` +
         `Loan ID:  ${loanId}\n` +
         `Due Date: ${dueFmt}\n` +
         `Location: ${tool.data[TC.LOCATION - 1]}\n\n` +
-        `Please return it by the due date in the same condition you received it.\n\n` +
+        `Please return by the due date in the same condition.\n\n` +
         `Thank you,\n${settings['orgName'] || 'Tool Library'}`);
     }
 
@@ -75,7 +85,6 @@ function submitCheckoutRequest(data) {
   }
 }
 
-/** Looks up active loans for a borrower by name or email. */
 function lookupActiveLoans(contact) {
   contact = (contact || '').trim().toLowerCase();
   if (!contact) return [];
@@ -94,6 +103,7 @@ function lookupActiveLoans(contact) {
       loanId:     r[LC.ID - 1],
       toolId:     r[LC.TOOL_ID - 1],
       toolName:   r[LC.TOOL_NAME - 1],
+      qty:        r[LC.QTY - 1] || 1,
       borrowDate: r[LC.BORROW_DATE - 1]
         ? Utilities.formatDate(new Date(r[LC.BORROW_DATE - 1]), tz, 'MM/dd/yyyy') : '',
       dueDate: r[LC.DUE_DATE - 1]
@@ -102,13 +112,11 @@ function lookupActiveLoans(contact) {
     }));
 }
 
-/** Processes a return submitted from the web app. */
 function submitReturnRequest(data) {
   try {
     const settings = getSettings();
     returnTool(data.toolId, new Date(), data.condition, data.notes || '');
 
-    // Find borrower email from the loan record
     const lData = loansSheet().getDataRange().getValues();
     let email = data.email || '';
     if (!email) {
@@ -122,9 +130,8 @@ function submitReturnRequest(data) {
 
     const tool = getToolById(data.toolId);
     if (email) {
-      const name = data.name || 'there';
       sendEmail(email, '✅ Tool Returned: ' + (tool ? tool.data[TC.NAME - 1] : data.toolId),
-        `Hi ${name},\n\nWe've logged your tool return.\n\n` +
+        `Hi ${data.name || 'there'},\n\nWe've logged your tool return.\n\n` +
         `Tool:            ${tool ? tool.data[TC.NAME - 1] : data.toolId}\n` +
         `Return Date:     ${Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'MMMM d, yyyy')}\n` +
         `Condition Noted: ${data.condition}\n\n` +
@@ -155,9 +162,7 @@ function showWebAppUrl() {
       ui.ButtonSet.OK);
     return;
   }
-  ui.alert('🌐 Web App URL',
-    'Share this URL with borrowers:\n\n' + url,
-    ui.ButtonSet.OK);
+  ui.alert('🌐 Web App URL', 'Share this URL with borrowers:\n\n' + url, ui.ButtonSet.OK);
 }
 
 // ── Utility ───────────────────────────────────────────────────────────────────

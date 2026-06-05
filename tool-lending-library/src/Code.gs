@@ -17,19 +17,19 @@ const SHEET_NAMES = {
   SETTINGS:  'Settings',
 };
 
-// ── Column indices (1-based, matches sheet columns) ───────────────────────────
+// ── Column indices (1-based) ──────────────────────────────────────────────────
 
 // Tools Inventory
 const TC = {
-  ID: 1, NAME: 2, CATEGORY: 3, CONDITION: 4,
-  STATUS: 5, LOCATION: 6, PHOTO_URL: 7, NOTES: 8, DATE_ADDED: 9,
+  ID: 1, NAME: 2, CATEGORY: 3, CONDITION: 4, QUANTITY: 5,
+  STATUS: 6, LOCATION: 7, PHOTO_URL: 8, NOTES: 9, DATE_ADDED: 10,
 };
 
 // Loans
 const LC = {
-  ID: 1, TOOL_ID: 2, TOOL_NAME: 3, BORROWER_NAME: 4,
-  EMAIL: 5, PHONE: 6, BORROW_DATE: 7, DUE_DATE: 8,
-  RETURN_DATE: 9, RETURN_CONDITION: 10, STATUS: 11, NOTES: 12,
+  ID: 1, TOOL_ID: 2, TOOL_NAME: 3, QTY: 4, BORROWER_NAME: 5,
+  EMAIL: 6, PHONE: 7, BORROW_DATE: 8, DUE_DATE: 9,
+  RETURN_DATE: 10, RETURN_CONDITION: 11, STATUS: 12, NOTES: 13,
 };
 
 // Borrowers
@@ -107,10 +107,10 @@ function generateId(prefix, sheet, col) {
 
 // ── Sheet accessors ───────────────────────────────────────────────────────────
 
-function ss()              { return SpreadsheetApp.getActiveSpreadsheet(); }
-function toolsSheet()      { return ss().getSheetByName(SHEET_NAMES.TOOLS); }
-function loansSheet()      { return ss().getSheetByName(SHEET_NAMES.LOANS); }
-function borrowersSheet()  { return ss().getSheetByName(SHEET_NAMES.BORROWERS); }
+function ss()             { return SpreadsheetApp.getActiveSpreadsheet(); }
+function toolsSheet()     { return ss().getSheetByName(SHEET_NAMES.TOOLS); }
+function loansSheet()     { return ss().getSheetByName(SHEET_NAMES.LOANS); }
+function borrowersSheet() { return ss().getSheetByName(SHEET_NAMES.BORROWERS); }
 
 // ── Tool helpers ──────────────────────────────────────────────────────────────
 
@@ -138,22 +138,45 @@ function setToolStatus(toolRow, status) {
   toolsSheet().getRange(toolRow, TC.STATUS).setValue(status);
 }
 
+/** Returns how many of a tool are currently available (total minus active loans). */
+function getAvailableQty(toolId) {
+  const tool  = getToolById(toolId);
+  if (!tool) return 0;
+  const total = parseInt(tool.data[TC.QUANTITY - 1]) || 1;
+  const out   = loansSheet().getDataRange().getValues().slice(1)
+    .filter(r => String(r[LC.TOOL_ID - 1]).trim() === String(toolId).trim() && !r[LC.RETURN_DATE - 1])
+    .reduce((sum, r) => sum + (parseInt(r[LC.QTY - 1]) || 1), 0);
+  return Math.max(0, total - out);
+}
+
 function getAvailableTools() {
-  return toolsSheet().getDataRange().getValues().slice(1)
-    .filter(r => r[TC.STATUS - 1] === 'Available' && r[TC.ID - 1]);
+  const sheet = toolsSheet();
+  const data  = sheet.getDataRange().getValues().slice(1).filter(r => r[TC.ID - 1]);
+  return data.filter(r => {
+    const status = r[TC.STATUS - 1];
+    if (status === 'Maintenance' || status === 'Retired') return false;
+    return getAvailableQty(r[TC.ID - 1]) > 0;
+  });
 }
 
 // ── Loan helpers ──────────────────────────────────────────────────────────────
 
-function getActiveLoanForTool(toolId) {
+function getActiveLoansForTool(toolId) {
   const sheet = loansSheet();
   const data  = sheet.getDataRange().getValues();
+  const result = [];
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][LC.TOOL_ID - 1]).trim() === String(toolId).trim() &&
         !data[i][LC.RETURN_DATE - 1])
-      return { row: i + 1, data: data[i] };
+      result.push({ row: i + 1, data: data[i] });
   }
-  return null;
+  return result;
+}
+
+// Returns the most recent active loan for a tool (for single-item returns)
+function getActiveLoanForTool(toolId) {
+  const loans = getActiveLoansForTool(toolId);
+  return loans.length ? loans[loans.length - 1] : null;
 }
 
 // ── Borrower helpers ──────────────────────────────────────────────────────────
@@ -189,42 +212,74 @@ function updateBorrowerStats(borrowerRow) {
 
 // ── Core checkout / return logic ──────────────────────────────────────────────
 
-function checkOutTool(toolId, borrowerName, email, phone, borrowDate, dueDate) {
-  const tool = getToolById(toolId);
+function checkOutTool(toolId, borrowerName, email, phone, borrowDate, dueDate, qty) {
+  qty = Math.max(1, parseInt(qty) || 1);
+
+  const tool   = getToolById(toolId);
   if (!tool) throw new Error('Tool not found: ' + toolId);
-  if (tool.data[TC.STATUS - 1] !== 'Available') throw new Error('Tool is not available');
+
+  const status = tool.data[TC.STATUS - 1];
+  if (status === 'Maintenance') throw new Error('This tool is currently in maintenance');
+  if (status === 'Retired')     throw new Error('This tool has been retired');
+
+  const avail = getAvailableQty(toolId);
+  if (avail < qty) throw new Error(
+    avail === 0
+      ? 'No units of this tool are currently available'
+      : `Only ${avail} available — you requested ${qty}`
+  );
 
   const lSheet = loansSheet();
   const loanId = generateId('L', lSheet, LC.ID);
   lSheet.appendRow([
-    loanId, toolId, tool.data[TC.NAME - 1],
+    loanId, toolId, tool.data[TC.NAME - 1], qty,
     borrowerName, email || '', phone || '',
     borrowDate, dueDate, '', '', 'Active', '',
   ]);
-  lSheet.getRange(lSheet.getLastRow(), LC.BORROW_DATE).setNumberFormat('MM/dd/yyyy');
-  lSheet.getRange(lSheet.getLastRow(), LC.DUE_DATE).setNumberFormat('MM/dd/yyyy');
-  setToolStatus(tool.row, 'Borrowed');
+  const newRow = lSheet.getLastRow();
+  lSheet.getRange(newRow, LC.BORROW_DATE).setNumberFormat('MM/dd/yyyy');
+  lSheet.getRange(newRow, LC.DUE_DATE).setNumberFormat('MM/dd/yyyy');
+
+  // Update tool status to reflect availability
+  if (getAvailableQty(toolId) === 0) setToolStatus(tool.row, 'Borrowed');
+
   updateBorrowerStats(findOrCreateBorrower(borrowerName, email, phone));
   return loanId;
 }
 
-function returnTool(toolId, returnDate, returnCondition, notes) {
+function returnTool(toolId, returnDate, returnCondition, notes, loanRow) {
   const tool = getToolById(toolId);
   if (!tool) throw new Error('Tool not found: ' + toolId);
 
-  const loan = getActiveLoanForTool(toolId);
-  if (!loan) throw new Error('No active loan found for tool: ' + toolId);
+  // If loanRow not specified, use the most recent active loan
+  let loan;
+  if (loanRow) {
+    loan = { row: loanRow, data: loansSheet().getRange(loanRow, 1, 1, 13).getValues()[0] };
+  } else {
+    loan = getActiveLoanForTool(toolId);
+  }
+  if (!loan) throw new Error('No active loan found for: ' + tool.data[TC.NAME - 1]);
 
   const lSheet = loansSheet();
   lSheet.getRange(loan.row, LC.RETURN_DATE).setValue(returnDate).setNumberFormat('MM/dd/yyyy');
   lSheet.getRange(loan.row, LC.RETURN_CONDITION).setValue(returnCondition || '');
   lSheet.getRange(loan.row, LC.STATUS).setValue('Returned');
   if (notes) lSheet.getRange(loan.row, LC.NOTES).setValue(notes);
-
-  const newStatus = (returnCondition === 'Broken' || returnCondition === 'Poor')
-    ? 'Maintenance' : 'Available';
-  setToolStatus(tool.row, newStatus);
   if (returnCondition) toolsSheet().getRange(tool.row, TC.CONDITION).setValue(returnCondition);
+
+  // Recalculate status
+  const stillOut = getAvailableQty(toolId);  // now updated since loan is returned
+  const total    = parseInt(tool.data[TC.QUANTITY - 1]) || 1;
+  let newStatus;
+  if (returnCondition === 'Broken') {
+    newStatus = 'Maintenance';
+  } else if (getAvailableQty(toolId) > 0) {
+    newStatus = 'Available';
+  } else {
+    newStatus = 'Borrowed';
+  }
+  setToolStatus(tool.row, newStatus);
+
   return loan.data[LC.ID - 1];
 }
 

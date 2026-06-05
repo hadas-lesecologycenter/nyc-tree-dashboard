@@ -1,13 +1,11 @@
 /**
  * Dashboard.gs — Refreshes the Dashboard tab with live stats.
- * Called automatically after every checkout, return, and form submission.
  */
 
 function updateDashboard() {
   const sheet = ss().getSheetByName(SHEET_NAMES.DASHBOARD);
   if (!sheet) return;
 
-  // Sync loan statuses first (Active / Overdue / Returned)
   syncLoanStatuses();
 
   const tools     = toolsSheet().getDataRange().getValues().slice(1).filter(r => r[TC.ID - 1]);
@@ -15,19 +13,35 @@ function updateDashboard() {
   const borrowers = borrowersSheet().getDataRange().getValues().slice(1).filter(r => r[BC.ID - 1]);
   const now       = new Date();
 
+  // Inventory stats — count individual units, not just tool types
+  const totalUnits     = tools.reduce((s, r) => s + (parseInt(r[TC.QUANTITY - 1]) || 1), 0);
+  const availableUnits = tools.reduce((s, r) => {
+    if (r[TC.STATUS - 1] === 'Maintenance' || r[TC.STATUS - 1] === 'Retired') return s;
+    return s + getAvailableQty(r[TC.ID - 1]);
+  }, 0);
+  const borrowedUnits  = allLoans
+    .filter(r => !r[LC.RETURN_DATE - 1])
+    .reduce((s, r) => s + (parseInt(r[LC.QTY - 1]) || 1), 0);
+  const maintenanceUnits = tools
+    .filter(r => r[TC.STATUS - 1] === 'Maintenance')
+    .reduce((s, r) => s + (parseInt(r[TC.QUANTITY - 1]) || 1), 0);
+  const retiredUnits   = tools
+    .filter(r => r[TC.STATUS - 1] === 'Retired')
+    .reduce((s, r) => s + (parseInt(r[TC.QUANTITY - 1]) || 1), 0);
+
   const stats = {
-    total:       tools.length,
-    available:   tools.filter(r => r[TC.STATUS - 1] === 'Available').length,
-    borrowed:    tools.filter(r => r[TC.STATUS - 1] === 'Borrowed').length,
-    maintenance: tools.filter(r => r[TC.STATUS - 1] === 'Maintenance').length,
-    retired:     tools.filter(r => r[TC.STATUS - 1] === 'Retired').length,
-    active:      allLoans.filter(r => r[LC.STATUS - 1] === 'Active').length,
-    overdue:     allLoans.filter(r => r[LC.STATUS - 1] === 'Overdue').length,
-    totalLoans:  allLoans.length,
-    borrowers:   borrowers.length,
+    toolTypes:   tools.length,
+    totalUnits,
+    availableUnits,
+    borrowedUnits,
+    maintenanceUnits,
+    retiredUnits,
+    activeLoans:   allLoans.filter(r => r[LC.STATUS - 1] === 'Active').length,
+    overdueLoans:  allLoans.filter(r => r[LC.STATUS - 1] === 'Overdue').length,
+    totalLoans:    allLoans.length,
+    totalBorrowers:borrowers.length,
   };
 
-  // Clear everything below the header rows
   if (sheet.getLastRow() > 2)
     sheet.getRange(3, 1, sheet.getLastRow() - 2, 6).clearContent().clearFormat();
 
@@ -35,39 +49,43 @@ function updateDashboard() {
 
   // ── Inventory summary ────────────────────────────────────────────────────
   row = writeSectionHeader(sheet, row, '📦  INVENTORY SUMMARY');
-  writeStat(sheet, row, 1, 'Total Tools',       stats.total,       '#1A237E');
-  writeStat(sheet, row, 4, 'Available',          stats.available,   '#1B5E20');
+  writeStat(sheet, row, 1, 'Tool Types',        stats.toolTypes,        '#1A237E');
+  writeStat(sheet, row, 4, 'Total Units',        stats.totalUnits,       '#1A237E');
   row++;
-  writeStat(sheet, row, 1, 'Currently Borrowed', stats.borrowed,    '#E65100');
-  writeStat(sheet, row, 4, 'In Maintenance',     stats.maintenance, '#F57F17');
+  writeStat(sheet, row, 1, 'Units Available',    stats.availableUnits,   '#1B5E20');
+  writeStat(sheet, row, 4, 'Units Borrowed',     stats.borrowedUnits,    '#E65100');
   row++;
-  writeStat(sheet, row, 1, 'Retired / Inactive', stats.retired,     '#78909C');
+  writeStat(sheet, row, 1, 'In Maintenance',     stats.maintenanceUnits, '#F57F17');
+  writeStat(sheet, row, 4, 'Retired',            stats.retiredUnits,     '#78909C');
   row += 2;
 
   // ── Loans summary ────────────────────────────────────────────────────────
   row = writeSectionHeader(sheet, row, '📋  LOANS SUMMARY');
-  writeStat(sheet, row, 1, 'Active Loans',        stats.active,      '#1565C0');
-  writeStat(sheet, row, 4, 'Overdue Loans',        stats.overdue,     '#B71C1C');
+  writeStat(sheet, row, 1, 'Active Loans',         stats.activeLoans,      '#1565C0');
+  writeStat(sheet, row, 4, 'Overdue Loans',         stats.overdueLoans,     '#B71C1C');
   row++;
-  writeStat(sheet, row, 1, 'All-time Total Loans', stats.totalLoans,  '#37474F');
-  writeStat(sheet, row, 4, 'Registered Borrowers', stats.borrowers,   '#37474F');
+  writeStat(sheet, row, 1, 'All-time Total Loans',  stats.totalLoans,       '#37474F');
+  writeStat(sheet, row, 4, 'Registered Borrowers',  stats.totalBorrowers,   '#37474F');
   row += 2;
 
   // ── Overdue loans ────────────────────────────────────────────────────────
   const overdueLoans = allLoans.filter(r => r[LC.STATUS - 1] === 'Overdue');
   if (overdueLoans.length > 0) {
     row = writeSectionHeader(sheet, row, '🚨  OVERDUE LOANS', '#B71C1C');
-    writeTableHeader(sheet, row, ['Loan ID', 'Tool Name', 'Borrower', 'Email', 'Due Date', 'Days Overdue'], '#FFCDD2', '#B71C1C');
+    writeTableHeader(sheet, row,
+      ['Loan ID', 'Tool Name', 'Qty', 'Borrower', 'Email', 'Due Date / Days Over'],
+      '#FFCDD2', '#B71C1C');
     row++;
     overdueLoans
       .sort((a, b) => new Date(a[LC.DUE_DATE - 1]) - new Date(b[LC.DUE_DATE - 1]))
       .forEach(loan => {
-        const daysOverdue = Math.floor((now - new Date(loan[LC.DUE_DATE - 1])) / 86400000);
+        const daysOver = Math.floor((now - new Date(loan[LC.DUE_DATE - 1])) / 86400000);
         sheet.getRange(row, 1, 1, 6).setValues([[
-          loan[LC.ID - 1], loan[LC.TOOL_NAME - 1], loan[LC.BORROWER_NAME - 1],
-          loan[LC.EMAIL - 1], loan[LC.DUE_DATE - 1], daysOverdue,
+          loan[LC.ID - 1], loan[LC.TOOL_NAME - 1], loan[LC.QTY - 1] || 1,
+          loan[LC.BORROWER_NAME - 1], loan[LC.EMAIL - 1],
+          Utilities.formatDate(new Date(loan[LC.DUE_DATE - 1]), Session.getScriptTimeZone(), 'MM/dd/yyyy') +
+            ' (' + daysOver + ' days)',
         ]]).setBackground('#FFEBEE');
-        sheet.getRange(row, 5).setNumberFormat('MM/dd/yyyy');
         row++;
       });
     row++;
@@ -84,17 +102,20 @@ function updateDashboard() {
       .setFontStyle('italic').setFontColor('#78909C');
     row++;
   } else {
-    writeTableHeader(sheet, row, ['Loan ID', 'Tool Name', 'Borrower', 'Email', 'Due Date', 'Days Remaining'], '#BBDEFB', '#1565C0');
+    writeTableHeader(sheet, row,
+      ['Loan ID', 'Tool Name', 'Qty', 'Borrower', 'Due Date', 'Days Remaining'],
+      '#BBDEFB', '#1565C0');
     row++;
     activeLoans.forEach(loan => {
       const daysLeft = Math.ceil((new Date(loan[LC.DUE_DATE - 1]) - now) / 86400000);
       const r = sheet.getRange(row, 1, 1, 6);
       r.setValues([[
-        loan[LC.ID - 1], loan[LC.TOOL_NAME - 1], loan[LC.BORROWER_NAME - 1],
-        loan[LC.EMAIL - 1], loan[LC.DUE_DATE - 1], daysLeft,
+        loan[LC.ID - 1], loan[LC.TOOL_NAME - 1], loan[LC.QTY - 1] || 1,
+        loan[LC.BORROWER_NAME - 1],
+        loan[LC.DUE_DATE - 1], daysLeft,
       ]]);
       sheet.getRange(row, 5).setNumberFormat('MM/dd/yyyy');
-      if (daysLeft <= 2) r.setBackground('#FFF9C4'); // yellow: due soon
+      if (daysLeft <= 2) r.setBackground('#FFF9C4');
       row++;
     });
     row++;
@@ -102,9 +123,13 @@ function updateDashboard() {
 
   // ── Tool inventory quick view ─────────────────────────────────────────────
   row = writeSectionHeader(sheet, row, '🗂️  TOOL INVENTORY');
-  writeTableHeader(sheet, row, ['Tool ID', 'Tool Name', 'Category', 'Condition', 'Status', 'Location'], '#C8E6C9', '#2E7D32');
+  writeTableHeader(sheet, row,
+    ['Tool ID', 'Tool Name', 'Category', 'Qty Available / Total', 'Status', 'Location'],
+    '#C8E6C9', '#2E7D32');
   row++;
   tools.forEach(tool => {
+    const avail = getAvailableQty(tool[TC.ID - 1]);
+    const total = parseInt(tool[TC.QUANTITY - 1]) || 1;
     const statusColors = {
       Available:   '#E8F5E9', Borrowed: '#FFF3E0',
       Maintenance: '#FFF8E1', Retired:  '#ECEFF1',
@@ -112,12 +137,12 @@ function updateDashboard() {
     const bg = statusColors[tool[TC.STATUS - 1]] || '#FFFFFF';
     sheet.getRange(row, 1, 1, 6).setValues([[
       tool[TC.ID - 1], tool[TC.NAME - 1], tool[TC.CATEGORY - 1],
-      tool[TC.CONDITION - 1], tool[TC.STATUS - 1], tool[TC.LOCATION - 1],
+      avail + ' / ' + total,
+      tool[TC.STATUS - 1], tool[TC.LOCATION - 1],
     ]]).setBackground(bg);
     row++;
   });
 
-  // Update "last updated" row
   sheet.getRange('A2:F2').merge()
     .setValue('Last updated: ' + Utilities.formatDate(now, Session.getScriptTimeZone(), 'EEEE, MMMM d yyyy  h:mm a'))
     .setBackground('#E8EAF6').setFontColor('#5C6BC0').setFontStyle('italic')
@@ -147,8 +172,6 @@ function writeStat(sheet, row, col, label, value, color) {
     .setFontSize(16).setFontWeight('bold').setFontColor(color || '#000000');
   sheet.setRowHeight(row, 36);
 }
-
-// ── Sync loan statuses ────────────────────────────────────────────────────────
 
 function syncLoanStatuses() {
   const sheet = loansSheet();
