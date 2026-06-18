@@ -1541,6 +1541,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div class="stat-card"><div class="stat-num" id="s-alltime" style="color:#1a7fa8">—</div><div class="stat-lbl">Unique Trees Cared For</div></div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em">🔍 Query Data</span>
+      </div>
+      <input id="nl-query-input" type="text" placeholder="Ask a question (e.g., 'trees on June 11', 'care on Main Street', 'June 11 activities')"
+        style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;margin-bottom:10px"
+        onkeypress="if(event.key==='Enter') queryData(document.getElementById('nl-query-input').value)">
+      <div id="nl-query-results" style="font-size:12px;color:var(--text2);line-height:1.6;display:none;padding:10px;background:var(--bg);border-radius:6px;border:1px solid var(--border3)"></div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
         <span style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.07em">🎯 Progress Toward Goal</span>
         <span id="s-goal-text" style="font-size:13px;font-weight:700;color:var(--text)">0 / 1,000 trees cared for in 2026</span>
@@ -3542,6 +3551,124 @@ function updateStats() {
       maintainAspectRatio: false
     }
   });
+}
+
+function queryData(input) {
+  const resultsEl = document.getElementById('nl-query-results');
+  if (!input.trim()) {
+    resultsEl.style.display = 'none';
+    return;
+  }
+
+  const query = input.toLowerCase();
+  const tcAreas = tcLoad();
+  const allEventsById = {};
+
+  // Build tree ID to events mapping
+  tcAreas.forEach(area => {
+    const tid = String(area._treeId || '');
+    if (!tid) return;
+    if (!allEventsById[tid]) allEventsById[tid] = [];
+    (area.careEvents || []).forEach(ev => {
+      allEventsById[tid].push({ ...ev, areaId: area.id, areaName: area.name || 'Unnamed area' });
+    });
+  });
+
+  // Parse query for date (YYYY-MM-DD or "Month DD" or just month name or just day)
+  let dateFilter = null;
+  const datePatterns = [
+    /(\d{4})-(\d{2})-(\d{2})/, // YYYY-MM-DD
+    /(\d{2})\/(\d{2})\/(\d{4})/, // MM/DD/YYYY
+    /([a-z]+)\s+(\d{1,2})(?:\s+(\d{4}))?/i, // "June 11 2026" or "June 11"
+    /(\d{1,2})\s+([a-z]+)/i // "11 June"
+  ];
+
+  for (const pattern of datePatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      if (pattern === datePatterns[0]) {
+        dateFilter = `${match[1]}-${match[2]}-${match[3]}`;
+      } else if (pattern === datePatterns[1]) {
+        dateFilter = `${match[3]}-${match[1]}-${match[2]}`;
+      } else if (pattern === datePatterns[2]) {
+        const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        const monthIdx = monthNames.indexOf(match[1].toLowerCase());
+        const year = match[3] || new Date().getFullYear();
+        const day = String(match[2]).padStart(2, '0');
+        const month = String(monthIdx + 1).padStart(2, '0');
+        dateFilter = `${year}-${month}-${day}`;
+      } else if (pattern === datePatterns[3]) {
+        const monthNames = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        const monthIdx = monthNames.indexOf(match[2].toLowerCase());
+        const year = new Date().getFullYear();
+        const day = String(match[1]).padStart(2, '0');
+        const month = String(monthIdx + 1).padStart(2, '0');
+        dateFilter = `${year}-${month}-${day}`;
+      }
+      break;
+    }
+  }
+
+  // Parse query for street/address
+  let streetFilter = null;
+  const streetMatch = query.match(/(?:on\s+|at\s+)?([a-z\s]+(?:st|street|ave|avenue|blvd|boulevard|rd|road|ln|lane|way|pl|place|ct|court|sq|square|dr|drive)\.?)\b/i);
+  if (streetMatch) {
+    streetFilter = streetMatch[1].trim();
+  }
+
+  // Filter events
+  let results = [];
+  Object.entries(allEventsById).forEach(([treeId, events]) => {
+    events.forEach(ev => {
+      let matches = true;
+      if (dateFilter && !ev.date.startsWith(dateFilter)) matches = false;
+      if (streetFilter) {
+        const tree = allTrees.find(t => String(t.tree_id) === treeId);
+        const address = tree?.address || '';
+        if (!address.toLowerCase().includes(streetFilter)) matches = false;
+      }
+      if (matches) results.push({ treeId, event: ev });
+    });
+  });
+
+  // Generate results
+  if (!results.length) {
+    resultsEl.innerHTML = `<strong>No matches found</strong> for your query.`;
+    resultsEl.style.display = 'block';
+    return;
+  }
+
+  // Count unique trees and aggregate activity types
+  const uniqueTrees = new Set(results.map(r => r.treeId));
+  const activities = {};
+  results.forEach(r => {
+    (r.event.activities || []).forEach(a => {
+      activities[a] = (activities[a] || 0) + 1;
+    });
+  });
+
+  const activityLabels = {
+    'watering': '💧 Watering',
+    'weeding': '🌱 Weeding',
+    'mulching': '🍂 Mulching',
+    'pruning': '✂️ Pruning',
+    'planting': '🌳 Planting',
+    'tree_guard': '🛡️ Tree Guard',
+    'other': '📝 Other'
+  };
+
+  let html = `<strong>${uniqueTrees.size}</strong> unique tree${uniqueTrees.size !== 1 ? 's' : ''} with <strong>${results.length}</strong> care event${results.length !== 1 ? 's' : ''}`;
+
+  if (Object.keys(activities).length > 0) {
+    html += '<br/><strong>Activity breakdown:</strong><br/>';
+    html += Object.entries(activities)
+      .sort((a, b) => b[1] - a[1])
+      .map(([act, count]) => `• ${activityLabels[act] || act}: ${count}`)
+      .join('<br/>');
+  }
+
+  resultsEl.innerHTML = html;
+  resultsEl.style.display = 'block';
 }
 
 // (Priority list/detail panels removed — priority sidebar now shows static tier info only)
