@@ -1463,6 +1463,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             ○ Show empty tree beds
           </label>
           <label class="cp-chk">
+            <input type="checkbox" id="f-street-trees-only" checked onchange="applyFilters()">
+            🛣️ Street Trees Only
+          </label>
+          <label class="cp-chk">
             <input type="checkbox" id="f-care-needed" onchange="applyFilters()">
             🔧 Care Needed (To-Do list)
           </label>
@@ -2651,6 +2655,7 @@ function applyFilters(reload = false) {
   const health = document.getElementById('f-health').value;
   const selSpecies = filterSel.species;
   const selAge = filterSel.age;
+  const streetTreesOnly = document.getElementById('f-street-trees-only')?.checked || false;
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
@@ -2660,6 +2665,7 @@ function applyFilters(reload = false) {
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
   let base = [...allTrees];
+  if (streetTreesOnly) base = base.filter(t => (t.tree_type || 'street') === 'street');
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (selSpecies.size) base = base.filter(t => selSpecies.has(t.spc_common || ''));
   if (selAge.size) {
