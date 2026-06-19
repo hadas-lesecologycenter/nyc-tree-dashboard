@@ -21,6 +21,7 @@ LIMIT   = 50_000       # more than enough for CB3
 
 # NYC Open Data Socrata endpoints
 FORESTRY_ID  = 'hn5i-inap'   # Forestry Tree Points — live operational DB
+PLANTING_ID  = '82zj-84is'   # Forestry Planting Spaces — has pssite (street/park indicator)
 CENSUS_ID    = 'uvpi-gqnh'   # 2015 Street Tree Census
 BASE_URL     = 'https://data.cityofnewyork.us/resource/{id}.json'
 CSV_URL      = 'https://data.cityofnewyork.us/api/views/{id}/rows.csv?accessType=DOWNLOAD'
@@ -60,6 +61,7 @@ FORESTRY_MAP = {
     'genusspecies':       'spc_common',   # combined genus+species
     'tpcondition':        'health',
     'tpstructure':        'status',
+    'plantingspaceglobalid': 'plantingspaceglobalid',  # for joining with planting spaces
     # Legacy / 2015-census field names (kept in case dataset schema changes)
     'spc_latin':          'spc_latin',
     'spc_common':         'spc_common',
@@ -79,6 +81,13 @@ FORESTRY_MAP = {
     'boro_ct':            'boro_ct',
     'block_id':           'block_id',
     'census_tract':       'boro_ct',
+}
+
+PLANTING_SPACES_MAP = {
+    'globalid':           'plantingspaceglobalid',  # for joining with tree points
+    'pssite':             'tree_type',              # 'Street' or 'Park' indicator
+    'parkname':           'park_name',
+    'parkzone':           'park_zone',
 }
 
 # Condition/health value normalisation (Forestry uses different strings)
@@ -301,6 +310,64 @@ def fetch_forestry():
     return normalised
 
 
+def fetch_planting_spaces():
+    """Fetch Planting Spaces data to get tree_type (street/park) for each tree."""
+    print('Fetching Planting Spaces data for tree type information…')
+    try:
+        rows = fetch(PLANTING_ID, {'$limit': LIMIT})
+        if isinstance(rows, list) and rows:
+            print(f'  Fetched {len(rows)} planting spaces')
+            # Map to our field names
+            mapped = []
+            for row in rows:
+                out = {}
+                for k, v in row.items():
+                    mapped_key = PLANTING_SPACES_MAP.get(k, k)
+                    out[mapped_key] = v
+                mapped.append(out)
+            return mapped
+        return []
+    except Exception as e:
+        print(f'  Warning: Could not fetch planting spaces: {e}')
+        return []
+
+
+def join_tree_type_data(trees, planting_spaces):
+    """Join tree points with planting spaces to add tree_type and park_name."""
+    # Index planting spaces by globalid for fast lookup
+    spaces_by_id = {}
+    for space in planting_spaces:
+        ps_id = space.get('plantingspaceglobalid')
+        if ps_id:
+            spaces_by_id[ps_id] = space
+
+    # Add tree_type and park info from planting spaces
+    for tree in trees:
+        ps_id = tree.get('plantingspaceglobalid')
+        if ps_id and ps_id in spaces_by_id:
+            space = spaces_by_id[ps_id]
+            tree_type = space.get('tree_type', '').strip()
+            # Normalize the tree_type field: 'Street' → 'street', 'Park' → 'park'
+            if tree_type.lower() == 'street':
+                tree['tree_type'] = 'street'
+            elif tree_type.lower() == 'park':
+                tree['tree_type'] = 'park'
+                # Add park name if available
+                park_name = space.get('park_name', '').strip()
+                if park_name:
+                    tree['park_name'] = park_name
+                park_zone = space.get('park_zone', '').strip()
+                if park_zone:
+                    tree['park_zone'] = park_zone
+            else:
+                tree['tree_type'] = 'unknown'
+        else:
+            # Default to street if no planting space info available
+            tree['tree_type'] = 'street'
+
+    return trees
+
+
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
     rows = try_cb3_filters(CENSUS_ID)
@@ -313,11 +380,25 @@ def fetch_census_2015():
 
 def main():
     trees = None
+    source = None
 
     try:
         trees = fetch_forestry()
         print(f'  Forestry Tree Points: {len(trees)} CB3 trees')
         source = 'Forestry Tree Points (live)'
+
+        # Fetch planting spaces to get tree_type (street/park) information
+        planting_spaces = fetch_planting_spaces()
+        if planting_spaces:
+            print(f'  Joining with {len(planting_spaces)} planting spaces…')
+            trees = join_tree_type_data(trees, planting_spaces)
+            # Count by type
+            street_count = sum(1 for t in trees if t.get('tree_type') == 'street')
+            park_count = sum(1 for t in trees if t.get('tree_type') == 'park')
+            print(f'  Tree types: {street_count} street, {park_count} park')
+        else:
+            print('  Warning: Could not fetch planting spaces — trees will have tree_type=street')
+
     except Exception as e:
         print(f'  Forestry fetch failed: {e}')
         print('  Falling back to 2015 census…')
