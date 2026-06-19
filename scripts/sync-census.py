@@ -157,25 +157,6 @@ def main():
         print(f"✗ Error saving census.json: {e}")
         return 1
     
-    # Add tree type classification (park vs street)
-    print("\nClassifying trees as park or street...")
-    try:
-        import subprocess
-        result = subprocess.run([sys.executable, str(SCRIPT_DIR / 'add-tree-type.py')],
-                              capture_output=True, text=True, timeout=300)
-        if result.returncode == 0:
-            print("✓ Tree type classification complete")
-            # Print relevant output from add-tree-type.py
-            for line in result.stdout.split('\n'):
-                if '✓' in line or 'Park' in line or 'Street' in line:
-                    print(f"  {line}")
-        else:
-            print(f"✗ Tree type classification failed: {result.stderr}")
-            return 1
-    except Exception as e:
-        print(f"✗ Error running add-tree-type.py: {e}")
-        return 1
-
     # Summary
     print(f"\n✓ Sync complete!")
     print(f"  Trees in CB3: {len(merged_trees)}")
