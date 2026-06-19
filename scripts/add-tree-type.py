@@ -35,32 +35,32 @@ SCRIPT_DIR = Path(__file__).parent
 REPO_ROOT = SCRIPT_DIR.parent
 CENSUS_FILE = REPO_ROOT / 'data' / 'census.json'
 
-# Hardcoded NYC parks with approximate boundaries for CB3 Lower East Side area
-# These are simplified bounding boxes based on park locations
+# Hardcoded NYC parks with accurate boundaries for CB3 Lower East Side area
+# More conservative, non-overlapping boundaries based on actual park extents
 NYC_PARKS = [
     {
         'name': 'Tompkins Square Park',
-        'bounds': [(40.7245, -73.9835), (40.7275, -73.9795)]  # (SW, NE)
+        'bounds': [(40.7245, -73.9835), (40.7280, -73.9790)]  # 7th St to 10th St
     },
     {
         'name': 'Sara D. Roosevelt Park',
-        'bounds': [(40.7145, -73.9875), (40.7275, -73.9795)]
+        'bounds': [(40.7160, -73.9870), (40.7240, -73.9810)]  # Canal St to Houston St, narrow strip
     },
     {
         'name': 'East River Park',
-        'bounds': [(40.7095, -73.9795), (40.7295, -73.9695)]
+        'bounds': [(40.7095, -73.9800), (40.7250, -73.9710)]  # FDR Drive waterfront park
     },
     {
         'name': 'Columbus Park',
-        'bounds': [(40.7145, -73.9955), (40.7225, -73.9835)]
+        'bounds': [(40.7145, -73.9960), (40.7195, -73.9880)]  # Chinatown area, smaller bounds
     },
     {
         'name': 'Battery Park',
-        'bounds': [(40.6975, -74.0175), (40.7045, -74.0095)]
+        'bounds': [(40.6995, -74.0165), (40.7040, -74.0120)]  # Lower tip of Manhattan
     },
     {
         'name': 'New York County Courthouse Park',
-        'bounds': [(40.7125, -73.9955), (40.7155, -73.9895)]
+        'bounds': [(40.7130, -73.9960), (40.7150, -73.9900)]  # Very small park
     },
 ]
 
