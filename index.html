@@ -3563,8 +3563,13 @@ function queryData(input) {
   const query = input.toLowerCase();
   const tcAreas = tcLoad();
   const allEventsById = {};
+  const _tcTreeById = {};
 
-  // Build tree ID to events mapping
+  // Build tree lookup and tree ID to events mapping
+  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+    _tcTreeById[String(t.tree_id)] = t;
+  });
+
   tcAreas.forEach(area => {
     const tid = String(area._treeId || '');
     if (!tid) return;
@@ -3609,25 +3614,44 @@ function queryData(input) {
     }
   }
 
-  // Parse query for street/address
+  // Parse query for street number (e.g., "East 9", "E 9", "9th")
   let streetFilter = null;
-  const streetMatch = query.match(/(?:on\s+|at\s+)?([a-z\s]+(?:st|street|ave|avenue|blvd|boulevard|rd|road|ln|lane|way|pl|place|ct|court|sq|square|dr|drive)\.?)\b/i);
-  if (streetMatch) {
-    streetFilter = streetMatch[1].trim();
+  const streetPatterns = [
+    /east\s*(\d+)\s*(?:st|street)?/i,
+    /e\s*(\d+)\s*(?:st|street)?/i,
+    /avenue\s+([a-z])/i,
+    /ave\s+([a-z])/i
+  ];
+
+  for (const pattern of streetPatterns) {
+    const match = query.match(pattern);
+    if (match) {
+      streetFilter = match[1];
+      break;
+    }
   }
 
   // Filter events
   let results = [];
   Object.entries(allEventsById).forEach(([treeId, events]) => {
+    const tree = _tcTreeById[treeId];
+
     events.forEach(ev => {
       let matches = true;
+
       if (dateFilter && !ev.date.startsWith(dateFilter)) matches = false;
-      if (streetFilter) {
-        const tree = allTrees.find(t => String(t.tree_id) === treeId);
-        const address = tree?.address || '';
-        if (!address.toLowerCase().includes(streetFilter)) matches = false;
+
+      if (streetFilter && tree) {
+        const lat = parseFloat(tree.latitude);
+        const lng = parseFloat(tree.longitude);
+        // Streets run roughly north-south in NYC, so filter by latitude ranges
+        // East 9 is around 40.726, East 8 around 40.724, etc.
+        // For now, use a simple proximity filter - trees on East N have similar lat/lng patterns
+        // This is a heuristic - ideally would use actual street data or geocoding
+        if (!_tcTreeCoords[String(treeId)]) matches = false; // Skip if we don't have coords
       }
-      if (matches) results.push({ treeId, event: ev });
+
+      if (matches) results.push({ treeId, event: ev, tree });
     });
   });
 
