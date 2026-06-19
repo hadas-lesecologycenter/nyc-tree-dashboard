@@ -3564,9 +3564,10 @@ function queryData(input) {
   const tcAreas = tcLoad();
   const allEventsById = {};
   const _tcTreeById = {};
+  const displayTrees = typeof filteredTrees !== 'undefined' ? filteredTrees : (typeof allTrees !== 'undefined' ? allTrees : []);
 
-  // Build tree lookup and tree ID to events mapping
-  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+  // Build tree lookup from currently displayed trees (live data)
+  displayTrees.forEach(t => {
     _tcTreeById[String(t.tree_id)] = t;
   });
 
@@ -3614,11 +3615,18 @@ function queryData(input) {
     }
   }
 
-  // Parse query for street number (e.g., "East 9", "E 9", "9th")
-  let streetFilter = null;
+  // Parse query for tier (e.g., "tier 3", "tier3")
+  let tierFilter = null;
+  const tierMatch = query.match(/tier\s*(\d)/i);
+  if (tierMatch) {
+    tierFilter = parseInt(tierMatch[1]);
+  }
+
+  // Parse query for street/coordinates using address or lat/lng
+  let locationFilter = null;
   const streetPatterns = [
-    /east\s*(\d+)\s*(?:st|street)?/i,
-    /e\s*(\d+)\s*(?:st|street)?/i,
+    /east\s*(\d+)/i,
+    /e\s+(\d+)/i,
     /avenue\s+([a-z])/i,
     /ave\s+([a-z])/i
   ];
@@ -3626,32 +3634,48 @@ function queryData(input) {
   for (const pattern of streetPatterns) {
     const match = query.match(pattern);
     if (match) {
-      streetFilter = match[1];
+      locationFilter = match[1];
       break;
     }
   }
 
-  // Filter events
+  // Filter events and apply all criteria
   let results = [];
   Object.entries(allEventsById).forEach(([treeId, events]) => {
     const tree = _tcTreeById[treeId];
+    if (!tree) return;
+
+    // Check tier filter if specified
+    if (tierFilter !== null) {
+      const treeTier = calcPriority(tree);
+      if (treeTier !== tierFilter) return;
+    }
+
+    // Check location filter if specified
+    if (locationFilter !== null) {
+      const lat = parseFloat(tree.latitude || 0);
+      const lng = parseFloat(tree.longitude || 0);
+      // Rough lat/lng ranges for East streets in CB3
+      const eastStreetRanges = {
+        '2': { latMin: 40.715, latMax: 40.720 },
+        '3': { latMin: 40.722, latMax: 40.727 },
+        '4': { latMin: 40.721, latMax: 40.726 },
+        '5': { latMin: 40.725, latMax: 40.730 },
+        '7': { latMin: 40.724, latMax: 40.729 },
+        '8': { latMin: 40.723, latMax: 40.728 },
+        '9': { latMin: 40.724, latMax: 40.729 },
+        '10': { latMin: 40.728, latMax: 40.733 },
+        '11': { latMin: 40.732, latMax: 40.737 }
+      };
+      const range = eastStreetRanges[locationFilter];
+      if (range && (lat < range.latMin || lat > range.latMax || lng < -73.985 || lng > -73.975)) {
+        return;
+      }
+    }
 
     events.forEach(ev => {
-      let matches = true;
-
-      if (dateFilter && !ev.date.startsWith(dateFilter)) matches = false;
-
-      if (streetFilter && tree) {
-        const lat = parseFloat(tree.latitude);
-        const lng = parseFloat(tree.longitude);
-        // Streets run roughly north-south in NYC, so filter by latitude ranges
-        // East 9 is around 40.726, East 8 around 40.724, etc.
-        // For now, use a simple proximity filter - trees on East N have similar lat/lng patterns
-        // This is a heuristic - ideally would use actual street data or geocoding
-        if (!_tcTreeCoords[String(treeId)]) matches = false; // Skip if we don't have coords
-      }
-
-      if (matches) results.push({ treeId, event: ev, tree });
+      if (dateFilter && !ev.date.startsWith(dateFilter)) return;
+      results.push({ treeId, event: ev, tree });
     });
   });
 
