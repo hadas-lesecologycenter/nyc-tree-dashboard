@@ -310,26 +310,50 @@ def fetch_forestry():
     return normalised
 
 
-def fetch_planting_spaces():
-    """Fetch Planting Spaces data to get tree_type (street/park) for each tree."""
+def fetch_planting_spaces(trees):
+    """Fetch Planting Spaces for the given trees, to get tree_type (street/park).
+
+    The Planting Spaces dataset has 1.09M rows citywide, so we must NOT just
+    grab the first N — we'd miss almost all CB3 spaces. Instead we query only
+    the planting spaces our trees reference, batched by globalid.
+    """
     print('Fetching Planting Spaces data for tree type information…')
-    try:
-        rows = fetch(PLANTING_ID, {'$limit': LIMIT})
-        if isinstance(rows, list) and rows:
-            print(f'  Fetched {len(rows)} planting spaces')
-            # Map to our field names
-            mapped = []
-            for row in rows:
-                out = {}
-                for k, v in row.items():
-                    mapped_key = PLANTING_SPACES_MAP.get(k, k)
-                    out[mapped_key] = v
-                mapped.append(out)
-            return mapped
+
+    # Collect the unique planting space IDs our CB3 trees reference
+    needed_ids = sorted({
+        t.get('plantingspaceglobalid') for t in trees
+        if t.get('plantingspaceglobalid')
+    })
+    if not needed_ids:
+        print('  No plantingspaceglobalid values on trees — cannot fetch')
         return []
-    except Exception as e:
-        print(f'  Warning: Could not fetch planting spaces: {e}')
-        return []
+    print(f'  Need {len(needed_ids)} planting spaces (joining by globalid)…')
+
+    all_rows = []
+    CHUNK = 150  # keep the IN(...) URL well under length limits
+    for i in range(0, len(needed_ids), CHUNK):
+        chunk = needed_ids[i:i + CHUNK]
+        # Socrata SoQL: globalid in ('A','B',…)
+        id_list = ','.join(f"'{gid}'" for gid in chunk)
+        where = f'globalid in ({id_list})'
+        try:
+            rows = fetch(PLANTING_ID, {'$where': where, '$limit': CHUNK})
+            if isinstance(rows, list):
+                all_rows.extend(rows)
+        except Exception as e:
+            print(f'  Warning: chunk {i // CHUNK + 1} failed: {e}')
+
+    print(f'  Fetched {len(all_rows)} planting spaces')
+
+    # Map to our field names
+    mapped = []
+    for row in all_rows:
+        out = {}
+        for k, v in row.items():
+            mapped_key = PLANTING_SPACES_MAP.get(k, k)
+            out[mapped_key] = v
+        mapped.append(out)
+    return mapped
 
 
 def join_tree_type_data(trees, planting_spaces):
@@ -341,30 +365,33 @@ def join_tree_type_data(trees, planting_spaces):
         if ps_id:
             spaces_by_id[ps_id] = space
 
+    matched = unmatched = 0
     # Add tree_type and park info from planting spaces
     for tree in trees:
         ps_id = tree.get('plantingspaceglobalid')
         if ps_id and ps_id in spaces_by_id:
+            matched += 1
             space = spaces_by_id[ps_id]
-            tree_type = space.get('tree_type', '').strip()
-            # Normalize the tree_type field: 'Street' → 'street', 'Park' → 'park'
+            tree_type = (space.get('tree_type') or '').strip()
+            # pssite values: 'Street' or 'Park'
             if tree_type.lower() == 'street':
                 tree['tree_type'] = 'street'
             elif tree_type.lower() == 'park':
                 tree['tree_type'] = 'park'
-                # Add park name if available
-                park_name = space.get('park_name', '').strip()
+                park_name = (space.get('park_name') or '').strip()
                 if park_name:
                     tree['park_name'] = park_name
-                park_zone = space.get('park_zone', '').strip()
+                park_zone = (space.get('park_zone') or '').strip()
                 if park_zone:
                     tree['park_zone'] = park_zone
             else:
                 tree['tree_type'] = 'unknown'
         else:
-            # Default to street if no planting space info available
-            tree['tree_type'] = 'street'
+            # No planting space found — mark unknown rather than silently 'street'
+            unmatched += 1
+            tree['tree_type'] = 'unknown'
 
+    print(f'  Join: {matched} matched, {unmatched} unmatched')
     return trees
 
 
@@ -388,16 +415,17 @@ def main():
         source = 'Forestry Tree Points (live)'
 
         # Fetch planting spaces to get tree_type (street/park) information
-        planting_spaces = fetch_planting_spaces()
+        planting_spaces = fetch_planting_spaces(trees)
         if planting_spaces:
             print(f'  Joining with {len(planting_spaces)} planting spaces…')
             trees = join_tree_type_data(trees, planting_spaces)
             # Count by type
             street_count = sum(1 for t in trees if t.get('tree_type') == 'street')
             park_count = sum(1 for t in trees if t.get('tree_type') == 'park')
-            print(f'  Tree types: {street_count} street, {park_count} park')
+            unknown_count = sum(1 for t in trees if t.get('tree_type') == 'unknown')
+            print(f'  Tree types: {street_count} street, {park_count} park, {unknown_count} unknown')
         else:
-            print('  Warning: Could not fetch planting spaces — trees will have tree_type=street')
+            print('  Warning: Could not fetch planting spaces — leaving tree_type unset')
 
     except Exception as e:
         print(f'  Forestry fetch failed: {e}')
