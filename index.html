@@ -2665,7 +2665,7 @@ function applyFilters(reload = false) {
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
   let base = [...allTrees];
-  if (streetTreesOnly) base = base.filter(t => (t.tree_type || 'street') === 'street');
+  if (streetTreesOnly) base = base.filter(isStreetTree);
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (selSpecies.size) base = base.filter(t => selSpecies.has(t.spc_common || ''));
   if (selAge.size) {
@@ -3069,6 +3069,11 @@ function setViewMode(mode) {
 function toggleSpeciesView() { setViewMode(priorityMode ? 'species' : 'priority'); }
 
 // ========== STATS ==========
+// Stats always reflect CB3 street trees — park and unknown planting sites are
+// excluded, regardless of the map's current filters. Mirrors the map's
+// "Street Trees Only" predicate so both share one definition of a street tree.
+function isStreetTree(t) { return (t.tree_type || 'street') === 'street'; }
+
 // Refresh tier counts whenever map updates
 (function patchUpdateMap() {
   const orig = window.updateMap;
@@ -3179,7 +3184,7 @@ function renderTierBreakdownRows() {
   const data = _tierPieData[_tierBreakdownYear] || _tierPieData.all || { 1: new Set(), 2: new Set(), 3: new Set() };
   const tierLabels = { 3: 'Tier 3 — Planted 2023–2026', 2: 'Tier 2 — Planted 2020–2022 / DBH < 6"', 1: 'Tier 1 — DBH ≥ 6" or pre-2020' };
   const tierTotals = { 1: 0, 2: 0, 3: 0 };
-  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+  (typeof allTrees !== 'undefined' ? allTrees : []).filter(isStreetTree).forEach(t => {
     const tier = calcPriority(t);
     if (tier >= 1 && tier <= 3) tierTotals[tier]++;
   });
@@ -3281,7 +3286,9 @@ function renderTierPieChart() {
 }
 
 function updateStats() {
-  const trees = filteredTrees;
+  // Stats are based on street trees only (not all trees, which include park /
+  // unknown sites) and are independent of the map's current filter state.
+  const trees = (typeof allTrees !== 'undefined' ? allTrees : []).filter(isStreetTree);
   const total = trees.length;
   const byHealth = { Good: 0, Fair: 0, Poor: 0, Unknown: 0 };
   const bySpecies = {};
@@ -3321,13 +3328,15 @@ function updateStats() {
 
   // ── Priority tier breakdown + pie chart ───────────────────────
   const tierTotals = { 1: 0, 2: 0, 3: 0 };
-  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => {
+  (typeof allTrees !== 'undefined' ? allTrees : []).filter(isStreetTree).forEach(t => {
     const tier = calcPriority(t);
     if (tier >= 1 && tier <= 3) tierTotals[tier]++;
   });
   const tierCared = { 1: new Set(), 2: new Set(), 3: new Set() };
   const _tcTreeById = {};
-  (typeof allTrees !== 'undefined' ? allTrees : []).forEach(t => { _tcTreeById[String(t.tree_id)] = t; });
+  // Street trees only, so cared-tree tier counts share the same universe as the
+  // denominators above (a cared park tree resolves to no match and is skipped).
+  (typeof allTrees !== 'undefined' ? allTrees : []).filter(isStreetTree).forEach(t => { _tcTreeById[String(t.tree_id)] = t; });
   // Build per-year tier data for the pie chart
   _tierPieData = { all: { 1: new Set(), 2: new Set(), 3: new Set() } };
   tcAreas.forEach(area => {
