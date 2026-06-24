@@ -264,6 +264,24 @@ def guard_is_present(value):
     return value is not None and str(value).strip().lower() not in GUARD_ABSENT_VALUES
 
 
+def report_tree_points_guards(rows):
+    """Diagnostic: report whether the Tree Points dataset itself carries a
+    guard column. Guards are normally a Planting Spaces (bed) attribute, but
+    this verifies the tree-level dataset too and logs its full schema."""
+    if not rows:
+        return
+    field = discover_guard_field(rows)
+    if field:
+        present = sum(1 for r in rows if guard_is_present(r.get(field)))
+        dist = Counter((r.get(field) or '(empty)') for r in rows)
+        print(f'  Guard field detected on Tree Points: "{field}"')
+        print(f'    {present}/{len(rows)} trees have a guard present')
+        print(f'    value distribution: {dict(dist.most_common(10))}')
+    else:
+        print('  No guard field found on Tree Points dataset '
+              f'(columns: {sorted(rows[0].keys())})')
+
+
 def normalise_forestry(row):
     """Normalise a Forestry Tree Points row to 2015-census field names."""
     out = {}
@@ -332,6 +350,7 @@ def fetch_forestry():
         rows = try_cb3_filters(FORESTRY_ID)
         if rows:
             print(f'  SODA query returned {len(rows)} rows')
+            report_tree_points_guards(rows)
             normalised = [normalise_forestry(r) for r in rows]
             normalised = filter_to_cb3(normalised)
             if normalised and not (REQUIRED - set(normalised[0].keys())):
@@ -343,7 +362,8 @@ def fetch_forestry():
     if not rows:
         raise ValueError('No CB3 rows found in CSV download')
 
-    print(f'  CSV columns: {list(rows[0].keys())[:15]}…')
+    print(f'  CSV columns: {sorted(rows[0].keys())}')
+    report_tree_points_guards(rows)
     normalised = [normalise_forestry(r) for r in rows]
 
     # Validate required fields
