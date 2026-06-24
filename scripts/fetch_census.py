@@ -9,7 +9,7 @@ required fields.
 Run manually or via the update-census GitHub Action.
 """
 
-import csv, io, json, sys, urllib.request, urllib.parse, os, time
+import csv, io, json, sys, urllib.request, urllib.parse, os, time, math
 from collections import Counter
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -242,6 +242,24 @@ def parse_wkt_point(wkt):
         return float(parts[1]), float(parts[0])   # lat, lng
     except Exception:
         return None, None
+
+
+def _to_float(v):
+    """Best-effort float parse; returns None on failure or a zero value
+    (0/0.0 coordinates are not valid NYC locations)."""
+    try:
+        f = float(v)
+        return f if f else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _haversine_m(lat1, lng1, lat2, lng2):
+    """Approximate distance in metres between two lat/lng points (equirectangular
+    projection — accurate to well under 1% at street-block scale)."""
+    x = math.radians(lng2 - lng1) * math.cos(math.radians((lat1 + lat2) / 2.0))
+    y = math.radians(lat2 - lat1)
+    return math.hypot(x, y) * 6_371_000.0
 
 
 def discover_guard_field(rows):
@@ -487,6 +505,91 @@ def join_tree_type_data(trees, planting_spaces):
     return trees
 
 
+def fetch_2015_guard_points():
+    """Fetch Manhattan CB3 trees that have a tree guard from the 2015 Street Tree
+    Census, to spatially join guard status onto the live forestry trees.
+
+    The 2015 census `guards` field (Helpful/Harmful/Unsure) is NYC's only
+    published tree-guard record — the live Forestry Tree Points and Planting
+    Spaces datasets carry none. Logs CB3 coverage (the 'verify' report) and
+    returns guard-present trees that have usable coordinates."""
+    print('Fetching 2015-census tree-guard anchors for CB3…')
+    try:
+        rows = try_cb3_filters(CENSUS_ID)
+    except Exception as e:
+        print(f'  2015 census fetch failed: {e}')
+        return []
+    if not rows:
+        print('  No 2015 census CB3 rows returned — skipping guard join')
+        return []
+    rows = filter_to_cb3(rows)
+    total = len(rows)
+    present = [r for r in rows if guard_is_present(r.get('guards'))]
+    print(f'  2015 CB3 trees: {total}')
+    print(f'    status:  {dict(Counter((r.get("status") or "(empty)") for r in rows))}')
+    print(f'    guards:  {dict(Counter((r.get("guards") or "(empty)") for r in rows))}')
+    pct = (100.0 * len(present) / total) if total else 0.0
+    print(f'    guard PRESENT: {len(present)} ({pct:.1f}% of CB3)')
+
+    points = []
+    for r in present:
+        lat, lng = _to_float(r.get('latitude')), _to_float(r.get('longitude'))
+        if lat and lng:
+            points.append({'lat': lat, 'lng': lng,
+                           'guards': str(r.get('guards')).strip()})
+    print(f'    guard anchors with valid coordinates: {len(points)}')
+    return points
+
+
+def join_2015_guards(trees, points, attach_threshold_m=5.0):
+    """Attach 2015-census guard status to live trees by nearest-neighbour spatial
+    match. Reports how many live trees fall within several distance thresholds of
+    a guard anchor (so the threshold can be tuned from real data), then attaches
+    the guard value at `attach_threshold_m`. Only fills trees with no guard yet."""
+    if not points:
+        print('  No guard anchors — nothing to join')
+        return 0
+    # Grid cell sized larger than the widest threshold scanned, so a tree's
+    # nearest anchor is always within the 3×3 block of cells around it.
+    CELL = 0.00015  # ≈16m lat / ≈13m lng
+    grid = {}
+    for p in points:
+        grid.setdefault((int(p['lat'] / CELL), int(p['lng'] / CELL)), []).append(p)
+
+    thresholds = (3, 4, 5, 6, 8, 10)
+    within = Counter()
+    attached = 0
+    for tree in trees:
+        if tree.get('guards'):
+            continue
+        lat, lng = _to_float(tree.get('latitude')), _to_float(tree.get('longitude'))
+        if not (lat and lng):
+            continue
+        ci, cj = int(lat / CELL), int(lng / CELL)
+        best = None
+        for di in (-1, 0, 1):
+            for dj in (-1, 0, 1):
+                for p in grid.get((ci + di, cj + dj), ()):
+                    d = _haversine_m(lat, lng, p['lat'], p['lng'])
+                    if best is None or d < best[0]:
+                        best = (d, p)
+        if best is None:
+            continue
+        d, p = best
+        for t in thresholds:
+            if d <= t:
+                within[t] += 1
+        if d <= attach_threshold_m:
+            tree['guards'] = p['guards']
+            attached += 1
+
+    print('  Live trees within N metres of a 2015 guard anchor:')
+    for t in thresholds:
+        print(f'    <={t}m: {within[t]}')
+    print(f'  Attached guards to {attached} live trees (threshold {attach_threshold_m:.0f}m)')
+    return attached
+
+
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
     rows = try_cb3_filters(CENSUS_ID)
@@ -528,6 +631,11 @@ def main():
             print(f'  Tree types: {street_count} street, {park_count} park, {unknown_count} unknown')
         else:
             print('  Warning: Could not fetch planting spaces — leaving tree_type unset')
+
+        # Attach NYC's 2015-census tree-guard status by spatial match — the live
+        # Forestry datasets carry no guard field, so this is the only NYC source.
+        guard_points = fetch_2015_guard_points()
+        join_2015_guards(trees, guard_points)
 
     except Exception as e:
         print(f'  Forestry fetch failed: {e}')
