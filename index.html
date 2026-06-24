@@ -1474,6 +1474,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-nyc-guards" onchange="applyFilters()">
+            🛡 Guard in NYC records
+          </label>
           <div style="margin-bottom:8px">
             <label class="cp-chk">
               <input type="checkbox" id="f-reserved" onchange="toggleReservedFilter()">
@@ -2658,6 +2662,7 @@ function applyFilters(reload = false) {
   const streetTreesOnly = document.getElementById('f-street-trees-only')?.checked || false;
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
+  const nycGuardsOnly = document.getElementById('f-nyc-guards')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
   const reservedGeneralOnly = document.getElementById('f-reserved-general')?.checked || false;
@@ -2682,6 +2687,11 @@ function applyFilters(reload = false) {
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
     base = base.filter(t => guardedIds.has(String(t.tree_id)));
+  }
+  if (nycGuardsOnly) {
+    // NYC's official guard data, joined onto trees from the Planting Spaces
+    // dataset (tree.guards is only set when a guard is actually present).
+    base = base.filter(t => !!(t.guards && String(t.guards).trim()));
   }
   if (reservedPersonOnly || reservedEventOnly || reservedGeneralOnly) {
     const reservedIds = getReservationTreeIds(reservedPersonOnly, reservedEventOnly, reservedGeneralOnly);
@@ -2732,6 +2742,7 @@ function clearAllFilters() {
   document.getElementById('f-health').value = '';
   document.getElementById('f-care-needed').checked = false;
   document.getElementById('f-tree-guards').checked = false;
+  document.getElementById('f-nyc-guards').checked = false;
   document.getElementById('f-reserved').checked = false;
   document.getElementById('f-reserved-person').checked = false;
   document.getElementById('f-reserved-event').checked = false;
@@ -3839,7 +3850,7 @@ function openMapTreeDetail(tree) {
     tree.status                ? ['Status',          tree.status]                               : null,
     tree.nta_name              ? ['Neighborhood',    tree.nta_name]                             : null,
     tree.sidewalk              ? ['Sidewalk',        tree.sidewalk]                             : null,
-    tree.guards                ? ['Guards',          tree.guards]                               : null,
+    tree.guards                ? ['🛡 Guard (NYC)',  tree.guards]                               : null,
     tree.tree_id               ? ['Tree ID',         tree.tree_id]                              : null,
     tree.spc_latin             ? ['Scientific name', '<em>' + tree.spc_latin + '</em>']         : null,
   ].filter(Boolean);

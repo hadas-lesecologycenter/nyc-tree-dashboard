@@ -10,6 +10,7 @@ Run manually or via the update-census GitHub Action.
 """
 
 import csv, io, json, sys, urllib.request, urllib.parse, os, time
+from collections import Counter
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -89,6 +90,21 @@ PLANTING_SPACES_MAP = {
     'parkname':           'park_name',
     'parkzone':           'park_zone',
 }
+
+# ── Tree-guard detection ──────────────────────────────────────────────────────
+# Per LES Ecology Center, tree-guard info lives on the Planting Spaces dataset,
+# but the exact column name isn't documented for the live Forestry data and may
+# differ between the Tree Points and Planting Spaces datasets. So we probe a list
+# of likely column names, then fall back to any column whose name contains
+# 'guard'. The real field name + value distribution is reported in the sync log.
+GUARD_FIELD_CANDIDATES = (
+    'guards', 'guard', 'guardtype', 'psguardtype', 'psguard',
+    'treeguard', 'tpguard', 'has_guard', 'hasguard',
+)
+# Values (case-insensitive) that mean "no guard present". Any other non-empty
+# value is treated as a guard being present — e.g. the 2015-census categories
+# Helpful / Harmful / Unsure, or a guard-type string.
+GUARD_ABSENT_VALUES = {'', 'none', 'no', 'false', '0', '0.0', 'no guard', 'n/a', 'null'}
 
 # Condition/health value normalisation (Forestry uses different strings)
 HEALTH_MAP = {
@@ -228,6 +244,26 @@ def parse_wkt_point(wkt):
         return None, None
 
 
+def discover_guard_field(rows):
+    """Return the name of the guard column present in these rows, or None.
+    Checks known candidates first, then any header containing 'guard'."""
+    if not rows:
+        return None
+    keys = list(rows[0].keys())
+    for cand in GUARD_FIELD_CANDIDATES:
+        if cand in keys:
+            return cand
+    for k in keys:
+        if 'guard' in k.lower():
+            return k
+    return None
+
+
+def guard_is_present(value):
+    """True if a guard column value indicates a guard is actually present."""
+    return value is not None and str(value).strip().lower() not in GUARD_ABSENT_VALUES
+
+
 def normalise_forestry(row):
     """Normalise a Forestry Tree Points row to 2015-census field names."""
     out = {}
@@ -263,6 +299,15 @@ def normalise_forestry(row):
         out['tree_id'] = str(row['objectid'])
     elif 'tree_id' in out:
         out['tree_id'] = str(out['tree_id'])
+
+    # Only keep a guard value if it indicates a guard is present (keeps the
+    # downstream 'has guard' check a simple truthiness test and avoids storing
+    # 'None'). Tree-guard info usually arrives via the planting-space join, but
+    # honour it here too if the points dataset happens to carry it.
+    if 'guards' in out and not guard_is_present(out.get('guards')):
+        del out['guards']
+    elif 'guards' in out:
+        out['guards'] = str(out['guards']).strip()
     return out
 
 
@@ -345,6 +390,19 @@ def fetch_planting_spaces(trees):
 
     print(f'  Fetched {len(all_rows)} planting spaces')
 
+    # Detect which column (if any) carries tree-guard info, and report it so the
+    # sync log documents the real schema — the field name isn't known up front.
+    guard_field = discover_guard_field(all_rows)
+    if guard_field:
+        dist = Counter((r.get(guard_field) or '(empty)') for r in all_rows)
+        present = sum(1 for r in all_rows if guard_is_present(r.get(guard_field)))
+        print(f'  Guard field detected on Planting Spaces: "{guard_field}"')
+        print(f'    {present}/{len(all_rows)} spaces have a guard present')
+        print(f'    value distribution: {dict(dist)}')
+    else:
+        print('  No guard field found on Planting Spaces dataset '
+              f'(columns: {sorted(all_rows[0].keys()) if all_rows else []})')
+
     # Map to our field names
     mapped = []
     for row in all_rows:
@@ -352,12 +410,17 @@ def fetch_planting_spaces(trees):
         for k, v in row.items():
             mapped_key = PLANTING_SPACES_MAP.get(k, k)
             out[mapped_key] = v
+        # Normalise the detected guard column to a stable 'guards' key so the
+        # join step doesn't need to know the original column name.
+        if guard_field:
+            out['guards'] = row.get(guard_field)
         mapped.append(out)
     return mapped
 
 
 def join_tree_type_data(trees, planting_spaces):
-    """Join tree points with planting spaces to add tree_type and park_name."""
+    """Join tree points with planting spaces to add tree_type, park_name, and
+    NYC's official tree-guard status (matched by plantingspaceglobalid)."""
     # Index planting spaces by globalid for fast lookup
     spaces_by_id = {}
     for space in planting_spaces:
@@ -365,8 +428,8 @@ def join_tree_type_data(trees, planting_spaces):
         if ps_id:
             spaces_by_id[ps_id] = space
 
-    matched = unmatched = 0
-    # Add tree_type and park info from planting spaces
+    matched = unmatched = guarded = 0
+    # Add tree_type, park info, and guard status from planting spaces
     for tree in trees:
         ps_id = tree.get('plantingspaceglobalid')
         if ps_id and ps_id in spaces_by_id:
@@ -386,12 +449,21 @@ def join_tree_type_data(trees, planting_spaces):
                     tree['park_zone'] = park_zone
             else:
                 tree['tree_type'] = 'unknown'
+
+            # Attach NYC's official tree-guard info from the planting space.
+            # Only store when a guard is actually present, to keep census.json
+            # lean and make "has guard" a simple truthiness check downstream.
+            guard_val = space.get('guards')
+            if guard_is_present(guard_val):
+                tree['guards'] = str(guard_val).strip()
+                guarded += 1
         else:
             # No planting space found — mark unknown rather than silently 'street'
             unmatched += 1
             tree['tree_type'] = 'unknown'
 
     print(f'  Join: {matched} matched, {unmatched} unmatched')
+    print(f'  Guards: {guarded} trees have a tree guard (per NYC planting spaces)')
     return trees
 
 
@@ -400,7 +472,17 @@ def fetch_census_2015():
     rows = try_cb3_filters(CENSUS_ID)
     if not rows:
         raise ValueError('No rows returned from any filter strategy')
-    return filter_to_cb3(rows)
+    rows = filter_to_cb3(rows)
+    # The 2015 census carries 'guards' directly (Helpful/Harmful/Unsure/None).
+    # Drop the "no guard" rows so 'guards' is only set when one is present.
+    guarded = 0
+    for r in rows:
+        if 'guards' in r and not guard_is_present(r.get('guards')):
+            del r['guards']
+        elif 'guards' in r:
+            guarded += 1
+    print(f'  Guards: {guarded} trees have a tree guard (per 2015 census)')
+    return rows
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
