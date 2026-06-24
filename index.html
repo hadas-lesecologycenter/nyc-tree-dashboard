@@ -6967,6 +6967,13 @@ window.addEventListener('load', async () => {
   allTrees = CENSUS_DATA.filter(t => !emptyStatuses.has(t.status) &&
                                      cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude)))
                         .map(t => ({ ...t, _priority: calcPriority(t) }));
+  // The "Guard in NYC records" filter is only meaningful when the joined census
+  // data actually carries guard info. NYC's live Forestry datasets (Tree Points
+  // + Planting Spaces) don't currently expose a guard column, so hide the filter
+  // unless/until a guard-bearing source populates tree.guards.
+  const hasNycGuardData = allTrees.some(t => t.guards && String(t.guards).trim());
+  const nycGuardLabel = document.getElementById('f-nyc-guards')?.closest('label');
+  if (nycGuardLabel) nycGuardLabel.style.display = hasNycGuardData ? '' : 'none';
   populateSpeciesFilter();
   populatePlantingYearFilter();
   applyFilters(false);
