@@ -1,0 +1,20 @@
+name: Verify 2015 Guard Coverage (diagnostic)
+
+# Throwaway diagnostic: reports 2015-census tree-guard coverage for CB3.
+# Does not modify or commit anything. Manual trigger only.
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Verify 2015 guard coverage
+        run: python scripts/verify_2015_guards.py
