@@ -542,10 +542,13 @@ def fetch_2015_guard_points():
 
 
 def join_2015_guards(trees, points, attach_threshold_m=5.0):
-    """Attach 2015-census guard status to live trees by nearest-neighbour spatial
-    match. Reports how many live trees fall within several distance thresholds of
-    a guard anchor (so the threshold can be tuned from real data), then attaches
-    the guard value at `attach_threshold_m`. Only fills trees with no guard yet."""
+    """Attach 2015-census guard status to live trees by spatial match.
+
+    Logs how many live trees fall within several distance thresholds of a guard
+    anchor (threshold sensitivity), then attaches guards **one-to-one**: shortest
+    pairs first, each 2015 anchor and each live tree used at most once. This stops
+    a single 2015 guard from being attributed to several nearby trees. Only fills
+    trees that don't already carry a guard."""
     if not points:
         print('  No guard anchors — nothing to join')
         return 0
@@ -553,40 +556,51 @@ def join_2015_guards(trees, points, attach_threshold_m=5.0):
     # nearest anchor is always within the 3×3 block of cells around it.
     CELL = 0.00015  # ≈16m lat / ≈13m lng
     grid = {}
-    for p in points:
-        grid.setdefault((int(p['lat'] / CELL), int(p['lng'] / CELL)), []).append(p)
+    for ai, p in enumerate(points):
+        grid.setdefault((int(p['lat'] / CELL), int(p['lng'] / CELL)), []).append(ai)
 
     thresholds = (3, 4, 5, 6, 8, 10)
     within = Counter()
-    attached = 0
-    for tree in trees:
+    candidates = []  # (dist, tree_idx, anchor_idx) for pairs within attach_threshold
+    for ti, tree in enumerate(trees):
         if tree.get('guards'):
             continue
         lat, lng = _to_float(tree.get('latitude')), _to_float(tree.get('longitude'))
         if not (lat and lng):
             continue
         ci, cj = int(lat / CELL), int(lng / CELL)
-        best = None
+        nearest = None
         for di in (-1, 0, 1):
             for dj in (-1, 0, 1):
-                for p in grid.get((ci + di, cj + dj), ()):
+                for ai in grid.get((ci + di, cj + dj), ()):
+                    p = points[ai]
                     d = _haversine_m(lat, lng, p['lat'], p['lng'])
-                    if best is None or d < best[0]:
-                        best = (d, p)
-        if best is None:
-            continue
-        d, p = best
-        for t in thresholds:
-            if d <= t:
-                within[t] += 1
-        if d <= attach_threshold_m:
-            tree['guards'] = p['guards']
-            attached += 1
+                    if nearest is None or d < nearest:
+                        nearest = d
+                    if d <= attach_threshold_m:
+                        candidates.append((d, ti, ai))
+        if nearest is not None:
+            for t in thresholds:
+                if nearest <= t:
+                    within[t] += 1
 
-    print('  Live trees within N metres of a 2015 guard anchor:')
+    # Greedy one-to-one assignment: shortest pairs first.
+    candidates.sort(key=lambda c: c[0])
+    used_trees, used_anchors = set(), set()
+    attached = 0
+    for d, ti, ai in candidates:
+        if ti in used_trees or ai in used_anchors:
+            continue
+        trees[ti]['guards'] = points[ai]['guards']
+        used_trees.add(ti)
+        used_anchors.add(ai)
+        attached += 1
+
+    print('  Live trees within N metres of a 2015 guard anchor (tree-centric):')
     for t in thresholds:
         print(f'    <={t}m: {within[t]}')
-    print(f'  Attached guards to {attached} live trees (threshold {attach_threshold_m:.0f}m)')
+    print(f'  Attached guards to {attached} live trees '
+          f'(1:1 match @ {attach_threshold_m:.0f}m; {len(points)} anchors, {len(used_anchors)} used)')
     return attached
 
 
