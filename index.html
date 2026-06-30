@@ -3069,10 +3069,12 @@ function setViewMode(mode) {
 function toggleSpeciesView() { setViewMode(priorityMode ? 'species' : 'priority'); }
 
 // ========== STATS ==========
-// Stats always reflect CB3 street trees — park and unknown planting sites are
-// excluded, regardless of the map's current filters. Mirrors the map's
-// "Street Trees Only" predicate so both share one definition of a street tree.
-function isStreetTree(t) { return (t.tree_type || 'street') === 'street'; }
+// Stats always reflect CB3 street trees — only park planting sites are excluded,
+// regardless of the map's current filters. Mirrors the map's "Street Trees Only"
+// predicate so both share one definition of a street tree. Trees with an
+// "unknown" tree_type (typically brand-new plantings the NYC census hasn't yet
+// classified) count as street trees so they aren't silently hidden from the map.
+function isStreetTree(t) { return (t.tree_type || 'street') !== 'park'; }
 
 // Refresh tier counts whenever map updates
 (function patchUpdateMap() {
