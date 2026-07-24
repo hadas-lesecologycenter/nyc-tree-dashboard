@@ -1259,7 +1259,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .summary-row { grid-template-columns: 1fr; }
   }
 
-  /* Risk Assessment Tab */
+  /* Health Assessment Tab */
   .ra-rating-group { display:flex; gap:6px; }
   .ra-rating-btn {
     flex:1; padding:7px 0; border:1px solid var(--border); border-radius:6px;
@@ -1294,7 +1294,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button class="nav-btn" onclick="switchView('stats',event)">📊 Stats</button>
 <button class="nav-btn" id="myblock-nav-btn" onclick="switchView('myblock',event)">🌿 Tree Care</button>
     <button class="nav-btn" onclick="switchView('calls',event)">📞 311 Calls</button>
-    <button class="nav-btn" onclick="switchView('risk',event)">🔍 Risk Assessment</button>
+    <button class="nav-btn" onclick="switchView('risk',event)">🔍 Health Assessment</button>
     <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
 
@@ -1355,7 +1355,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="mtp-fields"></div>
         <button type="button" id="mtp-assess-btn" onclick="handleMapAssessBtn()"
           style="display:none;margin-top:14px;width:100%;padding:11px;background:#7b3fa0;background-color:#7b3fa0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(123,63,160,0.35)">
-          📋 Risk Assessment
+          📋 Health Assessment
         </button>
         <button type="button" id="mtp-care-btn" onclick="handleMapReportCareBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#06b6d4;background-color:#06b6d4;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(6,182,212,0.35)">
@@ -2047,7 +2047,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">What is this?</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8">A planning tool for the LES Ecology Center's street tree stewardship program. It maps and ranks based on urgency of care all ~11,000 active street trees in Community Board 3 — the area where LES Ecology Center works — and brings together tree care tracking, 311 call monitoring, and field risk assessments in one place.</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8">A planning tool for the LES Ecology Center's street tree stewardship program. It maps and ranks based on urgency of care all ~11,000 active street trees in Community Board 3 — the area where LES Ecology Center works — and brings together tree care tracking, 311 call monitoring, and field health assessments in one place.</p>
       </div>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
@@ -2084,8 +2084,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div style="display:flex;gap:14px">
             <div style="font-size:20px;flex-shrink:0">🔍</div>
             <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Risk Assessment</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2024 and 2025 plantings. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings.</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Health Assessment</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2024 and 2025 plantings. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, growth, and stewardship ratings.</div>
             </div>
           </div>
         </div>
@@ -2133,17 +2133,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
-  <!-- RISK ASSESSMENT VIEW -->
+  <!-- HEALTH ASSESSMENT VIEW -->
   <div id="risk-view" class="view">
     <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
       <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg2)">
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">🔍 Young Trees Risk Assessment</h2>
+          <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin:0">🔍 Young Trees Health Assessment</h2>
           <div style="display:flex;align-items:center;gap:6px">
             <button id="ra-view-map-btn" class="toggle-btn on" onclick="switchRiskView('map')">🗺 Map</button>
             <button id="ra-view-table-btn" class="toggle-btn" onclick="switchRiskView('table')">☰ Table</button>
             <button id="ra-view-stats-btn" class="toggle-btn" onclick="switchRiskView('stats')">📊 Stats</button>
-            <button onclick="exportTableCSV('ra-table','risk-assessments.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="ra-export-btn">⬇ CSV</button>
+            <button onclick="exportTableCSV('ra-table','health-assessments.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="ra-export-btn">⬇ CSV</button>
           </div>
         </div>
       </div>
@@ -2172,9 +2172,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
               </label>
             </div>
           </div>
-          <!-- Risk legend -->
+          <!-- Health legend -->
           <div style="margin-bottom:16px">
-            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Fill = Risk Level</div>
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Fill = Health Level</div>
             <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text2)">
               <div style="display:flex;align-items:center;gap:8px">
                 <div style="width:11px;height:11px;border-radius:50%;background:#9ca3af;flex-shrink:0;opacity:0.5"></div>
@@ -2183,17 +2183,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <div style="width:11px;height:11px;border-radius:50%;background:#22c55e;flex-shrink:0"></div>
-                <span>Low risk</span>
+                <span>Low concern</span>
                 <span id="ra-stat-low" style="margin-left:auto;font-weight:700;color:#22c55e"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <div style="width:11px;height:11px;border-radius:50%;background:#f59e0b;flex-shrink:0"></div>
-                <span>Medium risk</span>
+                <span>Medium concern</span>
                 <span id="ra-stat-med" style="margin-left:auto;font-weight:700;color:#f59e0b"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <div style="width:11px;height:11px;border-radius:50%;background:#dc2626;flex-shrink:0"></div>
-                <span>High risk</span>
+                <span>High concern</span>
                 <span id="ra-stat-high" style="margin-left:auto;font-weight:700;color:#dc2626"></span>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
@@ -2261,6 +2261,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Pest</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Soil</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Growth</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Steward</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Notes</th>
                 <th style="padding:10px 12px;border-bottom:1px solid var(--border)"></th>
               </tr>
@@ -2273,11 +2274,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
-  <!-- RISK ASSESSMENT MODAL -->
+  <!-- HEALTH ASSESSMENT MODAL -->
   <div id="ra-assess-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25);padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Risk Assessment</h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment</h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2296,7 +2297,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       </div>
       <!-- Indicators -->
       <div class="ra-indicators-section" style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Risk Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each — optional if Dead)</span></div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Health Indicators <span style="font-weight:400;color:var(--text3);text-transform:none">(rate each — optional if Dead)</span></div>
         <div style="margin-bottom:12px">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🪵 Structural / Physical Damage</div>
           <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Broken or hanging branches · trunk wounds, cracks, or cavities · leaning trunk (&gt;15°) · root damage · missing or stripped bark</div>
@@ -2324,7 +2325,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">Poor</button>
           </div>
         </div>
-        <div>
+        <div style="margin-bottom:12px">
           <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🌿 Growth &amp; Vitality</div>
           <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Canopy fullness vs. expected for species · new growth present this season · leaf-out completeness · leaf color and size · dead or dying branches (dieback) · drought stress signs (wilting, leaf scorch, early leaf drop)</div>
           <div class="ra-rating-group" data-field="growthVitality">
@@ -2333,10 +2334,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">Poor</button>
           </div>
         </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px">🌱 Signs of Stewardship</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:7px;line-height:1.5">Mulch ring or wood chips present · watering bag or evidence of recent watering · tree guard, fencing, or protective bed · signage, plantings, or educational materials · evidence of recent pruning, staking, or debris removal</div>
+          <div class="ra-rating-group" data-field="stewardship">
+            <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">Good</button>
+            <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">Fair</button>
+            <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">Poor</button>
+          </div>
+        </div>
       </div>
       <!-- Overall -->
       <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Overall Risk Rating</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Overall Health Rating</div>
         <div class="ra-rating-group ra-overall" data-field="overall">
           <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">🟢 Low</button>
           <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">🟡 Medium</button>
@@ -3361,7 +3371,7 @@ function updateStats() {
   document.getElementById('s-tier3-reached').textContent = tier3Count.toLocaleString();
   document.getElementById('s-alltime').textContent = alltimeCount.toLocaleString();
   // Trees assessed = unique treeIds in raAssessments
-  // raAssessments is only populated after visiting the Risk tab, so load it if needed
+  // raAssessments is only populated after visiting the Health Assessment tab, so load it if needed
   const _setAssessed = () => {
     const assessedCount = new Set((typeof raAssessments !== 'undefined' ? raAssessments : []).map(a => a.treeId).filter(Boolean)).size;
     const el = document.getElementById('s-assessed');
@@ -7030,7 +7040,7 @@ function initMobileUI() {
       { view: 'myblock', icon: '🌿', label: 'Care',   action: 'switch' },
       { view: 'calls',   icon: '📞', label: '311',    action: 'switch' },
       { view: null,      icon: '⚙️', label: 'Filter', action: 'filter', id: 'filter-toggle-btn' },
-      { view: 'risk',    icon: '🔍', label: 'Risk',   action: 'switch' },
+      { view: 'risk',    icon: '🔍', label: 'Health',   action: 'switch' },
       { view: 'about',   icon: 'ℹ️', label: 'About',  action: 'switch' },
     ];
 
@@ -7298,7 +7308,7 @@ function renderRaTable() {
   const tbody = document.getElementById('ra-table-body');
   if (!tbody) return;
   if (!raAssessments.length) {
-    tbody.innerHTML = '<tr><td colspan="12" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
     return;
   }
   const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
@@ -7320,6 +7330,7 @@ function renderRaTable() {
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.pestDisease) + '">' + rl(a.pestDisease) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.soilSite) + '">' + rl(a.soilSite) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.growthVitality) + '">' + rl(a.growthVitality) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.stewardship) + '">' + rl(a.stewardship) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-style:italic;max-width:200px">' + (a.notes || '') + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">' +
         '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--text2)">✏️ Edit</button>' +
@@ -7361,9 +7372,9 @@ function renderRaStats() {
   const pct = total ? Math.round(assessed / total * 100) : 0;
   const riskRows = [
     { label:'Not assessed', color:'#9ca3af', count:counts.none },
-    { label:'Low risk',     color:'#22c55e', count:counts.low },
-    { label:'Medium risk',  color:'#f59e0b', count:counts.medium },
-    { label:'High risk',    color:'#dc2626', count:counts.high },
+    { label:'Low concern',     color:'#22c55e', count:counts.low },
+    { label:'Medium concern',  color:'#f59e0b', count:counts.medium },
+    { label:'High concern',    color:'#dc2626', count:counts.high },
     { label:'Dead',         color:'#111111', count:counts.dead },
     { label:'Empty pit',         color:'#6b7280', count:counts.empty },
     { label:'Park / Playground', color:'#3b82f6', count:counts.park },
@@ -7406,7 +7417,7 @@ function renderRaStats() {
         '</div>' +
       '</div>' +
       '<div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">' +
-        '<div style="font-family:\'Lora\',serif;font-size:15px;font-weight:700;margin-bottom:12px">Risk Breakdown</div>' +
+        '<div style="font-family:\'Lora\',serif;font-size:15px;font-weight:700;margin-bottom:12px">Health Breakdown</div>' +
         riskRows.map(r => {
           const p = total ? ((r.count/total)*100).toFixed(1) : 0;
           return '<div style="margin-bottom:10px">' +
@@ -7907,7 +7918,7 @@ window.addEventListener('load', function() {
 });
 
 // ============================================================
-// RISK ASSESSMENT TAB
+// HEALTH ASSESSMENT TAB
 // ============================================================
 let raMap = null;
 let raMarkers = [];
@@ -7994,7 +8005,7 @@ async function raLoadAssessments() {
   const deduped = raDeduplicateAssessments(raAssessments);
   if (deduped.length < raAssessments.length) {
     raAssessments = deduped;
-    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
+    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
     sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
   }
   raRenderMap();
@@ -8002,7 +8013,7 @@ async function raLoadAssessments() {
 
 function raDeduplicateAssessments(list) {
   // Remove duplicates created by the broken edit flow (same tree+assessor+all ratings = keep newest only)
-  const key = a => a.treeId + '|' + a.assessorName + '|' + a.overallRisk + '|' + a.structural + '|' + a.pestDisease + '|' + a.soilSite + '|' + a.growthVitality;
+  const key = a => a.treeId + '|' + a.assessorName + '|' + a.overallRisk + '|' + a.structural + '|' + a.pestDisease + '|' + a.soilSite + '|' + a.growthVitality + '|' + a.stewardship;
   const sorted = [...list].sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
   const seen = new Set();
   return sorted.filter(a => {
@@ -8142,7 +8153,7 @@ function raOpenPanel(tree) {
   let badgeHTML = '<span style="background:' + yearColor + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (yr || '?') + ' Planting</span>';
   if (latest) {
     const rc = raRiskColor(latest.overallRisk) || '#888';
-    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk === 'dead' ? 'DEAD' : latest.overallRisk === 'empty' ? 'EMPTY PIT' : latest.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (latest.overallRisk || '').toUpperCase() + ' RISK') + '</span>';
+    badgeHTML += ' <span style="background:' + rc + ';color:#fff;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700">' + (latest.overallRisk === 'dead' ? 'DEAD' : latest.overallRisk === 'empty' ? 'EMPTY PIT' : latest.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (latest.overallRisk || '').toUpperCase() + ' CONCERN') + '</span>';
   }
   document.getElementById('ra-panel-badge').innerHTML = badgeHTML;
 
@@ -8189,7 +8200,8 @@ function raRenderPanelHistory(tid) {
     structural:    '🪵 Structural',
     pestDisease:   '🐛 Pest & Disease',
     soilSite:      '🌍 Soil & Site',
-    growthVitality:'🌿 Growth & Vitality'
+    growthVitality:'🌿 Growth & Vitality',
+    stewardship:   '🌱 Stewardship'
   };
 
   hist.innerHTML =
@@ -8206,7 +8218,7 @@ function raRenderPanelHistory(tid) {
       const ts = (a.timestamp || '').replace(/'/g, "\\'");
       return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : a.overallRisk === 'empty' ? 'EMPTY PIT' : a.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (a.overallRisk || '').toUpperCase() + ' RISK') + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:' + rc + '">' + (a.overallRisk === 'dead' ? 'DEAD' : a.overallRisk === 'empty' ? 'EMPTY PIT' : a.overallRisk === 'park' ? 'PARK/PLAYGROUND' : (a.overallRisk || '').toUpperCase() + ' CONCERN') + '</span>' +
           '<div style="display:flex;align-items:center;gap:6px">' +
             '<span style="font-size:10px;color:var(--text3)">' + (a.date || a.timestamp || '').slice(0,10) + '</span>' +
             '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:10px;color:var(--text2)">✏️</button>' +
@@ -8248,7 +8260,7 @@ function raEditAssessment(timestamp) {
   modal.classList.remove('ra-dead-mode', 'ra-empty-mode', 'ra-park-mode');
   document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
 
-  const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
+  const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'stewardship', 'overall'];
   FIELDS.forEach(field => {
     const val = field === 'overall' ? a.overallRisk : a[field];
     if (!val) return;
@@ -8286,7 +8298,7 @@ function raHandleAssessBtn() {
   const existing = raLatestAssessment(raTreeId(tree));
   if (existing) {
     _raEditingTimestamp = existing.timestamp;
-    const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'overall'];
+    const FIELDS = ['structural', 'pestDisease', 'soilSite', 'growthVitality', 'stewardship', 'overall'];
     FIELDS.forEach(field => {
       const val = field === 'overall' ? existing.overallRisk : existing[field];
       if (!val) return;
@@ -8343,14 +8355,15 @@ async function raSubmitAssessment() {
   const pestDisease    = getRating('pestDisease');
   const soilSite       = getRating('soilSite');
   const growthVitality = getRating('growthVitality');
+  const stewardship    = getRating('stewardship');
   const overallRisk    = getRating('overall');
 
   if (!overallRisk) {
-    alert('Please select an overall risk rating before submitting.');
+    alert('Please select an overall health rating before submitting.');
     return;
   }
-  if (overallRisk !== 'dead' && overallRisk !== 'empty' && overallRisk !== 'park' && (!structural || !pestDisease || !soilSite || !growthVitality)) {
-    alert('Please rate all four indicators before submitting, or mark the tree as Dead.');
+  if (overallRisk !== 'dead' && overallRisk !== 'empty' && overallRisk !== 'park' && (!structural || !pestDisease || !soilSite || !growthVitality || !stewardship)) {
+    alert('Please rate all five indicators before submitting, or mark the tree as Dead.');
     return;
   }
 
@@ -8364,7 +8377,7 @@ async function raSubmitAssessment() {
   const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
 
-  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','overallRisk','notes'];
+  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
 
   if (isEdit) {
     // Update existing record in-place
@@ -8372,7 +8385,7 @@ async function raSubmitAssessment() {
     if (idx !== -1) {
       raAssessments[idx] = Object.assign({}, raAssessments[idx], {
         assessorName, date, notes,
-        structural, pestDisease, soilSite, growthVitality, overallRisk
+        structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk
       });
     }
     await sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
@@ -8393,7 +8406,7 @@ async function raSubmitAssessment() {
       season: plantRec ? plantRec.season : String(yr),
       plantYear: String(yr),
       assessorName, date,
-      structural, pestDisease, soilSite, growthVitality, overallRisk, notes
+      structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk, notes
     };
 
     const allRecords = [...raAssessments, record];
