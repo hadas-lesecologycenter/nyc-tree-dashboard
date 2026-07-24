@@ -2347,11 +2347,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
               <input type="checkbox" class="ra-stewardship-check" value="guard" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0f9e6e">
-              Tree guard, fencing, or protective bed
+              Tree guard or fencing
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
               <input type="checkbox" class="ra-stewardship-check" value="signage" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0f9e6e">
-              Signage, plantings, or educational materials
+              Signage
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+              <input type="checkbox" class="ra-stewardship-check" value="plantings" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0f9e6e">
+              Plantings
             </label>
             <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
               <input type="checkbox" class="ra-stewardship-check" value="care" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#0f9e6e">
@@ -7331,7 +7335,7 @@ function renderRaTable() {
   const rl = v => ({ low:'Low', medium:'Med', high:'High', dead:'Dead', empty:'Empty', park:'Park/Playground', good:'Good', fair:'Fair', poor:'Poor' }[v] || v || '—');
   const rc = v => raRiskColor(v) || ({ good:'#22c55e', fair:'#f59e0b', poor:'#dc2626' }[v] || 'var(--text3)');
   const stewardLabel = v => (v || '').split(',').filter(Boolean).map(k =>
-    ({ mulch:'Mulch', watering:'Water', guard:'Guard', signage:'Signage', care:'Care' }[k] || k)
+    ({ mulch:'Mulch', watering:'Water', guard:'Guard', signage:'Signage', plantings:'Plantings', care:'Care' }[k] || k)
   ).join(', ') || '—';
   tbody.innerHTML = sorted.map((a, i) => {
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
@@ -8221,7 +8225,7 @@ function raRenderPanelHistory(tid) {
     soilSite:      '🌍 Soil & Site',
     growthVitality:'🌿 Growth & Vitality'
   };
-  const STEWARD_LABELS = { mulch:'Mulch', watering:'Watering', guard:'Guard', signage:'Signage', care:'Recent care' };
+  const STEWARD_LABELS = { mulch:'Mulch', watering:'Watering', guard:'Guard', signage:'Signage', plantings:'Plantings', care:'Recent care' };
 
   hist.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment History</div>' +
