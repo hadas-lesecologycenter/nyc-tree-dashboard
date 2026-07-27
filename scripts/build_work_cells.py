@@ -87,13 +87,16 @@ def load_trees():
 
 
 def project(trees):
+    """Project lat/lng to local meters in-place. Returns (lat0, lng0, cos0)
+    so callers that need to project points back (e.g. rectangle corners
+    that aren't tree coordinates themselves) can invert it."""
     lat0 = sum(t['lat'] for t in trees) / len(trees)
     lng0 = sum(t['lng'] for t in trees) / len(trees)
     cos0 = math.cos(math.radians(lat0))
     for t in trees:
         t['x'] = (t['lng'] - lng0) * cos0 * 111320.0
         t['y'] = (t['lat'] - lat0) * 110540.0
-    return trees
+    return lat0, lng0, cos0
 
 
 def build_grid(trees, cell_size):
