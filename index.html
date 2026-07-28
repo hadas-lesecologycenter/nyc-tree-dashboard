@@ -2089,7 +2089,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🔍</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Health Assessment</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2024 and 2025 plantings. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2024, 2025, and 2026 plantings. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</div>
             </div>
           </div>
         </div>
@@ -2155,7 +2155,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <!-- Sidebar -->
       <div id="ra-sidebar" style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:12px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
-          <div style="font-size:11px;color:var(--text3)">2024 &amp; 2025 plantings</div>
+          <div style="font-size:11px;color:var(--text3)">2024–2026 plantings</div>
         </div>
         <div style="flex:1;overflow-y:auto;padding:16px">
           <!-- Year filter -->
@@ -2173,6 +2173,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #06b6d4;flex-shrink:0"></span>
                 2025 trees
                 <span id="ra-count-2025" style="margin-left:auto;font-size:10px;font-weight:700;color:#06b6d4"></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-2026" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #a855f7;flex-shrink:0"></span>
+                2026 trees
+                <span id="ra-count-2026" style="margin-left:auto;font-size:10px;font-weight:700;color:#a855f7"></span>
               </label>
             </div>
           </div>
@@ -5455,8 +5461,9 @@ function updateMapAssessBtn(tree) {
   const btn = document.getElementById('mtp-assess-btn');
   if (!btn) return;
   const yr = parseInt(tree && (tree.tree_cen_date || tree.planteddate) || 0);
-  btn.style.display = (yr === 2024 || yr === 2025) ? 'block' : 'none';
-  if (yr === 2024 || yr === 2025) btn.style.marginTop = '14px';
+  const eligible = yr === 2024 || yr === 2025 || yr === 2026;
+  btn.style.display = eligible ? 'block' : 'none';
+  if (eligible) btn.style.marginTop = '14px';
 }
 
 async function handleMapAssessBtn() {
@@ -7385,7 +7392,7 @@ function renderRaTable() {
   const tbody = document.getElementById('ra-table-body');
   if (!tbody) return;
   if (!raAssessments.length) {
-    tbody.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025 tree on the main map.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025/2026 tree on the main map.</td></tr>';
     return;
   }
   const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
@@ -7435,9 +7442,10 @@ function renderRaStats() {
   const counts = { high:0, medium:0, low:0, dead:0, empty:0, park:0, none:0 };
   const by2024 = { assessed:0, total:0 };
   const by2025 = { assessed:0, total:0 };
+  const by2026 = { assessed:0, total:0 };
   allTrees.forEach(t => {
     const ty = parseInt(t.tree_cen_date || t.planteddate || 0);
-    const b = ty === 2025 ? by2025 : by2024;
+    const b = ty === 2025 ? by2025 : ty === 2026 ? by2026 : by2024;
     b.total++;
     const a = raLatestAssessment(raTreeId(t));
     if (a) b.assessed++;
@@ -7466,8 +7474,8 @@ function renderRaStats() {
   const cohortSection = yr === 'all'
     ? '<div style="background:var(--bg2);border-radius:10px;padding:16px">' +
         '<div style="font-family:\'Lora\',serif;font-size:15px;font-weight:700;margin-bottom:12px">By Cohort</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-        [{label:'2024 Plantings',color:'#f59e0b',d:by2024},{label:'2025 Plantings',color:'#06b6d4',d:by2025}].map(c =>
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">' +
+        [{label:'2024 Plantings',color:'#f59e0b',d:by2024},{label:'2025 Plantings',color:'#06b6d4',d:by2025},{label:'2026 Plantings',color:'#a855f7',d:by2026}].map(c =>
           '<div style="background:var(--bg3);border-radius:8px;padding:14px;border-top:3px solid ' + c.color + '">' +
             '<div style="font-weight:700;font-size:12px;color:' + c.color + ';margin-bottom:6px">' + c.label + '</div>' +
             '<div style="font-size:24px;font-weight:700;color:var(--text);line-height:1">' + c.d.assessed + '</div>' +
@@ -7485,6 +7493,7 @@ function renderRaStats() {
         '<button style="' + pillStyle('all') + '" onclick="_raStatsYear=\'all\';renderRaStats()">All</button>' +
         '<button style="' + pillStyle('2024') + '" onclick="_raStatsYear=\'2024\';renderRaStats()">2024</button>' +
         '<button style="' + pillStyle('2025') + '" onclick="_raStatsYear=\'2025\';renderRaStats()">2025</button>' +
+        '<button style="' + pillStyle('2026') + '" onclick="_raStatsYear=\'2026\';renderRaStats()">2026</button>' +
       '</div>' +
       '<div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">' +
         '<div style="font-family:\'Lora\',serif;font-size:15px;font-weight:700;margin-bottom:12px">Assessment Progress</div>' +
@@ -8049,7 +8058,7 @@ function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
   return allTrees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
-    if (yr !== 2024 && yr !== 2025) return false;
+    if (yr !== 2024 && yr !== 2025 && yr !== 2026) return false;
     return cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude));
   });
 }
@@ -8108,17 +8117,21 @@ function raUpdateStats() {
   const trees = raGetYoungTrees();
   const show2024 = document.getElementById('ra-show-2024') ? document.getElementById('ra-show-2024').checked : true;
   const show2025 = document.getElementById('ra-show-2025') ? document.getElementById('ra-show-2025').checked : true;
+  const show2026 = document.getElementById('ra-show-2026') ? document.getElementById('ra-show-2026').checked : true;
 
   const t2024 = trees.filter(t => parseInt(t.tree_cen_date || t.planteddate) === 2024);
   const t2025 = trees.filter(t => parseInt(t.tree_cen_date || t.planteddate) === 2025);
+  const t2026 = trees.filter(t => parseInt(t.tree_cen_date || t.planteddate) === 2026);
   const c2024 = document.getElementById('ra-count-2024');
   const c2025 = document.getElementById('ra-count-2025');
+  const c2026 = document.getElementById('ra-count-2026');
   if (c2024) c2024.textContent = t2024.length;
   if (c2025) c2025.textContent = t2025.length;
+  if (c2026) c2026.textContent = t2026.length;
 
   const visible = trees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate);
-    return (yr === 2024 && show2024) || (yr === 2025 && show2025);
+    return (yr === 2024 && show2024) || (yr === 2025 && show2025) || (yr === 2026 && show2026);
   });
 
   let high = 0, med = 0, low = 0, dead = 0, empty = 0, park = 0, none = 0;
@@ -8169,6 +8182,7 @@ function raRenderMap() {
 
   const show2024 = document.getElementById('ra-show-2024') ? document.getElementById('ra-show-2024').checked : true;
   const show2025 = document.getElementById('ra-show-2025') ? document.getElementById('ra-show-2025').checked : true;
+  const show2026 = document.getElementById('ra-show-2026') ? document.getElementById('ra-show-2026').checked : true;
   const trees = raGetYoungTrees();
 
   trees.forEach(t => {
@@ -8178,7 +8192,8 @@ function raRenderMap() {
     if (!lat || !lng) return;
     if (yr === 2024 && !show2024) return;
     if (yr === 2025 && !show2025) return;
-    const yearColor = yr === 2024 ? '#f59e0b' : '#06b6d4';
+    if (yr === 2026 && !show2026) return;
+    const yearColor = yr === 2024 ? '#f59e0b' : yr === 2025 ? '#06b6d4' : '#a855f7';
     const m = raMakeMarker(t, yearColor);
     m.addTo(raMap);
     raMarkers.push(m);
@@ -8224,7 +8239,7 @@ function raOpenPanel(tree) {
   panel.style.display = 'block';
 
   const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
-  const yearColor = yr === 2025 ? '#06b6d4' : '#f59e0b';
+  const yearColor = yr === 2025 ? '#06b6d4' : yr === 2026 ? '#a855f7' : '#f59e0b';
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
   document.getElementById('ra-panel-title').textContent = species;
 
