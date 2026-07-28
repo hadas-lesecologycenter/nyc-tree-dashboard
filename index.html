@@ -1517,6 +1517,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="layer-coolest-blocks" onchange="toggleCoolestBlocksFromPanel()">
             🏆 Coolest Block 2025
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-work-cells" onchange="toggleWorkCellsFromPanel()">
+            🗂️ Work-Plan Cells (draft)
+          </label>
         </div>
 
         <div class="cp-section">
@@ -2419,6 +2423,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script>
 const CENSUS_DATA_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json?t=' + Date.now();
 const CB3_BOUNDARY_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/cb3-boundary.json';
+const WORK_CELLS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/work-cells-rect.geojson';
 let CENSUS_DATA = []; // loaded dynamically at startup
 
 
@@ -2462,6 +2467,10 @@ let coolestBlocksVisible = false;
 let hydrantLayer = null;
 let hydrantVisible = false;
 let hydrantLoading = false;
+let workCellsLayer = null;
+let workCellsVisible = false;
+let workCellsLoading = false;
+let workCellsData = null;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -4152,6 +4161,54 @@ function toggleFireHydrantsFromPanel() {
       hydrantVisible = false;
     })
     .finally(() => { hydrantLoading = false; });
+}
+
+// ========== WORK-PLAN CELLS LAYER ==========
+// Source: data/work-cells-rect.geojson — a rotated grid of ~15-30 tree
+// cells for the annual work plan (see scripts/build_rect_cells.py).
+
+async function initWorkCellsLayer() {
+  if (!workCellsData) {
+    const resp = await fetch(WORK_CELLS_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    workCellsData = await resp.json();
+  }
+  const HUES = [142, 18, 258, 200, 40, 320, 168, 0, 232, 70, 288, 190, 100, 340];
+  workCellsLayer = L.layerGroup();
+  workCellsData.features.forEach(f => {
+    const id = f.properties.cell_id;
+    const n = f.properties.tree_count;
+    const color = `hsl(${HUES[id % HUES.length]} 55% 42%)`;
+    L.geoJSON(f, { style: { color, weight: 1.5, fillColor: color, fillOpacity: 0.16 } })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:140px">
+        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🗂️ Work-Plan Cell ${id}</div>
+        <div style="font-size:11px;color:#6b6456;margin-top:2px">${n} trees</div>
+      </div>`)
+      .addTo(workCellsLayer);
+  });
+  console.log(`Work-plan cells: ${workCellsLayer.getLayers().length} loaded`);
+}
+
+function toggleWorkCellsFromPanel() {
+  const cb = document.getElementById('layer-work-cells');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === workCellsVisible) return;
+  workCellsVisible = shouldShow;
+  if (!workCellsVisible) {
+    if (workCellsLayer) workCellsLayer.remove();
+    return;
+  }
+  if (workCellsLayer) { workCellsLayer.addTo(mapInstance); return; }
+  if (workCellsLoading) return;
+  workCellsLoading = true;
+  initWorkCellsLayer()
+    .then(() => { if (workCellsVisible) workCellsLayer.addTo(mapInstance); })
+    .catch(err => {
+      console.error('Work-plan cells load failed:', err);
+      if (cb) cb.checked = false;
+      workCellsVisible = false;
+    })
+    .finally(() => { workCellsLoading = false; });
 }
 
 // ========== EMPTY BEDS LAYER ==========
