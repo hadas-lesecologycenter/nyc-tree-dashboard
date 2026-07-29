@@ -2184,6 +2184,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
               </label>
             </div>
           </div>
+          <!-- Zone filter -->
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Zone</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-zone1" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#2563eb;flex-shrink:0"></span>
+                Zone 1 <span style="color:var(--text3)">(14th–Houston)</span>
+                <span id="ra-zone-count-1" style="margin-left:auto;font-size:10px;font-weight:700;color:#2563eb"></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-zone2" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#0f9e6e;flex-shrink:0"></span>
+                Zone 2 <span style="color:var(--text3)">(Houston–Grand)</span>
+                <span id="ra-zone-count-2" style="margin-left:auto;font-size:10px;font-weight:700;color:#0f9e6e"></span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                <input type="checkbox" id="ra-show-zone3" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:11px;height:11px;border-radius:3px;background:#c0392b;flex-shrink:0"></span>
+                Zone 3 <span style="color:var(--text3)">(Grand &amp; South)</span>
+                <span id="ra-zone-count-3" style="margin-left:auto;font-size:10px;font-weight:700;color:#c0392b"></span>
+              </label>
+            </div>
+          </div>
           <!-- Health legend -->
           <div style="margin-bottom:16px">
             <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Fill = Health Level</div>
@@ -2234,6 +2258,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
               <div id="ra-progress-bar" style="height:100%;background:#7b3fa0;width:0%;transition:width 0.4s"></div>
             </div>
+          </div>
+          <!-- By-zone progress -->
+          <div style="background:var(--bg3);border-radius:8px;padding:12px;font-size:11px;color:var(--text2);margin-top:10px">
+            <div style="font-weight:700;color:var(--text);margin-bottom:8px">Progress by Zone</div>
+            <div id="ra-zone-progress" style="display:flex;flex-direction:column;gap:8px"></div>
           </div>
         </div>
       </div>
@@ -7460,6 +7489,13 @@ function renderRaStats() {
     counts[a.overallRisk] = (counts[a.overallRisk] || 0) + 1;
   });
 
+  const byZone = { 1: { assessed:0, total:0 }, 2: { assessed:0, total:0 }, 3: { assessed:0, total:0 } };
+  trees.forEach(t => {
+    const z = byZone[getZoneId(parseFloat(t.latitude))];
+    z.total++;
+    if (raLatestAssessment(raTreeId(t))) z.assessed++;
+  });
+
   const assessed = total - counts.none;
   const pct = total ? Math.round(assessed / total * 100) : 0;
   const riskRows = [
@@ -7490,6 +7526,24 @@ function renderRaStats() {
         ).join('') +
         '</div></div>'
     : '';
+
+  const zoneSection =
+    '<div style="background:var(--bg2);border-radius:10px;padding:16px;margin-bottom:18px">' +
+      '<div style="font-family:\'Lora\',serif;font-size:15px;font-weight:700;margin-bottom:12px">By Zone</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">' +
+      CB3_ZONES.map(z => {
+        const d = byZone[z.id];
+        const p = d.total ? Math.round(d.assessed / d.total * 100) : 0;
+        return '<div style="background:var(--bg3);border-radius:8px;padding:14px;border-top:3px solid ' + z.color + '">' +
+          '<div style="font-weight:700;font-size:12px;color:' + z.color + ';margin-bottom:2px">' + z.label + '</div>' +
+          '<div style="font-size:10px;color:var(--text3);margin-bottom:6px">' + z.range + '</div>' +
+          '<div style="font-size:24px;font-weight:700;color:var(--text);line-height:1">' + d.assessed + '</div>' +
+          '<div style="font-size:11px;color:var(--text3);margin-top:3px">of ' + d.total + ' assessed (' + p + '%)</div>' +
+          '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:8px">' +
+            '<div style="height:100%;background:' + z.color + ';width:' + p + '%;border-radius:2px"></div>' +
+          '</div></div>';
+      }).join('') +
+      '</div></div>';
 
   el.innerHTML =
     '<div style="max-width:640px;margin:0 auto;font-family:\'Nunito\',sans-serif">' +
@@ -7524,6 +7578,7 @@ function renderRaStats() {
             '</div></div>';
         }).join('') +
       '</div>' +
+      zoneSection +
       cohortSection +
     '</div>';
 }
@@ -8124,6 +8179,11 @@ function renderZoneBreakdown(containerId, totals, compact) {
   }).join('');
 }
 
+function raGetZoneChecks() {
+  const checked = id => document.getElementById(id) ? document.getElementById(id).checked : true;
+  return { 1: checked('ra-show-zone1'), 2: checked('ra-show-zone2'), 3: checked('ra-show-zone3') };
+}
+
 function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
   return allTrees.filter(t => {
@@ -8199,10 +8259,35 @@ function raUpdateStats() {
   if (c2025) c2025.textContent = t2025.length;
   if (c2026) c2026.textContent = t2026.length;
 
+  CB3_ZONES.forEach(z => {
+    const el = document.getElementById('ra-zone-count-' + z.id);
+    if (el) el.textContent = trees.filter(t => getZoneId(parseFloat(t.latitude)) === z.id).length;
+  });
+
+  const showZones = raGetZoneChecks();
   const visible = trees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate);
-    return (yr === 2024 && show2024) || (yr === 2025 && show2025) || (yr === 2026 && show2026);
+    if (!((yr === 2024 && show2024) || (yr === 2025 && show2025) || (yr === 2026 && show2026))) return false;
+    return showZones[getZoneId(parseFloat(t.latitude))];
   });
+
+  const zoneEl = document.getElementById('ra-zone-progress');
+  if (zoneEl) {
+    zoneEl.innerHTML = CB3_ZONES.map(z => {
+      const zTrees = trees.filter(t => getZoneId(parseFloat(t.latitude)) === z.id);
+      const zAssessed = zTrees.filter(t => raLatestAssessment(raTreeId(t))).length;
+      const zTotal = zTrees.length;
+      const zPct = zTotal ? Math.round(zAssessed / zTotal * 100) : 0;
+      return '<div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:3px">' +
+          '<span style="color:' + z.color + ';font-weight:700">' + z.label + '</span>' +
+          '<span style="font-weight:700;color:var(--text)">' + zAssessed + ' / ' + zTotal + '</span>' +
+        '</div>' +
+        '<div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">' +
+          '<div style="height:100%;background:' + z.color + ';width:' + zPct + '%;transition:width 0.4s"></div>' +
+        '</div></div>';
+    }).join('');
+  }
 
   let high = 0, med = 0, low = 0, dead = 0, empty = 0, park = 0, none = 0;
   visible.forEach(t => {
@@ -8253,6 +8338,7 @@ function raRenderMap() {
   const show2024 = document.getElementById('ra-show-2024') ? document.getElementById('ra-show-2024').checked : true;
   const show2025 = document.getElementById('ra-show-2025') ? document.getElementById('ra-show-2025').checked : true;
   const show2026 = document.getElementById('ra-show-2026') ? document.getElementById('ra-show-2026').checked : true;
+  const showZones = raGetZoneChecks();
   const trees = raGetYoungTrees();
 
   trees.forEach(t => {
@@ -8263,6 +8349,7 @@ function raRenderMap() {
     if (yr === 2024 && !show2024) return;
     if (yr === 2025 && !show2025) return;
     if (yr === 2026 && !show2026) return;
+    if (!showZones[getZoneId(lat)]) return;
     const yearColor = yr === 2024 ? '#f59e0b' : yr === 2025 ? '#06b6d4' : '#a855f7';
     const m = raMakeMarker(t, yearColor);
     m.addTo(raMap);
