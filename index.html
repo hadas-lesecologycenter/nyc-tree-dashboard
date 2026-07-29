@@ -1566,6 +1566,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="s-goal-fill" style="height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width 0.6s ease"></div>
       </div>
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px" id="s-zone-breakdown"></div>
     </div>
     <div class="charts-grid" style="margin-bottom:20px">
       <div class="chart-card" style="flex:1.6;min-width:260px">
@@ -1642,6 +1643,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tc-progress-fill" style="height:100%;width:0%;background:var(--accent);border-radius:4px;transition:width 0.5s"></div>
           </div>
           <div id="tc-progress-text" style="font-size:10px;color:var(--text3)">0 / 1,000 trees cared for in 2026</div>
+          <div id="tc-zone-breakdown" style="margin-top:8px;display:flex;flex-direction:column;gap:5px"></div>
         </div>
         <div id="res-counter-widget" style="margin:0 16px 10px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0;display:none">
           <div style="font-size:10px;font-weight:700;color:#7b3fa0;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">📅 Reservations</div>
@@ -3372,6 +3374,7 @@ function updateStats() {
   if (subEl)  subEl.textContent = goalTotal > 0
     ? areas2026.length + ' area' + (areas2026.length !== 1 ? 's' : '') + ' with care logged in 2026'
     : 'Claim areas and log care events in the Tree Care tab to track progress.';
+  renderZoneBreakdown('s-zone-breakdown', tcComputeZoneTotals(tcAreas), false);
 
   // ── Priority tier breakdown + pie chart ───────────────────────
   const tierTotals = { 1: 0, 2: 0, 3: 0 };
@@ -6539,6 +6542,7 @@ function tcUpdateProgress() {
   const textEl = document.getElementById('tc-progress-text');
   if (fillEl) fillEl.style.width = pct + '%';
   if (textEl) textEl.textContent = total + ' / 1,000 trees cared for in 2026';
+  renderZoneBreakdown('tc-zone-breakdown', tcComputeZoneTotals(areas), true);
 }
 
 // ── Sidebar ───────────────────────────────────────────────────
@@ -8052,6 +8056,72 @@ function _pipTest(lat, lng, poly) {
 function cb3Contains(lat, lng) {
   const poly = _cb3OfficialPolygon || CB3_POLYGON_FALLBACK;
   return _pipTest(lat, lng, poly);
+}
+
+// ========== CB3 ZONES ==========
+// Latitude cutoffs approximate 14th St, Houston St, and Grand St, which run
+// roughly east-west across CB3 — good enough for splitting trackers by zone.
+const CB3_ZONES = [
+  { id: 1, label: 'Zone 1', range: '14th–Houston', color: '#2563eb', minLat: 40.7237 },
+  { id: 2, label: 'Zone 2', range: 'Houston–Grand', color: '#0f9e6e', minLat: 40.7185 },
+  { id: 3, label: 'Zone 3', range: 'Grand & South', color: '#c0392b', minLat: -Infinity },
+];
+function getZoneId(lat) {
+  for (const z of CB3_ZONES) if (lat >= z.minLat) return z.id;
+  return 3;
+}
+
+// Best-effort representative coordinate for a Tree Care area (polygon centroid,
+// or the coords of the single tree behind a scraped/address-based area).
+function tcAreaLatLng(area) {
+  if (area.polygon && area.polygon.length >= 3) {
+    const lat = area.polygon.reduce((s, p) => s + p[0], 0) / area.polygon.length;
+    const lng = area.polygon.reduce((s, p) => s + p[1], 0) / area.polygon.length;
+    return { lat, lng };
+  }
+  if (area._treeId) {
+    const tid = String(area._treeId);
+    let c = typeof _tcTreeCoords !== 'undefined' ? _tcTreeCoords[tid] : null;
+    if ((!c || !c.lat || !c.lng) && typeof allTrees !== 'undefined') {
+      const t = allTrees.find(x => String(x.tree_id) === tid);
+      if (t && t.latitude && t.longitude) c = { lat: parseFloat(t.latitude), lng: parseFloat(t.longitude) };
+    }
+    if (c && c.lat && c.lng) return c;
+  }
+  return null;
+}
+
+// Same "trees cared for in 2026" logic as the citywide goal, bucketed by zone.
+function tcComputeZoneTotals(areas) {
+  const totals = { 1: 0, 2: 0, 3: 0 };
+  areas.forEach(a => {
+    const events2026 = (a.careEvents || []).filter(ev => (ev.date || '').startsWith('2026'));
+    if (!events2026.length) return;
+    const coord = tcAreaLatLng(a);
+    if (!coord) return;
+    const maxCount = events2026.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
+    totals[getZoneId(coord.lat)] += maxCount;
+  });
+  return totals;
+}
+
+function renderZoneBreakdown(containerId, totals, compact) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = CB3_ZONES.map(z => {
+    const count = totals[z.id] || 0;
+    return compact
+      ? '<div style="display:flex;justify-content:space-between;align-items:center;font-size:10px">' +
+          '<span style="color:var(--text2)"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + z.color + ';margin-right:5px"></span>' + z.label + ' <span style="color:var(--text3)">(' + z.range + ')</span></span>' +
+          '<span style="font-weight:700;color:' + z.color + '">' + count + '</span>' +
+        '</div>'
+      : '<div style="background:var(--bg3);border-radius:8px;padding:10px;border-top:3px solid ' + z.color + '">' +
+          '<div style="font-size:11px;font-weight:700;color:' + z.color + '">' + z.label + '</div>' +
+          '<div style="font-size:9px;color:var(--text3);margin-bottom:5px">' + z.range + '</div>' +
+          '<div style="font-size:20px;font-weight:700;color:var(--text)">' + count + '</div>' +
+          '<div style="font-size:9px;color:var(--text3)">trees cared for in 2026</div>' +
+        '</div>';
+  }).join('');
 }
 
 function raGetYoungTrees() {
