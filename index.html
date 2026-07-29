@@ -2206,6 +2206,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 Zone 3 <span style="color:var(--text3)">(Grand &amp; South)</span>
                 <span id="ra-zone-count-3" style="margin-left:auto;font-size:10px;font-weight:700;color:#c0392b"></span>
               </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:var(--text2);margin-top:2px">
+                <input type="checkbox" id="ra-show-zone-lines" checked onchange="raRenderMap()">
+                <span style="display:inline-block;width:11px;border-top:2px dashed var(--text3);flex-shrink:0"></span>
+                Show boundary streets
+              </label>
             </div>
           </div>
           <!-- Health legend -->
@@ -7491,7 +7496,7 @@ function renderRaStats() {
 
   const byZone = { 1: { assessed:0, total:0 }, 2: { assessed:0, total:0 }, 3: { assessed:0, total:0 } };
   trees.forEach(t => {
-    const z = byZone[getZoneId(parseFloat(t.latitude))];
+    const z = byZone[getZoneId(parseFloat(t.latitude), parseFloat(t.longitude))];
     z.total++;
     if (raLatestAssessment(raTreeId(t))) z.assessed++;
   });
@@ -8114,15 +8119,35 @@ function cb3Contains(lat, lng) {
 }
 
 // ========== CB3 ZONES ==========
-// Latitude cutoffs approximate 14th St, Houston St, and Grand St, which run
-// roughly east-west across CB3 — good enough for splitting trackers by zone.
+// CB3's east-west streets do not follow lines of latitude — East Houston St
+// alone drops ~900m of latitude between the Bowery and the East River. A flat
+// latitude cutoff is therefore correct at one longitude and hundreds of metres
+// off at the other end of the district, so each divider is modelled as a line
+// running parallel to the Lower East Side street grid instead.
+//
+// Slope and reference latitudes were fit from the addressed street trees in
+// data/trees.csv by scripts/fit_zone_boundaries.py. A single shared slope keeps
+// the dividers parallel so they can never cross inside CB3. Zone 1's northern
+// edge (14th St) needs no line of its own — it is the CB3 boundary itself,
+// which cb3Contains() already enforces.
+const CB3_GRID_SLOPE   = -0.2891;    // dLat per dLng along the LES street grid
+const CB3_GRID_REF_LNG = -73.9850;   // meridian the edgeLat values below are quoted at
 const CB3_ZONES = [
-  { id: 1, label: 'Zone 1', range: '14th–Houston', color: '#2563eb', minLat: 40.7237 },
-  { id: 2, label: 'Zone 2', range: 'Houston–Grand', color: '#0f9e6e', minLat: 40.7160 },
-  { id: 3, label: 'Zone 3', range: 'Grand & South', color: '#c0392b', minLat: -Infinity },
+  // edgeLat = latitude of this zone's southern boundary street at CB3_GRID_REF_LNG
+  { id: 1, label: 'Zone 1', range: '14th–Houston',  color: '#2563eb', edgeLat: 40.72176 }, // E Houston St
+  { id: 2, label: 'Zone 2', range: 'Houston–Grand', color: '#0f9e6e', edgeLat: 40.71555 }, // Grand St
+  { id: 3, label: 'Zone 3', range: 'Grand & South', color: '#c0392b', edgeLat: -Infinity },
 ];
-function getZoneId(lat) {
-  for (const z of CB3_ZONES) if (lat >= z.minLat) return z.id;
+
+// Latitude of a zone boundary street at the given longitude.
+function cb3ZoneEdgeLat(edgeLat, lng) {
+  if (!isFinite(edgeLat)) return edgeLat;
+  const l = isFinite(lng) ? lng : CB3_GRID_REF_LNG;
+  return edgeLat + CB3_GRID_SLOPE * (l - CB3_GRID_REF_LNG);
+}
+
+function getZoneId(lat, lng) {
+  for (const z of CB3_ZONES) if (lat >= cb3ZoneEdgeLat(z.edgeLat, lng)) return z.id;
   return 3;
 }
 
@@ -8155,7 +8180,7 @@ function tcComputeZoneTotals(areas) {
     const coord = tcAreaLatLng(a);
     if (!coord) return;
     const maxCount = events2026.reduce((mx, ev) => Math.max(mx, tcEventTreeCount(a, ev)), 0);
-    totals[getZoneId(coord.lat)] += maxCount;
+    totals[getZoneId(coord.lat, coord.lng)] += maxCount;
   });
   return totals;
 }
@@ -8261,20 +8286,20 @@ function raUpdateStats() {
 
   CB3_ZONES.forEach(z => {
     const el = document.getElementById('ra-zone-count-' + z.id);
-    if (el) el.textContent = trees.filter(t => getZoneId(parseFloat(t.latitude)) === z.id).length;
+    if (el) el.textContent = trees.filter(t => getZoneId(parseFloat(t.latitude), parseFloat(t.longitude)) === z.id).length;
   });
 
   const showZones = raGetZoneChecks();
   const visible = trees.filter(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate);
     if (!((yr === 2024 && show2024) || (yr === 2025 && show2025) || (yr === 2026 && show2026))) return false;
-    return showZones[getZoneId(parseFloat(t.latitude))];
+    return showZones[getZoneId(parseFloat(t.latitude), parseFloat(t.longitude))];
   });
 
   const zoneEl = document.getElementById('ra-zone-progress');
   if (zoneEl) {
     zoneEl.innerHTML = CB3_ZONES.map(z => {
-      const zTrees = trees.filter(t => getZoneId(parseFloat(t.latitude)) === z.id);
+      const zTrees = trees.filter(t => getZoneId(parseFloat(t.latitude), parseFloat(t.longitude)) === z.id);
       const zAssessed = zTrees.filter(t => raLatestAssessment(raTreeId(t))).length;
       const zTotal = zTrees.length;
       const zPct = zTotal ? Math.round(zAssessed / zTotal * 100) : 0;
@@ -8349,14 +8374,36 @@ function raRenderMap() {
     if (yr === 2024 && !show2024) return;
     if (yr === 2025 && !show2025) return;
     if (yr === 2026 && !show2026) return;
-    if (!showZones[getZoneId(lat)]) return;
+    if (!showZones[getZoneId(lat, lng)]) return;
     const yearColor = yr === 2024 ? '#f59e0b' : yr === 2025 ? '#06b6d4' : '#a855f7';
     const m = raMakeMarker(t, yearColor);
     m.addTo(raMap);
     raMarkers.push(m);
   });
 
+  raDrawZoneBoundaries();
   raUpdateStats();
+}
+
+// Draw the two divider streets (E Houston, Grand) so the zone edges can be
+// checked against the map rather than taken on trust.
+function raDrawZoneBoundaries() {
+  const toggle = document.getElementById('ra-show-zone-lines');
+  if (toggle && !toggle.checked) return;
+  const poly = _cb3OfficialPolygon || CB3_POLYGON_FALLBACK;
+  const lngs = poly.map(p => p[0]);
+  const west = Math.min.apply(null, lngs), east = Math.max.apply(null, lngs);
+  [
+    { edgeLat: CB3_ZONES[0].edgeLat, label: 'E Houston St — Zone 1 / Zone 2' },
+    { edgeLat: CB3_ZONES[1].edgeLat, label: 'Grand St — Zone 2 / Zone 3' },
+  ].forEach(d => {
+    const line = L.polyline(
+      [[cb3ZoneEdgeLat(d.edgeLat, west), west], [cb3ZoneEdgeLat(d.edgeLat, east), east]],
+      { color: '#374151', weight: 2, opacity: 0.55, dashArray: '7,6' }
+    ).bindTooltip(d.label, { sticky: true });
+    line.addTo(raMap);
+    raMarkers.push(line);
+  });
 }
 
 function raInit() {
