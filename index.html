@@ -722,7 +722,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .brand-sub { font-size: 10px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
   nav { display: flex; gap: 3px; margin-left: auto; }
   /* Shown only on mobile, where the header nav is hidden (see mobile media query) */
-  #mobile-view-toggle { display: none; }
+  #mobile-view-fab { display: none; }
   .nav-btn {
     background: none; border: 1px solid transparent; color: var(--text2);
     padding: 6px 14px; border-radius: 6px; cursor: pointer;
@@ -1289,18 +1289,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
   @media (max-width: 768px) {
     .ra-mobile-only { display: inline-flex !important; }
 
-    /* Header button pairs with the hidden nav: one tap into Health, one tap back */
-    #mobile-view-toggle {
-      display: inline-flex; align-items: center; gap: 5px;
-      margin-left: auto; flex-shrink: 0; white-space: nowrap;
-      padding: 7px 13px; min-height: 38px;
-      border: 1px solid var(--border2); border-radius: 999px;
-      background: var(--bg); color: var(--text);
-      font-family: 'Nunito', sans-serif; font-size: 13px; font-weight: 700;
+    /* Floating route in and out of Health Assessment — bottom right, in thumb reach.
+       Sits above the map's attribution strip and below the .map-overlay pills. */
+    #mobile-view-fab {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      position: fixed; right: 12px; bottom: 20px;
+      height: 44px; padding: 0 16px;
+      border: none; border-radius: 999px;
+      background: #7b3fa0; color: #fff;
+      font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700;
+      white-space: nowrap; box-shadow: 0 3px 12px rgba(0,0,0,0.28);
       cursor: pointer; -webkit-appearance: none; appearance: none;
       -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+      /* Below the bottom sheets (2001) so an open sheet simply covers it — the
+         sheet has its own way back, and no JS has to chase every open/close. */
+      z-index: 1150;
+      transition: transform 0.12s;
     }
-    #mobile-view-toggle:active { background: var(--bg3); }
+    #mobile-view-fab:active { transform: scale(0.93); }
 
     /* Title and the map/table/stats switch stack instead of squeezing together */
     #ra-header-row { flex-wrap: wrap; gap: 8px; }
@@ -1391,8 +1397,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button class="nav-btn" onclick="switchView('risk',event)">🔍 Health Assessment</button>
     <button class="nav-btn" onclick="switchView('about',event)">ℹ️ About</button>
   </nav>
-  <!-- Mobile has no nav bar, so this is the way in and out of Health Assessment on a phone -->
-  <button type="button" id="mobile-view-toggle" onclick="mobileToggleHealthView()">🔍 Health</button>
 </header>
 
 <!-- hidden filter selects kept for applyFilters() compatibility -->
@@ -2535,6 +2539,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
 </main>
+
+<!-- Mobile has no nav bar, so this floating button is the way in and out of
+     Health Assessment on a phone. Hidden on desktop, where the header nav works. -->
+<button type="button" id="mobile-view-fab" onclick="mobileToggleHealthView()">🔍 Health</button>
 
 <!-- TREE DETAIL PANEL (injected dynamically) -->
 
@@ -3956,7 +3964,7 @@ function switchView(view, evt) {
       });
     }
     if (view === 'risk') { setTimeout(raInit, 50); }
-    syncMobileViewToggle();
+    syncMobileViewFab();
     console.log('switchView completed for:', view);
   } catch(err) {
     console.error('switchView error:', err);
@@ -7299,18 +7307,18 @@ function initMobileUI() {
   }
 }
 
-// The header nav is hidden on mobile and the bottom tab bar is disabled, so this
-// header button is the only route into and back out of the Health Assessment tab.
+// The header nav is hidden on mobile and the bottom tab bar is disabled, so the
+// floating button is the only route into and back out of the Health Assessment tab.
 function mobileToggleHealthView() {
   const riskView = document.getElementById('risk-view');
   const onRisk = riskView && riskView.classList.contains('active');
   switchView(onRisk ? 'map' : 'risk', null);
-  syncMobileViewToggle();
+  syncMobileViewFab();
 }
 
 // Label the button with where it goes, not where you are.
-function syncMobileViewToggle() {
-  const btn = document.getElementById('mobile-view-toggle');
+function syncMobileViewFab() {
+  const btn = document.getElementById('mobile-view-fab');
   if (!btn) return;
   const riskView = document.getElementById('risk-view');
   const onRisk = riskView && riskView.classList.contains('active');
@@ -8197,7 +8205,7 @@ window.addEventListener('hashchange', function() {
     setTimeout(() => mapInstance.invalidateSize(), 50);
   }
   if (hash === 'risk-view') { setTimeout(raInit, 50); }
-  syncMobileViewToggle();
+  syncMobileViewFab();
 });
 
 // Initialize on load
