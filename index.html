@@ -603,6 +603,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	cursor: pointer;
 	pointer-events: auto;
 	}
+/* Sub-zone id sitting on the polygon itself, so a crew can read its
+   assignment off the map without opening anything. */
+.leaflet-tooltip.subzone-tag {
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	font-family: 'Lora', serif;
+	font-size: 14px;
+	font-weight: 700;
+	color: #2c2a24;
+	text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
+	}
+.leaflet-tooltip.subzone-tag:before { display: none; }
 .leaflet-tooltip-top:before,
 .leaflet-tooltip-bottom:before,
 .leaflet-tooltip-left:before,
@@ -1620,6 +1633,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="layer-work-cells" onchange="toggleWorkCellsFromPanel()">
             🗂️ Work-Plan Cells (draft)
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-subzones" onchange="toggleSubzonesFromPanel()">
+            🧭 Sub-Zones (~10 blocks)
+          </label>
         </div>
 
         <div class="cp-section">
@@ -2573,6 +2590,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 const CENSUS_DATA_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json?t=' + Date.now();
 const CB3_BOUNDARY_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/cb3-boundary.json';
 const WORK_CELLS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/work-cells-rect.geojson';
+const SUBZONES_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/subzones.geojson';
 let CENSUS_DATA = []; // loaded dynamically at startup
 
 
@@ -2620,6 +2638,10 @@ let workCellsLayer = null;
 let workCellsVisible = false;
 let workCellsLoading = false;
 let workCellsData = null;
+let subzonesLayer = null;
+let subzonesVisible = false;
+let subzonesLoading = false;
+let subzonesData = null;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -4360,6 +4382,75 @@ function toggleWorkCellsFromPanel() {
       workCellsVisible = false;
     })
     .finally(() => { workCellsLoading = false; });
+}
+
+// ========== SUB-ZONES LAYER ==========
+// Source: data/subzones.geojson — each of the three care zones cut into
+// sub-zones of roughly ten city blocks, every edge running down a real street
+// centerline (see scripts/build_street_grid.py and scripts/build_subzones.py).
+// Sub-zones nest inside the zones: the Houston and Grand dividers drawn by
+// raDrawZoneBoundaries() are the same lines the sub-zone edges are pinned to.
+
+// Sub-zones inherit their zone's colour and separate from each other by
+// lightness, so the three zones stay readable as zones at a glance while
+// individual sub-zones remain distinguishable when you zoom in.
+function subzoneShade(zoneId, index, total) {
+  const base = { 1: 217, 2: 162, 3: 6 }[zoneId] || 217;
+  const light = 34 + 30 * (total > 1 ? index / (total - 1) : 0.5);
+  return `hsl(${base} 58% ${light}%)`;
+}
+
+async function initSubzonesLayer() {
+  if (!subzonesData) {
+    const resp = await fetch(SUBZONES_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    subzonesData = await resp.json();
+  }
+  const perZone = {};
+  subzonesData.features.forEach(f => {
+    const z = f.properties.zone;
+    perZone[z] = (perZone[z] || 0) + 1;
+  });
+  const seen = {};
+  subzonesLayer = L.layerGroup();
+  subzonesData.features.forEach(f => {
+    const p = f.properties;
+    seen[p.zone] = (seen[p.zone] || 0);
+    const color = subzoneShade(p.zone, seen[p.zone]++, perZone[p.zone]);
+    L.geoJSON(f, { style: { color, weight: 2, fillColor: color, fillOpacity: 0.18 } })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:200px">
+        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
+        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.label}</div>
+        <div style="font-size:11px;color:#6b6456;margin-top:4px">
+          Zone ${p.zone} · ${p.region_label}<br>${p.blocks} blocks · ${p.tree_count} trees
+        </div>
+      </div>`)
+      .bindTooltip(p.subzone_id, { permanent: true, direction: 'center', className: 'subzone-tag' })
+      .addTo(subzonesLayer);
+  });
+  console.log(`Sub-zones: ${subzonesLayer.getLayers().length} loaded`);
+}
+
+function toggleSubzonesFromPanel() {
+  const cb = document.getElementById('layer-subzones');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === subzonesVisible) return;
+  subzonesVisible = shouldShow;
+  if (!subzonesVisible) {
+    if (subzonesLayer) subzonesLayer.remove();
+    return;
+  }
+  if (subzonesLayer) { subzonesLayer.addTo(mapInstance); return; }
+  if (subzonesLoading) return;
+  subzonesLoading = true;
+  initSubzonesLayer()
+    .then(() => { if (subzonesVisible) subzonesLayer.addTo(mapInstance); })
+    .catch(err => {
+      console.error('Sub-zones load failed:', err);
+      if (cb) cb.checked = false;
+      subzonesVisible = false;
+    })
+    .finally(() => { subzonesLoading = false; });
 }
 
 // ========== EMPTY BEDS LAYER ==========
