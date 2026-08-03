@@ -1397,7 +1397,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
       background: var(--bg); border-top: 1px solid var(--border);
     }
-    #ra-modal-actions button { min-height: 48px; font-size: 15px !important; }
+    /* touch-action stops the browser holding the tap back to wait for a
+       double-tap-to-zoom gesture on the primary action. */
+    #ra-modal-actions button { min-height: 48px; font-size: 15px !important; touch-action: manipulation; }
   }
 </style>
 </head>
@@ -2453,7 +2455,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div id="ra-assess-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center">
     <div style="background:var(--bg);border-radius:14px;width:90%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25);padding:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment</h2>
+        <!-- Build tag: lets a field user tell us whether their phone is running
+             the current page or a cached copy, without opening a console. -->
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 4</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -5101,14 +5105,23 @@ async function sheetsRead(sheetName) {
 async function sheetsWriteOrThrow(sheetName, headers, items, rowFn) {
   if (!TREE_CARE_SCRIPT_URL) throw new Error('No Google Sheet is connected, so there is nowhere to save this.');
   const rows = [headers, ...items.map(rowFn)];
+  // fetch has no timeout of its own. On a weak signal in the field this request
+  // can hang indefinitely, leaving the submit button sitting there disabled with
+  // no error and no save — which reads as "the button does nothing".
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
   let res;
   try {
     res = await fetch(TREE_CARE_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ sheet: sheetName, rows })
+      body: JSON.stringify({ sheet: sheetName, rows }),
+      signal: ctrl.signal
     });
   } catch (e) {
+    if (e && e.name === 'AbortError') throw new Error('The save timed out after 20 seconds. Check your signal and try again.');
     throw new Error('Could not reach the Google Sheet — check your signal and try again.');
+  } finally {
+    clearTimeout(timer);
   }
   if (!res.ok) throw new Error('The Google Sheet rejected the save (HTTP ' + res.status + ').');
   return res;
@@ -9009,6 +9022,10 @@ function raCloseAssessModal() {
 // a disabled button. Nothing is allowed to fail quietly any more.
 async function raSubmitAssessment() {
   const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
+  // Change the label the instant the tap lands, before anything can go wrong.
+  // If this never appears, the tap is not reaching the button at all; if it
+  // sticks, the save is hanging. Either way the screen now says which.
+  if (submitBtn) submitBtn.textContent = '⏳ Saving…';
   try {
     await raSubmitAssessmentInner(submitBtn);
   } catch (err) {
@@ -9016,7 +9033,11 @@ async function raSubmitAssessment() {
     alert('Could not save this assessment.\n\n' + ((err && err.message) || err) +
           '\n\nYour entries are still filled in — please try again.');
   } finally {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '';
+      submitBtn.textContent = '📋 Submit Assessment';
+    }
   }
 }
 
