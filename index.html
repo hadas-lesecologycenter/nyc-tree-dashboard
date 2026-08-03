@@ -1402,6 +1402,42 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #ra-modal-actions button { min-height: 48px; font-size: 15px !important; touch-action: manipulation; }
   }
 </style>
+<script>
+// A phone in the field has no console, so an uncaught error is invisible and a
+// dead-looking button is unreportable. Put any error on the screen instead.
+// Anchored to the top so it can never cover the form's action buttons.
+(function () {
+  function show(msg) {
+    var el = document.getElementById('js-error-banner');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'js-error-banner';
+      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#b91c1c;' +
+        'color:#fff;font:12px/1.45 ui-monospace,monospace;padding:10px 38px 10px 10px;' +
+        'white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto';
+      var x = document.createElement('button');
+      x.textContent = '✕';
+      x.setAttribute('aria-label', 'Dismiss error');
+      x.style.cssText = 'position:absolute;top:6px;right:6px;width:26px;height:26px;background:none;' +
+        'border:1px solid #fff;color:#fff;border-radius:5px;font-size:13px';
+      x.onclick = function () { el.parentNode.removeChild(el); };
+      el.appendChild(x);
+      (document.body || document.documentElement).appendChild(el);
+    }
+    var line = document.createElement('div');
+    line.textContent = msg;
+    el.appendChild(line);
+  }
+  window.addEventListener('error', function (e) {
+    show('JS error: ' + (e.message || e.error) +
+         (e.filename ? '\n' + String(e.filename).split('/').pop() + ':' + e.lineno : ''));
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var r = e.reason;
+    show('Unhandled rejection: ' + ((r && r.message) || r));
+  });
+})();
+</script>
 </head>
 <body>
 <div id="loading-bar"></div>
@@ -2457,7 +2493,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 5</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 6</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -9015,6 +9051,20 @@ function raShowAssessModal(modal) {
   // silently when that happened — the form stayed open and the tap looked dead,
   // while Cancel (which needs no tree) kept working.
   _raModalTree = _raCurrentTree;
+
+  // A disabled button swallows taps in complete silence — no click event, no
+  // handler, nothing on screen — while Cancel beside it keeps working. Nothing
+  // used to clear that state, so a single submit that disabled the button and
+  // never finished (a stalled save, an error in an older build) left it dead
+  // for the rest of the page's life, through every reopen. Submit state belongs
+  // to one attempt, so reset it every time the form opens.
+  const submitBtn = modal.querySelector('button[onclick="raSubmitAssessment()"]');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '';
+    submitBtn.textContent = '📋 Submit Assessment';
+  }
+
   modal.style.display = 'flex';
   document.body.classList.add('ra-assess-open');
 }
