@@ -1367,6 +1367,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     #ra-table { min-width: 900px; }
 
     /* Assessment form goes full-screen: it is the main thing done in the field */
+    #ra-assess-modal {
+      /* A fixed inset:0 box is sized against the URL-bar-hidden viewport, so its
+         bottom edge — and the sticky Submit bar pinned to it — ends up under the
+         URL bar with no way to scroll to it. dvh tracks the visible height. */
+      height: 100dvh !important;
+      align-items: stretch !important;
+    }
     #ra-assess-modal > div {
       width: 100% !important; max-width: none !important;
       height: 100%; max-height: none !important;
