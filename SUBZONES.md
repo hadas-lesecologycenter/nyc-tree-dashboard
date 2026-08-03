@@ -1,14 +1,23 @@
 # CB3 Sub-Zones
 
-The three care zones split into 31 sub-zones of roughly ten city blocks each.
+The three care zones split into 28 sub-zones of roughly ten block segments each.
 
-**Every sub-zone boundary is a street centerline.** A sub-zone is the area
-between two E-W streets and two N-S streets, so it can be handed to a crew in
-words - "E 4th to E 2nd, Bowery to Ave B" - and walked without a map. Trees on
-a boundary street belong to the sub-zone on their own side of the roadway,
-which is the same rule the existing Houston/Grand zone dividers already follow.
+**Boundaries run mid-block, so both sides of every street stay in the same
+sub-zone.** A sub-zone is a set of whole streets rather than an area fenced off
+by them, so it can be handed to a crew in words — "E 4th St to E 3rd St, Bowery
+to Ave A, both sides" — and walked without a map.
 
-Sub-zones nest inside the zones: no sub-zone crosses Houston St or Grand St.
+A boundary has to cross the street network somewhere: cutting along
+centrelines separates a street from its own far sidewalk, and cutting
+mid-block divides the perpendicular streets part-way along a block. Mid-block
+is the cheaper cut here — 88 of CB3's 509 block segments end up divided,
+against 106 when the same sub-zones were bounded by centrelines — because what
+gets divided is the avenues, and an avenue was previously being split
+lengthwise along its entire run.
+
+The three **zone** dividers — Houston St, Grand St and East Broadway — keep
+their centrelines, so sub-zones still nest inside the three zones and no zone
+total moves. They are the only streets still split down the middle.
 
 ## Files
 
@@ -26,10 +35,13 @@ python3 scripts/build_subzones.py      # subzones -> data/subzones.{geojson,csv}
 ```
 
 Both print a validation report. `build_subzones.py` checks that every tree
-falls inside its own sub-zone polygon and inside no other; that line should
-read `0 trees outside ... 0 inside more than one`.
+falls inside its own sub-zone polygon and inside no other — that line should
+read `0 trees outside ... 0 inside more than one` — and reports how many block
+segments end up divided between two sub-zones.
 
-Sub-zone size is `TARGET_BLOCKS` in `scripts/build_subzones.py` (currently 10).
+Sub-zone size is `TARGET_BLOCKS` in `scripts/build_subzones.py` (currently 10);
+`ROWS_PER_BAND` (currently 2) sets how many streets a sub-zone runs across
+before it splits sideways instead.
 
 ## Caveat
 
@@ -44,36 +56,36 @@ centerline data ever lands in the repo, re-run both scripts against it.
 
 ## The sub-zones
 
-| ID | Zone | Blocks | Trees | Bounded by |
-|---|---|---|---|---|
-| **1A** | 1 | 8 | 183 | E 14th St–E 12th St, CB3 Boundary–Ave A |
-| **1B** | 1 | 8 | 158 | E 14th St–E 12th St, Ave A–FDR Dr |
-| **1C** | 1 | 8 | 225 | E 12th St–E 10th St, CB3 Boundary–Ave A |
-| **1D** | 1 | 8 | 212 | E 12th St–E 10th St, Ave A–FDR Dr |
-| **1E** | 1 | 10 | 223 | E 10th St–E 8th St / St Marks Pl, CB3 Boundary–Ave B |
-| **1F** | 1 | 7 | 195 | E 10th St–E 8th St / St Marks Pl, Ave B–CB3 Boundary |
-| **1G** | 1 | 8 | 181 | E 8th St / St Marks Pl–E 6th St, CB3 Boundary–Ave A |
-| **1H** | 1 | 8 | 221 | E 8th St / St Marks Pl–E 6th St, Ave A–CB3 Boundary |
-| **1I** | 1 | 8 | 203 | E 6th St–E 4th St, Bowery / 3rd Ave–Ave B |
-| **1J** | 1 | 6 | 168 | E 6th St–E 4th St, Ave B–CB3 Boundary |
-| **1K** | 1 | 8 | 220 | E 4th St–E 2nd St, Bowery / 3rd Ave–Ave B |
-| **1L** | 1 | 7 | 146 | E 4th St–E 2nd St, Ave B–CB3 Boundary |
-| **1M** | 1 | 11 | 264 | E 2nd St–E Houston St, Bowery / 3rd Ave–Ave D |
-| **2A** | 2 | 12 | 214 | E Houston St–Rivington St, Bowery–Ludlow St |
-| **2B** | 2 | 12 | 230 | E Houston St–Rivington St, Ludlow St–Ridge St |
-| **2C** | 2 | 10 | 155 | E Houston St–Rivington St, Ridge St–FDR Dr |
-| **2D** | 2 | 12 | 195 | Rivington St–Broome St, Bowery–Ludlow St |
-| **2E** | 2 | 12 | 180 | Rivington St–Broome St, Ludlow St–Ridge St |
-| **2F** | 2 | 9 | 110 | Rivington St–Broome St, Ridge St–FDR Dr |
-| **2G** | 2 | 9 | 117 | Broome St–Grand St, Bowery–Suffolk St |
-| **2H** | 2 | 8 | 63 | Broome St–Grand St, Suffolk St–FDR Dr |
-| **3A** | 3 | 10 | 104 | Grand St–Canal St, Bowery–Suffolk St |
-| **3B** | 3 | 9 | 107 | Grand St–Canal St, Suffolk St–CB3 Boundary |
-| **3C** | 3 | 13 | 232 | Canal St–Division St, CB3 Boundary–Jackson St |
-| **3D** | 3 | 10 | 165 | E Broadway–Madison St, CB3 Boundary–Jefferson St |
-| **3E** | 3 | 10 | 261 | E Broadway–Madison St, Jefferson St–FDR Dr |
-| **3F** | 3 | 10 | 191 | Madison St–Cherry St, CB3 Boundary–Jefferson St |
-| **3G** | 3 | 8 | 96 | Madison St–Cherry St, Jefferson St–FDR Dr |
-| **3H** | 3 | 11 | 165 | Cherry St–South St, CB3 Boundary–Clinton St |
-| **3I** | 3 | 8 | 73 | Cherry St–South St, Clinton St–FDR Dr |
-| **3J** | 3 | 5 | 58 | South St–CB3 Boundary, CB3 Boundary–Gouverneur St |
+Each row lists the streets the crew works, both sides, and the avenues the run
+spans.
+
+| ID | Zone | Segments | Trees | Streets | Across |
+|---|---|---|---|---|---|
+| **1A** | 1 | 8 | 156 | E 14th St to E 13th St | Bowery / 3rd Ave to Ave A |
+| **1B** | 1 | 7 | 93 | E 14th St to E 13th St | Ave B to FDR Dr |
+| **1C** | 1 | 8 | 251 | E 12th St to E 11th St | Bowery / 3rd Ave to Ave A |
+| **1D** | 1 | 6 | 137 | E 12th St to E 11th St | Ave B to Ave D |
+| **1E** | 1 | 8 | 211 | E 10th St to E 9th St | Bowery / 3rd Ave to Ave A |
+| **1F** | 1 | 8 | 227 | E 10th St to E 9th St | Ave B to FDR Dr |
+| **1G** | 1 | 8 | 224 | E 8th St / St Marks Pl to E 7th St | Bowery / 3rd Ave to Ave A |
+| **1H** | 1 | 6 | 198 | E 8th St / St Marks Pl to E 7th St | Ave B to Ave D |
+| **1I** | 1 | 8 | 167 | E 6th St to E 5th St | Bowery / 3rd Ave to Ave A |
+| **1J** | 1 | 7 | 197 | E 6th St to E 5th St | Ave B to FDR Dr |
+| **1K** | 1 | 8 | 200 | E 4th St to E 3rd St | Bowery / 3rd Ave to Ave A |
+| **1L** | 1 | 7 | 202 | E 4th St to E 3rd St | Ave B to FDR Dr |
+| **1M** | 1 | 8 | 220 | E 2nd St to E 1st St | Bowery / 3rd Ave to Ave A |
+| **1N** | 1 | 6 | 116 | E 2nd St to E 1st St | Ave B to FDR Dr |
+| **2A** | 2 | 10 | 269 | Stanton St to Rivington St | Chrystie St to Orchard St |
+| **2B** | 2 | 10 | 221 | Stanton St to Rivington St | Ludlow St to Clinton St |
+| **2C** | 2 | 10 | 243 | Stanton St to Rivington St | Attorney St to Mangin St |
+| **2D** | 2 | 12 | 218 | Delancey St to Broome St | Chrystie St to Ludlow St |
+| **2E** | 2 | 12 | 202 | Delancey St to Broome St | Essex St to Ridge St |
+| **2F** | 2 | 8 | 111 | Delancey St to Broome St | Pitt St to Mangin St |
+| **3A** | 3 | 12 | 262 | Hester St to Canal St | Bowery to Essex St |
+| **3B** | 3 | 11 | 181 | Hester St to Canal St | Norfolk St to FDR Dr |
+| **3C** | 3 | 10 | 237 | Henry St to Madison St | Catherine St to Jefferson St |
+| **3D** | 3 | 8 | 268 | Henry St to Madison St | Clinton St to Jackson St |
+| **3E** | 3 | 10 | 177 | Monroe St to Cherry St | Catherine St to Jefferson St |
+| **3F** | 3 | 7 | 85 | Monroe St to Cherry St | Clinton St to Jackson St |
+| **3G** | 3 | 9 | 178 | Water St to South St | Catherine St to Jefferson St |
+| **3H** | 3 | 8 | 64 | Water St to South St | Clinton St to Jackson St |

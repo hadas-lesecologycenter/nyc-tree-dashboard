@@ -8,24 +8,39 @@ arbitrary tree counts, and build_rect_cells.py laid a rotated rectangular grid
 over the district that sliced through the middle of blocks. Neither produced
 an assignment a crew could be told in words or walk without a map.
 
+Boundaries run MID-BLOCK, so both sides of a street stay together
+-----------------------------------------------------------------
+A sub-zone is a set of whole streets, not an area fenced off by them. Each
+CELL is centred on one street and reaches half a block to either side, so a
+crew handed "E 4th St to E 3rd St, Bowery to Ave A" works both sidewalks of
+both streets across that whole run.
+
+Something has to give: a boundary cannot enclose a region without crossing the
+street network somewhere. Cutting along street centrelines separates a street
+from its own far sidewalk; cutting mid-block divides the perpendicular streets
+part-way along a block. Mid-block turns out to be the cheaper of the two here -
+88 of CB3's 509 block segments end up divided, against 106 when the same
+sub-zones were bounded by centrelines - because the streets that get divided
+are the avenues, and an avenue was already being split lengthwise for its
+entire run under the old scheme.
+
 How it works
 ------------
   1. data/cb3-street-grid.json (from build_street_grid.py) supplies named
-     street centerlines per grid region. A BLOCK is one cell of that
-     arrangement: the area between two consecutive E-W streets and two
-     consecutive N-S streets. Blocks with no trees are not blocks - they are
-     parks, water, or the inside of a superblock - and are dropped.
-  2. Blocks are grouped into sub-zones by taking a band of consecutive street
-     rows and cutting it into runs of consecutive avenue columns. A sub-zone
-     is therefore always a rectangle in grid terms, bounded by exactly four
-     named streets, which is what makes it describable: "E 4th St-E 2nd St,
-     Bowery/3rd Ave-Ave B" rather than "cell 147".
-  3. Sub-zones nest inside the existing three zones, because the region
-     dividers are pinned to the same Houston/Grand lines index.html already
-     draws (see PINS in build_street_grid.py). No sub-zone straddles a zone.
+     street centerlines per grid region. cell_bands() turns each family of
+     streets into cells split by mid-block lines, one street per cell. Cells
+     with no trees - parks, water, the inside of a superblock - are dropped.
+  2. Cells are grouped into sub-zones by taking a band of consecutive street
+     rows and cutting it into runs of consecutive avenue columns, so a
+     sub-zone is always a rectangle in grid terms and names the streets it
+     contains rather than the ones that fence it in.
+  3. Sub-zones nest inside the existing three zones. The zone dividers -
+     Houston, Grand, East Broadway - keep their centrelines and bound cells
+     rather than sitting inside one, so no tree changes zone and no zone
+     total moves. They are the only streets still split down the middle.
 
-Sizing: TARGET_BLOCKS is the knob. At 10 blocks CB3 comes out as 31 sub-zones
-of 5-13 blocks (mean 9.1) holding 58-264 trees (mean 171) - a season's
+Sizing: TARGET_BLOCKS is the knob. At 10 blocks CB3 comes out as 28 sub-zones
+of 6-12 block segments (mean 8.6) holding 64-269 trees (mean 190) - a season's
 assignment for a crew, not a day's. Lower it for smaller units; none of the
 geometry changes.
 
@@ -210,23 +225,41 @@ def load_trees(boundary):
     return trees
 
 
-def edge_lines(region, family):
-    """A family's streets with an open-ended entry bolted on each side.
+def midline(line_a, line_b):
+    """The line running down the middle of the block between two streets.
 
-    The outermost blocks are bounded on their far side by the district edge,
-    not by a grid line, so those entries carry no geometry - only a name. It
-    is usually a real street that the grid fit had to drop for want of trees
-    to place it with (the Bowery on the west, the FDR on the east); where even
-    that is unknown the block is labelled against the CB3 boundary itself."""
+    Averaging slope and intercept rather than bisecting properly is fine here:
+    neighbouring streets within a region sit within a degree or two of each
+    other, so the two constructions differ by centimetres over a block."""
+    return [(line_a[0] + line_b[0]) / 2.0, (line_a[1] + line_b[1]) / 2.0]
+
+
+def cell_bands(region, family):
+    """Split a family's streets into cells with one street at the centre of
+    each, so that both sides of every street land in the same cell.
+
+    Returns (cuts, centres). Cell k holds the street centres[k] and runs from
+    cuts[k] to cuts[k+1]; a cut of None means that side is open and gets closed
+    later by the CB3 boundary. Interior cuts are mid-block lines - that is the
+    whole point of this function.
+
+    Zone dividers are the exception and stay on their own centreline. Houston,
+    Grand and East Broadway carry the three-zone split the dashboard already
+    draws, so moving them half a block would shift trees between zones and
+    change every zone total. They bound cells instead of sitting inside one,
+    which leaves them as the only streets whose two sides are still separated."""
     lines = region[family]
-    dropped = region.get(family + 'Dropped', [])
-    n_streets = len(lines) + len(dropped)
-    lead = next((d['name'] for d in dropped if d['before'] == 0), 'CB3 boundary')
-    trail = next((d['name'] for d in dropped if d['before'] >= n_streets - 1),
-                 'CB3 boundary')
-    return ([{'name': lead, 'line': None, 'open': True}]
-            + [dict(l, open=False) for l in lines]
-            + [{'name': trail, 'line': None, 'open': True}])
+    centres = [l for l in lines if l.get('source') != 'divider']
+    if not centres:
+        return [], []
+    cuts = [None] * (len(centres) + 1)
+    for k in range(len(centres) - 1):
+        cuts[k + 1] = midline(centres[k]['line'], centres[k + 1]['line'])
+    if lines[0].get('source') == 'divider':
+        cuts[0] = lines[0]['line']
+    if lines[-1].get('source') == 'divider':
+        cuts[-1] = lines[-1]['line']
+    return cuts, centres
 
 
 # -------------------------------------------------------------------- main --
@@ -254,6 +287,12 @@ def pretty(name):
         return w if len(w) == 1 else w.capitalize()
 
     return ' '.join(word(w) for w in name.split())
+
+
+def name_span(names):
+    """'E 14 ST', ..., 'E 13 ST' -> 'E 14th St to E 13th St'."""
+    first, last = pretty(names[0]), pretty(names[-1])
+    return first if first == last else '%s to %s' % (first, last)
 
 
 def main():
@@ -293,22 +332,24 @@ def main():
         if not region:
             continue
         sub = [t for t in trees if t['region'] == rid]
-        ew = edge_lines(region, 'ew')
-        ns = edge_lines(region, 'ns')
-        real_ew = [l for l in ew if not l['open']]
-        real_ns = [l for l in ns if not l['open']]
+        ew_cuts, ew_streets = cell_bands(region, 'ew')
+        ns_cuts, ns_streets = cell_bands(region, 'ns')
+        if not ew_streets or not ns_streets:
+            continue
 
-        # Bucket every tree into a block. A tree's row is how many E-W streets
-        # lie north of it; its column, how many N-S streets lie west of it.
-        # The +1 shifts past the open-ended entry at index 0.
-        blocks = collections.defaultdict(list)
+        # Bucket every tree into a cell. A cell is centred on one street and
+        # reaches half a block either side, so a tree's row is how many
+        # mid-block lines lie north of it. Only interior cuts count here: the
+        # outer two are the region's own dividers, which no tree crosses.
+        cells = collections.defaultdict(list)
         for t in sub:
-            north_of = sum(1 for l in real_ew if t['lat'] <= ew_lat(l['line'], t['lng']))
-            west_of = sum(1 for l in real_ns if t['lng'] >= ns_lng(l['line'], t['lat']))
-            blocks[(north_of, west_of)].append(t)
+            row = sum(1 for c in ew_cuts[1:-1] if t['lat'] <= ew_lat(c, t['lng']))
+            col = sum(1 for c in ns_cuts[1:-1] if t['lng'] >= ns_lng(c, t['lat']))
+            cells[(row, col)].append(t)
+        blocks = cells   # kept as `blocks` below: one cell is one block segment of work
 
         rows = sorted({r for r, _c in blocks})
-        print('\n=== %s (%s) zone %d: %d trees, %d occupied blocks across %d rows'
+        print('\n=== %s (%s) zone %d: %d trees, %d occupied cells across %d street rows'
               % (rid, region['label'], region['zone'], len(sub), len(blocks), len(rows)))
 
         # Bands of consecutive rows, then cut each band into runs of columns
@@ -342,7 +383,7 @@ def main():
             if cur:
                 chunks.append(cur)
 
-            for chunk in chunks:
+            for ci, chunk in enumerate(chunks):
                 r0, r1 = min(band), max(band) + 1
                 c0, c1 = min(chunk), max(chunk) + 1
                 members = [(r, c) for r in band for c in chunk if (r, c) in blocks]
@@ -350,17 +391,27 @@ def main():
                 if not tset:
                     continue
 
-                # An open-ended entry contributes no half-plane; the CB3
-                # boundary clip below is what closes that side.
+                # Names come from the cells that actually hold trees; the
+                # polygon runs to the region edge. Rows and columns at the
+                # rim are often empty - the FDR frontage, the far side of a
+                # park - and stopping the geometry there leaves bare gaps in
+                # the middle of a zone that look like something went wrong.
+                g_r0 = 0 if band_start == 0 else r0
+                g_r1 = len(ew_cuts) - 1 if band_start + ROWS_PER_BAND >= len(rows) else r1
+                g_c0 = 0 if ci == 0 else c0
+                g_c1 = len(ns_cuts) - 1 if ci == len(chunks) - 1 else c1
+
+                # A None cut is an open side; the CB3 boundary clip below is
+                # what closes it.
                 window = list(bbox)
-                if ew[r0]['line']:
-                    window = clip_halfplane(window, ew_halfplane(ew[r0]['line'], True))
-                if ew[r1]['line']:
-                    window = clip_halfplane(window, ew_halfplane(ew[r1]['line'], False))
-                if ns[c0]['line']:
-                    window = clip_halfplane(window, ns_halfplane(ns[c0]['line'], False))
-                if ns[c1]['line']:
-                    window = clip_halfplane(window, ns_halfplane(ns[c1]['line'], True))
+                if ew_cuts[g_r0]:
+                    window = clip_halfplane(window, ew_halfplane(ew_cuts[g_r0], True))
+                if ew_cuts[g_r1]:
+                    window = clip_halfplane(window, ew_halfplane(ew_cuts[g_r1], False))
+                if ns_cuts[g_c0]:
+                    window = clip_halfplane(window, ns_halfplane(ns_cuts[g_c0], False))
+                if ns_cuts[g_c1]:
+                    window = clip_halfplane(window, ns_halfplane(ns_cuts[g_c1], True))
                 for div_key, keep_south in REGION_BOUNDS[rid]:
                     if len(window) < 3:
                         break
@@ -375,16 +426,20 @@ def main():
                 zone = region['zone']
                 per_zone_count[zone] += 1
                 sid = '%d%s' % (zone, zone_letter(per_zone_count[zone] - 1))
-                north, south = pretty(ew[r0]['name']), pretty(ew[r1]['name'])
-                west, east = pretty(ns[c0]['name']), pretty(ns[c1]['name'])
-                label = '%s–%s, %s–%s' % (north, south, west, east)
+                # A sub-zone is named for the streets it CONTAINS, not the
+                # ones that bound it - which is the point of moving the edges
+                # mid-block. "E 14th St to E 13th St, Bowery to Ave A" means
+                # both sides of both streets, all the way across.
+                streets = name_span([s['name'] for s in ew_streets[r0:r1]])
+                avenues = name_span([s['name'] for s in ns_streets[c0:c1]])
+                label = '%s, %s' % (streets, avenues)
 
                 features.append({
                     'type': 'Feature',
                     'properties': {
                         'subzone_id': sid, 'zone': zone, 'region': rid,
                         'region_label': region['label'], 'label': label,
-                        'north': north, 'south': south, 'west': west, 'east': east,
+                        'streets': streets, 'avenues': avenues,
                         'blocks': len(members), 'tree_count': len(tset),
                         'area_m2': round(poly_area_m2(ring[:-1])),
                     },
@@ -429,6 +484,45 @@ def main():
             overlapping += 1
     print('validation: %d trees outside their own sub-zone polygon, '
           '%d inside more than one' % (outside, overlapping))
+
+    # What the mid-block boundaries cost. Every street now sits wholly inside
+    # one sub-zone, both sides together - but the boundary has to cross the
+    # network somewhere, and with the edges mid-block it crosses the streets
+    # running perpendicular to it, part-way along a block. Count the block
+    # segments that end up divided so the trade is visible rather than implied.
+    seg_of = {}
+    for rid in ('EV', 'LES', 'CH', 'TB'):
+        region = regions.get(rid)
+        if not region:
+            continue
+        for t in (x for x in trees if x['region'] == rid):
+            best = None
+            for family, lines in (('ew', region['ew']), ('ns', region['ns'])):
+                for idx, l in enumerate(lines):
+                    if family == 'ew':
+                        d = abs(t['lat'] - ew_lat(l['line'], t['lng'])) * M_PER_DEG_LAT
+                    else:
+                        d = abs(t['lng'] - ns_lng(l['line'], t['lat'])) * M_PER_DEG_LNG
+                    if best is None or d < best[0]:
+                        best = (d, family, idx)
+            _d, family, idx = best
+            cross = region['ns'] if family == 'ew' else region['ew']
+            if family == 'ew':
+                along = sum(1 for l in cross if t['lng'] >= ns_lng(l['line'], t['lat']))
+            else:
+                along = sum(1 for l in cross if t['lat'] <= ew_lat(l['line'], t['lng']))
+            seg_of[t['tree_id']] = (rid, family, idx, along)
+
+    by_seg = collections.defaultdict(set)
+    seg_trees = collections.Counter()
+    for tid, sid in by_tree.items():
+        by_seg[seg_of[tid]].add(sid)
+        seg_trees[seg_of[tid]] += 1
+    split = [s for s, ids in by_seg.items() if len(ids) > 1]
+    split_trees = sum(seg_trees[s] for s in split)
+    print('block segments: %d total, %d divided between two sub-zones '
+          '(%d trees, %.1f%%)'
+          % (len(by_seg), len(split), split_trees, 100.0 * split_trees / len(trees)))
 
     with open(OUT_GEOJSON, 'w') as f:
         json.dump({'type': 'FeatureCollection', 'features': features}, f)
