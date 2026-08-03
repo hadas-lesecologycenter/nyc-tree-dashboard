@@ -575,7 +575,15 @@ def main():
         seed_div = DIV_EBWAY if rid == 'TB' else DIV_HOUSTON
         seed_ew = math.degrees(math.atan2(seed_div[0] * M_PER_DEG_LAT, M_PER_DEG_LNG)) % 180
         ew_brg = scan_bearing(sub, seed_ew, span_deg=10.0 if rid == 'CH' else 25.0)
-        ns_brg = scan_bearing(sub, (ew_brg + 90.0) % 180.0)
+        # The N-S family is taken as exactly perpendicular rather than scanned
+        # on its own. Scanned independently, all four regions came out within
+        # half a degree of orthogonal except Grand-to-Division, which has only
+        # ~170 N-S-oriented trees to go on - few enough that a two-tree census
+        # change swung its peak by 4 degrees, shifted every candidate by most
+        # of a block, and handed each line the name of its neighbour. Deriving
+        # the angle from the well-anchored E-W fit costs nothing where the
+        # scan already agreed and makes the sparse region stable.
+        ns_brg = (ew_brg + 90.0) % 180.0
         print('  bearings: E-W %.1f deg, N-S %.1f deg (cross angle %.1f)'
               % (ew_brg, ns_brg, angle_dist(ew_brg, ns_brg)))
 

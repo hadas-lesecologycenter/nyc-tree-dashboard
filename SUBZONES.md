@@ -24,7 +24,7 @@ total moves. They are the only streets still split down the middle.
 | File | What it is |
 |---|---|
 | `data/subzones.geojson` | One polygon per sub-zone, clipped to the CB3 boundary |
-| `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` for all 5,315 live street trees |
+| `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` for all 5,308 live street trees |
 | `data/cb3-street-grid.json` | The named street centerlines everything above is built from |
 
 ## Rebuilding
@@ -57,17 +57,17 @@ centerline data ever lands in the repo, re-run both scripts against it.
 ## The sub-zones
 
 Each row lists the streets the crew works, both sides, and the avenues the run
-spans.
+spans. 28 sub-zones, 6-12 block segments (mean 8.6), 64-269 trees (mean 189).
 
 | ID | Zone | Segments | Trees | Streets | Across |
 |---|---|---|---|---|---|
 | **1A** | 1 | 8 | 156 | E 14th St to E 13th St | Bowery / 3rd Ave to Ave A |
 | **1B** | 1 | 7 | 93 | E 14th St to E 13th St | Ave B to FDR Dr |
 | **1C** | 1 | 8 | 251 | E 12th St to E 11th St | Bowery / 3rd Ave to Ave A |
-| **1D** | 1 | 6 | 137 | E 12th St to E 11th St | Ave B to Ave D |
-| **1E** | 1 | 8 | 211 | E 10th St to E 9th St | Bowery / 3rd Ave to Ave A |
+| **1D** | 1 | 6 | 135 | E 12th St to E 11th St | Ave B to Ave D |
+| **1E** | 1 | 8 | 212 | E 10th St to E 9th St | Bowery / 3rd Ave to Ave A |
 | **1F** | 1 | 8 | 227 | E 10th St to E 9th St | Ave B to FDR Dr |
-| **1G** | 1 | 8 | 224 | E 8th St / St Marks Pl to E 7th St | Bowery / 3rd Ave to Ave A |
+| **1G** | 1 | 8 | 223 | E 8th St / St Marks Pl to E 7th St | Bowery / 3rd Ave to Ave A |
 | **1H** | 1 | 6 | 198 | E 8th St / St Marks Pl to E 7th St | Ave B to Ave D |
 | **1I** | 1 | 8 | 167 | E 6th St to E 5th St | Bowery / 3rd Ave to Ave A |
 | **1J** | 1 | 7 | 197 | E 6th St to E 5th St | Ave B to FDR Dr |
@@ -76,16 +76,16 @@ spans.
 | **1M** | 1 | 8 | 220 | E 2nd St to E 1st St | Bowery / 3rd Ave to Ave A |
 | **1N** | 1 | 6 | 116 | E 2nd St to E 1st St | Ave B to FDR Dr |
 | **2A** | 2 | 10 | 269 | Stanton St to Rivington St | Chrystie St to Orchard St |
-| **2B** | 2 | 10 | 221 | Stanton St to Rivington St | Ludlow St to Clinton St |
+| **2B** | 2 | 10 | 220 | Stanton St to Rivington St | Ludlow St to Clinton St |
 | **2C** | 2 | 10 | 243 | Stanton St to Rivington St | Attorney St to Mangin St |
 | **2D** | 2 | 12 | 218 | Delancey St to Broome St | Chrystie St to Ludlow St |
 | **2E** | 2 | 12 | 202 | Delancey St to Broome St | Essex St to Ridge St |
 | **2F** | 2 | 8 | 111 | Delancey St to Broome St | Pitt St to Mangin St |
 | **3A** | 3 | 12 | 262 | Hester St to Canal St | Bowery to Essex St |
-| **3B** | 3 | 11 | 181 | Hester St to Canal St | Norfolk St to FDR Dr |
+| **3B** | 3 | 11 | 179 | Hester St to Canal St | Norfolk St to FDR Dr |
 | **3C** | 3 | 10 | 237 | Henry St to Madison St | Catherine St to Jefferson St |
 | **3D** | 3 | 8 | 268 | Henry St to Madison St | Clinton St to Jackson St |
 | **3E** | 3 | 10 | 177 | Monroe St to Cherry St | Catherine St to Jefferson St |
-| **3F** | 3 | 7 | 85 | Monroe St to Cherry St | Clinton St to Jackson St |
-| **3G** | 3 | 9 | 178 | Water St to South St | Catherine St to Jefferson St |
+| **3F** | 3 | 7 | 84 | Monroe St to Cherry St | Clinton St to Jackson St |
+| **3G** | 3 | 9 | 177 | Water St to South St | Catherine St to Jefferson St |
 | **3H** | 3 | 8 | 64 | Water St to South St | Clinton St to Jackson St |
