@@ -1320,6 +1320,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       transition: transform 0.12s;
     }
     #mobile-view-fab:active { transform: scale(0.93); }
+    /* It overlaps the assessment form's Submit button — never compete with it. */
+    body.ra-assess-open #mobile-view-fab { display: none; }
 
     /* Title and the map/table/stats switch stack instead of squeezing together */
     #ra-header-row { flex-wrap: wrap; gap: 8px; }
@@ -5093,14 +5095,30 @@ async function sheetsRead(sheetName) {
   } catch(e) { return null; }
 }
 
-async function sheetsWrite(sheetName, headers, items, rowFn) {
-  if (!TREE_CARE_SCRIPT_URL) return;
+// Throws on failure. Use this wherever the user is waiting on the save and needs
+// to be told when it did not happen — a silent failure in the field means the
+// assessment is simply lost.
+async function sheetsWriteOrThrow(sheetName, headers, items, rowFn) {
+  if (!TREE_CARE_SCRIPT_URL) throw new Error('No Google Sheet is connected, so there is nowhere to save this.');
+  const rows = [headers, ...items.map(rowFn)];
+  let res;
   try {
-    const rows = [headers, ...items.map(rowFn)];
-    await fetch(TREE_CARE_SCRIPT_URL, {
+    res = await fetch(TREE_CARE_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ sheet: sheetName, rows })
     });
+  } catch (e) {
+    throw new Error('Could not reach the Google Sheet — check your signal and try again.');
+  }
+  if (!res.ok) throw new Error('The Google Sheet rejected the save (HTTP ' + res.status + ').');
+  return res;
+}
+
+// Fire-and-forget variant for background syncs nobody is waiting on.
+async function sheetsWrite(sheetName, headers, items, rowFn) {
+  if (!TREE_CARE_SCRIPT_URL) return;
+  try {
+    await sheetsWriteOrThrow(sheetName, headers, items, rowFn);
   } catch(e) { console.error('Sheets write error:', e); }
 }
 
@@ -8463,8 +8481,9 @@ function raGetYoungTrees() {
 }
 
 function raGetPlantingRecord(tree) {
-  const addr = (tree.address || '').split(',')[0].toUpperCase().trim();
-  return PLANTINGS_DATA.find(p => p.street.toUpperCase() === addr) || null;
+  if (typeof PLANTINGS_DATA === 'undefined' || !Array.isArray(PLANTINGS_DATA)) return null;
+  const addr = ((tree && tree.address) || '').split(',')[0].toUpperCase().trim();
+  return PLANTINGS_DATA.find(p => p && p.street && p.street.toUpperCase() === addr) || null;
 }
 
 function raTreeId(tree) {
@@ -8907,7 +8926,7 @@ function raEditAssessment(timestamp) {
   document.getElementById('ra-date').value = a.date || new Date().toISOString().split('T')[0];
   document.getElementById('ra-notes').value = a.notes || '';
 
-  modal.style.display = 'flex';
+  raShowAssessModal(modal);
 }
 
 function raHandleAssessBtn() {
@@ -8952,7 +8971,7 @@ function raHandleAssessBtn() {
     document.getElementById('ra-notes').value = '';
   }
 
-  modal.style.display = 'flex';
+  raShowAssessModal(modal);
 }
 
 function raSelectRating(btn) {
@@ -8970,14 +8989,44 @@ function raSelectRating(btn) {
   }
 }
 
-function raCloseAssessModal() {
-  document.getElementById('ra-assess-modal').style.display = 'none';
+// The floating Health/Map button is pinned to the bottom-right corner, which on a
+// phone is exactly where the full-screen form's Submit button lands — a 44px tap
+// target sitting on the primary action, in the same purple. It has nothing to do
+// while the form is open, so take it out of the way.
+function raShowAssessModal(modal) {
+  modal.style.display = 'flex';
+  document.body.classList.add('ra-assess-open');
 }
 
+function raCloseAssessModal() {
+  document.getElementById('ra-assess-modal').style.display = 'none';
+  document.body.classList.remove('ra-assess-open');
+}
+
+// Everything here used to fail silently: an exception anywhere below threw out
+// of the handler before it could close the modal and before the submit button
+// was re-enabled, so the tap looked like it did nothing and every later tap hit
+// a disabled button. Nothing is allowed to fail quietly any more.
 async function raSubmitAssessment() {
+  const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
+  try {
+    await raSubmitAssessmentInner(submitBtn);
+  } catch (err) {
+    console.error('Assessment submit failed:', err);
+    alert('Could not save this assessment.\n\n' + ((err && err.message) || err) +
+          '\n\nYour entries are still filled in — please try again.');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+  }
+}
+
+async function raSubmitAssessmentInner(submitBtn) {
   const isEdit = !!_raEditingTimestamp;
   const tree = _raCurrentTree;
-  if (!isEdit && !tree) return;
+  if (!isEdit && !tree) {
+    alert('This form lost track of which tree it belongs to. Please close it, tap the tree again, and re-open the assessment.');
+    return;
+  }
 
   const getRating = field => {
     const group = document.querySelector('.ra-rating-group[data-field="' + field + '"]');
@@ -9007,9 +9056,9 @@ async function raSubmitAssessment() {
 
   const date  = document.getElementById('ra-date').value;
   const notes = document.getElementById('ra-notes').value.trim();
-  localStorage.setItem('_ra_assessor', assessorName);
+  // Remembering the name is a convenience; blocked storage must not block a save.
+  try { localStorage.setItem('_ra_assessor', assessorName); } catch (e) { /* private mode / storage full */ }
 
-  const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
 
   const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
@@ -9023,7 +9072,7 @@ async function raSubmitAssessment() {
         structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk
       });
     }
-    await sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
+    await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
     _raEditingTimestamp = null;
     raCloseAssessModal();
     if (tree) { raOpenPanel(tree); raRenderMap(); }
@@ -9045,7 +9094,7 @@ async function raSubmitAssessment() {
     };
 
     const allRecords = [...raAssessments, record];
-    await sheetsWrite('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
+    await sheetsWriteOrThrow('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
 
     raAssessments.push(record);
     raCloseAssessModal();
