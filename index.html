@@ -2494,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 9</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 10</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2580,18 +2580,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
       </div>
-      <!-- Overall -->
-      <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Overall Health Rating</div>
-        <div class="ra-rating-group ra-overall" data-field="overall">
-          <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">🟢 High</button>
-          <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">🟡 Medium</button>
-          <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">🔴 Low</button>
-          <button type="button" class="ra-rating-btn" data-val="dead" onclick="raSelectRating(this)">⚫ Dead</button>
-          <button type="button" class="ra-rating-btn" data-val="empty" onclick="raSelectRating(this)">🕳 Empty Pit</button>
-          <button type="button" class="ra-rating-btn" data-val="park" onclick="raSelectRating(this)">🚫 Park / Playground</button>
-        </div>
-      </div>
       <!-- Required care -->
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Required Care <span style="font-weight:400;color:var(--text3);text-transform:none">(check all that apply)</span></div>
@@ -2616,6 +2604,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <!-- Revealed only when Other is ticked. -->
         <input id="ra-care-other" type="text" placeholder="What other care is needed?"
           style="display:none;width:100%;box-sizing:border-box;margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
+      </div>
+      <!-- Overall -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Overall Health Rating</div>
+        <div class="ra-rating-group ra-overall" data-field="overall">
+          <button type="button" class="ra-rating-btn" data-val="low" onclick="raSelectRating(this)">🟢 High</button>
+          <button type="button" class="ra-rating-btn" data-val="medium" onclick="raSelectRating(this)">🟡 Medium</button>
+          <button type="button" class="ra-rating-btn" data-val="high" onclick="raSelectRating(this)">🔴 Low</button>
+          <button type="button" class="ra-rating-btn" data-val="dead" onclick="raSelectRating(this)">⚫ Dead</button>
+          <button type="button" class="ra-rating-btn" data-val="empty" onclick="raSelectRating(this)">🕳 Empty Pit</button>
+          <button type="button" class="ra-rating-btn" data-val="park" onclick="raSelectRating(this)">🚫 Park / Playground</button>
+        </div>
       </div>
       <!-- Notes -->
       <div style="margin-bottom:20px">
@@ -8576,29 +8576,16 @@ function raHideSubmitPrompt(dismissed) {
 
 // Called whenever an answer changes. Fires once, when the last required answer
 // lands — the moment the assessment is actually finished.
-// Answering the last rating is not the same as being finished — Required Care
-// and Notes come after it. Wait until the bottom of the form has actually been
-// reached, so the prompt never lands on top of a section still being filled in.
-function raFormAtBottom() {
-  const panel = document.querySelector('#ra-assess-modal > div');
-  if (!panel) return true;
-  return panel.scrollHeight - panel.scrollTop - panel.clientHeight < 60;
-}
-
+// Required Care sits above the overall rating, so the rating really is the last
+// step of the assessment and completing it is the signal to offer the submit.
 function raMaybePromptSubmit() {
   const assessModal = document.getElementById('ra-assess-modal');
   if (!assessModal || assessModal.style.display === 'none') return;
-  if (_raPromptDismissed || !raIsAssessmentComplete() || !raFormAtBottom()) return;
+  if (_raPromptDismissed || !raIsAssessmentComplete()) return;
   setTimeout(function () {
-    if (!_raPromptDismissed && raIsAssessmentComplete() && raFormAtBottom()) raShowSubmitPrompt();
+    if (!_raPromptDismissed && raIsAssessmentComplete()) raShowSubmitPrompt();
   }, 400);
 }
-
-// Scrolling to the end of a completed form is the "I'm done" signal.
-document.addEventListener('scroll', function (e) {
-  const panel = e.target;
-  if (panel && panel.parentElement && panel.parentElement.id === 'ra-assess-modal') raMaybePromptSubmit();
-}, true);
 let _raEditingTimestamp = null;
 let _raStatsYear = 'all';
 let _raInitialized = false;
