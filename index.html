@@ -1320,7 +1320,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       transition: transform 0.12s;
     }
     #mobile-view-fab:active { transform: scale(0.93); }
-    /* It overlaps the assessment form's Submit button — never compete with it. */
+    /* It overlaps the assessment form's action bar — never compete with it. */
     body.ra-assess-open #mobile-view-fab { display: none; }
 
     /* Title and the map/table/stats switch stack instead of squeezing together */
@@ -2493,7 +2493,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 7</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 8</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2598,8 +2598,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical"></textarea>
       </div>
       <div id="ra-modal-actions" style="display:flex;gap:8px">
+        <!-- Submitting happens in the centred prompt that comes up when the
+             assessment is finished, not from here. -->
         <button type="button" data-ra-action="cancel" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
-        <button type="button" data-ra-action="submit" onclick="raSubmitAssessment()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
       </div>
     </div>
   </div>
@@ -9203,21 +9204,27 @@ function raSelectRating(btn) {
       modal.classList.toggle('ra-empty-mode', btn.dataset.val === 'empty');
       modal.classList.toggle('ra-park-mode',  btn.dataset.val === 'park');
     }
-    // Changing the overall rating is a real re-think, so let the prompt back in.
-    _raPromptDismissed = false;
   }
+  // Submitting is only offered through the prompt now, so "Keep editing" must
+  // never be a dead end: carrying on with the form brings the prompt back.
+  _raPromptDismissed = false;
   raMaybePromptSubmit();
 }
 
-// The name is usually pre-filled, so this mostly matters the first time out.
+// Same reasoning for the other inputs — finishing the name, ticking a
+// stewardship box, or coming out of the notes field re-offers the prompt.
 document.addEventListener('change', function (e) {
-  if (e.target && e.target.id === 'ra-assessor') raMaybePromptSubmit();
+  const t = e.target;
+  if (!t) return;
+  if (t.id === 'ra-assessor' || t.id === 'ra-notes' || t.classList.contains('ra-stewardship-check')) {
+    _raPromptDismissed = false;
+    raMaybePromptSubmit();
+  }
 });
 
-// The floating Health/Map button is pinned to the bottom-right corner, which on a
-// phone is exactly where the full-screen form's Submit button lands — a 44px tap
-// target sitting on the primary action, in the same purple. It has nothing to do
-// while the form is open, so take it out of the way.
+// The floating Health/Map button is pinned to the bottom-right corner, right on
+// top of the full-screen form's action bar. It has nothing to do while the form
+// is open, so take it out of the way.
 function raShowAssessModal(modal) {
   // Pin the tree to the open form. _raCurrentTree is shared state that anything
   // closing the tree panel resets to null, and submitting used to just return
