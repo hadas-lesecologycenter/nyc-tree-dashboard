@@ -1384,12 +1384,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
       overscroll-behavior: contain;
     }
     /* 16px keeps iOS Safari from zooming in when a field is focused */
-    #ra-assessor, #ra-date, #ra-notes { font-size: 16px !important; padding: 11px 12px !important; }
+    #ra-assessor, #ra-date, #ra-notes, #ra-care-other { font-size: 16px !important; padding: 11px 12px !important; }
     .ra-rating-group { flex-wrap: wrap; gap: 8px; }
     .ra-rating-btn { min-height: 46px; font-size: 13px; flex: 1 1 30%; }
     .ra-overall { display: grid; grid-template-columns: 1fr 1fr; }
     .ra-overall .ra-rating-btn { min-height: 50px; font-size: 14px; }
-    .ra-stewardship-check { width: 22px !important; height: 22px !important; }
+    .ra-stewardship-check, .ra-care-check { width: 22px !important; height: 22px !important; }
     /* Submit stays reachable without scrolling back down a long form */
     #ra-modal-actions {
       position: sticky; bottom: 0;
@@ -2475,6 +2475,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Soil</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Growth</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Steward</th>
+                <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">Care Needed</th>
                 <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2)">Notes</th>
                 <th style="padding:10px 12px;border-bottom:1px solid var(--border)"></th>
               </tr>
@@ -2493,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 8</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 9</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2590,6 +2591,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="ra-rating-btn" data-val="empty" onclick="raSelectRating(this)">🕳 Empty Pit</button>
           <button type="button" class="ra-rating-btn" data-val="park" onclick="raSelectRating(this)">🚫 Park / Playground</button>
         </div>
+      </div>
+      <!-- Required care -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Required Care <span style="font-weight:400;color:var(--text3);text-transform:none">(check all that apply)</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+            <input type="checkbox" class="ra-care-check" value="pruning" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
+            ✂️ Pruning
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+            <input type="checkbox" class="ra-care-check" value="mulching" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
+            🪵 Mulching
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+            <input type="checkbox" class="ra-care-check" value="weeding" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
+            🌿 Weeding
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+            <input type="checkbox" class="ra-care-check" value="other" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
+            ➕ Other
+          </label>
+        </div>
+        <!-- Revealed only when Other is ticked. -->
+        <input id="ra-care-other" type="text" placeholder="What other care is needed?"
+          style="display:none;width:100%;box-sizing:border-box;margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none">
       </div>
       <!-- Notes -->
       <div style="margin-bottom:20px">
@@ -7757,7 +7783,7 @@ function renderRaTable() {
   const tbody = document.getElementById('ra-table-body');
   if (!tbody) return;
   if (!raAssessments.length) {
-    tbody.innerHTML = '<tr><td colspan="13" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025/2026 tree on the main map.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" style="padding:40px;text-align:center;color:var(--text3)">No assessments yet — submit one from the Map tab or by clicking a 2024/2025/2026 tree on the main map.</td></tr>';
     return;
   }
   const sorted = [...raAssessments].sort((a, b) => (b.date || b.timestamp || '') > (a.date || a.timestamp || '') ? 1 : -1);
@@ -7765,6 +7791,10 @@ function renderRaTable() {
   const rc = v => raRiskColor(v) || ({ good:'#22c55e', fair:'#f59e0b', poor:'#dc2626' }[v] || 'var(--text3)');
   const stewardLabel = v => (v || '').split(',').filter(Boolean).map(k =>
     ({ mulch:'Mulch', watering:'Water', guard:'Guard', signage:'Signage', plantings:'Plantings', care:'Care' }[k] || k)
+  ).join(', ') || '—';
+  const careLabel = (v, other) => (v || '').split(',').filter(Boolean).map(k =>
+    k === 'other' ? (other ? 'Other: ' + other : 'Other')
+                  : ({ pruning:'Pruning', mulching:'Mulching', weeding:'Weeding' }[k] || k)
   ).join(', ') || '—';
   tbody.innerHTML = sorted.map((a, i) => {
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
@@ -7783,6 +7813,7 @@ function renderRaTable() {
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.soilSite) + '">' + rl(a.soilSite) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:' + rc(a.growthVitality) + '">' + rl(a.growthVitality) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">' + stewardLabel(a.stewardship) + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:#d97706;font-size:11px;font-weight:600">' + careLabel(a.careNeeded, a.careOther) + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-style:italic;max-width:200px">' + (a.notes || '') + '</td>' +
       '<td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">' +
         '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;color:var(--text2)">✏️ Edit</button>' +
@@ -8461,7 +8492,7 @@ async function raFlushToSheet() {
   _raFlushing = true;
   const plural = n => n + ' assessment' + (n === 1 ? '' : 's');
   tcShowSyncStatus('⟳ Syncing ' + plural(pending) + '…');
-  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
+  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes','careNeeded','careOther'];
   try {
     await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
     const server = await sheetsRead('RiskAssessments');
@@ -8545,14 +8576,29 @@ function raHideSubmitPrompt(dismissed) {
 
 // Called whenever an answer changes. Fires once, when the last required answer
 // lands — the moment the assessment is actually finished.
+// Answering the last rating is not the same as being finished — Required Care
+// and Notes come after it. Wait until the bottom of the form has actually been
+// reached, so the prompt never lands on top of a section still being filled in.
+function raFormAtBottom() {
+  const panel = document.querySelector('#ra-assess-modal > div');
+  if (!panel) return true;
+  return panel.scrollHeight - panel.scrollTop - panel.clientHeight < 60;
+}
+
 function raMaybePromptSubmit() {
   const assessModal = document.getElementById('ra-assess-modal');
   if (!assessModal || assessModal.style.display === 'none') return;
-  if (_raPromptDismissed || !raIsAssessmentComplete()) return;
+  if (_raPromptDismissed || !raIsAssessmentComplete() || !raFormAtBottom()) return;
   setTimeout(function () {
-    if (!_raPromptDismissed && raIsAssessmentComplete()) raShowSubmitPrompt();
+    if (!_raPromptDismissed && raIsAssessmentComplete() && raFormAtBottom()) raShowSubmitPrompt();
   }, 400);
 }
+
+// Scrolling to the end of a completed form is the "I'm done" signal.
+document.addEventListener('scroll', function (e) {
+  const panel = e.target;
+  if (panel && panel.parentElement && panel.parentElement.id === 'ra-assess-modal') raMaybePromptSubmit();
+}, true);
 let _raEditingTimestamp = null;
 let _raStatsYear = 'all';
 let _raInitialized = false;
@@ -8726,7 +8772,7 @@ async function raLoadAssessments() {
   const deduped = raDeduplicateAssessments(raAssessments);
   if (deduped.length < raAssessments.length) {
     raAssessments = deduped;
-    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
+    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes','careNeeded','careOther'];
     sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
   }
   // Work recorded on this device that the Sheet has not confirmed comes back in,
@@ -9060,6 +9106,7 @@ function raRenderPanelHistory(tid) {
     growthVitality:'🌿 Growth & Vitality'
   };
   const STEWARD_LABELS = { mulch:'Mulch', watering:'Watering', guard:'Guard', signage:'Signage', plantings:'Plantings', care:'Recent care' };
+  const CARE_LABELS = { pruning:'Pruning', mulching:'Mulching', weeding:'Weeding' };
 
   hist.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment History</div>' +
@@ -9076,6 +9123,11 @@ function raRenderPanelHistory(tid) {
       const stewardRow = '<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0">' +
         '<span style="color:var(--text3)">🌱 Stewardship</span>' +
         '<span style="font-weight:600;color:' + (stewardSigns.length ? '#0f9e6e' : 'var(--text3)') + '">' + (stewardSigns.join(', ') || 'None observed') + '</span></div>';
+      const careNames = (a.careNeeded || '').split(',').filter(Boolean)
+        .map(k => k === 'other' ? (a.careOther ? 'Other: ' + a.careOther : 'Other') : (CARE_LABELS[k] || k));
+      const careRow = '<div style="display:flex;justify-content:space-between;gap:8px;font-size:10px;padding:2px 0">' +
+        '<span style="color:var(--text3);flex-shrink:0">🛠 Care needed</span>' +
+        '<span style="font-weight:600;text-align:right;color:' + (careNames.length ? '#d97706' : 'var(--text3)') + '">' + (careNames.join(', ') || 'None') + '</span></div>';
       const ts = (a.timestamp || '').replace(/'/g, "\\'");
       return '<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-bottom:8px;border-left:3px solid ' + rc + '">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
@@ -9088,6 +9140,7 @@ function raRenderPanelHistory(tid) {
         '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>' +
         indRows +
         stewardRow +
+        careRow +
         (a.notes ? '<div style="font-size:10px;color:var(--text2);margin-top:6px;font-style:italic">' + a.notes + '</div>' : '') +
       '</div>';
     }).join('');
@@ -9104,6 +9157,39 @@ function raSetStewardshipChecks(value) {
   document.querySelectorAll('.ra-stewardship-check').forEach(cb => {
     cb.checked = selected.has(cb.value);
   });
+}
+
+function raSetCareChecks(value, otherDetail) {
+  const selected = new Set((value || '').split(',').filter(Boolean));
+  document.querySelectorAll('.ra-care-check').forEach(cb => {
+    cb.checked = selected.has(cb.value);
+  });
+  const field = document.getElementById('ra-care-other');
+  if (field) field.value = otherDetail || '';
+  raSyncCareOther();
+}
+
+// The detail box only exists while "Other" is ticked; unticking clears it so a
+// stale detail can never be filed against care that was not asked for.
+function raSyncCareOther() {
+  const other = document.querySelector('.ra-care-check[value="other"]');
+  const field = document.getElementById('ra-care-other');
+  if (!field) return;
+  if (other && other.checked) {
+    field.style.display = 'block';
+  } else {
+    field.style.display = 'none';
+    field.value = '';
+  }
+}
+
+function raGetCareNeeded() {
+  return Array.from(document.querySelectorAll('.ra-care-check:checked')).map(c => c.value).join(',');
+}
+
+function raGetCareOther() {
+  const field = document.getElementById('ra-care-other');
+  return field ? field.value.trim() : '';
 }
 
 function raEditAssessment(timestamp) {
@@ -9137,6 +9223,7 @@ function raEditAssessment(timestamp) {
     if (btn) btn.classList.add('selected');
   });
   raSetStewardshipChecks(a.stewardship);
+  raSetCareChecks(a.careNeeded, a.careOther);
   if (a.overallRisk === 'dead')  modal.classList.add('ra-dead-mode');
   if (a.overallRisk === 'empty') modal.classList.add('ra-empty-mode');
 
@@ -9165,6 +9252,7 @@ function raHandleAssessBtn() {
   modal.classList.remove('ra-dead-mode');
   document.querySelectorAll('#ra-assess-modal .ra-rating-btn').forEach(b => b.classList.remove('selected'));
   raSetStewardshipChecks('');
+  raSetCareChecks('', '');
 
   const existing = raLatestAssessment(raTreeId(tree));
   if (existing) {
@@ -9177,6 +9265,7 @@ function raHandleAssessBtn() {
       if (btn) btn.classList.add('selected');
     });
     raSetStewardshipChecks(existing.stewardship);
+    raSetCareChecks(existing.careNeeded, existing.careOther);
     if (existing.overallRisk === 'dead')  modal.classList.add('ra-dead-mode');
     if (existing.overallRisk === 'empty') modal.classList.add('ra-empty-mode');
     if (existing.overallRisk === 'park')  modal.classList.add('ra-park-mode');
@@ -9216,7 +9305,9 @@ function raSelectRating(btn) {
 document.addEventListener('change', function (e) {
   const t = e.target;
   if (!t) return;
-  if (t.id === 'ra-assessor' || t.id === 'ra-notes' || t.classList.contains('ra-stewardship-check')) {
+  if (t.classList.contains('ra-care-check')) raSyncCareOther();
+  if (t.id === 'ra-assessor' || t.id === 'ra-notes' || t.id === 'ra-care-other' ||
+      t.classList.contains('ra-stewardship-check') || t.classList.contains('ra-care-check')) {
     _raPromptDismissed = false;
     raMaybePromptSubmit();
   }
@@ -9302,6 +9393,8 @@ function raSubmitAssessmentInner() {
   const growthVitality = getRating('growthVitality');
   const stewardship    = Array.from(document.querySelectorAll('.ra-stewardship-check:checked')).map(c => c.value).join(',');
   const overallRisk    = getRating('overall');
+  const careNeeded     = raGetCareNeeded();
+  const careOther      = raGetCareOther();
 
   if (!overallRisk) {
     alert('Please select an overall health rating before submitting.');
@@ -9327,7 +9420,8 @@ function raSubmitAssessmentInner() {
     if (idx !== -1) {
       raAssessments[idx] = Object.assign({}, raAssessments[idx], {
         assessorName, date, notes,
-        structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk
+        structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk,
+        careNeeded, careOther
       });
       raRememberLocally(raAssessments[idx]);
     }
@@ -9347,7 +9441,8 @@ function raSubmitAssessmentInner() {
       season: plantRec ? plantRec.season : String(yr),
       plantYear: String(yr),
       assessorName, date,
-      structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk, notes
+      structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk, notes,
+      careNeeded, careOther
     };
 
     raAssessments.push(record);
