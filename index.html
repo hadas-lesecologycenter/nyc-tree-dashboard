@@ -2493,7 +2493,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 6</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 7</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2598,13 +2598,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical"></textarea>
       </div>
       <div id="ra-modal-actions" style="display:flex;gap:8px">
-        <button type="button" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
-        <button type="button" onclick="raSubmitAssessment()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
+        <button type="button" data-ra-action="cancel" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" data-ra-action="submit" onclick="raSubmitAssessment()" style="flex:2;padding:10px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
       </div>
     </div>
   </div>
 
 </main>
+
+<!-- Submit confirmation. Deliberately centred on the screen and kept out of the
+     assessment form's scroll container: the bottom strip of a phone is the one
+     place where browser chrome, system gesture areas and floating controls all
+     compete for the same pixels, so the primary action does not live there. -->
+<div id="ra-confirm-modal" style="display:none;position:fixed;inset:0;height:100dvh;background:rgba(0,0,0,0.55);z-index:10050;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
+  <div style="background:var(--bg);border-radius:16px;width:100%;max-width:380px;padding:24px;box-shadow:0 10px 50px rgba(0,0,0,0.35);text-align:center">
+    <div style="font-size:36px;line-height:1;margin-bottom:10px">🌳</div>
+    <h3 style="font-family:'Lora',serif;font-size:19px;font-weight:700;margin-bottom:6px;color:var(--text)">Ready to submit?</h3>
+    <div id="ra-confirm-summary" style="font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.55"></div>
+    <button type="button" data-ra-action="submit"
+      style="display:block;width:100%;min-height:56px;padding:14px;background:#7b3fa0;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
+    <button type="button" data-ra-action="keep-editing"
+      style="display:block;width:100%;min-height:46px;margin-top:10px;background:none;border:1px solid var(--border);color:var(--text2);border-radius:10px;font-size:14px;font-family:'Nunito',sans-serif;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none">Keep editing</button>
+  </div>
+</div>
 
 <!-- Mobile has no nav bar, so this floating button is the way in and out of
      Health Assessment on a phone. Hidden on desktop, where the header nav works. -->
@@ -8391,6 +8407,151 @@ let _raCurrentTree = null;
 // The tree the open assessment form belongs to, held separately so that closing
 // the tree panel mid-form cannot strand the submit.
 let _raModalTree = null;
+
+// ===== Local-first assessment storage =====
+// The Google Sheet is a sync target, not the save. An assessment is recorded on
+// this device the moment it is submitted, so a dead spot in the field, a stalled
+// request or a broken endpoint cannot cost a volunteer their work — and none of
+// that can make the Submit button appear to do nothing.
+const RA_LOCAL_KEY = '_ra_local_assessments';
+let _raSubmitting = false;
+let _raFlushing = false;
+
+function raReadLocal() {
+  try { return JSON.parse(localStorage.getItem(RA_LOCAL_KEY) || '[]'); } catch (e) { return []; }
+}
+
+function raWriteLocal(list) {
+  try { localStorage.setItem(RA_LOCAL_KEY, JSON.stringify(list)); return true; }
+  catch (e) { console.error('Local assessment store failed:', e); return false; }
+}
+
+// Keyed by timestamp, which is unique per submission and is also what comes back
+// from the Sheet, so re-reading the server can never duplicate a record.
+function raRememberLocally(record) {
+  const list = raReadLocal().filter(r => r.timestamp !== record.timestamp);
+  list.push(Object.assign({}, record, { _synced: false }));
+  if (!raWriteLocal(list)) {
+    alert('This phone would not let the app store the assessment locally, so it is only held in memory. Keep this tab open until it syncs.');
+  }
+}
+
+function raPendingCount() { return raReadLocal().filter(r => !r._synced).length; }
+
+// Anything this device recorded that the Sheet has not confirmed still belongs
+// on the map and in the table.
+function raMergeLocalIntoMemory() {
+  const seen = new Set(raAssessments.map(r => r.timestamp));
+  raReadLocal().forEach(r => {
+    if (seen.has(r.timestamp)) return;
+    const copy = Object.assign({}, r);
+    delete copy._synced;
+    raAssessments.push(copy);
+  });
+}
+
+// Push the table, then read it back to confirm the Sheet really has it. The
+// confirmation is the point: a write here can fail in ways that look exactly
+// like success, which is how assessments went missing before.
+async function raFlushToSheet() {
+  if (_raFlushing) return;
+  const pending = raPendingCount();
+  if (!pending) return;
+  _raFlushing = true;
+  const plural = n => n + ' assessment' + (n === 1 ? '' : 's');
+  tcShowSyncStatus('⟳ Syncing ' + plural(pending) + '…');
+  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
+  try {
+    await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
+    const server = await sheetsRead('RiskAssessments');
+    if (!server) throw new Error('could not read the Sheet back to confirm the save');
+    const confirmed = new Set(server.map(r => r.timestamp));
+    const list = raReadLocal().map(r => confirmed.has(r.timestamp) ? Object.assign({}, r, { _synced: true }) : r);
+    raWriteLocal(list);
+    const left = list.filter(r => !r._synced).length;
+    if (left) tcShowSyncStatus('⚠ ' + plural(left) + ' not in the Sheet yet — kept on this phone', true);
+    else tcShowSyncStatus('✓ Synced to Google Sheets');
+  } catch (e) {
+    console.error('Assessment sync failed:', e);
+    tcShowSyncStatus('⚠ Saved on this phone — will sync when you have signal', true);
+  } finally {
+    _raFlushing = false;
+  }
+}
+
+window.addEventListener('online', raFlushToSheet);
+
+// The form's buttons are driven from here rather than from their onclick
+// attributes. This listener is on the document in the capture phase, so it runs
+// before the event can reach the button at all — nothing about the button's own
+// state can stop it. The inline onclick stays as a fallback for the case where
+// this listener never registered; stopPropagation keeps exactly one of the two
+// from running, never both.
+document.addEventListener('click', function (e) {
+  const el = e.target && e.target.closest ? e.target.closest('[data-ra-action]') : null;
+  if (!el) return;
+  e.stopPropagation();
+  const action = el.dataset.raAction;
+  if (action === 'submit') raSubmitAssessment();
+  else if (action === 'cancel') raCloseAssessModal();
+  else if (action === 'keep-editing') raHideSubmitPrompt(true);
+}, true);
+
+// ===== Submit prompt =====
+// The assessment ends by asking to submit, in the middle of the screen, instead
+// of relying on a button parked in the bottom corner.
+let _raPromptDismissed = false;
+
+function raFormRating(field) {
+  const group = document.querySelector('.ra-rating-group[data-field="' + field + '"]');
+  const sel = group && group.querySelector('.ra-rating-btn.selected');
+  return sel ? sel.dataset.val : '';
+}
+
+function raIsAssessmentComplete() {
+  const overall = raFormRating('overall');
+  if (!overall) return false;
+  const nameField = document.getElementById('ra-assessor');
+  if (!nameField || !nameField.value.trim()) return false;
+  // Dead / empty pit / park do not need the four indicators.
+  if (overall === 'dead' || overall === 'empty' || overall === 'park') return true;
+  return ['structural', 'pestDisease', 'soilSite', 'growthVitality'].every(raFormRating);
+}
+
+function raShowSubmitPrompt() {
+  const modal = document.getElementById('ra-confirm-modal');
+  if (!modal) return;
+  const tree = _raModalTree || _raCurrentTree;
+  const label = {
+    low: '🟢 High', medium: '🟡 Medium', high: '🔴 Low',
+    dead: '⚫ Dead', empty: '🕳 Empty Pit', park: '🚫 Park / Playground'
+  }[raFormRating('overall')] || '';
+  const summary = document.getElementById('ra-confirm-summary');
+  if (summary) {
+    summary.innerHTML =
+      (tree ? '<strong>' + ((tree.spc_common || tree.spc_latin || 'Tree')) + '</strong><br>' +
+              (tree.address || '') + '<br>' : '') +
+      'Overall health: <strong>' + label + '</strong>';
+  }
+  modal.style.display = 'flex';
+}
+
+function raHideSubmitPrompt(dismissed) {
+  const modal = document.getElementById('ra-confirm-modal');
+  if (modal) modal.style.display = 'none';
+  if (dismissed) _raPromptDismissed = true;
+}
+
+// Called whenever an answer changes. Fires once, when the last required answer
+// lands — the moment the assessment is actually finished.
+function raMaybePromptSubmit() {
+  const assessModal = document.getElementById('ra-assess-modal');
+  if (!assessModal || assessModal.style.display === 'none') return;
+  if (_raPromptDismissed || !raIsAssessmentComplete()) return;
+  setTimeout(function () {
+    if (!_raPromptDismissed && raIsAssessmentComplete()) raShowSubmitPrompt();
+  }, 400);
+}
 let _raEditingTimestamp = null;
 let _raStatsYear = 'all';
 let _raInitialized = false;
@@ -8567,7 +8728,11 @@ async function raLoadAssessments() {
     const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
     sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
   }
+  // Work recorded on this device that the Sheet has not confirmed comes back in,
+  // then we retry pushing it. Nothing recorded in the field is ever only remote.
+  raMergeLocalIntoMemory();
   raRenderMap();
+  raFlushToSheet();
 }
 
 function raDeduplicateAssessments(list) {
@@ -9038,8 +9203,16 @@ function raSelectRating(btn) {
       modal.classList.toggle('ra-empty-mode', btn.dataset.val === 'empty');
       modal.classList.toggle('ra-park-mode',  btn.dataset.val === 'park');
     }
+    // Changing the overall rating is a real re-think, so let the prompt back in.
+    _raPromptDismissed = false;
   }
+  raMaybePromptSubmit();
 }
+
+// The name is usually pre-filled, so this mostly matters the first time out.
+document.addEventListener('change', function (e) {
+  if (e.target && e.target.id === 'ra-assessor') raMaybePromptSubmit();
+});
 
 // The floating Health/Map button is pinned to the bottom-right corner, which on a
 // phone is exactly where the full-screen form's Submit button lands — a 44px tap
@@ -9058,18 +9231,22 @@ function raShowAssessModal(modal) {
   // never finished (a stalled save, an error in an older build) left it dead
   // for the rest of the page's life, through every reopen. Submit state belongs
   // to one attempt, so reset it every time the form opens.
-  const submitBtn = modal.querySelector('button[onclick="raSubmitAssessment()"]');
-  if (submitBtn) {
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '';
-    submitBtn.textContent = '📋 Submit Assessment';
-  }
+  document.querySelectorAll('[data-ra-action="submit"]').forEach(b => {
+    b.disabled = false;
+    b.style.opacity = '';
+    b.textContent = '📋 Submit Assessment';
+  });
+
+  _raSubmitting = false;
+  _raPromptDismissed = false;
+  raHideSubmitPrompt(false);
 
   modal.style.display = 'flex';
   document.body.classList.add('ra-assess-open');
 }
 
 function raCloseAssessModal() {
+  raHideSubmitPrompt(false);
   document.getElementById('ra-assess-modal').style.display = 'none';
   document.body.classList.remove('ra-assess-open');
   _raModalTree = null;
@@ -9080,27 +9257,24 @@ function raCloseAssessModal() {
 // was re-enabled, so the tap looked like it did nothing and every later tap hit
 // a disabled button. Nothing is allowed to fail quietly any more.
 async function raSubmitAssessment() {
-  const submitBtn = document.querySelector('#ra-assess-modal button[onclick="raSubmitAssessment()"]');
+  if (_raSubmitting) return;
+  _raSubmitting = true;
   // Change the label the instant the tap lands, before anything can go wrong.
-  // If this never appears, the tap is not reaching the button at all; if it
-  // sticks, the save is hanging. Either way the screen now says which.
-  if (submitBtn) submitBtn.textContent = '⏳ Saving…';
+  const allSubmits = document.querySelectorAll('[data-ra-action="submit"]');
+  allSubmits.forEach(b => { b.textContent = '⏳ Saving…'; });
   try {
-    await raSubmitAssessmentInner(submitBtn);
+    raSubmitAssessmentInner();
   } catch (err) {
     console.error('Assessment submit failed:', err);
     alert('Could not save this assessment.\n\n' + ((err && err.message) || err) +
           '\n\nYour entries are still filled in — please try again.');
   } finally {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '';
-      submitBtn.textContent = '📋 Submit Assessment';
-    }
+    _raSubmitting = false;
+    allSubmits.forEach(b => { b.style.opacity = ''; b.textContent = '📋 Submit Assessment'; });
   }
 }
 
-async function raSubmitAssessmentInner(submitBtn) {
+function raSubmitAssessmentInner() {
   const isEdit = !!_raEditingTimestamp;
   const tree = _raCurrentTree || _raModalTree;
   if (!isEdit && !tree) {
@@ -9139,20 +9313,17 @@ async function raSubmitAssessmentInner(submitBtn) {
   // Remembering the name is a convenience; blocked storage must not block a save.
   try { localStorage.setItem('_ra_assessor', assessorName); } catch (e) { /* private mode / storage full */ }
 
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.6'; }
-
-  const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes'];
-
+  // From here on nothing may fail. The assessment is recorded in memory and on
+  // this device, and the form closes — the network is not in this path at all.
   if (isEdit) {
-    // Update existing record in-place
     const idx = raAssessments.findIndex(x => x.timestamp === _raEditingTimestamp);
     if (idx !== -1) {
       raAssessments[idx] = Object.assign({}, raAssessments[idx], {
         assessorName, date, notes,
         structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk
       });
+      raRememberLocally(raAssessments[idx]);
     }
-    await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
     _raEditingTimestamp = null;
     raCloseAssessModal();
     if (tree) { raOpenPanel(tree); raRenderMap(); }
@@ -9160,11 +9331,10 @@ async function raSubmitAssessmentInner(submitBtn) {
   } else {
     const yr = parseInt(tree.tree_cen_date || tree.planteddate || 0);
     const plantRec = raGetPlantingRecord(tree);
-    const timestamp = new Date().toISOString();
-    const treeId = raTreeId(tree);
 
     const record = {
-      timestamp, treeId,
+      timestamp: new Date().toISOString(),
+      treeId: raTreeId(tree),
       address: tree.address || '',
       species: tree.spc_common || tree.spc_latin || '',
       season: plantRec ? plantRec.season : String(yr),
@@ -9173,16 +9343,16 @@ async function raSubmitAssessmentInner(submitBtn) {
       structural, pestDisease, soilSite, growthVitality, stewardship, overallRisk, notes
     };
 
-    const allRecords = [...raAssessments, record];
-    await sheetsWriteOrThrow('RiskAssessments', headers, allRecords, r => headers.map(h => r[h] || ''));
-
     raAssessments.push(record);
+    raRememberLocally(record);
     raCloseAssessModal();
     raOpenPanel(tree);
     raRenderMap();
   }
 
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+  // Push to the Sheet afterwards, on its own time. Failure here costs nothing —
+  // the record is already safe and the next flush will pick it up again.
+  raFlushToSheet();
 }
 </script>
 </body>
