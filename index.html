@@ -2494,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 15</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 16</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2627,10 +2627,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button type="button" class="ra-rating-btn" data-val="park" onclick="raSelectRating(this)">🚫 Park / Playground</button>
         </div>
       </div>
-      <div id="ra-modal-actions" style="display:flex;gap:8px">
-        <!-- Submitting happens in the centred prompt that comes up when the
-             assessment is finished, not from here. -->
-        <button type="button" data-ra-action="cancel" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Discard draft</button>
+      <!-- Stacked, submit on top: the primary action gets the position furthest
+           from the bottom edge, where browser chrome and system gestures sit.
+           Discarding is guarded by a confirm, since it now takes that edge. -->
+      <div id="ra-modal-actions" style="display:flex;flex-direction:column;gap:8px">
+        <button type="button" data-ra-action="submit" onclick="raSubmitAssessment()" style="width:100%;box-sizing:border-box;padding:12px;background:#7b3fa0;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none">📋 Submit Assessment</button>
+        <button type="button" data-ra-action="cancel" onclick="raDiscardAssessment()" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;appearance:none">Discard draft</button>
       </div>
     </div>
   </div>
@@ -8578,7 +8580,7 @@ document.addEventListener('click', function (e) {
   e.stopPropagation();
   const action = el.dataset.raAction;
   if (action === 'submit') raSubmitAssessment();
-  else if (action === 'cancel') raCloseAssessModal();
+  else if (action === 'cancel') raDiscardAssessment();
   else if (action === 'keep-editing') raHideSubmitPrompt(true);
 }, true);
 
@@ -9384,7 +9386,7 @@ function raShowAssessModal(modal) {
   // "Cancel" reads as though it might delete the assessment. It only throws away
   // what is on the form, so say which of the two it is — reopening a tree that
   // already has an assessment edits that one, and this leaves it untouched.
-  const cancelBtn = modal.querySelector('[data-ra-action="cancel"]');
+  const cancelBtn = modal.querySelector('#ra-modal-actions [data-ra-action="cancel"]');
   if (cancelBtn) {
     cancelBtn.textContent = _raEditingTimestamp ? 'Discard changes' : 'Discard draft';
     cancelBtn.title = _raEditingTimestamp
@@ -9398,6 +9400,31 @@ function raShowAssessModal(modal) {
 
   modal.style.display = 'flex';
   document.body.classList.add('ra-assess-open');
+}
+
+function raFormHasInput() {
+  if (document.querySelector('#ra-assess-modal .ra-rating-btn.selected')) return true;
+  if (document.querySelector('.ra-stewardship-check:checked')) return true;
+  if (document.querySelector('.ra-care-check:checked')) return true;
+  const notes = document.getElementById('ra-notes');
+  if (notes && notes.value.trim()) return true;
+  const careOther = document.getElementById('ra-care-other');
+  if (careOther && careOther.value.trim()) return true;
+  return false;
+}
+
+// Discard now sits on the bottom edge of the screen, which is the easiest place
+// on a phone to hit by accident, and it throws away a whole assessment. Ask
+// first if there is anything to lose — and say plainly what is and is not kept,
+// since "cancel" here has been read as though it might delete the submission.
+function raDiscardAssessment() {
+  if (raFormHasInput()) {
+    const msg = _raEditingTimestamp
+      ? 'Discard your changes?\n\nThe assessment already submitted for this tree is kept.'
+      : 'Discard this assessment?\n\nNothing will be recorded for this tree.';
+    if (!confirm(msg)) return;
+  }
+  raCloseAssessModal();
 }
 
 function raCloseAssessModal() {
