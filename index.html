@@ -2494,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 10</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 11</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -8482,6 +8482,41 @@ function raMergeLocalIntoMemory() {
   });
 }
 
+// A record can be confirmed into the Sheet and then wiped out later by another
+// device writing back a copy of the table that predates it. Anything of ours
+// that is no longer on the Sheet goes back in the queue rather than being
+// quietly lost — this is what makes the clobber self-healing.
+function raRequeueMissing(server) {
+  const present = new Set(server.map(r => r.timestamp));
+  let requeued = 0;
+  const list = raReadLocal().map(r => {
+    if (r._synced && !present.has(r.timestamp)) {
+      requeued++;
+      return Object.assign({}, r, { _synced: false });
+    }
+    return r;
+  });
+  if (requeued) raWriteLocal(list);
+  return requeued;
+}
+
+// Fold the Sheet's current contents into memory before writing it back, so a
+// full-table write extends what is there instead of replacing it with a list
+// that may be minutes out of date. Our own records win over the server's copy
+// (this device made or edited them); everything else the server knows about is
+// adopted so that writing cannot delete it.
+function raAdoptServerRecords(server) {
+  const mine = new Set(raReadLocal().map(r => r.timestamp));
+  const byTs = new Map();
+  server.forEach(r => byTs.set(r.timestamp, r));
+  let adopted = server.filter(r => !raAssessments.some(x => x.timestamp === r.timestamp)).length;
+  raAssessments.forEach(r => {
+    if (mine.has(r.timestamp) || !byTs.has(r.timestamp)) byTs.set(r.timestamp, r);
+  });
+  raAssessments = Array.from(byTs.values());
+  return adopted;
+}
+
 // Push the table, then read it back to confirm the Sheet really has it. The
 // confirmation is the point: a write here can fail in ways that look exactly
 // like success, which is how assessments went missing before.
@@ -8494,6 +8529,12 @@ async function raFlushToSheet() {
   tcShowSyncStatus('⟳ Syncing ' + plural(pending) + '…');
   const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes','careNeeded','careOther'];
   try {
+    // Read → merge → write, so another device's work is never overwritten. This
+    // narrows the collision window from "since the page was opened" to the few
+    // seconds of this flush.
+    const current = await sheetsRead('RiskAssessments');
+    if (current && raAdoptServerRecords(current)) raRenderMap();
+
     await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
     const server = await sheetsRead('RiskAssessments');
     if (!server) throw new Error('could not read the Sheet back to confirm the save');
@@ -8761,6 +8802,12 @@ async function raLoadAssessments() {
     raAssessments = deduped;
     const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes','careNeeded','careOther'];
     sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
+  }
+  // Anything of ours the Sheet has lost since we last confirmed it — another
+  // device overwriting the table, a manual edit — is queued for re-sending.
+  if (rows) {
+    const requeued = raRequeueMissing(rows);
+    if (requeued) console.warn('Re-queued ' + requeued + ' assessment(s) missing from the Sheet');
   }
   // Work recorded on this device that the Sheet has not confirmed comes back in,
   // then we retry pushing it. Nothing recorded in the field is ever only remote.
