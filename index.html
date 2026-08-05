@@ -2494,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 11</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 12</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2626,7 +2626,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="ra-modal-actions" style="display:flex;gap:8px">
         <!-- Submitting happens in the centred prompt that comes up when the
              assessment is finished, not from here. -->
-        <button type="button" data-ra-action="cancel" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" data-ra-action="cancel" onclick="raCloseAssessModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Discard draft</button>
       </div>
     </div>
   </div>
@@ -4980,9 +4980,17 @@ function tcShowSyncStatus(msg, isError) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'tc-sync-status';
+    // pointer-events:none is load-bearing. This toast is fixed to the
+    // bottom-right corner and is never removed — it only fades to opacity 0,
+    // and a transparent element still swallows taps. Appended to <body> after
+    // the modals and sharing their z-index, it painted on top of them, so any
+    // action that had ever shown a toast left an invisible pad over the
+    // bottom-right of every screen after it. That is what made the assessment
+    // form's Submit button dead to the touch while Cancel, further left,
+    // kept working. It reports status; it must never receive input.
     el.style.cssText = 'position:fixed;bottom:16px;right:16px;padding:8px 14px;border-radius:8px;' +
       'font-size:12px;font-weight:600;font-family:Nunito,sans-serif;z-index:9999;' +
-      'box-shadow:0 2px 12px rgba(0,0,0,0.18);transition:opacity 0.4s';
+      'box-shadow:0 2px 12px rgba(0,0,0,0.18);transition:opacity 0.4s;pointer-events:none';
     document.body.appendChild(el);
   }
   el.textContent = msg;
@@ -9368,6 +9376,17 @@ function raShowAssessModal(modal) {
     b.style.opacity = '';
     b.textContent = '📋 Submit Assessment';
   });
+
+  // "Cancel" reads as though it might delete the assessment. It only throws away
+  // what is on the form, so say which of the two it is — reopening a tree that
+  // already has an assessment edits that one, and this leaves it untouched.
+  const cancelBtn = modal.querySelector('[data-ra-action="cancel"]');
+  if (cancelBtn) {
+    cancelBtn.textContent = _raEditingTimestamp ? 'Discard changes' : 'Discard draft';
+    cancelBtn.title = _raEditingTimestamp
+      ? 'Close without saving. The assessment already submitted for this tree is kept.'
+      : 'Close without saving. Nothing is recorded for this tree.';
+  }
 
   _raSubmitting = false;
   _raPromptDismissed = false;
