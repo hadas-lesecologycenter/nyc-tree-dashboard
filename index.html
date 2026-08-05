@@ -2494,7 +2494,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <!-- Build tag: lets a field user tell us whether their phone is running
              the current page or a cached copy, without opening a console. -->
-        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 13</span></h2>
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700">📋 Health Assessment <span style="font-family:'Nunito',sans-serif;font-size:10px;font-weight:400;color:var(--text3)">build 14</span></h2>
         <button type="button" onclick="raCloseAssessModal()" style="background:none;border:1px solid var(--border);color:var(--text2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
       <div id="ra-modal-tree-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
@@ -2595,6 +2595,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
             <input type="checkbox" class="ra-care-check" value="weeding" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
             🌿 Weeding
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
+            <input type="checkbox" class="ra-care-check" value="root-buried" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
+            🪴 Root base buried
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);cursor:pointer">
             <input type="checkbox" class="ra-care-check" value="other" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#d97706">
@@ -7802,7 +7806,7 @@ function renderRaTable() {
   ).join(', ') || '—';
   const careLabel = (v, other) => (v || '').split(',').filter(Boolean).map(k =>
     k === 'other' ? (other ? 'Other: ' + other : 'Other')
-                  : ({ pruning:'Pruning', mulching:'Mulching', weeding:'Weeding' }[k] || k)
+                  : ({ pruning:'Pruning', mulching:'Mulching', weeding:'Weeding', 'root-buried':'Root base buried' }[k] || k)
   ).join(', ') || '—';
   tbody.innerHTML = sorted.map((a, i) => {
     const bg = i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)';
@@ -9148,7 +9152,7 @@ function raRenderPanelHistory(tid) {
     growthVitality:'🌿 Growth & Vitality'
   };
   const STEWARD_LABELS = { mulch:'Mulch', watering:'Watering', guard:'Guard', signage:'Signage', plantings:'Plantings', care:'Recent care' };
-  const CARE_LABELS = { pruning:'Pruning', mulching:'Mulching', weeding:'Weeding' };
+  const CARE_LABELS = { pruning:'Pruning', mulching:'Mulching', weeding:'Weeding', 'root-buried':'Root base buried' };
 
   hist.innerHTML =
     '<div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Assessment History</div>' +
