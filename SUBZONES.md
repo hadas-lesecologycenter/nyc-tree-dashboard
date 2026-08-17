@@ -74,8 +74,23 @@ both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
 layer in the map's Program Layers panel shows all 189 of them.
 
-Two things make the segmentation legible rather than just present:
+Every segment carries a **stable identifier** — `1A-03` — so a block can be
+assigned, radioed and reported by name. Within a sub-zone they are numbered
+streets first, north to south, then avenues west to east. The numbering is by
+rank, not by any fitted value, so re-running the fit cannot renumber a crew's
+assignment under them. `data/subzones.csv` carries a `segmentId` on every tree,
+so "which trees are in 1A-03" is a lookup rather than a guess.
 
+Three things make the segmentation legible rather than merely present:
+
+* **A segment is drawn as the corridor it covers**, wide enough to hold its own
+  two sidewalk rows, so the shaded area *is* the set of trees in the segment
+  rather than a bar balanced on the centreline with the trees off to the sides.
+  Width comes from the segment's own outermost tree, not a fixed figure — a
+  fixed half right of way was tried and left 28 trees outside their own
+  segment, because the Riis frontage on E 10th St stands 9 m out, past the
+  property line. Each corridor is clipped to its sub-zone, which is a truer
+  bound than any fixed one and stops it spilling into a neighbour.
 * **Each segment stops at the cross street's property line**, so it covers the
   block *face* and the intersections are left blank. Drawn end to end they were
   one unbroken line down E 12th St and no colour told you it was four blocks of
@@ -84,16 +99,12 @@ Two things make the segmentation legible rather than just present:
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twelve sub-zones
   is well past what colour can distinguish, so hue is spent on the one thing
-  nothing else shows. Which segment is which comes from the geometry, the hover
-  tooltip, and a count badge that appears on each segment from zoom 17 in.
+  nothing else shows.
 
-Each segment sits on its own street's fitted centreline under a white casing,
-so it stays legible over the basemap's roads and over a sub-zone wash.
-
-2,379 of zone 1's 2,597 street trees sit on a segment. The other 218 stand
-where there is no street line to put them on — inside housing superblocks, in
-courtyards and on paths — so they belong to a sub-zone but to no segment
-within it.
+All 2,379 trees that belong to a segment fall inside their own corridor. Nine
+of them fall inside a second one as well, all in 1L, where Houston St converges
+with E 1st St and the two roads genuinely run close enough that their corridors
+overlap.
 
 ## Where the lines come from
 
@@ -133,8 +144,8 @@ street names and as a starting guess for each fit.
 | File | What it is |
 |---|---|
 | `data/subzones.geojson` | One polygon per defined sub-zone, clipped to CB3 |
-| `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` |
-| `data/subzone-segments.geojson` | One LineString per block segment, for the map layer |
+| `data/subzones.csv` | `treeId,subzoneId,segmentId,zone,latitude,longitude,species` |
+| `data/subzone-segments.geojson` | One Polygon per block segment, for the map layer |
 | `data/cb3-street-lines.json` | The fitted centrelines, for inspection |
 | `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
 

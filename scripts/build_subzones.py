@@ -51,8 +51,8 @@ data/subzones.geojson holds only the bands that have been drawn.
 Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
   data/subzones.geojson      — one Polygon per sub-zone, clipped to CB3
-  data/subzones.csv          — treeId,subzoneId,zone,latitude,longitude,species
-  data/subzone-segments.geojson — one LineString per block segment of work
+  data/subzones.csv          — treeId,subzoneId,segmentId,zone,lat,lng,species
+  data/subzone-segments.geojson — one Polygon per block segment of work
 """
 
 import collections
@@ -721,7 +721,9 @@ PROBE_M = 4.0
 
 
 def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
-    """The part of a street between `lo` and `hi` that lies inside `ring`.
+    """The stretch of a street between `lo` and `hi` that lies inside `ring`.
+
+    Returns the trimmed (lo, hi) along the street, or None.
 
     Sampled rather than solved: the ring is CB3's boundary clipped, so it is
     simple but not convex, and a segment can in principle enter and leave it.
@@ -732,16 +734,12 @@ def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
     the sub-zone, because a street can BE the boundary: Houston St is 1K's
     southern edge, so its centreline lies exactly along the ring and testing it
     directly returned nonsense - a 14 m stub for a segment holding 21 trees."""
-    def at(x):
-        return ((x, street['slope'] * x + street['offset']) if axis == 'ew'
-                else (street['slope'] * x + street['offset'], x))
-
     du, dn = (1.0, street['slope']) if axis == 'ew' else (street['slope'], 1.0)
     h = math.hypot(du, dn)
     px, pn = -dn / h, du / h            # unit normal to the street
 
     def inside(x):
-        u, n = at(x)
+        u, n = point_on(street, axis, x)
         side = 1.0 if (centre[0] - u) * px + (centre[1] - n) * pn > 0 else -1.0
         probe = (u + side * PROBE_M * px, n + side * PROBE_M * pn)
         return point_in_poly(*frame.to_lnglat(*probe), poly=ring)
@@ -756,7 +754,7 @@ def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
         if f and run is None:
             run = i
         if (not f or i == steps) and run is not None:
-            end = i if not f else i
+            end = i
             if best is None or (end - run) > (best[1] - best[0]):
                 best = (run, end)
             run = None
@@ -778,13 +776,41 @@ def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
     x1 = hi if i1 >= steps else edge_at(i1 - 1, i1)
     if x1 - x0 < 4.0:            # shorter than a single tree pit
         return None
-    return [frame.to_lnglat(*at(x0)), frame.to_lnglat(*at(x1))]
+    return x0, x1
 
 
-MIN_SEG_M = 12.0        # never trim a segment shorter than this
+def point_on(street, axis, x):
+    return ((x, street['slope'] * x + street['offset']) if axis == 'ew'
+            else (street['slope'] * x + street['offset'], x))
 
 
-def segment_feature(frame, walk, ordered, ring, name, axis, step, tree_count, spec):
+def perp_dist(street, axis, u, n):
+    """How far a tree stands from a street's centreline, in metres."""
+    off = (n - (street['slope'] * u + street['offset']) if axis == 'ew'
+           else u - (street['slope'] * n + street['offset']))
+    return abs(off) / math.hypot(1.0, street['slope'])
+
+
+CORRIDOR_MARGIN_M = 2.0     # air around the outermost tree in a segment
+CORRIDOR_MIN_M = 5.0
+MIN_SEG_M = 12.0            # never trim a segment shorter than this
+
+
+def corridor(frame, street, axis, x0, x1, half):
+    """The block face as a quadrilateral: the run from x0 to x1, `half` metres
+    to either side of the centreline."""
+    du, dn = (1.0, street['slope']) if axis == 'ew' else (street['slope'], 1.0)
+    h = math.hypot(du, dn)
+    nx, ny = -dn / h, du / h
+    ring = []
+    for x, s in ((x0, 1), (x1, 1), (x1, -1), (x0, -1)):
+        u, n = point_on(street, axis, x)
+        ring.append(frame.to_lnglat(u + s * half * nx, n + s * half * ny))
+    return [ring + [ring[0]]]
+
+
+def segment_feature(frame, walk, ordered, ring, name, axis, step, members, spec,
+                    seg_id):
     street = walk[name]
     pts = [frame.to_un(*p) for p in ring[:-1]]
     centre = (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
@@ -818,25 +844,58 @@ def segment_feature(frame, walk, ordered, ring, name, axis, step, tree_count, sp
     # every counted segment gets drawn; the count and the map must agree.
     full = (lo, hi)
     lo, hi = lo + trims[0], hi - trims[1]
-    line = trim_to_ring(frame, street, axis, lo, hi, ring, centre)
-    if line is None:
-        line = trim_to_ring(frame, street, axis, full[0], full[1], ring, centre)
-    if line is None:
+    span = trim_to_ring(frame, street, axis, lo, hi, ring, centre)
+    if span is None:
+        span = trim_to_ring(frame, street, axis, full[0], full[1], ring, centre)
+    if span is None:
         return None
+
+    # The corridor is drawn wide enough to hold the segment's own trees, so
+    # what it covers IS what a crew works: both sidewalk rows of that block,
+    # not a bar balanced on the centreline with the trees left to the side.
+    # Nothing caps the width here - the corridor is clipped to the sub-zone
+    # below, which is a truer bound than any fixed one and keeps it from
+    # spilling into a neighbour. A fixed cap of half a right of way was tried
+    # and left 28 trees outside their own segment: the Riis frontage on E 10th
+    # St stands 9 m out, past the property line, and Ave C's rows are wider
+    # still.
+    reach = max((perp_dist(street, axis, t['u'], t['n']) for t in members),
+                default=0.0)
+    half = max(CORRIDOR_MIN_M, reach + CORRIDOR_MARGIN_M)
+
+    # Reach along the block for corner trees that sit past the property line,
+    # but never past the cross street's centreline, so the gap at the corner
+    # narrows rather than closing.
+    along = [t['u'] if axis == 'ew' else t['n'] for t in members]
+    x0, x1 = span
+    if along:
+        x0 = max(full[0], min(x0, min(along) - CORRIDOR_MARGIN_M))
+        x1 = min(full[1], max(x1, max(along) + CORRIDOR_MARGIN_M))
+    span = (x0, x1)
+
+    # Clipped to the sub-zone, so a corridor stops where its sub-zone does -
+    # at the district boundary, and at the line it shares with its neighbour.
+    quad = corridor(frame, street, axis, span[0], span[1], half)[0]
+    clipped = clip_to_convex(ring, quad[:-1])
+    if len(clipped) >= 3:
+        quad = clipped + [clipped[0]]
+
     ends = [pretty(names[step - 1]) if step > 0 else 'the district edge',
             pretty(names[step]) if step < len(names) else 'the district edge']
     return {
         'type': 'Feature',
         'properties': {
+            'segment_id': seg_id,
             'subzone_id': spec['id'],
             'zone': spec['zone'],
             'street': pretty(name),
             'from': ends[0],
             'to': ends[1],
             'label': '%s, %s to %s' % (pretty(name), ends[0], ends[1]),
-            'tree_count': tree_count,
+            'tree_count': len(members),
         },
-        'geometry': {'type': 'LineString', 'coordinates': line},
+        'geometry': {'type': 'Polygon',
+                     'coordinates': [quad]},
     }
 
 
@@ -949,6 +1008,7 @@ def main():
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
     features, csv_rows, edge_records, segments = [], [], [], []
+    tree_segment = {}
     print('\n=== sub-zones')
     for spec in SUBZONES:
         rid = spec['region']
@@ -1083,11 +1143,27 @@ def main():
                             else t['n'] >= g['slope'] * t['u'] + g['offset']))
             segs[(name, axis, step)].append(t)
 
-        for (name, axis, step), members in sorted(segs.items()):
+        # A stable identifier per segment: streets first, north to south, then
+        # avenues west to east, numbered within the sub-zone. Ordering is by
+        # RANK - which street comes before which - not by any fitted value, so
+        # re-running the fit cannot renumber a crew's assignment under them.
+        def seg_order(key):
+            name, axis, step = key
+            return (0 if axis == 'ew' else 1, walk[name]['offset'], step)
+
+        for i, key in enumerate(sorted(segs, key=seg_order), start=1):
+            name, axis, step = key
+            members = segs[key]
+            seg_id = '%s-%02d' % (spec['id'], i)
+            for t in members:
+                tree_segment[t['tree_id']] = seg_id
             seg = segment_feature(frame, walk, ordered, ring, name, axis, step,
-                                  len(members), spec)
+                                  members, spec, seg_id)
             if seg:
                 segments.append(seg)
+            else:
+                print('  WARNING: %s (%s) has no drawable geometry'
+                      % (seg_id, pretty(name)))
 
         def in_order(names, axis):
             return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
@@ -1112,8 +1188,8 @@ def main():
         features.append({'type': 'Feature', 'properties': props,
                          'geometry': {'type': 'Polygon', 'coordinates': [ring]}})
         for t in inside:
-            csv_rows.append((t['tree_id'], spec['id'], spec['zone'],
-                             t['lat'], t['lng'], t['species']))
+            csv_rows.append((t['tree_id'], spec['id'], tree_segment.get(t['tree_id'], ''),
+                             spec['zone'], t['lat'], t['lng'], t['species']))
 
         print('  %-4s %2d blocks %4d trees   bounds: %s' % (spec['id'], len(segs),
                                                             len(inside), spec['bounds']))
@@ -1170,7 +1246,8 @@ def main():
         json.dump({'type': 'FeatureCollection', 'features': segments}, fh)
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.writer(fh)
-        w.writerow(['treeId', 'subzoneId', 'zone', 'latitude', 'longitude', 'species'])
+        w.writerow(['treeId', 'subzoneId', 'segmentId', 'zone',
+                    'latitude', 'longitude', 'species'])
         w.writerows(csv_rows)
     print('\nwrote %s (%d sub-zones), %s (%d trees) and %s (%d segments)'
           % (os.path.relpath(OUT_GEOJSON, ROOT), len(features),

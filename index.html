@@ -605,7 +605,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 /* Sub-zone id sitting on the polygon itself, so a crew can read its
    assignment off the map without opening anything. */
-.segment-count {
+.segment-id {
   font-family: 'Nunito', sans-serif;
   font-size: 10px;
   font-weight: 700;
@@ -4589,6 +4589,9 @@ const SEGMENT_BINS = [
   { max: 29,  color: '#184f95', label: '20–29' },
   { max: Infinity, color: '#0d366b', label: '30+' },
 ];
+// Every segment carries a stable identifier — "1A-03" — so a block can be
+// assigned, radioed and reported by name. It is the ID that goes on the map;
+// the tree count is what colour is for.
 const SEGMENT_LABEL_ZOOM = 17;
 
 function segmentColor(n) {
@@ -4606,32 +4609,37 @@ async function initSegmentsLayer() {
   segmentsData.features.forEach(f => {
     const p = f.properties;
     const color = segmentColor(p.tree_count);
-    // A white casing under every segment, so a bar stays legible over the
-    // basemap's own road fill and over a sub-zone wash of the same hue.
-    L.geoJSON(f, { style: { color: '#ffffff', weight: 9, opacity: 0.9, lineCap: 'butt' } })
-      .addTo(segmentsLayer);
-    L.geoJSON(f, { style: { color, weight: 5, opacity: 1, lineCap: 'butt' } })
-      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:210px">
-        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧱 ${p.label}</div>
-        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides</div>
+    // The corridor covers the block's two sidewalk rows, so what is shaded IS
+    // the set of trees in the segment. A white edge keeps neighbouring
+    // corridors apart where they meet at a corner.
+    L.geoJSON(f, {
+      style: { color: '#ffffff', weight: 1.5, opacity: 0.95,
+               fillColor: color, fillOpacity: 0.6 },
+    })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:220px">
+        <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;color:#2c2a24">🧱 ${p.segment_id}</div>
+        <div style="font-size:12px;color:#2c2a24;margin-top:2px">${p.label}</div>
+        <div style="font-size:12px;color:#2c2a24;margin-top:4px">${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides</div>
         <div style="font-size:11px;color:#6b6456;margin-top:4px">Sub-Zone ${p.subzone_id} · Zone ${p.zone}</div>
       </div>`)
-      .bindTooltip(`${p.label} — ${p.tree_count} trees`, { sticky: true })
+      .bindTooltip(`${p.segment_id} · ${p.label} — ${p.tree_count} trees`, { sticky: true })
       .addTo(segmentsLayer);
 
-    const c = f.geometry.coordinates;
-    const mid = [(c[0][1] + c[1][1]) / 2, (c[0][0] + c[1][0]) / 2];
-    L.marker(mid, {
+    const ring = f.geometry.coordinates[0];
+    let lng = 0, lat = 0;
+    ring.slice(0, -1).forEach(c => { lng += c[0]; lat += c[1]; });
+    const n = ring.length - 1;
+    L.marker([lat / n, lng / n], {
       interactive: false,
-      icon: L.divIcon({ className: 'segment-count', html: String(p.tree_count),
-                        iconSize: [26, 16], iconAnchor: [13, 8] }),
+      icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
+                        iconSize: [44, 16], iconAnchor: [22, 8] }),
     }).addTo(segmentLabels);
   });
   console.log(`Block segments: ${segmentsData.features.length} loaded`);
 }
 
-// Counts are shown only once the map is zoomed in far enough for them not to
-// collide — a number on all 189 at once is noise, not a label.
+// Segment IDs are shown only once the map is zoomed in far enough for them not
+// to collide — 189 labels at once is noise, not a label.
 function syncSegmentLabels() {
   if (!segmentsVisible || !segmentLabels) return;
   const show = mapInstance.getZoom() >= SEGMENT_LABEL_ZOOM;
