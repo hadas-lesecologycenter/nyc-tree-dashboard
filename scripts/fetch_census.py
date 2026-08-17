@@ -32,12 +32,30 @@ APP_TOKEN  = os.environ.get('SOCRATA_APP_TOKEN', '')  # optional but avoids rate
 # Required fields the app depends on (in 2015-census naming)
 REQUIRED = {'latitude', 'longitude', 'spc_common'}
 
+# The app's priority tiers are driven entirely by planting year (see calcPriority()
+# in index.html): Tier 3 is "planted 2023–2026". Only the live Forestry dataset
+# carries a planting date — the 2015 census has no such column — so data without
+# it silently collapses the whole tier system into a DBH split with zero Tier 3
+# trees. Treat its absence as a failed fetch rather than writing degraded data.
+PLANTING_DATE_FIELDS = ('tree_cen_date', 'planteddate')
+
+# Refuse to overwrite census.json if the new fetch returns less than this
+# fraction of the trees already on disk — a collapse that large means the
+# upstream query degraded, not that CB3 lost thousands of trees.
+MIN_TREE_COUNT_RATIO = 0.6
+
 # CB3 NTA names — confirmed from existing census data (most precise filter)
 CB3_NTA_NAMES = ('Lower East Side', 'East Village', 'Chinatown')
 
 # CB3 filter strategies to try in order (Socrata SoQL $where expressions).
 # The real community board column is 'cb_num' (confirmed from API output).
-CB3_WHERE_VARIANTS = [
+#
+# These are 2015-census columns. The Forestry dataset has none of them — its
+# only columns are objectid, dbh, genusspecies, geometry, location, globalid,
+# plantingspaceglobalid, tpcondition, tpstructure, createddate, updateddate,
+# planteddate — so every one of these returns HTTP 400 against it. Keep the
+# two lists separate so neither dataset burns retries on impossible queries.
+CENSUS_WHERE_VARIANTS = [
     "cb_num='3' AND borocode='1'",
     "cb_num=3 AND borocode=1",
     "cb_num='3' AND boroname='Manhattan'",
@@ -45,8 +63,17 @@ CB3_WHERE_VARIANTS = [
     (f"latitude > {CB3_LAT[0]} AND latitude < {CB3_LAT[1]} "
      f"AND longitude > {CB3_LNG[0]} AND longitude < {CB3_LNG[1]} "
      f"AND boroname='Manhattan'"),
-    # Forestry dataset uses 'geometry' as the geo column (confirmed from probe)
-    f'within_box(geometry, {CB3_LAT[0]}, {CB3_LNG[0]}, {CB3_LAT[1]}, {CB3_LNG[1]})',
+]
+
+# Socrata's signature is within_box(geo_col, nwLat, nwLon, seLat, seLon) — the
+# north-west corner first, then the south-east. That means the *higher* latitude
+# leads. Passing them the other way round describes an inverted box that matches
+# nothing, which is what previously pushed every run onto the 2015 fallback.
+_NW_LAT, _NW_LNG = CB3_LAT[1], CB3_LNG[0]
+_SE_LAT, _SE_LNG = CB3_LAT[0], CB3_LNG[1]
+FORESTRY_WHERE_VARIANTS = [
+    f'within_box(geometry, {_NW_LAT}, {_NW_LNG}, {_SE_LAT}, {_SE_LNG})',
+    f'within_box(location, {_NW_LAT}, {_NW_LNG}, {_SE_LAT}, {_SE_LNG})',
 ]
 
 # ── Field normalisation maps ──────────────────────────────────────────────────
@@ -130,9 +157,9 @@ def fetch(dataset_id, params):
             time.sleep(5 * (attempt + 1))
 
 
-def try_cb3_filters(dataset_id):
+def try_cb3_filters(dataset_id, variants):
     """Try each CB3 filter strategy in turn; return rows from the first that works."""
-    for where in CB3_WHERE_VARIANTS:
+    for where in variants:
         try:
             rows = fetch(dataset_id, {'$where': where, '$limit': LIMIT})
             if isinstance(rows, list) and rows:
@@ -284,7 +311,7 @@ def fetch_forestry():
         print(f'  SODA API not available: {e}')
 
     if soda_works:
-        rows = try_cb3_filters(FORESTRY_ID)
+        rows = try_cb3_filters(FORESTRY_ID, FORESTRY_WHERE_VARIANTS)
         if rows:
             print(f'  SODA query returned {len(rows)} rows')
             normalised = [normalise_forestry(r) for r in rows]
@@ -397,10 +424,60 @@ def join_tree_type_data(trees, planting_spaces):
 
 def fetch_census_2015():
     print('Using 2015 Street Tree Census (fallback)…')
-    rows = try_cb3_filters(CENSUS_ID)
+    rows = try_cb3_filters(CENSUS_ID, CENSUS_WHERE_VARIANTS)
     if not rows:
         raise ValueError('No rows returned from any filter strategy')
     return filter_to_cb3(rows)
+
+
+# ── Write guard ───────────────────────────────────────────────────────────────
+
+def count_with_planting_date(trees):
+    return sum(
+        1 for t in trees
+        if any(str(t.get(f) or '').strip() for f in PLANTING_DATE_FIELDS)
+    )
+
+
+def check_not_degraded(trees, out_path):
+    """Compare a fetch against the census.json already on disk.
+
+    Returns a list of reasons the new data is worse than what we have. An empty
+    list means it is safe to write. The point is that a degraded upstream
+    response must fail the job loudly instead of quietly replacing good data —
+    the 2015 fallback in particular has no planting date at all, which silently
+    zeroes out every Tier 3 tree in the dashboard.
+    """
+    if not os.path.exists(out_path):
+        return []
+    try:
+        with open(out_path) as f:
+            old = json.load(f)
+    except Exception as e:
+        print(f'  Could not read existing census.json for comparison: {e}')
+        return []
+    if not old:
+        return []
+
+    reasons = []
+
+    floor = int(len(old) * MIN_TREE_COUNT_RATIO)
+    if len(trees) < floor:
+        reasons.append(
+            f'tree count collapsed: {len(trees)} new vs {len(old)} existing '
+            f'(floor is {floor})'
+        )
+
+    old_dated = count_with_planting_date(old)
+    new_dated = count_with_planting_date(trees)
+    if old_dated and not new_dated:
+        reasons.append(
+            f'planting dates disappeared: {old_dated} trees had one '
+            f'({" or ".join(PLANTING_DATE_FIELDS)}), now 0 — every Tier 3 '
+            f'tree would vanish from the dashboard'
+        )
+
+    return reasons
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -439,12 +516,26 @@ def main():
             sys.exit(1)
 
     out_path = os.path.abspath(OUT_PATH)
+
+    problems = check_not_degraded(trees, out_path)
+    if problems:
+        print(f'\nRefusing to overwrite census.json with data from {source}:')
+        for p in problems:
+            print(f'  ✗ {p}')
+        print('\nThe existing census.json has been left untouched. This usually '
+              'means the Forestry Tree Points dataset was unavailable and the '
+              'fetch fell back to the 2015 census, which carries no planting '
+              'dates. Re-run once NYC Open Data recovers.')
+        sys.exit(1)
+
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, 'w') as f:
         json.dump(trees, f, separators=(',', ':'))
 
     size_kb = os.path.getsize(out_path) / 1024
+    dated = count_with_planting_date(trees)
     print(f'\nSaved {len(trees)} trees ({size_kb:.0f} KB) to {out_path}')
+    print(f'  {dated} trees carry a planting date')
     print(f'Source: {source}')
 
 
