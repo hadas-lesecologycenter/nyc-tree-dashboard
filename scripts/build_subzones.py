@@ -44,9 +44,9 @@ way, which puts it on the property line - "immediately north of E 10th St" in
 the literal sense - and nudged further out if a tree stands there, because a
 right of way is a constant and a street's planting is not. See EDGE_CLEAR_M.
 
-Sub-zones 1A to 1L are defined, covering the whole of zone 1 - E 14th St down
-to E Houston St. Zones 2 and 3 are still to come, and until they arrive
-data/subzones.geojson holds only the bands that have been drawn.
+Sub-zones 1A to 1L cover zone 1, E 14th St down to E Houston St, and 2A to 2F
+cover zone 2, Houston down to Grand St. Zone 3 is still to come, and until it
+arrives data/subzones.geojson holds only what has been drawn.
 
 Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
@@ -284,6 +284,63 @@ SUBZONES = [
         'east': CB3_EDGE,
         'bounds': 'Ave C to the East River, E 4th St to E Houston St',
     },
+
+    # ---- zone 2, the Lower East Side: Houston St down to Grand St ----------
+    # Two bands, split on Delancey St, which is the one street here anybody
+    # navigates by and which cuts the zone 800 trees to 463. The north band
+    # takes four sub-zones and the south two, so all six land in the 150-260
+    # range zone 1 settled at rather than forcing the same three columns onto
+    # both. The column lines - Allen, Essex, Clinton - are the wide, named
+    # streets a crew would recognise, and Essex is shared by both bands so it
+    # runs unbroken through the zone.
+    {
+        'id': '2A', 'zone': 2, 'region': 'LES',
+        'north': DIVIDER + 'houston',
+        'south': 'DELANCEY ST',
+        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
+        'east': 'ELDRIDGE ST',
+        'bounds': 'Chrystie St to Eldridge St, E Houston St to Delancey St',
+    },
+    {
+        'id': '2B', 'zone': 2, 'region': 'LES',
+        'north': DIVIDER + 'houston',
+        'south': 'DELANCEY ST',
+        'west': 'ELDRIDGE ST',
+        'east': 'ESSEX ST',
+        'bounds': 'Allen St to Essex St, E Houston St to Delancey St',
+    },
+    {
+        'id': '2C', 'zone': 2, 'region': 'LES',
+        'north': DIVIDER + 'houston',
+        'south': 'DELANCEY ST',
+        'west': 'ESSEX ST',
+        'east': 'CLINTON ST',
+        'bounds': 'Norfolk St to Clinton St, E Houston St to Delancey St',
+    },
+    {
+        'id': '2D', 'zone': 2, 'region': 'LES',
+        'north': DIVIDER + 'houston',
+        'south': 'DELANCEY ST',
+        'west': 'CLINTON ST',
+        'east': CB3_EDGE,
+        'bounds': 'Attorney St to the East River, E Houston St to Delancey St',
+    },
+    {
+        'id': '2E', 'zone': 2, 'region': 'LES',
+        'north': 'DELANCEY ST',
+        'south': DIVIDER + 'grand',
+        'west': CB3_EDGE,
+        'east': 'ESSEX ST',
+        'bounds': 'Chrystie St to Essex St, Delancey St to Grand St',
+    },
+    {
+        'id': '2F', 'zone': 2, 'region': 'LES',
+        'north': 'DELANCEY ST',
+        'south': DIVIDER + 'grand',
+        'west': 'ESSEX ST',
+        'east': CB3_EDGE,
+        'bounds': 'Norfolk St to the East River, Delancey St to Grand St',
+    },
 ]
 
 
@@ -459,9 +516,15 @@ def find_rows(pts, seed, slope):
     That pair is what a street looks like from above, and nothing in between
     can merge them.
 
-    `pts` are (along, across) metre pairs, already de-trended by `slope`.
-    Returns the two row centres, or None."""
-    sel = [p[1] - slope * p[0] for p in pts if abs(p[1] - seed) <= HALF_WINDOW_M]
+    `pts` are (along, across) metre pairs; `slope` is the bearing to de-trend
+    by. Returns the two row centres in de-trended terms, or None.
+
+    Both the window and the values are de-trended. Testing the RAW coordinate
+    against the seed while reporting the de-trended one is the same thing on a
+    grid the frame is aligned to, and 165 m adrift on one that is not - it put
+    every Lower East Side avenue two blocks west of itself."""
+    sel = [d for d in (p[1] - slope * p[0] for p in pts)
+           if abs(d - seed) <= HALF_WINDOW_M]
     if len(sel) < 12:
         return None
     lo, hi = min(sel), max(sel)
@@ -517,7 +580,8 @@ def fit_street(pts, seed, slope, free_slope):
     for centre in found:
         members = [p for p in pts
                    if abs((p[1] - slope * p[0]) - centre) <= ROW_KERNEL_M
-                   and abs(p[1] - seed) <= HALF_WINDOW_M + ROW_KERNEL_M]
+                   and abs((p[1] - slope * p[0]) - seed)
+                   <= HALF_WINDOW_M + ROW_KERNEL_M]
         if len(members) < 5:
             return None
         if free_slope:
@@ -547,6 +611,29 @@ def median(vals):
     s = sorted(vals)
     k = len(s)
     return s[k // 2] if k % 2 else (s[k // 2 - 1] + s[k // 2]) / 2.0
+
+
+def family_slope(pts, axis):
+    """The bearing a region's streets run at, measured off the trees.
+
+    The row finder de-trends by this before looking for rows, and it cannot
+    start from zero: the frame is aligned to the East Village grid, so zero is
+    right there and nowhere else. The Lower East Side sits 7 degrees off it -
+    slope -0.124 - which smears a row across 60 m of the search window and
+    leaves the fit with nothing to lock onto. Half of zone 2's trees ended up
+    on no street at all.
+
+    Scored by how sharply the cross-coordinate clusters once de-trended: at the
+    true bearing every row collapses to a spike, so the sum of squared bin
+    counts peaks. Coarse pass then a fine one."""
+    def score(slope):
+        vals = [(n - slope * u) if axis == 'ew' else (u - slope * n) for u, n in pts]
+        hist = collections.Counter(int(v // 1.0) for v in vals)
+        return sum(c * c for c in hist.values())
+
+    coarse = max((score(k / 1000.0), k / 1000.0) for k in range(-400, 401, 2))[1]
+    return max((score(coarse + d / 10000.0), coarse + d / 10000.0)
+               for d in range(-20, 21))[1]
 
 
 def line_to_frame(frame, line, axis):
@@ -581,22 +668,22 @@ def fit_region_lines(frame, trees_un, grid_region, log):
     ew_seed = {s['name']: s for s in grid_region['ew']}
     ns_seed = {s['name']: s for s in grid_region['ns']}
 
-    # Seeds in frame coordinates: the grid stores each line as [slope,
-    # intercept] in lng/lat, so evaluate it at the region's middle and convert.
-    def seed_n(name):
-        slope, inter = ew_seed[name]['line']
-        lng = REF_LNG
-        return frame.to_un(lng, inter + slope * (lng - REF_LNG))[1]
-
-    def seed_u(name):
-        slope, inter = ns_seed[name]['line']
-        lat = REF_LAT
-        return frame.to_un(inter + slope * (lat - REF_LAT), lat)[0]
-
-    streets = {n: seed_n(n) for n in ew_names}
-    avenues = {n: seed_u(n) for n in ns_names}
+    # Seeds in frame coordinates. The grid stores each line as [slope,
+    # intercept] in lng/lat, and it has to be converted as a LINE, not by
+    # evaluating it at some reference point: an offset is the coordinate where
+    # the line crosses the frame's origin axis, and reading it off a point
+    # hundreds of metres away shears it by slope times that distance. In the
+    # East Village, where the frame is aligned to the grid and the slopes are
+    # near zero, that error was under 10 m and the row search absorbed it. On
+    # the Lower East Side, at slope 0.128, it was 200 m and every single avenue
+    # was rejected for landing too far from its own seed.
+    streets = {n: line_to_frame(frame, ew_seed[n]['line'], 'ew')[1] for n in ew_names}
+    avenues = {n: line_to_frame(frame, ns_seed[n]['line'], 'ns')[1] for n in ns_names}
     fitted_ew, fitted_ns = {}, {}
-    ew_slope = ns_slope = 0.0
+    ew_slope = family_slope(trees_un, 'ew')
+    ns_slope = family_slope(trees_un, 'ns')
+    log.append('  bearings off the tree rows: streets %+.5f, avenues %+.5f'
+               % (ew_slope, ns_slope))
 
     for stage in (1, 2, 3):
         free = (stage == 1)
