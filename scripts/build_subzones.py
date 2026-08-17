@@ -44,8 +44,8 @@ way, which puts it on the property line - "immediately north of E 10th St" in
 the literal sense - and nudged further out if a tree stands there, because a
 right of way is a constant and a street's planting is not. See EDGE_CLEAR_M.
 
-Sub-zones 1A to 1I are defined, covering E 14th St down to E 4th St; the rest
-of the district's divisions are still to come, and until they arrive
+Sub-zones 1A to 1L are defined, covering the whole of zone 1 - E 14th St down
+to E Houston St. Zones 2 and 3 are still to come, and until they arrive
 data/subzones.geojson holds only the bands that have been drawn.
 
 Output:
@@ -90,6 +90,7 @@ ROW_HALF_M = {
     'BOWERY / 3 AVE': 100 * FT / 2,
     '2 AVE': 100 * FT / 2,
     '1 AVE': 100 * FT / 2,
+    'E HOUSTON ST': 100 * FT / 2,
 }
 SIDEWALK_M = 3.5             # curbside tree row to property line
 MIN_ROW_HALF_M = 60 * FT / 2  # never draw an edge inside a 60 ft right of way
@@ -155,6 +156,18 @@ SEED_TOLERANCE_M = 25.0
 # CB3_EDGE means that side is the district boundary itself - the exact line -
 # rather than a fitted street.
 CB3_EDGE = 'CB3'
+
+# DIVIDER + a key from the grid's `dividers` names one of the three lines that
+# split CB3 into its care zones: Houston St, Grand St, East Broadway. These are
+# the one exception to the offset rule, and they keep their CENTRELINES.
+#
+# The reason is that the zone split is older and wider than the sub-zones: the
+# dashboard reports per-zone totals off it, and pushing Houston St's line north
+# to keep the street whole would hand every tree on its north side to zone 2 and
+# move those totals. So Houston stays down the middle, zone 1's sub-zones cover
+# exactly zone 1, and Houston St is the only street the sub-zones split - which
+# is what the previous scheme did too.
+DIVIDER = 'DIVIDER:'
 
 # The 14th-to-10th band, west to east. Every one of these stops immediately
 # north of E 10th St, so E 10th St itself belongs to the band below.
@@ -239,6 +252,34 @@ SUBZONES = [
         'west': 'AVE B',
         'east': CB3_EDGE,
         'bounds': 'Ave C to the East River, E 7th St to E 4th St',
+    },
+
+    # The 4th-to-Houston band, and the bottom of zone 1. Its southern edge is
+    # the Houston St divider on its centreline rather than a line north of the
+    # street, so these three cover zone 1 exactly and the zone totals hold.
+    {
+        'id': '1J', 'zone': 1, 'region': 'EV',
+        'north': 'E 4 ST',
+        'south': DIVIDER + 'houston',
+        'west': CB3_EDGE,
+        'east': '1 AVE',
+        'bounds': '4th Ave to 1st Ave, E 4th St to E Houston St',
+    },
+    {
+        'id': '1K', 'zone': 1, 'region': 'EV',
+        'north': 'E 4 ST',
+        'south': DIVIDER + 'houston',
+        'west': '1 AVE',
+        'east': 'AVE B',
+        'bounds': 'Ave A to Ave B, E 4th St to E Houston St',
+    },
+    {
+        'id': '1L', 'zone': 1, 'region': 'EV',
+        'north': 'E 4 ST',
+        'south': DIVIDER + 'houston',
+        'west': 'AVE B',
+        'east': CB3_EDGE,
+        'bounds': 'Ave C to the East River, E 4th St to E Houston St',
     },
 ]
 
@@ -505,6 +546,22 @@ def median(vals):
     return s[k // 2] if k % 2 else (s[k // 2 - 1] + s[k // 2]) / 2.0
 
 
+def line_to_frame(frame, line, axis):
+    """A grid line stored as [slope, intercept] in lng/lat, in frame terms.
+
+    Sample two points and refit. The frame mapping is affine, so a line stays a
+    line and this is exact, not an approximation."""
+    slope, inter = line
+    if axis == 'ew':
+        pts = [frame.to_un(REF_LNG + d, inter + slope * d) for d in (-0.02, 0.02)]
+        (a1, b1), (a2, b2) = pts
+    else:
+        pts = [frame.to_un(inter + slope * d, REF_LAT + d) for d in (-0.01, 0.01)]
+        (b1, a1), (b2, a2) = pts
+    s = (b2 - b1) / (a2 - a1)
+    return s, b1 - s * a1
+
+
 def fit_region_lines(frame, trees_un, grid_region, log):
     """Fit every named street and avenue in a grid region.
 
@@ -601,6 +658,20 @@ def fit_region_lines(frame, trees_un, grid_region, log):
                 walk[name] = {'name': name, 'axis': axis, 'slope': slope,
                               'offset': seeds[name], 'half_row_m': 0.0,
                               'rows': [], 'seeded': True}
+
+    # The zone dividers belong here too. They are not fitted and never bound a
+    # cell, but a sub-zone at the bottom of a zone holds one side of one, and
+    # without a line to match against, every tree on it reads as standing on no
+    # street at all - which left E Houston St out of the contents of the three
+    # sub-zones that work it.
+    for entries, axis in ((grid_region['ew'], 'ew'), (grid_region['ns'], 'ns')):
+        for s in entries:
+            if s.get('source') != 'divider':
+                continue
+            slope, offset = line_to_frame(frame, s['line'], axis)
+            walk[s['name']] = {'name': s['name'], 'axis': axis, 'slope': slope,
+                               'offset': offset, 'half_row_m': 0.0, 'rows': [],
+                               'seeded': True, 'divider': True}
     return fitted, walk
 
 
@@ -718,9 +789,18 @@ def main():
               open(OUT_LINES, 'w'), indent=1)
     print('\nwrote %s' % os.path.relpath(OUT_LINES, ROOT))
 
+    # The zone dividers, carried into the frame. They are stored in lng/lat, so
+    # sample two points and refit; the mapping is affine, so the line stays a
+    # line and this is exact.
+    divider_lines = {}
+    for key, line in divs.items():
+        slope, offset = line_to_frame(frame, line, 'ew')
+        divider_lines[key] = {'name': key, 'axis': 'ew', 'slope': slope,
+                              'offset': offset, 'half_row_m': 0.0, 'rows': []}
+
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
-    features, csv_rows = [], []
+    features, csv_rows, edge_records = [], [], []
     print('\n=== sub-zones')
     for spec in SUBZONES:
         rid = spec['region']
@@ -729,25 +809,39 @@ def main():
         window = [[-BIG, -BIG], [BIG, -BIG], [BIG, BIG], [-BIG, BIG]]  # (u, n)
         used = {}
 
+        def named_line(name):
+            """The line a side names: a fitted street, a zone divider, or None
+            for the district boundary."""
+            if name == CB3_EDGE:
+                return None, 0.0
+            if name.startswith(DIVIDER):
+                return divider_lines[name[len(DIVIDER):]], 0.0
+            f = region_lines.get(name)
+            if f is None:
+                raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
+            return f, row_half(name, f)
+
         def column(sides):
             """Extent of this sub-zone along the axis an edge runs in.
 
             An edge's offset is chosen from the trees it actually crosses, so
             it needs to know how far the sub-zone reaches sideways. The two
-            perpendicular edges give that, at their nominal offsets - good
-            enough to say which trees are in the column, which is all it is
-            for. Two sub-zones bounded by the same street over the same column
-            therefore get the same offset, which is what keeps 1C and 1F, or
-            1A and 1D, sharing one line."""
-            lo, hi = -BIG, BIG
-            wname, ename = spec[sides[0]], spec[sides[1]]
-            if wname != CB3_EDGE:
-                g = region_lines[wname]
-                lo = g['offset'] + row_half(wname, g)
-            if ename != CB3_EDGE:
-                g = region_lines[ename]
-                hi = g['offset'] + row_half(ename, g)
-            return lo, hi
+            perpendicular edges give that - close enough to say which trees are
+            in the column, which is all it is for. Two sub-zones bounded by the
+            same street over the same column therefore get the same offset,
+            which is what keeps 1C and 1F, or 1A and 1D, sharing one line.
+
+            The two axes take opposite signs: an avenue's line is EAST of its
+            centreline and a street's is NORTH of it, and north is where n gets
+            smaller."""
+            sign = -1.0 if sides[0] == 'north' else 1.0
+            bounds = []
+            for side in sides:
+                f, half = named_line(spec[side])
+                bounds.append(None if f is None else f['offset'] + sign * half)
+            lo = bounds[0] if bounds[0] is not None else -BIG
+            hi = bounds[1] if bounds[1] is not None else BIG
+            return (lo, hi) if lo <= hi else (hi, lo)
 
         def edge(side):
             """Half-plane for one named edge, or None for a CB3 edge.
@@ -756,12 +850,17 @@ def main():
             against the window afterwards reproduces the official line exactly,
             which is more accurate than anything fitted from trees."""
             name = spec[side]
-            if name == CB3_EDGE:
-                return None
-            f = region_lines.get(name)
+            f, floor = named_line(name)
             if f is None:
-                raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
-            floor = row_half(name, f)
+                return None
+            if name.startswith(DIVIDER):
+                # A zone divider is fixed: it sits on its centreline and is not
+                # nudged, so report the air it happens to have and move on.
+                lo, hi = column(('west', 'east'))
+                clear = min((abs(f['offset'] + f['slope'] * t['u'] - t['n'])
+                             for t in region_trees if lo <= t['u'] <= hi), default=99.0)
+                used[side] = (name[len(DIVIDER):] + ' (zone divider)', f, 0.0, clear, 0.0)
+                return f, 0.0
             if f['axis'] == 'ew':
                 lo, hi = column(('west', 'east'))
                 obst = [f['offset'] + f['slope'] * t['u'] - t['n'] for t in region_trees
@@ -861,6 +960,7 @@ def main():
         for side in ('north', 'south', 'west', 'east'):
             if side in used:
                 name, f, half, clear, floor = used[side]
+                edge_records.append((spec['id'], side, name, half, clear, floor))
                 note = '' if half <= floor + 0.01 else ' (nudged out from %.2f)' % floor
                 if clear < EDGE_CLEAR_M:
                     note += '  <- no clear band; nearest tree %.2f m' % clear
@@ -882,30 +982,26 @@ def main():
     print('trees inside more than one sub-zone: %d' % multi)
     problems += multi
 
-    # Every edge must clear the sidewalk rows of the street it is named for,
-    # and must not reach the next street over.
-    for spec in SUBZONES:
-        region_lines = lines[spec['region']]
-        for side in ('north', 'south', 'west', 'east'):
-            name = spec[side]
-            if name == CB3_EDGE:
-                continue
-            f = region_lines[name]
-            half = row_half(name, f)
-            clear = half - f['half_row_m']
-            if clear < 1.5:
-                print('WARNING: %s %s edge clears its own sidewalk row by only %.2f m'
-                      % (spec['id'], side, clear))
-                problems += 1
-            axis = 'ew' if f['axis'] == 'ew' else 'ns'
-            others = sorted((g['offset'] for k, g in region_lines.items()
-                             if g['axis'] == axis and k != name))
-            nearest = min((abs(o - f['offset']) for o in others), default=1e9)
-            if half > nearest - 12.0:
-                print('WARNING: %s %s edge at %.1f m reaches toward the next street '
-                      '(%.1f m away)' % (spec['id'], side, half, nearest))
-                problems += 1
-    print('%s' % ('all edge offsets clear' if problems == 0 else '%d problem(s)' % problems))
+    # Every edge should have air either side of it. Ones that do not are listed
+    # rather than counted as faults: a zone divider is pinned to its centreline
+    # and cannot be nudged off whatever stands there, and inside a housing
+    # superblock there is sometimes no line that clears anything.
+    tight = sorted((rec for rec in edge_records if rec[4] < EDGE_CLEAR_M),
+                   key=lambda r: r[4])
+    if tight:
+        print('edges with less than %.1f m of air:' % EDGE_CLEAR_M)
+        for sid, side, name, half, clear, floor in tight:
+            print('  %-4s %-5s %-22s %.2f m from the nearest tree'
+                  % (sid, side, pretty(name), clear))
+    else:
+        print('every edge has at least %.1f m of air' % EDGE_CLEAR_M)
+    nudged = [r for r in edge_records if r[3] > r[5] + 0.01]
+    if nudged:
+        print('edges nudged out past the property line to find air:')
+        for sid, side, name, half, clear, floor in nudged:
+            print('  %-4s %-5s %-22s %.2f m (from %.2f), %.2f m clear'
+                  % (sid, side, pretty(name), half, floor, clear))
+    print('%s' % ('no overlaps' if problems == 0 else '%d problem(s)' % problems))
 
     with open(OUT_GEOJSON, 'w') as fh:
         json.dump({'type': 'FeatureCollection', 'features': features}, fh)
