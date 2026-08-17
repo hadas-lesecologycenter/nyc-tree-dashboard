@@ -605,6 +605,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	}
 /* Sub-zone id sitting on the polygon itself, so a crew can read its
    assignment off the map without opening anything. */
+.segment-count {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  color: #2c2a24;
+  background: rgba(255,255,255,0.92);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.10);
+  pointer-events: none;
+}
+.seg-sw {
+  display: inline-block;
+  width: 22px;
+  height: 8px;
+  border-radius: 2px;
+}
 .leaflet-tooltip.subzone-tag {
 	background: transparent;
 	border: none;
@@ -1684,6 +1702,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="layer-segments" onchange="toggleSegmentsFromPanel()">
             🧱 Block Segments
           </label>
+          <div id="segment-legend" style="display:none;margin:2px 0 6px 22px">
+            <div style="font-size:9px;color:var(--text3);margin-bottom:3px">Street trees on the block</div>
+            <div style="display:flex;align-items:center;gap:3px">
+              <span class="seg-sw" style="background:#6da7ec"></span>
+              <span class="seg-sw" style="background:#3987e5"></span>
+              <span class="seg-sw" style="background:#256abf"></span>
+              <span class="seg-sw" style="background:#184f95"></span>
+              <span class="seg-sw" style="background:#0d366b"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:2px">
+              <span>1</span><span>10</span><span>20</span><span>30+</span>
+            </div>
+          </div>
         </div>
 
         <div class="cp-section">
@@ -2771,6 +2802,7 @@ let segmentsLayer = null;
 let segmentsVisible = false;
 let segmentsLoading = false;
 let segmentsData = null;
+let segmentLabels = null;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -4544,59 +4576,95 @@ function toggleSubzonesFromPanel() {
 // centreline, cut at the two cross streets that bracket it, so a segment shows
 // where the work actually is rather than an abstract cell.
 
+// Colour carries ONE thing: how many trees are on the block. Sub-zone identity
+// is already on the map as the sub-zone polygon, and twelve sub-zones is far
+// past what colour can distinguish anyway — so the segments answer "where is
+// the work heavy" instead, on a single-hue ordinal ramp (validated light→dark,
+// each step clearing the basemap). Which segment is which comes from geometry
+// and labels, not from hue.
+const SEGMENT_BINS = [
+  { max: 4,   color: '#6da7ec', label: '1–4' },
+  { max: 9,   color: '#3987e5', label: '5–9' },
+  { max: 19,  color: '#256abf', label: '10–19' },
+  { max: 29,  color: '#184f95', label: '20–29' },
+  { max: Infinity, color: '#0d366b', label: '30+' },
+];
+const SEGMENT_LABEL_ZOOM = 17;
+
+function segmentColor(n) {
+  return (SEGMENT_BINS.find(b => n <= b.max) || SEGMENT_BINS[SEGMENT_BINS.length - 1]).color;
+}
+
 async function initSegmentsLayer() {
   if (!segmentsData) {
     const resp = await fetchData(SEGMENTS_URL);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     segmentsData = await resp.json();
   }
-  // Segments inherit their sub-zone's shade, so a run of them reads as one
-  // sub-zone even with the sub-zone polygons switched off.
-  const ids = {};
-  segmentsData.features.forEach(f => {
-    const p = f.properties;
-    (ids[p.zone] = ids[p.zone] || new Set()).add(p.subzone_id);
-  });
-  const order = {};
-  Object.keys(ids).forEach(z => {
-    [...ids[z]].sort().forEach((sid, i) => { order[sid] = { i, n: ids[z].size }; });
-  });
-
   segmentsLayer = L.layerGroup();
+  segmentLabels = L.layerGroup();
   segmentsData.features.forEach(f => {
     const p = f.properties;
-    const seat = order[p.subzone_id] || { i: 0, n: 1 };
-    const color = subzoneShade(p.zone, seat.i, seat.n);
-    L.geoJSON(f, { style: { color, weight: 5, opacity: 0.85, lineCap: 'round' } })
-      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:200px">
+    const color = segmentColor(p.tree_count);
+    // A white casing under every segment, so a bar stays legible over the
+    // basemap's own road fill and over a sub-zone wash of the same hue.
+    L.geoJSON(f, { style: { color: '#ffffff', weight: 9, opacity: 0.9, lineCap: 'butt' } })
+      .addTo(segmentsLayer);
+    L.geoJSON(f, { style: { color, weight: 5, opacity: 1, lineCap: 'butt' } })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:210px">
         <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧱 ${p.label}</div>
-        <div style="font-size:11px;color:#6b6456;margin-top:4px">
-          Sub-Zone ${p.subzone_id} · Zone ${p.zone}<br>${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides
-        </div>
+        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides</div>
+        <div style="font-size:11px;color:#6b6456;margin-top:4px">Sub-Zone ${p.subzone_id} · Zone ${p.zone}</div>
       </div>`)
       .bindTooltip(`${p.label} — ${p.tree_count} trees`, { sticky: true })
       .addTo(segmentsLayer);
+
+    const c = f.geometry.coordinates;
+    const mid = [(c[0][1] + c[1][1]) / 2, (c[0][0] + c[1][0]) / 2];
+    L.marker(mid, {
+      interactive: false,
+      icon: L.divIcon({ className: 'segment-count', html: String(p.tree_count),
+                        iconSize: [26, 16], iconAnchor: [13, 8] }),
+    }).addTo(segmentLabels);
   });
-  console.log(`Block segments: ${segmentsLayer.getLayers().length} loaded`);
+  console.log(`Block segments: ${segmentsData.features.length} loaded`);
+}
+
+// Counts are shown only once the map is zoomed in far enough for them not to
+// collide — a number on all 189 at once is noise, not a label.
+function syncSegmentLabels() {
+  if (!segmentsVisible || !segmentLabels) return;
+  const show = mapInstance.getZoom() >= SEGMENT_LABEL_ZOOM;
+  if (show && !mapInstance.hasLayer(segmentLabels)) segmentLabels.addTo(mapInstance);
+  if (!show && mapInstance.hasLayer(segmentLabels)) segmentLabels.remove();
 }
 
 function toggleSegmentsFromPanel() {
   const cb = document.getElementById('layer-segments');
+  const legend = document.getElementById('segment-legend');
   const shouldShow = !!(cb && cb.checked);
+  if (legend) legend.style.display = shouldShow ? 'block' : 'none';
   if (shouldShow === segmentsVisible) return;
   segmentsVisible = shouldShow;
   if (!segmentsVisible) {
     if (segmentsLayer) segmentsLayer.remove();
+    if (segmentLabels) segmentLabels.remove();
     return;
   }
-  if (segmentsLayer) { segmentsLayer.addTo(mapInstance); return; }
+  if (segmentsLayer) { segmentsLayer.addTo(mapInstance); syncSegmentLabels(); return; }
   if (segmentsLoading) return;
   segmentsLoading = true;
   initSegmentsLayer()
-    .then(() => { if (segmentsVisible) segmentsLayer.addTo(mapInstance); })
+    .then(() => {
+      if (!segmentsVisible) return;
+      segmentsLayer.addTo(mapInstance);
+      mapInstance.on('zoomend', syncSegmentLabels);
+      syncSegmentLabels();
+    })
     .catch(err => {
       console.error('Block segments load failed:', err);
       if (cb) cb.checked = false;
+      if (legend) legend.style.display = 'none';
       segmentsVisible = false;
     })
     .finally(() => { segmentsLoading = false; });

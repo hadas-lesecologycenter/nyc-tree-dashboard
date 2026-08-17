@@ -72,9 +72,23 @@ the Bowery in the south. This affects only the wording and the segment count.
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 189 of them, each on its own
-street's fitted centreline, cut at the two cross streets that bracket it and
-trimmed to its sub-zone, coloured by sub-zone and labelled with its tree count.
+layer in the map's Program Layers panel shows all 189 of them.
+
+Two things make the segmentation legible rather than just present:
+
+* **Each segment stops at the cross street's property line**, so it covers the
+  block *face* and the intersections are left blank. Drawn end to end they were
+  one unbroken line down E 12th St and no colour told you it was four blocks of
+  work; with the gaps you can count them.
+* **Colour carries how many trees are on the block**, on a single-hue ramp from
+  pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
+  identity is already on the map as the sub-zone polygon, and twelve sub-zones
+  is well past what colour can distinguish, so hue is spent on the one thing
+  nothing else shows. Which segment is which comes from the geometry, the hover
+  tooltip, and a count badge that appears on each segment from zoom 17 in.
+
+Each segment sits on its own street's fitted centreline under a white casing,
+so it stays legible over the basemap's roads and over a sub-zone wash.
 
 2,379 of zone 1's 2,597 street trees sit on a segment. The other 218 stand
 where there is no street line to put them on — inside housing superblocks, in

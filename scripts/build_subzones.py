@@ -776,9 +776,12 @@ def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
     i0, i1 = best
     x0 = lo if i0 == 0 else edge_at(i0, i0 - 1)
     x1 = hi if i1 >= steps else edge_at(i1 - 1, i1)
-    if x1 - x0 < 6.0:            # shorter than a couple of tree pits
+    if x1 - x0 < 4.0:            # shorter than a single tree pit
         return None
     return [frame.to_lnglat(*at(x0)), frame.to_lnglat(*at(x1))]
+
+
+MIN_SEG_M = 12.0        # never trim a segment shorter than this
 
 
 def segment_feature(frame, walk, ordered, ring, name, axis, step, tree_count, spec):
@@ -793,7 +796,31 @@ def segment_feature(frame, walk, ordered, ring, name, axis, step, tree_count, sp
     hi = after if after is not None else SEG_FAR_M
     if lo > hi:
         lo, hi = hi, lo
+
+    # Stop each end at the cross street's property line instead of running to
+    # its centreline. A segment is a block FACE - the stretch a crew walks -
+    # not the intersection at either end, and drawn this way consecutive
+    # segments on the same street stop touching. That is what makes the
+    # segmentation visible: end to end they were one unbroken line down E 12th
+    # St, and no amount of colour told you it was four blocks of work.
+    trims = []
+    for idx, present in ((step - 1, before is not None), (step, after is not None)):
+        cross = walk[names[idx]] if present else None
+        trims.append(row_half(names[idx], cross) if cross else 0.0)
+    room = hi - lo
+    if room - sum(trims) < MIN_SEG_M and sum(trims) > 0:
+        # A short block: shrink both trims together rather than lose the segment
+        scale = max(0.0, (room - MIN_SEG_M)) / sum(trims)
+        trims = [t * scale for t in trims]
+    # A handful of segments are already stubs before any trimming - a corner of
+    # E 1st St that Houston has eaten into, one tree on the FDR frontage - and
+    # trimming them again leaves nothing. Fall back to the untrimmed span so
+    # every counted segment gets drawn; the count and the map must agree.
+    full = (lo, hi)
+    lo, hi = lo + trims[0], hi - trims[1]
     line = trim_to_ring(frame, street, axis, lo, hi, ring, centre)
+    if line is None:
+        line = trim_to_ring(frame, street, axis, full[0], full[1], ring, centre)
     if line is None:
         return None
     ends = [pretty(names[step - 1]) if step > 0 else 'the district edge',
