@@ -52,8 +52,10 @@ Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
   data/subzones.geojson      — one Polygon per sub-zone, clipped to CB3
   data/subzones.csv          — treeId,subzoneId,zone,latitude,longitude,species
+  data/subzone-segments.geojson — one LineString per block segment of work
 """
 
+import collections
 import csv
 import json
 import math
@@ -66,6 +68,7 @@ BOUNDARY_PATH = os.path.join(ROOT, 'data', 'cb3-boundary.json')
 OUT_LINES = os.path.join(ROOT, 'data', 'cb3-street-lines.json')
 OUT_GEOJSON = os.path.join(ROOT, 'data', 'subzones.geojson')
 OUT_CSV = os.path.join(ROOT, 'data', 'subzones.csv')
+OUT_SEGMENTS = os.path.join(ROOT, 'data', 'subzone-segments.geojson')
 
 REF_LNG, REF_LAT = -73.9850, 40.7200
 M_PER_DEG_LNG = 84400.0
@@ -692,6 +695,124 @@ def nearest_line(walk, u, n):
     return (best[1], best[2]) if best else (None, None)
 
 
+# ---------------------------------------------------------------- segments --
+# A sub-zone's size is quoted in block segments: one street, one block long,
+# both sides. That is the unit a crew is actually handed - "E 12th St, 2nd Ave
+# to 1st Ave" - so it is worth drawing, not just counting. Each one is the
+# street's own centreline, cut at the two cross streets that bracket it and
+# trimmed to the sub-zone, which is what puts the ends of a run against the
+# district boundary rather than out in the river.
+
+SEG_FAR_M = 4000.0
+
+
+def cross_at(street, cross):
+    """Where two grid lines meet, in whichever coordinate runs along `street`.
+
+    An E-W street is n = a*u + b and an N-S one u = a*n + b, so the two cases
+    are the same equation with the roles swapped and one formula does both."""
+    den = 1.0 - cross['slope'] * street['slope']
+    if abs(den) < 1e-9:
+        return None
+    return (cross['slope'] * street['offset'] + cross['offset']) / den
+
+
+PROBE_M = 4.0
+
+
+def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
+    """The part of a street between `lo` and `hi` that lies inside `ring`.
+
+    Sampled rather than solved: the ring is CB3's boundary clipped, so it is
+    simple but not convex, and a segment can in principle enter and leave it.
+    The longest run inside is the one to draw, and its ends are then pinned
+    down by bisection so they land on the boundary rather than on a sample.
+
+    The test point is nudged PROBE_M off the centreline, towards the middle of
+    the sub-zone, because a street can BE the boundary: Houston St is 1K's
+    southern edge, so its centreline lies exactly along the ring and testing it
+    directly returned nonsense - a 14 m stub for a segment holding 21 trees."""
+    def at(x):
+        return ((x, street['slope'] * x + street['offset']) if axis == 'ew'
+                else (street['slope'] * x + street['offset'], x))
+
+    du, dn = (1.0, street['slope']) if axis == 'ew' else (street['slope'], 1.0)
+    h = math.hypot(du, dn)
+    px, pn = -dn / h, du / h            # unit normal to the street
+
+    def inside(x):
+        u, n = at(x)
+        side = 1.0 if (centre[0] - u) * px + (centre[1] - n) * pn > 0 else -1.0
+        probe = (u + side * PROBE_M * px, n + side * PROBE_M * pn)
+        return point_in_poly(*frame.to_lnglat(*probe), poly=ring)
+
+    steps = 400
+    span = hi - lo
+    if span <= 0:
+        return None
+    flags = [inside(lo + span * i / steps) for i in range(steps + 1)]
+    best = run = None
+    for i, f in enumerate(flags):
+        if f and run is None:
+            run = i
+        if (not f or i == steps) and run is not None:
+            end = i if not f else i
+            if best is None or (end - run) > (best[1] - best[0]):
+                best = (run, end)
+            run = None
+    if best is None or best[1] <= best[0]:
+        return None
+
+    def edge_at(inside_i, outside_i):
+        a, b = lo + span * inside_i / steps, lo + span * outside_i / steps
+        for _ in range(24):
+            m = (a + b) / 2.0
+            if inside(m):
+                a = m
+            else:
+                b = m
+        return a
+
+    i0, i1 = best
+    x0 = lo if i0 == 0 else edge_at(i0, i0 - 1)
+    x1 = hi if i1 >= steps else edge_at(i1 - 1, i1)
+    if x1 - x0 < 6.0:            # shorter than a couple of tree pits
+        return None
+    return [frame.to_lnglat(*at(x0)), frame.to_lnglat(*at(x1))]
+
+
+def segment_feature(frame, walk, ordered, ring, name, axis, step, tree_count, spec):
+    street = walk[name]
+    pts = [frame.to_un(*p) for p in ring[:-1]]
+    centre = (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+    cross_axis = 'ns' if axis == 'ew' else 'ew'
+    names = ordered[cross_axis]
+    before = cross_at(street, walk[names[step - 1]]) if step > 0 else None
+    after = cross_at(street, walk[names[step]]) if step < len(names) else None
+    lo = before if before is not None else -SEG_FAR_M
+    hi = after if after is not None else SEG_FAR_M
+    if lo > hi:
+        lo, hi = hi, lo
+    line = trim_to_ring(frame, street, axis, lo, hi, ring, centre)
+    if line is None:
+        return None
+    ends = [pretty(names[step - 1]) if step > 0 else 'the district edge',
+            pretty(names[step]) if step < len(names) else 'the district edge']
+    return {
+        'type': 'Feature',
+        'properties': {
+            'subzone_id': spec['id'],
+            'zone': spec['zone'],
+            'street': pretty(name),
+            'from': ends[0],
+            'to': ends[1],
+            'label': '%s, %s to %s' % (pretty(name), ends[0], ends[1]),
+            'tree_count': tree_count,
+        },
+        'geometry': {'type': 'LineString', 'coordinates': line},
+    }
+
+
 # ------------------------------------------------------------------ naming --
 
 ORDINAL = {'1': 'st', '2': 'nd', '3': 'rd'}
@@ -800,7 +921,7 @@ def main():
 
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
-    features, csv_rows, edge_records = [], [], []
+    features, csv_rows, edge_records, segments = [], [], [], []
     print('\n=== sub-zones')
     for spec in SUBZONES:
         rid = spec['region']
@@ -916,17 +1037,30 @@ def main():
         # assignment only has to beat a 60-70 m block, so the old grid's rough
         # line is a perfectly good stand-in where a fitted one is missing.
         walk = walk_lines[rid]
-        held_ew, held_ns, segs = set(), set(), set()
+        ordered = {ax: [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
+                        if g['axis'] == ax] for ax in ('ew', 'ns')}
+        held_ew, held_ns = set(), set()
+        segs = collections.defaultdict(list)
         for t in inside:
             name, axis = nearest_line(walk, t['u'], t['n'])
             if name is None:
                 continue
             (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
+            # How far along its street the tree is, counted in cross streets
+            # passed. Lines within a family are near-parallel, so counting them
+            # and ordering them by offset agree, and the two lines bracketing
+            # the tree are ordered[cross][step-1] and ordered[cross][step].
             step = sum(1 for g in walk.values() if g['axis'] == cross
                        and (t['u'] >= g['slope'] * t['n'] + g['offset'] if cross == 'ns'
                             else t['n'] >= g['slope'] * t['u'] + g['offset']))
-            segs.add((name, step))
+            segs[(name, axis, step)].append(t)
+
+        for (name, axis, step), members in sorted(segs.items()):
+            seg = segment_feature(frame, walk, ordered, ring, name, axis, step,
+                                  len(members), spec)
+            if seg:
+                segments.append(seg)
 
         def in_order(names, axis):
             return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
@@ -1005,13 +1139,16 @@ def main():
 
     with open(OUT_GEOJSON, 'w') as fh:
         json.dump({'type': 'FeatureCollection', 'features': features}, fh)
+    with open(OUT_SEGMENTS, 'w') as fh:
+        json.dump({'type': 'FeatureCollection', 'features': segments}, fh)
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.writer(fh)
         w.writerow(['treeId', 'subzoneId', 'zone', 'latitude', 'longitude', 'species'])
         w.writerows(csv_rows)
-    print('\nwrote %s (%d sub-zones) and %s (%d trees)'
+    print('\nwrote %s (%d sub-zones), %s (%d trees) and %s (%d segments)'
           % (os.path.relpath(OUT_GEOJSON, ROOT), len(features),
-             os.path.relpath(OUT_CSV, ROOT), len(csv_rows)))
+             os.path.relpath(OUT_CSV, ROOT), len(csv_rows),
+             os.path.relpath(OUT_SEGMENTS, ROOT), len(segments)))
 
 
 if __name__ == '__main__':

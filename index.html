@@ -1680,6 +1680,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="layer-subzones" onchange="toggleSubzonesFromPanel()">
             🧭 Sub-Zones (~10 blocks)
           </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-segments" onchange="toggleSegmentsFromPanel()">
+            🧱 Block Segments
+          </label>
         </div>
 
         <div class="cp-section">
@@ -2697,6 +2701,7 @@ const DATA_FALLBACK_BASE = 'https://raw.githubusercontent.com/hadas-lesecologyce
 const CENSUS_DATA_URL = 'data/census.json';
 const CB3_BOUNDARY_URL = 'data/cb3-boundary.json';
 const SUBZONES_URL = 'data/subzones.geojson';
+const SEGMENTS_URL = 'data/subzone-segments.geojson';
 
 // Fetch a repo data file, preferring the same-origin copy and falling back to
 // the raw.githubusercontent mirror. Returns a Response; throws if both fail.
@@ -2762,6 +2767,10 @@ let subzonesLayer = null;
 let subzonesVisible = false;
 let subzonesLoading = false;
 let subzonesData = null;
+let segmentsLayer = null;
+let segmentsVisible = false;
+let segmentsLoading = false;
+let segmentsData = null;
 
 // ========== PRIORITY FORMULA ==========
 function getWeights() {
@@ -4526,6 +4535,71 @@ function toggleSubzonesFromPanel() {
       subzonesVisible = false;
     })
     .finally(() => { subzonesLoading = false; });
+}
+
+// ========== BLOCK SEGMENTS LAYER ==========
+// Source: data/subzone-segments.geojson — one line per block segment, which is
+// the unit a sub-zone's size is quoted in and the unit a crew is handed: one
+// street, one block long, both sides. The line is that street's own fitted
+// centreline, cut at the two cross streets that bracket it, so a segment shows
+// where the work actually is rather than an abstract cell.
+
+async function initSegmentsLayer() {
+  if (!segmentsData) {
+    const resp = await fetchData(SEGMENTS_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    segmentsData = await resp.json();
+  }
+  // Segments inherit their sub-zone's shade, so a run of them reads as one
+  // sub-zone even with the sub-zone polygons switched off.
+  const ids = {};
+  segmentsData.features.forEach(f => {
+    const p = f.properties;
+    (ids[p.zone] = ids[p.zone] || new Set()).add(p.subzone_id);
+  });
+  const order = {};
+  Object.keys(ids).forEach(z => {
+    [...ids[z]].sort().forEach((sid, i) => { order[sid] = { i, n: ids[z].size }; });
+  });
+
+  segmentsLayer = L.layerGroup();
+  segmentsData.features.forEach(f => {
+    const p = f.properties;
+    const seat = order[p.subzone_id] || { i: 0, n: 1 };
+    const color = subzoneShade(p.zone, seat.i, seat.n);
+    L.geoJSON(f, { style: { color, weight: 5, opacity: 0.85, lineCap: 'round' } })
+      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:200px">
+        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧱 ${p.label}</div>
+        <div style="font-size:11px;color:#6b6456;margin-top:4px">
+          Sub-Zone ${p.subzone_id} · Zone ${p.zone}<br>${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides
+        </div>
+      </div>`)
+      .bindTooltip(`${p.label} — ${p.tree_count} trees`, { sticky: true })
+      .addTo(segmentsLayer);
+  });
+  console.log(`Block segments: ${segmentsLayer.getLayers().length} loaded`);
+}
+
+function toggleSegmentsFromPanel() {
+  const cb = document.getElementById('layer-segments');
+  const shouldShow = !!(cb && cb.checked);
+  if (shouldShow === segmentsVisible) return;
+  segmentsVisible = shouldShow;
+  if (!segmentsVisible) {
+    if (segmentsLayer) segmentsLayer.remove();
+    return;
+  }
+  if (segmentsLayer) { segmentsLayer.addTo(mapInstance); return; }
+  if (segmentsLoading) return;
+  segmentsLoading = true;
+  initSegmentsLayer()
+    .then(() => { if (segmentsVisible) segmentsLayer.addTo(mapInstance); })
+    .catch(err => {
+      console.error('Block segments load failed:', err);
+      if (cb) cb.checked = false;
+      segmentsVisible = false;
+    })
+    .finally(() => { segmentsLoading = false; });
 }
 
 // ========== EMPTY BEDS LAYER ==========
