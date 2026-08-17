@@ -1,91 +1,86 @@
 # CB3 Sub-Zones
 
-The three care zones split into 28 sub-zones of roughly ten block segments each.
+**Status: being redrawn.** Sub-zone 1A is defined and on the map. The rest of
+CB3's divisions are still to come, and `data/subzones.geojson` holds only the
+sub-zones that have been defined, so most of the district shows no sub-zone
+yet. The 28 mid-block sub-zones this replaces are in the git history.
 
-**Boundaries run mid-block, so both sides of every street stay in the same
-sub-zone.** A sub-zone is a set of whole streets rather than an area fenced off
-by them, so it can be handed to a crew in words — "E 4th St to E 3rd St, Bowery
-to Ave A, both sides" — and walked without a map.
+## The rule
 
-A boundary has to cross the street network somewhere: cutting along
-centrelines separates a street from its own far sidewalk, and cutting
-mid-block divides the perpendicular streets part-way along a block. Mid-block
-is the cheaper cut here — 88 of CB3's 509 block segments end up divided,
-against 106 when the same sub-zones were bounded by centrelines — because what
-gets divided is the avenues, and an avenue was previously being split
-lengthwise along its entire run.
+Every edge is a named street, and it runs just outside that street's kerbline:
 
-The three **zone** dividers — Houston St, Grand St and East Broadway — keep
-their centrelines, so sub-zones still nest inside the three zones and no zone
-total moves. They are the only streets still split down the middle.
+* the boundary for a **numbered street runs immediately north of it**, so the
+  street — roadway and both sidewalks — belongs to the sub-zone on the **south**
+  side;
+* the boundary for an **avenue runs immediately east of it**, so the avenue
+  belongs to the sub-zone on the **west** side.
+
+So a sub-zone owns its northern street and its eastern avenue and neither of
+the other two, which tiles the district without ever splitting a street down
+the middle. "4th Ave to 1st Ave, E 14th St to E 10th St" means E 14th down to
+E 11th, both sides, and 3rd, 2nd and 1st Ave, both sides.
+
+## The sub-zones
+
+| ID | Zone | Bounded by | Works both sides of | Segments | Trees |
+|---|---|---|---|---|---|
+| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · Bowery / 3rd Ave to 1st Ave | 24 | 259 |
+
+## Where the lines come from
+
+Two anchors are exact, and they are the only exact geometry in this repo.
+CB3's official boundary runs down the middle of E 14th St across the top of the
+district and down 4th Ave / the Bowery on its west side. A sub-zone that
+reaches the edge of the district leaves that side of its window open and lets
+the boundary close it, which is why 1A's northern and western edges sit on
+those streets exactly.
+
+Everything else is fitted from the tree census. Street trees stand in two rows,
+one per sidewalk, and the rows are very straight — a least-squares line through
+one comes back with an RMS residual of 0.1–0.5 m. Fitting each row separately
+and averaging the pair gives a centreline good to well under a metre. The edge
+is that centreline pushed out by half a right of way (30 ft for the numbered
+side streets, 50 ft for the avenues) so it lands on the property line, and the
+build checks every offset against the sidewalk rows it has to clear.
+
+This is a different construction from the old `cb3-street-grid.json`, which fit
+whole families of streets at once. That fit put E 14th St 9.5 m south of the
+real street — its north sidewalk is in CB6 and missing from the data, so the
+line settled on the south sidewalk instead — and E 10th St 11 m north of it,
+having merged both of its sidewalk rows into one. The grid is still used, for
+street names and as a starting guess for each fit.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `data/subzones.geojson` | One polygon per sub-zone, clipped to the CB3 boundary |
-| `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` for all 5,308 live street trees |
-| `data/cb3-street-grid.json` | The named street centerlines everything above is built from |
+| `data/subzones.geojson` | One polygon per defined sub-zone, clipped to CB3 |
+| `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` |
+| `data/cb3-street-lines.json` | The fitted centrelines, for inspection |
+| `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
 
 ## Rebuilding
 
 ```
-python3 scripts/build_street_grid.py   # streets  -> data/cb3-street-grid.json
-python3 scripts/build_subzones.py      # subzones -> data/subzones.{geojson,csv}
+python3 scripts/build_subzones.py
 ```
 
-Both print a validation report. `build_subzones.py` checks that every tree
-falls inside its own sub-zone polygon and inside no other — that line should
-read `0 trees outside ... 0 inside more than one` — and reports how many block
-segments end up divided between two sub-zones.
+It prints every fitted centreline with the size and straightness of the two
+rows behind it, then each sub-zone with the offset of each of its four edges
+and how much clearance that leaves over the street's own sidewalk row. It
+checks that no tree lands in two sub-zones and that no edge either cuts into
+the street it names or reaches the next street over.
 
-Sub-zone size is `TARGET_BLOCKS` in `scripts/build_subzones.py` (currently 10);
-`ROWS_PER_BAND` (currently 2) sets how many streets a sub-zone runs across
-before it splits sideways instead.
+To add a sub-zone, add an entry to `SUBZONES` in that script naming its four
+bounding streets and re-run.
 
 ## Caveat
 
 No street-centerline dataset is reachable from this repo's build environment
-(NYC Open Data, Census TIGER and the OSM endpoints are all blocked), so the
-grid is reconstructed from the tree census itself: sidewalk rows are detected
-in the point cloud and named using the ~1,100 trees in `data/trees.csv` that
-carry a street address. Lines are good to roughly a sidewalk width. Housing
-superblocks (Tompkins Square, Baruch, Vladeck, Rutgers, Smith) have no
-interior streets to detect and so read as single oversized blocks. If real
-centerline data ever lands in the repo, re-run both scripts against it.
-
-## The sub-zones
-
-Each row lists the streets the crew works, both sides, and the avenues the run
-spans. 28 sub-zones, 6-12 block segments (mean 8.6), 64-269 trees (mean 189).
-
-| ID | Zone | Segments | Trees | Streets | Across |
-|---|---|---|---|---|---|
-| **1A** | 1 | 8 | 156 | E 14th St to E 13th St | Bowery / 3rd Ave to Ave A |
-| **1B** | 1 | 7 | 93 | E 14th St to E 13th St | Ave B to FDR Dr |
-| **1C** | 1 | 8 | 251 | E 12th St to E 11th St | Bowery / 3rd Ave to Ave A |
-| **1D** | 1 | 6 | 135 | E 12th St to E 11th St | Ave B to Ave D |
-| **1E** | 1 | 8 | 212 | E 10th St to E 9th St | Bowery / 3rd Ave to Ave A |
-| **1F** | 1 | 8 | 227 | E 10th St to E 9th St | Ave B to FDR Dr |
-| **1G** | 1 | 8 | 223 | E 8th St / St Marks Pl to E 7th St | Bowery / 3rd Ave to Ave A |
-| **1H** | 1 | 6 | 198 | E 8th St / St Marks Pl to E 7th St | Ave B to Ave D |
-| **1I** | 1 | 8 | 167 | E 6th St to E 5th St | Bowery / 3rd Ave to Ave A |
-| **1J** | 1 | 7 | 197 | E 6th St to E 5th St | Ave B to FDR Dr |
-| **1K** | 1 | 8 | 200 | E 4th St to E 3rd St | Bowery / 3rd Ave to Ave A |
-| **1L** | 1 | 7 | 202 | E 4th St to E 3rd St | Ave B to FDR Dr |
-| **1M** | 1 | 8 | 220 | E 2nd St to E 1st St | Bowery / 3rd Ave to Ave A |
-| **1N** | 1 | 6 | 116 | E 2nd St to E 1st St | Ave B to FDR Dr |
-| **2A** | 2 | 10 | 269 | Stanton St to Rivington St | Chrystie St to Orchard St |
-| **2B** | 2 | 10 | 220 | Stanton St to Rivington St | Ludlow St to Clinton St |
-| **2C** | 2 | 10 | 243 | Stanton St to Rivington St | Attorney St to Mangin St |
-| **2D** | 2 | 12 | 218 | Delancey St to Broome St | Chrystie St to Ludlow St |
-| **2E** | 2 | 12 | 202 | Delancey St to Broome St | Essex St to Ridge St |
-| **2F** | 2 | 8 | 111 | Delancey St to Broome St | Pitt St to Mangin St |
-| **3A** | 3 | 12 | 262 | Hester St to Canal St | Bowery to Essex St |
-| **3B** | 3 | 11 | 179 | Hester St to Canal St | Norfolk St to FDR Dr |
-| **3C** | 3 | 10 | 237 | Henry St to Madison St | Catherine St to Jefferson St |
-| **3D** | 3 | 8 | 268 | Henry St to Madison St | Clinton St to Jackson St |
-| **3E** | 3 | 10 | 177 | Monroe St to Cherry St | Catherine St to Jefferson St |
-| **3F** | 3 | 7 | 84 | Monroe St to Cherry St | Clinton St to Jackson St |
-| **3G** | 3 | 9 | 177 | Water St to South St | Catherine St to Jefferson St |
-| **3H** | 3 | 8 | 64 | Water St to South St | Clinton St to Jackson St |
+(NYC Open Data, Census TIGER and the OSM endpoints are all blocked), so every
+street except E 14th St and 4th Ave / the Bowery is located from the trees
+standing along it. Two streets have no two-row fit and cannot be used as
+boundaries: E 14th St, for the reason above, and FDR Drive. Housing
+superblocks (Tompkins Square, Baruch, Vladeck, Rutgers, Smith) have no interior
+streets to detect. If real centerline data ever lands in the repo, the fitting
+step is the part to replace.
