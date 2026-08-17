@@ -4457,11 +4457,12 @@ function toggleFireHydrantsFromPanel() {
 }
 
 // ========== SUB-ZONES LAYER ==========
-// Source: data/subzones.geojson — each of the three care zones cut into
-// sub-zones of roughly ten city blocks, every edge running down a real street
-// centerline (see scripts/build_street_grid.py and scripts/build_subzones.py).
-// Sub-zones nest inside the zones: the Houston and Grand dividers drawn by
-// raDrawZoneBoundaries() are the same lines the sub-zone edges are pinned to.
+// Source: data/subzones.geojson (see scripts/build_subzones.py). Every edge is
+// a named street, drawn immediately north of a numbered street or immediately
+// east of an avenue, so that street belongs whole — both sidewalks — to the
+// sub-zone on the near side. Where a sub-zone runs out to the edge of the
+// district the edge IS CB3's official boundary, which is why the western side
+// of the work area follows 4th Ave and the Bowery exactly.
 
 // Sub-zones inherit their zone's colour and separate from each other by
 // lightness, so the three zones stay readable as zones at a glance while
@@ -4492,7 +4493,9 @@ async function initSubzonesLayer() {
     L.geoJSON(f, { style: { color, weight: 2, fillColor: color, fillOpacity: 0.18 } })
       .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:200px">
         <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
-        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.label}</div>
+        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.bounds || p.label}</div>
+        ${p.contains ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
+          Works both sides of ${p.contains}</div>` : ''}
         <div style="font-size:11px;color:#6b6456;margin-top:4px">
           Zone ${p.zone} · ${p.region_label}<br>${p.blocks} blocks · ${p.tree_count} trees
         </div>
