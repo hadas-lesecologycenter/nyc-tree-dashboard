@@ -7341,20 +7341,37 @@ window.addEventListener('load', async () => {
   const countEl = document.getElementById('tree-count');
   if (countEl) countEl.textContent = 'Loading trees…';
 
+  // census.json is a multi-megabyte download and the URL carries a cache-busting
+  // ?t=, so every visit refetches it in full. A dropped connection therefore
+  // leaves the map completely empty — retry once before giving up, and say so
+  // on screen rather than only in the console: an empty map with a plain
+  // "0 trees" reads as "CB3 has no trees" instead of "the download failed".
+  let censusError = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const censusRes = await fetch(CENSUS_DATA_URL);
+      if (!censusRes.ok) throw new Error('HTTP ' + censusRes.status);
+      CENSUS_DATA = await censusRes.json();
+      censusError = null;
+      break;
+    } catch (e) {
+      censusError = e;
+      console.warn(`Could not load census.json (attempt ${attempt + 1}/2):`, e);
+      if (attempt === 0) {
+        if (countEl) countEl.textContent = 'Retrying tree data…';
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+  }
+
   try {
-    const [censusRes, boundaryRes] = await Promise.all([
-      fetch(CENSUS_DATA_URL),
-      fetch(CB3_BOUNDARY_URL),
-    ]);
-    if (!censusRes.ok) throw new Error('HTTP ' + censusRes.status);
-    CENSUS_DATA = await censusRes.json();
+    const boundaryRes = await fetch(CB3_BOUNDARY_URL);
     if (boundaryRes.ok) {
       const ring = await boundaryRes.json();
       if (Array.isArray(ring) && ring.length > 3) _cb3OfficialPolygon = ring;
     }
   } catch (e) {
-    console.warn('Could not load census.json:', e);
-    // App still works — map will be empty until data loads
+    console.warn('Could not load CB3 boundary:', e);
   }
 
   // Split into active trees and empty planting beds
@@ -7366,7 +7383,12 @@ window.addEventListener('load', async () => {
   populateSpeciesFilter();
   populatePlantingYearFilter();
   applyFilters(false);
-  if (countEl) countEl.textContent = allTrees.length.toLocaleString() + ' trees';
+  if (countEl) {
+    countEl.textContent = censusError
+      ? '⚠️ Tree data failed to load — check your connection and reload'
+      : allTrees.length.toLocaleString() + ' trees';
+    countEl.style.color = censusError ? '#c0392b' : '';
+  }
 
   initMap();
   updateMap();
