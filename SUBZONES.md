@@ -1,9 +1,10 @@
 # CB3 Sub-Zones
 
-**Status: being redrawn.** Sub-zone 1A is defined and on the map. The rest of
-CB3's divisions are still to come, and `data/subzones.geojson` holds only the
-sub-zones that have been defined, so most of the district shows no sub-zone
-yet. The 28 mid-block sub-zones this replaces are in the git history.
+**Status: being redrawn.** The E 14th St to E 10th St band is defined — 1A, 1B
+and 1C — and covers that band with no gap and no overlap. The rest of CB3's
+divisions are still to come, and `data/subzones.geojson` holds only the
+sub-zones that have been defined, so the district south of E 10th St shows no
+sub-zone yet. The 28 mid-block sub-zones this replaces are in the git history.
 
 ## The rule
 
@@ -20,11 +21,22 @@ the other two, which tiles the district without ever splitting a street down
 the middle. "4th Ave to 1st Ave, E 14th St to E 10th St" means E 14th down to
 E 11th, both sides, and 3rd, 2nd and 1st Ave, both sides.
 
+A sub-zone is named for the avenues it holds, so consecutive sub-zones read as
+a continuous run — 4th to 1st, then A to B, then C to the river. In the build
+script each side names the *line* that closes it instead, which is what makes
+neighbours abut exactly: 1A's eastern edge and 1B's western edge are both
+`1 AVE`, one line, so they can neither gap nor overlap.
+
 ## The sub-zones
 
-| ID | Zone | Bounded by | Works both sides of | Segments | Trees |
+E 14th St to E 10th St, west to east. All three stop immediately north of
+E 10th St, so E 10th St belongs to the band below.
+
+| ID | Zone | Named | Works both sides of | Segments | Trees |
 |---|---|---|---|---|---|
 | **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · Bowery / 3rd Ave to 1st Ave | 24 | 259 |
+| **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
+| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 176 |
 
 ## Where the lines come from
 
@@ -71,8 +83,14 @@ and how much clearance that leaves over the street's own sidewalk row. It
 checks that no tree lands in two sub-zones and that no edge either cuts into
 the street it names or reaches the next street over.
 
-To add a sub-zone, add an entry to `SUBZONES` in that script naming its four
-bounding streets and re-run.
+To add a sub-zone, add an entry to `SUBZONES` in that script naming the four
+lines that close it and re-run. Reuse the neighbour's line verbatim — give the
+sub-zone east of 1B `'west': 'AVE B'`, the same string 1B has for `'east'` —
+and the two are guaranteed to meet.
+
+Where a right-of-way width is not certain the offset is measured instead, as
+the street's own sidewalk row plus a sidewalk. Only the streets in `ROW_HALF_M`
+are stated outright; that list is the place to add one if a width is known.
 
 ## Caveat
 

@@ -104,14 +104,26 @@ def row_half(name, fit):
 SEED_TOLERANCE_M = 25.0
 
 # --------------------------------------------------------------- sub-zones --
-# Each sub-zone names the four streets that bound it. 'north'/'south' are
-# numbered streets, 'west'/'east' are avenues, and the offset convention above
-# decides which of them the sub-zone actually contains: the northern street and
-# the eastern avenue are inside, the southern street and western avenue are
-# not. CB3_EDGE means that side is the district boundary itself - the exact
-# line - rather than a fitted street.
+# Each of the four sides names the street whose boundary line closes it, NOT
+# the street the sub-zone starts at. Because every line runs immediately north
+# of its numbered street and immediately east of its avenue:
+#
+#   'north'  the street is INSIDE - it sits south of its own line
+#   'south'  the street is OUTSIDE - it belongs to the sub-zone below
+#   'east'   the avenue is INSIDE - it sits west of its own line
+#   'west'   the avenue is OUTSIDE - it belongs to the sub-zone to the left
+#
+# So a sub-zone described as "Ave A to Ave B" has 'west': '1 AVE' - the line
+# east of 1st Ave is where Ave A's block begins. Naming the line rather than
+# the content is what makes neighbours abut exactly: 1A's 'east' and 1B's
+# 'west' are the same street, so they share one line and cannot gap or overlap.
+#
+# CB3_EDGE means that side is the district boundary itself - the exact line -
+# rather than a fitted street.
 CB3_EDGE = 'CB3'
 
+# The 14th-to-10th band, west to east. Every one of these stops immediately
+# north of E 10th St, so E 10th St itself belongs to the band below.
 SUBZONES = [
     {
         'id': '1A', 'zone': 1, 'region': 'EV',
@@ -120,6 +132,22 @@ SUBZONES = [
         'west': CB3_EDGE,           # 4th Ave / Bowery, CB3's own western edge
         'east': '1 AVE',
         'bounds': '4th Ave to 1st Ave, E 14th St to E 10th St',
+    },
+    {
+        'id': '1B', 'zone': 1, 'region': 'EV',
+        'north': CB3_EDGE,
+        'south': 'E 10 ST',
+        'west': '1 AVE',            # shared with 1A's eastern edge
+        'east': 'AVE B',
+        'bounds': 'Ave A to Ave B, E 14th St to E 10th St',
+    },
+    {
+        'id': '1C', 'zone': 1, 'region': 'EV',
+        'north': CB3_EDGE,
+        'south': 'E 10 ST',
+        'west': 'AVE B',            # shared with 1B's eastern edge
+        'east': CB3_EDGE,           # the East River, CB3's own eastern edge
+        'bounds': 'Ave C to the East River, E 14th St to E 10th St',
     },
 ]
 
