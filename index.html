@@ -4592,7 +4592,7 @@ const SEGMENT_BINS = [
 // Every segment carries a stable identifier — "1A-03" — so a block can be
 // assigned, radioed and reported by name. It is the ID that goes on the map;
 // the tree count is what colour is for.
-const SEGMENT_LABEL_ZOOM = 17;
+const SEGMENT_LABEL_ZOOM = 16;
 
 function segmentColor(n) {
   return (SEGMENT_BINS.find(b => n <= b.max) || SEGMENT_BINS[SEGMENT_BINS.length - 1]).color;
@@ -4609,27 +4609,30 @@ async function initSegmentsLayer() {
   segmentsData.features.forEach(f => {
     const p = f.properties;
     const color = segmentColor(p.tree_count);
-    // The corridor covers the block's two sidewalk rows, so what is shaded IS
-    // the set of trees in the segment. A white edge keeps neighbouring
-    // corridors apart where they meet at a corner.
-    L.geoJSON(f, {
-      style: { color: '#ffffff', weight: 1.5, opacity: 0.95,
-               fillColor: color, fillOpacity: 0.6 },
-    })
-      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:220px">
+    const pts = f.geometry.coordinates;
+    const popup = `<div style="font-family:'Nunito',sans-serif;min-width:220px">
         <div style="font-family:'Lora',serif;font-size:15px;font-weight:700;color:#2c2a24">🧱 ${p.segment_id}</div>
         <div style="font-size:12px;color:#2c2a24;margin-top:2px">${p.label}</div>
         <div style="font-size:12px;color:#2c2a24;margin-top:4px">${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides</div>
         <div style="font-size:11px;color:#6b6456;margin-top:4px">Sub-Zone ${p.subzone_id} · Zone ${p.zone}</div>
-      </div>`)
-      .bindTooltip(`${p.segment_id} · ${p.label} — ${p.tree_count} trees`, { sticky: true })
-      .addTo(segmentsLayer);
-
-    const ring = f.geometry.coordinates[0];
+      </div>`;
+    // A segment IS its trees. Marking them is the whole layer — no bar and no
+    // box, both of which read as a shape sitting on the street rather than as
+    // the work. The trees group themselves: two rows with nothing in the
+    // intersection at either end.
     let lng = 0, lat = 0;
-    ring.slice(0, -1).forEach(c => { lng += c[0]; lat += c[1]; });
-    const n = ring.length - 1;
-    L.marker([lat / n, lng / n], {
+    pts.forEach(c => {
+      lng += c[0]; lat += c[1];
+      L.circleMarker([c[1], c[0]], {
+        radius: 5, color: '#ffffff', weight: 1.5, opacity: 1,
+        fillColor: color, fillOpacity: 0.95,
+      })
+        .bindPopup(popup)
+        .bindTooltip(`${p.segment_id} · ${p.label} — ${p.tree_count} trees`)
+        .addTo(segmentsLayer);
+    });
+
+    L.marker([lat / pts.length, lng / pts.length], {
       interactive: false,
       icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
                         iconSize: [44, 16], iconAnchor: [22, 8] }),

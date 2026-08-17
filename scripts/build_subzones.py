@@ -52,7 +52,7 @@ Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
   data/subzones.geojson      — one Polygon per sub-zone, clipped to CB3
   data/subzones.csv          — treeId,subzoneId,segmentId,zone,lat,lng,species
-  data/subzone-segments.geojson — one Polygon per block segment of work
+  data/subzone-segments.geojson — one MultiPoint per block segment: its trees
 """
 
 import collections
@@ -697,189 +697,25 @@ def nearest_line(walk, u, n):
 
 # ---------------------------------------------------------------- segments --
 # A sub-zone's size is quoted in block segments: one street, one block long,
-# both sides. That is the unit a crew is actually handed - "E 12th St, 2nd Ave
-# to 1st Ave" - so it is worth drawing, not just counting. Each one is the
-# street's own centreline, cut at the two cross streets that bracket it and
-# trimmed to the sub-zone, which is what puts the ends of a run against the
-# district boundary rather than out in the river.
-
-SEG_FAR_M = 4000.0
-
-
-def cross_at(street, cross):
-    """Where two grid lines meet, in whichever coordinate runs along `street`.
-
-    An E-W street is n = a*u + b and an N-S one u = a*n + b, so the two cases
-    are the same equation with the roles swapped and one formula does both."""
-    den = 1.0 - cross['slope'] * street['slope']
-    if abs(den) < 1e-9:
-        return None
-    return (cross['slope'] * street['offset'] + cross['offset']) / den
+# both sides. That is the unit a crew is handed - "E 12th St, 2nd Ave to 1st
+# Ave" - so it is worth drawing, not just counting.
+#
+# A segment is drawn AS ITS TREES, and its geometry is a MultiPoint of them.
+# Two shapes were tried before this and both read as a box balanced on the
+# street rather than as the work: a thick line along the centreline, then a
+# corridor polygon wide enough to enclose both sidewalk rows. Neither is what a
+# crew goes out to do. The trees are, and they group themselves - a block's
+# trees stand in two rows with nothing in the intersection at either end, so
+# the gaps that make the segmentation countable are already in the data.
+#
+# It also removes a whole class of failure. There is no span to trim, no
+# boundary to clip against and no way for a segment to come out undrawable, so
+# every counted segment is drawn by construction.
 
 
-PROBE_M = 4.0
-
-
-def trim_to_ring(frame, street, axis, lo, hi, ring, centre):
-    """The stretch of a street between `lo` and `hi` that lies inside `ring`.
-
-    Returns the trimmed (lo, hi) along the street, or None.
-
-    Sampled rather than solved: the ring is CB3's boundary clipped, so it is
-    simple but not convex, and a segment can in principle enter and leave it.
-    The longest run inside is the one to draw, and its ends are then pinned
-    down by bisection so they land on the boundary rather than on a sample.
-
-    The test point is nudged PROBE_M off the centreline, towards the middle of
-    the sub-zone, because a street can BE the boundary: Houston St is 1K's
-    southern edge, so its centreline lies exactly along the ring and testing it
-    directly returned nonsense - a 14 m stub for a segment holding 21 trees."""
-    du, dn = (1.0, street['slope']) if axis == 'ew' else (street['slope'], 1.0)
-    h = math.hypot(du, dn)
-    px, pn = -dn / h, du / h            # unit normal to the street
-
-    def inside(x):
-        u, n = point_on(street, axis, x)
-        side = 1.0 if (centre[0] - u) * px + (centre[1] - n) * pn > 0 else -1.0
-        probe = (u + side * PROBE_M * px, n + side * PROBE_M * pn)
-        return point_in_poly(*frame.to_lnglat(*probe), poly=ring)
-
-    steps = 400
-    span = hi - lo
-    if span <= 0:
-        return None
-    flags = [inside(lo + span * i / steps) for i in range(steps + 1)]
-    best = run = None
-    for i, f in enumerate(flags):
-        if f and run is None:
-            run = i
-        if (not f or i == steps) and run is not None:
-            end = i
-            if best is None or (end - run) > (best[1] - best[0]):
-                best = (run, end)
-            run = None
-    if best is None or best[1] <= best[0]:
-        return None
-
-    def edge_at(inside_i, outside_i):
-        a, b = lo + span * inside_i / steps, lo + span * outside_i / steps
-        for _ in range(24):
-            m = (a + b) / 2.0
-            if inside(m):
-                a = m
-            else:
-                b = m
-        return a
-
-    i0, i1 = best
-    x0 = lo if i0 == 0 else edge_at(i0, i0 - 1)
-    x1 = hi if i1 >= steps else edge_at(i1 - 1, i1)
-    if x1 - x0 < 4.0:            # shorter than a single tree pit
-        return None
-    return x0, x1
-
-
-def point_on(street, axis, x):
-    return ((x, street['slope'] * x + street['offset']) if axis == 'ew'
-            else (street['slope'] * x + street['offset'], x))
-
-
-def perp_dist(street, axis, u, n):
-    """How far a tree stands from a street's centreline, in metres."""
-    off = (n - (street['slope'] * u + street['offset']) if axis == 'ew'
-           else u - (street['slope'] * n + street['offset']))
-    return abs(off) / math.hypot(1.0, street['slope'])
-
-
-CORRIDOR_MARGIN_M = 2.0     # air around the outermost tree in a segment
-CORRIDOR_MIN_M = 5.0
-MIN_SEG_M = 12.0            # never trim a segment shorter than this
-
-
-def corridor(frame, street, axis, x0, x1, half):
-    """The block face as a quadrilateral: the run from x0 to x1, `half` metres
-    to either side of the centreline."""
-    du, dn = (1.0, street['slope']) if axis == 'ew' else (street['slope'], 1.0)
-    h = math.hypot(du, dn)
-    nx, ny = -dn / h, du / h
-    ring = []
-    for x, s in ((x0, 1), (x1, 1), (x1, -1), (x0, -1)):
-        u, n = point_on(street, axis, x)
-        ring.append(frame.to_lnglat(u + s * half * nx, n + s * half * ny))
-    return [ring + [ring[0]]]
-
-
-def segment_feature(frame, walk, ordered, ring, name, axis, step, members, spec,
-                    seg_id):
-    street = walk[name]
-    pts = [frame.to_un(*p) for p in ring[:-1]]
-    centre = (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+def segment_feature(members, walk, ordered, name, axis, step, spec, seg_id):
     cross_axis = 'ns' if axis == 'ew' else 'ew'
     names = ordered[cross_axis]
-    before = cross_at(street, walk[names[step - 1]]) if step > 0 else None
-    after = cross_at(street, walk[names[step]]) if step < len(names) else None
-    lo = before if before is not None else -SEG_FAR_M
-    hi = after if after is not None else SEG_FAR_M
-    if lo > hi:
-        lo, hi = hi, lo
-
-    # Stop each end at the cross street's property line instead of running to
-    # its centreline. A segment is a block FACE - the stretch a crew walks -
-    # not the intersection at either end, and drawn this way consecutive
-    # segments on the same street stop touching. That is what makes the
-    # segmentation visible: end to end they were one unbroken line down E 12th
-    # St, and no amount of colour told you it was four blocks of work.
-    trims = []
-    for idx, present in ((step - 1, before is not None), (step, after is not None)):
-        cross = walk[names[idx]] if present else None
-        trims.append(row_half(names[idx], cross) if cross else 0.0)
-    room = hi - lo
-    if room - sum(trims) < MIN_SEG_M and sum(trims) > 0:
-        # A short block: shrink both trims together rather than lose the segment
-        scale = max(0.0, (room - MIN_SEG_M)) / sum(trims)
-        trims = [t * scale for t in trims]
-    # A handful of segments are already stubs before any trimming - a corner of
-    # E 1st St that Houston has eaten into, one tree on the FDR frontage - and
-    # trimming them again leaves nothing. Fall back to the untrimmed span so
-    # every counted segment gets drawn; the count and the map must agree.
-    full = (lo, hi)
-    lo, hi = lo + trims[0], hi - trims[1]
-    span = trim_to_ring(frame, street, axis, lo, hi, ring, centre)
-    if span is None:
-        span = trim_to_ring(frame, street, axis, full[0], full[1], ring, centre)
-    if span is None:
-        return None
-
-    # The corridor is drawn wide enough to hold the segment's own trees, so
-    # what it covers IS what a crew works: both sidewalk rows of that block,
-    # not a bar balanced on the centreline with the trees left to the side.
-    # Nothing caps the width here - the corridor is clipped to the sub-zone
-    # below, which is a truer bound than any fixed one and keeps it from
-    # spilling into a neighbour. A fixed cap of half a right of way was tried
-    # and left 28 trees outside their own segment: the Riis frontage on E 10th
-    # St stands 9 m out, past the property line, and Ave C's rows are wider
-    # still.
-    reach = max((perp_dist(street, axis, t['u'], t['n']) for t in members),
-                default=0.0)
-    half = max(CORRIDOR_MIN_M, reach + CORRIDOR_MARGIN_M)
-
-    # Reach along the block for corner trees that sit past the property line,
-    # but never past the cross street's centreline, so the gap at the corner
-    # narrows rather than closing.
-    along = [t['u'] if axis == 'ew' else t['n'] for t in members]
-    x0, x1 = span
-    if along:
-        x0 = max(full[0], min(x0, min(along) - CORRIDOR_MARGIN_M))
-        x1 = min(full[1], max(x1, max(along) + CORRIDOR_MARGIN_M))
-    span = (x0, x1)
-
-    # Clipped to the sub-zone, so a corridor stops where its sub-zone does -
-    # at the district boundary, and at the line it shares with its neighbour.
-    quad = corridor(frame, street, axis, span[0], span[1], half)[0]
-    clipped = clip_to_convex(ring, quad[:-1])
-    if len(clipped) >= 3:
-        quad = clipped + [clipped[0]]
-
     ends = [pretty(names[step - 1]) if step > 0 else 'the district edge',
             pretty(names[step]) if step < len(names) else 'the district edge']
     return {
@@ -894,8 +730,10 @@ def segment_feature(frame, walk, ordered, ring, name, axis, step, members, spec,
             'label': '%s, %s to %s' % (pretty(name), ends[0], ends[1]),
             'tree_count': len(members),
         },
-        'geometry': {'type': 'Polygon',
-                     'coordinates': [quad]},
+        'geometry': {
+            'type': 'MultiPoint',
+            'coordinates': [[round(t['lng'], 6), round(t['lat'], 6)] for t in members],
+        },
     }
 
 
@@ -1157,13 +995,8 @@ def main():
             seg_id = '%s-%02d' % (spec['id'], i)
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
-            seg = segment_feature(frame, walk, ordered, ring, name, axis, step,
-                                  members, spec, seg_id)
-            if seg:
-                segments.append(seg)
-            else:
-                print('  WARNING: %s (%s) has no drawable geometry'
-                      % (seg_id, pretty(name)))
+            segments.append(segment_feature(members, walk, ordered, name, axis,
+                                            step, spec, seg_id))
 
         def in_order(names, axis):
             return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
