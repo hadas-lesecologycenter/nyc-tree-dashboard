@@ -1,11 +1,11 @@
 # CB3 Sub-Zones
 
-**Status: zone 1 done, zones 2 and 3 to come.** Four bands cover the East
-Village from E 14th St to E Houston St — all 2,597 of zone 1's street trees sit
-in exactly one sub-zone, so the sub-zone totals add up to the zone total the
-dashboard reports. `data/subzones.geojson` holds only what has been defined, so
-south of Houston St shows no sub-zone yet. The 28 mid-block sub-zones this
-replaces are in the git history.
+**Status: zones 1 and 2 done, zone 3 to come.** Eighteen sub-zones cover the
+East Village and the Lower East Side, E 14th St down to Grand St — all 3,860 of
+those trees sit in exactly one sub-zone, so the sub-zone totals add up to the
+zone totals the dashboard reports. `data/subzones.geojson` holds only what has
+been defined, so south of Grand St shows no sub-zone yet. The 28 mid-block
+sub-zones this replaces are in the git history.
 
 ## The rule
 
@@ -49,9 +49,29 @@ street it is named for, so that street opens the band below: E 10th St closes
 | **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E Houston St · 2nd Ave to 1st Ave | 18 | 257 |
 | **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E Houston St · Ave A to Ave B | 16 | 229 |
 | **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E Houston St · Ave C to FDR Dr | 14 | 226 |
+| **2A** | 2 | Chrystie St to Eldridge St, Houston to Delancey | Houston to Rivington St · Chrystie to Eldridge St | 16 | 179 |
+| **2B** | 2 | Allen St to Essex St, Houston to Delancey | Houston to Rivington St · Allen to Essex St | 22 | 178 |
+| **2C** | 2 | Norfolk St to Clinton St, Houston to Delancey | Houston to Rivington St · Norfolk to Clinton St | 18 | 174 |
+| **2D** | 2 | Attorney St to the East River, Houston to Delancey | Houston to Rivington St · Attorney to Mangin St | 29 | 265 |
+| **2E** | 2 | Chrystie St to Essex St, Delancey to Grand | Delancey to Grand St · Chrystie to Essex St | 33 | 207 |
+| **2F** | 2 | Norfolk St to the East River, Delancey to Grand | Delancey to Grand St · Norfolk to Mangin St | 41 | 260 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
+
+**Zone 2 is cut differently from zone 1, because it is shaped differently.**
+Delancey St is the one street here anybody navigates by and it splits the zone
+800 trees to 463, so the north band takes four sub-zones and the south two —
+forcing zone 1's three columns onto both would have produced one sub-zone of
+about 100 and another of 400. The column lines are Eldridge, Essex and Clinton,
+the wide named streets a crew would recognise, and Essex is shared by both
+bands so it runs unbroken through the zone. All six land between 174 and 265
+trees, inside the range zone 1 settled at.
+
+Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
+Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
+each: 2F is 41 segments averaging 6 trees, where 1A is 24 averaging 11. That is
+the street pattern, not the division.
 
 **Houston St is the one exception to the rule.** It is a zone divider, not just
 a street, and it keeps its centreline: the dashboard reports per-zone totals off
@@ -98,9 +118,14 @@ Two things make the segmentation legible rather than merely present:
   nothing else shows.
 
 Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 189 are
-drawn by construction, and the 2,379 marks on the map are exactly the 2,379
-trees that carry a `segmentId`.
+no boundary to clip against, so no segment can come out undrawable. All 348 are
+drawn by construction, and the marks on the map are exactly the trees that
+carry a `segmentId`.
+
+Zone 2 leaves more trees off a segment than zone 1 — 256 of 1,263 against 218
+of 2,597 — because the Lower East Side has more ground with no street through
+it: Baruch, Seward Park, Masaryk and Hillman. Those trees belong to a sub-zone
+but to no block within it.
 
 ## Where the lines come from
 
@@ -167,13 +192,38 @@ Where a right-of-way width is not certain the offset is measured instead, as
 the street's own sidewalk row plus a sidewalk. Only the streets in `ROW_HALF_M`
 are stated outright; that list is the place to add one if a width is known.
 
+## Fitting a grid the frame is not aligned to
+
+The metric frame is aligned to the East Village grid, because that is where its
+one exact anchor is — CB3's own E 14th St run. Zone 2's grid sits about seven
+degrees off it, and three things in the fitting quietly assumed otherwise:
+
+* the row finder started its search from a bearing of zero, which is right in
+  the East Village and 0.124 out on the Lower East Side — enough to smear a row
+  across the whole search window. The bearing is now measured off the trees
+  first, by scanning slopes for the one that makes the de-trended positions
+  clump hardest into rows;
+* the seed offsets were read off a point on each grid line rather than
+  converting the line, which shears the answer by the slope times the distance
+  to that point — under 10 m in the East Village, 200 m on the Lower East Side,
+  where it rejected every avenue for landing too far from its own seed;
+* the search window was tested against the raw coordinate while the values
+  collected were de-trended, which is the same thing on an aligned grid and
+  165 m adrift on this one.
+
+Together those took zone 2 from 13 of 22 streets fitted, half its trees on no
+street at all, to 18 of 22 and 80% placed. Zone 1's sub-zone totals did not
+move; three trees changed segment.
+
 ## Caveat
 
 No street-centerline dataset is reachable from this repo's build environment
 (NYC Open Data, Census TIGER and the OSM endpoints are all blocked), so every
 street except E 14th St and 4th Ave / the Bowery is located from the trees
 standing along it. Two streets have no two-row fit and cannot be used as
-boundaries: E 14th St, for the reason above, and FDR Drive. Housing
+boundaries: E 14th St, for the reason above, and FDR Drive. In zone 2, Willett
+St / Bialystoker Pl and Columbia St have no fit either — Baruch Houses covers
+most of what would be their frontage. Housing
 superblocks (Tompkins Square, Baruch, Vladeck, Rutgers, Smith) have no interior
 streets to detect. If real centerline data ever lands in the repo, the fitting
 step is the part to replace.
