@@ -1,10 +1,11 @@
 # CB3 Sub-Zones
 
-**Status: being redrawn.** Three bands are defined, E 14th St down to E 4th St,
-covering that stretch with no gap and no overlap. The rest of CB3's divisions
-are still to come, and `data/subzones.geojson` holds only the sub-zones that
-have been defined, so the district south of E 4th St shows no sub-zone yet.
-The 28 mid-block sub-zones this replaces are in the git history.
+**Status: zone 1 done, zones 2 and 3 to come.** Four bands cover the East
+Village from E 14th St to E Houston St — all 2,597 of zone 1's street trees sit
+in exactly one sub-zone, so the sub-zone totals add up to the zone total the
+dashboard reports. `data/subzones.geojson` holds only what has been defined, so
+south of Houston St shows no sub-zone yet. The 28 mid-block sub-zones this
+replaces are in the git history.
 
 ## The rule
 
@@ -45,9 +46,26 @@ street it is named for, so that street opens the band below: E 10th St closes
 | **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · Bowery / 3rd Ave to 1st Ave | 16 | 177 |
 | **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 155 |
 | **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 249 |
+| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E Houston St · 2nd Ave to 1st Ave | 18 | 257 |
+| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E Houston St · Ave A to Ave B | 16 | 229 |
+| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E Houston St · Ave C to FDR Dr | 14 | 226 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
+
+**Houston St is the one exception to the rule.** It is a zone divider, not just
+a street, and it keeps its centreline: the dashboard reports per-zone totals off
+that line, and pushing it north to keep the street whole would hand every tree
+on its north side to zone 2 and move those totals. So 1J–1L stop down the middle
+of Houston St, and it is the only street the sub-zones split — which is what the
+previous scheme did too. The cost is that the line passes within a metre of
+three trees on Houston's central plantings; the build reports them.
+
+1J's contents read "2nd Ave to 1st Ave" rather than naming the Bowery, because
+`BOWERY / 3 AVE` in the old grid is a single straight line standing in for two
+roads that diverge by up to 170 m — it tracks 3rd Ave in the north and misses
+the Bowery in the south. This affects only the wording and the segment count.
+1J's western edge is CB3's own boundary, which follows the Bowery exactly.
 
 ## Where the lines come from
 
