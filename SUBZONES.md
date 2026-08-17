@@ -81,30 +81,26 @@ rank, not by any fitted value, so re-running the fit cannot renumber a crew's
 assignment under them. `data/subzones.csv` carries a `segmentId` on every tree,
 so "which trees are in 1A-03" is a lookup rather than a guess.
 
-Three things make the segmentation legible rather than merely present:
+Two things make the segmentation legible rather than merely present:
 
-* **A segment is drawn as the corridor it covers**, wide enough to hold its own
-  two sidewalk rows, so the shaded area *is* the set of trees in the segment
-  rather than a bar balanced on the centreline with the trees off to the sides.
-  Width comes from the segment's own outermost tree, not a fixed figure — a
-  fixed half right of way was tried and left 28 trees outside their own
-  segment, because the Riis frontage on E 10th St stands 9 m out, past the
-  property line. Each corridor is clipped to its sub-zone, which is a truer
-  bound than any fixed one and stops it spilling into a neighbour.
-* **Each segment stops at the cross street's property line**, so it covers the
-  block *face* and the intersections are left blank. Drawn end to end they were
-  one unbroken line down E 12th St and no colour told you it was four blocks of
-  work; with the gaps you can count them.
+* **A segment is drawn as its trees.** The layer marks the trees themselves, in
+  the segment's colour, and nothing else — the shaded area *is* the set of trees
+  in the segment because there is no shaded area, only the trees. Two shapes
+  were tried before this and both read as a box sitting on the street rather
+  than as the work: a thick bar along the centreline, then a corridor polygon
+  wide enough to enclose both sidewalk rows. The trees group themselves anyway —
+  a block's trees stand in two rows with nothing in the intersection at either
+  end, so the gaps that make the segmentation countable are already in the data.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twelve sub-zones
   is well past what colour can distinguish, so hue is spent on the one thing
   nothing else shows.
 
-All 2,379 trees that belong to a segment fall inside their own corridor. Nine
-of them fall inside a second one as well, all in 1L, where Houston St converges
-with E 1st St and the two roads genuinely run close enough that their corridors
-overlap.
+Drawing the trees also removes a class of failure: there is no span to trim and
+no boundary to clip against, so no segment can come out undrawable. All 189 are
+drawn by construction, and the 2,379 marks on the map are exactly the 2,379
+trees that carry a `segmentId`.
 
 ## Where the lines come from
 
@@ -145,7 +141,7 @@ street names and as a starting guess for each fit.
 |---|---|
 | `data/subzones.geojson` | One polygon per defined sub-zone, clipped to CB3 |
 | `data/subzones.csv` | `treeId,subzoneId,segmentId,zone,latitude,longitude,species` |
-| `data/subzone-segments.geojson` | One Polygon per block segment, for the map layer |
+| `data/subzone-segments.geojson` | One MultiPoint per block segment — the trees it holds |
 | `data/cb3-street-lines.json` | The fitted centrelines, for inspection |
 | `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
 
