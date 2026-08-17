@@ -67,6 +67,20 @@ roads that diverge by up to 170 m — it tracks 3rd Ave in the north and misses
 the Bowery in the south. This affects only the wording and the segment count.
 1J's western edge is CB3's own boundary, which follows the Bowery exactly.
 
+## Block segments
+
+A sub-zone's size is quoted in **block segments**: one street, one block long,
+both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
+actually handed, so it is drawn as well as counted. The **Block Segments**
+layer in the map's Program Layers panel shows all 189 of them, each on its own
+street's fitted centreline, cut at the two cross streets that bracket it and
+trimmed to its sub-zone, coloured by sub-zone and labelled with its tree count.
+
+2,379 of zone 1's 2,597 street trees sit on a segment. The other 218 stand
+where there is no street line to put them on — inside housing superblocks, in
+courtyards and on paths — so they belong to a sub-zone but to no segment
+within it.
+
 ## Where the lines come from
 
 Two anchors are exact, and they are the only exact geometry in this repo.
@@ -106,6 +120,7 @@ street names and as a starting guess for each fit.
 |---|---|
 | `data/subzones.geojson` | One polygon per defined sub-zone, clipped to CB3 |
 | `data/subzones.csv` | `treeId,subzoneId,zone,latitude,longitude,species` |
+| `data/subzone-segments.geojson` | One LineString per block segment, for the map layer |
 | `data/cb3-street-lines.json` | The fitted centrelines, for inspection |
 | `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
 
