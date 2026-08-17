@@ -2681,9 +2681,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 </script>
 <script>
-const CENSUS_DATA_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census.json?t=' + Date.now();
-const CB3_BOUNDARY_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/cb3-boundary.json';
-const SUBZONES_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/subzones.geojson';
+// Data paths are relative on purpose. GitHub Pages publishes data/ alongside
+// this page, so the same-origin copy is reachable by definition wherever the
+// page itself loaded — no separate host to be blocked, throttled, or rate
+// limited. raw.githubusercontent.com is a source-code host rather than a CDN
+// for application data and is unreachable from parts of the world, which left
+// the map silently empty. It stays on only as a fallback, for deployments that
+// are not same-origin: the Apps Script embed, or opening this file from disk.
+const DATA_FALLBACK_BASE = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/';
+
+// No cache-busting query on the census: it is the largest file on the site and
+// re-downloading several megabytes on every visit is what made a slow or lossy
+// connection fatal. GitHub Pages serves it with an ETag and a short max-age, so
+// repeat visits revalidate cheaply and pick up a new sync within minutes.
+const CENSUS_DATA_URL = 'data/census.json';
+const CB3_BOUNDARY_URL = 'data/cb3-boundary.json';
+const SUBZONES_URL = 'data/subzones.geojson';
+
+// Fetch a repo data file, preferring the same-origin copy and falling back to
+// the raw.githubusercontent mirror. Returns a Response; throws if both fail.
+async function fetchData(path, init) {
+  const candidates = [path, DATA_FALLBACK_BASE + path];
+  let lastErr;
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, init);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res;
+    } catch (e) {
+      lastErr = e;
+      console.warn('Data fetch failed for ' + url + ':', e);
+    }
+  }
+  throw lastErr;
+}
 let CENSUS_DATA = []; // loaded dynamically at startup
 
 
@@ -4443,7 +4474,7 @@ function subzoneShade(zoneId, index, total) {
 
 async function initSubzonesLayer() {
   if (!subzonesData) {
-    const resp = await fetch(SUBZONES_URL);
+    const resp = await fetchData(SUBZONES_URL);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     subzonesData = await resp.json();
   }
@@ -4530,10 +4561,10 @@ const TC_SHEETS_URL = '';
 const TC_TREEMAP_PROXY_URL = ''; // disabled — bookmarklet writes directly to GitHub
 
 // Fetches the activities CSV from GitHub (updates within ~5 minutes of a bookmarklet sync).
-const TC_SCRAPED_SHEET_CSV_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/activities.csv';
+const TC_SCRAPED_SHEET_CSV_URL = 'data/activities.csv';
 
 // Tree coordinates CSV written by the bookmarklet (treeId → lat/lng/address/species).
-const TC_TREES_CSV_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/trees.csv';
+const TC_TREES_CSV_URL = 'data/trees.csv';
 
 // In-memory store for scraped events — never written to localStorage.
 // Shape is identical to manually-created areas so all existing UI works unchanged.
@@ -4545,7 +4576,7 @@ let _tcTreeCoords = {};
 async function tcLoadTreeCoords() {
   if (!TC_TREES_CSV_URL) return;
   try {
-    const res = await fetch(TC_TREES_CSV_URL);
+    const res = await fetchData(TC_TREES_CSV_URL);
     if (!res.ok) return;
     const lines = (await res.text()).trim().split('\n');
     lines.slice(1).forEach(line => {
@@ -4850,7 +4881,7 @@ async function tcFetchFromProxy() {
 
 // Fetch activities from the fallback CSV on GitHub/jsDelivr.
 async function tcFetchFromCSV() {
-  const res = await fetch(TC_SCRAPED_SHEET_CSV_URL, { cache: 'no-cache' });
+  const res = await fetchData(TC_SCRAPED_SHEET_CSV_URL, { cache: 'no-cache' });
   if (!res.ok) throw new Error('CSV HTTP ' + res.status);
   const text = await res.text();
   const lines = text.trim().split('\n');
@@ -7349,7 +7380,7 @@ window.addEventListener('load', async () => {
   let censusError = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const censusRes = await fetch(CENSUS_DATA_URL);
+      const censusRes = await fetchData(CENSUS_DATA_URL);
       if (!censusRes.ok) throw new Error('HTTP ' + censusRes.status);
       CENSUS_DATA = await censusRes.json();
       censusError = null;
@@ -7365,7 +7396,7 @@ window.addEventListener('load', async () => {
   }
 
   try {
-    const boundaryRes = await fetch(CB3_BOUNDARY_URL);
+    const boundaryRes = await fetchData(CB3_BOUNDARY_URL);
     if (boundaryRes.ok) {
       const ring = await boundaryRes.json();
       if (Array.isArray(ring) && ring.length > 3) _cb3OfficialPolygon = ring;
