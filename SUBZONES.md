@@ -1,10 +1,10 @@
 # CB3 Sub-Zones
 
-**Status: being redrawn.** The E 14th St to E 10th St band is defined — 1A, 1B
-and 1C — and covers that band with no gap and no overlap. The rest of CB3's
-divisions are still to come, and `data/subzones.geojson` holds only the
-sub-zones that have been defined, so the district south of E 10th St shows no
-sub-zone yet. The 28 mid-block sub-zones this replaces are in the git history.
+**Status: being redrawn.** Two bands are defined, E 14th St down to E 7th St,
+covering that stretch with no gap and no overlap. The rest of CB3's divisions
+are still to come, and `data/subzones.geojson` holds only the sub-zones that
+have been defined, so the district south of E 7th St shows no sub-zone yet.
+The 28 mid-block sub-zones this replaces are in the git history.
 
 ## The rule
 
@@ -29,14 +29,22 @@ neighbours abut exactly: 1A's eastern edge and 1B's western edge are both
 
 ## The sub-zones
 
-E 14th St to E 10th St, west to east. All three stop immediately north of
-E 10th St, so E 10th St belongs to the band below.
+Bands run north to south, and within a band the three sub-zones run west to
+east on the same three avenue columns. A band stops immediately north of the
+street it is named for, so that street opens the band below: E 10th St closes
+1A–1C by bounding them and then belongs to 1D–1F.
 
 | ID | Zone | Named | Works both sides of | Segments | Trees |
 |---|---|---|---|---|---|
 | **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · Bowery / 3rd Ave to 1st Ave | 24 | 259 |
 | **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
 | **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 176 |
+| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Bowery / 3rd Ave to 1st Ave | 18 | 233 |
+| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 126 |
+| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 261 |
+
+1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
+between E 7th and E 10th, and park trees are not street trees.
 
 ## Where the lines come from
 
