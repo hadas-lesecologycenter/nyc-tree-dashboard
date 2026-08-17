@@ -41,11 +41,12 @@ south sidewalk.
 
 The edge itself is then the centreline offset by half the street's right of
 way, which puts it on the property line - "immediately north of E 10th St" in
-the literal sense. Every offset is checked against the tree rows it is supposed
-to clear.
+the literal sense - and nudged further out if a tree stands there, because a
+right of way is a constant and a street's planting is not. See EDGE_CLEAR_M.
 
-Only sub-zone 1A is defined so far; the rest of the district's divisions are
-still to come, and until they arrive data/subzones.geojson holds 1A alone.
+Sub-zones 1A to 1F are defined, covering E 14th St down to E 7th St; the rest
+of the district's divisions are still to come, and until they arrive
+data/subzones.geojson holds only the band that has been drawn.
 
 Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
@@ -98,6 +99,39 @@ def row_half(name, fit):
     if name in ROW_HALF_M:
         return ROW_HALF_M[name]
     return max(MIN_ROW_HALF_M, fit['half_row_m'] + SIDEWALK_M)
+
+
+# Half a right of way is where the boundary WANTS to sit, but it is not always
+# where it can. A right of way is a constant and a street's planting is not:
+# along E 10th St the north side is an ordinary sidewalk row 5.4 m out as far
+# as Ave C, and then the Jacob Riis Houses set their frontage back and plant it
+# 8-10 m out, past the property line, on housing-authority ground. A boundary
+# held at 9.14 m runs straight down that row and splits it between two
+# sub-zones - which is the one thing every rule here exists to avoid.
+#
+# So each edge is nudged outward until it has clear air: of the offsets between
+# half a right of way and EDGE_SEARCH_M beyond it, take the SMALLEST that keeps
+# EDGE_CLEAR_M from every tree in the column that edge crosses, and failing
+# that the one that keeps the most. Smallest, so the line still hugs its
+# street; per column, because the planting changes along the street and a
+# single offset cannot suit all of it.
+EDGE_CLEAR_M = 1.0       # air a boundary should leave either side of itself
+EDGE_SEARCH_M = 6.0      # how far past the right of way it may be nudged
+
+
+def edge_offset(fit, floor, obstacles):
+    """Choose how far off its centreline a boundary sits.
+
+    `obstacles` are distances, in metres, of the trees in this edge's column
+    from the centreline, measured on the side the boundary goes. Returns
+    (offset, clearance)."""
+    near = sorted(d for d in obstacles if 0 < d <= floor + EDGE_SEARCH_M + 4.0)
+    top = floor + EDGE_SEARCH_M
+    tries = [floor, top] + [(a + b) / 2.0 for a, b in zip(near, near[1:])]
+    scored = [(o, min((abs(d - o) for d in near), default=99.0))
+              for o in tries if floor <= o <= top]
+    clear = [c for c in scored if c[1] >= EDGE_CLEAR_M]
+    return min(clear, key=lambda c: c[0]) if clear else max(scored, key=lambda c: c[1])
 
 # How far a fitted centreline may sit from where the old grid put it before the
 # fit is treated as having locked onto the wrong pair of rows.
@@ -663,10 +697,31 @@ def main():
     for spec in SUBZONES:
         rid = spec['region']
         region_lines = lines[rid]
+        region_trees = [t for t in trees if t['region'] == rid]
         window = [[-BIG, -BIG], [BIG, -BIG], [BIG, BIG], [-BIG, BIG]]  # (u, n)
         used = {}
 
-        def edge(side, key):
+        def column(sides):
+            """Extent of this sub-zone along the axis an edge runs in.
+
+            An edge's offset is chosen from the trees it actually crosses, so
+            it needs to know how far the sub-zone reaches sideways. The two
+            perpendicular edges give that, at their nominal offsets - good
+            enough to say which trees are in the column, which is all it is
+            for. Two sub-zones bounded by the same street over the same column
+            therefore get the same offset, which is what keeps 1C and 1F, or
+            1A and 1D, sharing one line."""
+            lo, hi = -BIG, BIG
+            wname, ename = spec[sides[0]], spec[sides[1]]
+            if wname != CB3_EDGE:
+                g = region_lines[wname]
+                lo = g['offset'] + row_half(wname, g)
+            if ename != CB3_EDGE:
+                g = region_lines[ename]
+                hi = g['offset'] + row_half(ename, g)
+            return lo, hi
+
+        def edge(side):
             """Half-plane for one named edge, or None for a CB3 edge.
 
             CB3 edges are left open on purpose: clipping the district boundary
@@ -678,29 +733,39 @@ def main():
             f = region_lines.get(name)
             if f is None:
                 raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
-            half = row_half(name, f)
-            used[side] = (name, f, half)
+            floor = row_half(name, f)
+            if f['axis'] == 'ew':
+                lo, hi = column(('west', 'east'))
+                obst = [f['offset'] + f['slope'] * t['u'] - t['n'] for t in region_trees
+                        if lo <= t['u'] <= hi]
+            else:
+                lo, hi = column(('north', 'south'))
+                lo, hi = (lo, hi) if lo <= hi else (hi, lo)
+                obst = [t['u'] - (f['offset'] + f['slope'] * t['n']) for t in region_trees
+                        if lo <= t['n'] <= hi]
+            half, clear = edge_offset(f, floor, obst)
+            used[side] = (name, f, half, clear, floor)
             return f, half
 
         # north / south: n = slope*u + offset, boundary offset NORTH by half a
         # right-of-way, so the street sits south of its own boundary.
         # west / east: u = slope*n + offset, offset EAST, so the avenue sits
         # west of its own boundary.
-        south = edge('south', 'n')
+        south = edge('south')
         if south:
             f, half = south
             # keep n <= slope*u + offset - half   ->   n - slope*u - (offset-half) <= 0
             window = clip_halfplane(window, (-f['slope'], 1.0, -(f['offset'] - half)))
-        north = edge('north', 'n')
+        north = edge('north')
         if north:
             f, half = north
             window = clip_halfplane(window, (f['slope'], -1.0, (f['offset'] - half)))
-        east = edge('east', 'u')
+        east = edge('east')
         if east:
             f, half = east
             # keep u <= slope*n + offset + half
             window = clip_halfplane(window, (1.0, -f['slope'], -(f['offset'] + half)))
-        west = edge('west', 'u')
+        west = edge('west')
         if west:
             f, half = west
             window = clip_halfplane(window, (-1.0, f['slope'], (f['offset'] + half)))
@@ -767,10 +832,12 @@ def main():
         print('       contains: %s' % props['contains'])
         for side in ('north', 'south', 'west', 'east'):
             if side in used:
-                name, f, half = used[side]
-                print('       %-5s edge %-14s centreline offset by %.2f m '
-                      '(%.2f m clear of its own sidewalk row)'
-                      % (side, pretty(name), half, half - f['half_row_m']))
+                name, f, half, clear, floor = used[side]
+                note = '' if half <= floor + 0.01 else ' (nudged out from %.2f)' % floor
+                if clear < EDGE_CLEAR_M:
+                    note += '  <- no clear band; nearest tree %.2f m' % clear
+                print('       %-5s edge %-14s offset %5.2f m, %.2f m clear%s'
+                      % (side, pretty(name), half, clear, note))
             else:
                 print('       %-5s edge %s' % (side, 'CB3 district boundary'))
 

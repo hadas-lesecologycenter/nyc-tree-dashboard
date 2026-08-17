@@ -38,10 +38,10 @@ street it is named for, so that street opens the band below: E 10th St closes
 |---|---|---|---|---|---|
 | **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · Bowery / 3rd Ave to 1st Ave | 24 | 259 |
 | **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
-| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 176 |
-| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Bowery / 3rd Ave to 1st Ave | 18 | 233 |
+| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to Ave D | 15 | 169 |
+| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Bowery / 3rd Ave to 1st Ave | 18 | 232 |
 | **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 126 |
-| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 261 |
+| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 15 | 268 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
@@ -60,8 +60,17 @@ one per sidewalk, and the rows are very straight — a least-squares line throug
 one comes back with an RMS residual of 0.1–0.5 m. Fitting each row separately
 and averaging the pair gives a centreline good to well under a metre. The edge
 is that centreline pushed out by half a right of way (30 ft for the numbered
-side streets, 50 ft for the avenues) so it lands on the property line, and the
-build checks every offset against the sidewalk rows it has to clear.
+side streets, 50 ft for the avenues) so it lands on the property line.
+
+Half a right of way is where a boundary wants to sit, but not always where it
+can, because a right of way is a constant and a street's planting is not. As
+far as Ave C the north side of E 10th St is an ordinary sidewalk row 5.4 m out;
+east of it the Jacob Riis Houses set their frontage back and plant it 8–10 m
+out, past the property line. A boundary held at 9.14 m ran straight down that
+row. So each edge is nudged outward until it has clear air: the smallest offset
+that keeps a metre from every tree in the column that edge crosses. The nudge
+is per column, since a single offset cannot suit the whole street, which is why
+the E 10th St boundary steps out by 5 m at Ave B.
 
 This is a different construction from the old `cb3-street-grid.json`, which fit
 whole families of streets at once. That fit put E 14th St 9.5 m south of the
@@ -86,10 +95,11 @@ python3 scripts/build_subzones.py
 ```
 
 It prints every fitted centreline with the size and straightness of the two
-rows behind it, then each sub-zone with the offset of each of its four edges
-and how much clearance that leaves over the street's own sidewalk row. It
-checks that no tree lands in two sub-zones and that no edge either cuts into
-the street it names or reaches the next street over.
+rows behind it, then each sub-zone with the offset of each of its four edges,
+how much air that leaves either side of the line, and whether the edge had to
+be nudged out past the property line to find it. It checks that no tree lands
+in two sub-zones and that no edge either cuts into the street it names or
+reaches the next street over.
 
 To add a sub-zone, add an entry to `SUBZONES` in that script naming the four
 lines that close it and re-run. Reuse the neighbour's line verbatim — give the
