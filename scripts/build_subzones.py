@@ -44,9 +44,9 @@ way, which puts it on the property line - "immediately north of E 10th St" in
 the literal sense - and nudged further out if a tree stands there, because a
 right of way is a constant and a street's planting is not. See EDGE_CLEAR_M.
 
-Sub-zones 1A to 1F are defined, covering E 14th St down to E 7th St; the rest
+Sub-zones 1A to 1I are defined, covering E 14th St down to E 4th St; the rest
 of the district's divisions are still to come, and until they arrive
-data/subzones.geojson holds only the band that has been drawn.
+data/subzones.geojson holds only the bands that have been drawn.
 
 Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
@@ -211,6 +211,34 @@ SUBZONES = [
         'west': 'AVE B',
         'east': CB3_EDGE,
         'bounds': 'Ave C to the East River, E 10th St to E 7th St',
+    },
+
+    # The 7th-to-4th band. 'E 7 ST' over the same three columns as above, so
+    # each edge is the identical line the band above closed on - including the
+    # nudge it needed - and E 7th St lands here.
+    {
+        'id': '1G', 'zone': 1, 'region': 'EV',
+        'north': 'E 7 ST',
+        'south': 'E 4 ST',
+        'west': CB3_EDGE,
+        'east': '1 AVE',
+        'bounds': '4th Ave to 1st Ave, E 7th St to E 4th St',
+    },
+    {
+        'id': '1H', 'zone': 1, 'region': 'EV',
+        'north': 'E 7 ST',
+        'south': 'E 4 ST',
+        'west': '1 AVE',
+        'east': 'AVE B',
+        'bounds': 'Ave A to Ave B, E 7th St to E 4th St',
+    },
+    {
+        'id': '1I', 'zone': 1, 'region': 'EV',
+        'north': 'E 7 ST',
+        'south': 'E 4 ST',
+        'west': 'AVE B',
+        'east': CB3_EDGE,
+        'bounds': 'Ave C to the East River, E 7th St to E 4th St',
     },
 ]
 
