@@ -149,6 +149,35 @@ SUBZONES = [
         'east': CB3_EDGE,           # the East River, CB3's own eastern edge
         'bounds': 'Ave C to the East River, E 14th St to E 10th St',
     },
+
+    # The 10th-to-7th band. 'E 10 ST' again, now as the northern edge: it is
+    # one line, so this band picks up exactly where the one above stops, and
+    # E 10th St itself lands here rather than in 1A-1C. Same three avenue
+    # columns, so 1D sits under 1A, 1E under 1B, 1F under 1C.
+    {
+        'id': '1D', 'zone': 1, 'region': 'EV',
+        'north': 'E 10 ST',
+        'south': 'E 7 ST',
+        'west': CB3_EDGE,           # the Bowery / Cooper Sq below Astor Pl
+        'east': '1 AVE',
+        'bounds': '4th Ave to 1st Ave, E 10th St to E 7th St',
+    },
+    {
+        'id': '1E', 'zone': 1, 'region': 'EV',
+        'north': 'E 10 ST',
+        'south': 'E 7 ST',
+        'west': '1 AVE',
+        'east': 'AVE B',
+        'bounds': 'Ave A to Ave B, E 10th St to E 7th St',
+    },
+    {
+        'id': '1F', 'zone': 1, 'region': 'EV',
+        'north': 'E 10 ST',
+        'south': 'E 7 ST',
+        'west': 'AVE B',
+        'east': CB3_EDGE,
+        'bounds': 'Ave C to the East River, E 10th St to E 7th St',
+    },
 ]
 
 
