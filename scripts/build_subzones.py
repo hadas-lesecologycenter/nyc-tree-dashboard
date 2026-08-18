@@ -857,22 +857,123 @@ def fit_region_lines(frame, trees_un, grid_region, log):
             walk[s['name']] = {'name': s['name'], 'axis': axis, 'slope': slope,
                                'offset': offset, 'half_row_m': 0.0, 'rows': [],
                                'seeded': True, 'divider': True}
+    measure_reach(walk, trees_un)
     return fitted, walk
+
+
+# How far from a centreline a tree can stand and still be ON that street.
+#
+# This is a different question from where a BOUNDARY goes, and wants a more
+# generous answer. A boundary has to clear the street's planting; an assignment
+# has to claim it. Measure every tree's distance to its nearest centreline and
+# the shape is unmistakable: a peak at 4-6 m (the sidewalk rows), a shoulder
+# out to about 11 m (set-back frontage, and the far sidewalk of the avenues
+# wide enough to have one), then from 12 m a flat background of 30-50 trees per
+# metre all the way out - which is what trees scattered inside a block look
+# like. So the frontage ends at 12 m, and that is the floor here.
+#
+# Twelve metres is the FLOOR, though, not the answer. Streets are not all the
+# same width and a street is not the same width along its whole run: Allen St
+# carries a central mall and stands its sidewalk rows 13 m out, Delancey St
+# widens into the bridge approach and puts a row of 30 trees 27 m from its
+# centreline, and both were being orphaned wholesale by a flat 12 m. So the
+# reach is MEASURED, per street and per side, from the trees themselves - the
+# same evidence the centrelines come from - and only ever widens the floor.
+SEGMENT_REACH_M = 12.0        # frontage always reaches at least this far
+SEGMENT_REACH_MAX_M = 28.0    # and never further: 185 ft kerb to kerb is nobody
+SEGMENT_PEAK_FRAC = 0.4       # a bin holds a ROW at this share of the side's best
+SEGMENT_GAP_FRAC = 0.4        # and never this far towards the next parallel street
+REACH_BIN_M = 2.0
+
+
+def measure_reach(walk, trees_un):
+    """Set each line's reach: how far out its own planting goes, per side.
+
+    A row of trees is a spike in the profile of perpendicular distances and
+    interior scatter is a flat background, so the outermost bin still holding a
+    row's worth of trees is where the street's frontage ends. Two guards keep
+    that from running away: an absolute ceiling, and a share of the gap to the
+    next parallel street, so no line can reach halfway into its neighbour's
+    block and claim trees that are plainly not on it.
+
+    Sides are measured separately because streets are not symmetrical. Delancey
+    St has an ordinary 10 m row on its north side and its widened south side
+    27 m out; one number for both would either drop the south row or drag the
+    north boundary into the block."""
+    lines = list(walk.values())
+    for g in lines:
+        g['reach'] = [SEGMENT_REACH_M, SEGMENT_REACH_M]
+
+    # Where the neighbouring street runs, measured in the middle of the region
+    # rather than at the frame's origin. An offset is an intercept, and two
+    # lines that are not parallel have intercepts that say nothing about how
+    # far apart they are out where the trees actually stand: the zone dividers
+    # keep the boundary's own bearing, which differs from the fitted families
+    # by up to 0.15, and comparing intercepts put E Houston St 19 m from E 1st
+    # St - a gap that would have capped Houston's reach at the floor.
+    umed = sorted(u for u, _ in trees_un)[len(trees_un) // 2] if trees_un else 0.0
+    nmed = sorted(n for _, n in trees_un)[len(trees_un) // 2] if trees_un else 0.0
+    caps = {}
+    for axis in ('ew', 'ns'):
+        mid = umed if axis == 'ew' else nmed
+        fam = sorted((g for g in lines if g['axis'] == axis),
+                     key=lambda g: g['slope'] * mid + g['offset'])
+        at = [g['slope'] * mid + g['offset'] for g in fam]
+        for i, g in enumerate(fam):
+            hyp = math.hypot(1.0, g['slope'])
+            gaps = [abs(at[j] - at[i]) / hyp
+                    for j in (i - 1, i + 1) if 0 <= j < len(fam)]
+            cap = min([SEGMENT_REACH_MAX_M]
+                      + [SEGMENT_GAP_FRAC * d for d in gaps if d > 0])
+            caps[id(g)] = max(SEGMENT_REACH_M, cap)
+
+    nbin = int(math.ceil(SEGMENT_REACH_MAX_M / REACH_BIN_M))
+    hist = {id(g): ([0] * nbin, [0] * nbin) for g in lines}
+    for u, n in trees_un:
+        for g in lines:
+            off = (n - (g['slope'] * u + g['offset']) if g['axis'] == 'ew'
+                   else u - (g['slope'] * n + g['offset']))
+            d = off / math.hypot(1.0, g['slope'])
+            b = int(abs(d) / REACH_BIN_M)
+            if b < nbin:
+                hist[id(g)][0 if d < 0 else 1][b] += 1
+
+    for g in lines:
+        cap = caps[id(g)]
+        top = min(nbin, int(math.ceil(cap / REACH_BIN_M)))
+        for side in (0, 1):
+            bins = hist[id(g)][side][:top]
+            if not bins:
+                continue
+            floor_count = max(3.0, SEGMENT_PEAK_FRAC * max(bins))
+            for b in range(len(bins) - 1, -1, -1):
+                if bins[b] >= floor_count:
+                    g['reach'][side] = max(SEGMENT_REACH_M,
+                                           min(cap, (b + 1) * REACH_BIN_M))
+                    break
 
 
 def nearest_line(walk, u, n):
     """Name of the street a tree stands on, and which family it belongs to.
 
-    None for a tree that is not on any street: a few hundred trees in the
+    None for a tree that is not on any street: several hundred trees in the
     census stand in courtyards, on housing-estate paths and inside the
     superblocks, and the nearest street can be 30 m away. Left unfiltered they
     put E 10th St in the contents of a sub-zone that stops a block short of
     it."""
     best = None
     for name, g in walk.items():
-        d = (abs(n - (g['slope'] * u + g['offset'])) if g['axis'] == 'ew'
-             else abs(u - (g['slope'] * n + g['offset'])))
-        if d <= row_half(name, g) and (best is None or d < best[0]):
+        # Perpendicular distance, not the raw coordinate gap. They agree where
+        # the frame is aligned to the grid and differ by the slope's hypotenuse
+        # where it is not - 22% in Two Bridges, which was rejecting that whole
+        # region's frontage as if it stood a fifth further out than it does.
+        off = (n - (g['slope'] * u + g['offset']) if g['axis'] == 'ew'
+               else u - (g['slope'] * n + g['offset']))
+        d = off / math.hypot(1.0, g['slope'])
+        side = g.get('reach', (SEGMENT_REACH_M, SEGMENT_REACH_M))[0 if d < 0 else 1]
+        reach = max(row_half(name, g), side)
+        d = abs(d)
+        if d <= reach and (best is None or d < best[0]):
             best = (d, name, g['axis'])
     return (best[1], best[2]) if best else (None, None)
 
@@ -1208,6 +1309,8 @@ def main():
             'contains': ', '.join(x for x in (streets_txt, avenues_txt) if x),
             'blocks': len(segs),
             'tree_count': len(inside),
+            'segment_trees': sum(len(v) for v in segs.values()),
+            'off_segment': len(inside) - sum(len(v) for v in segs.values()),
             'area_m2': round(poly_area_m2(ring[:-1])),
         }
         features.append({'type': 'Feature', 'properties': props,
@@ -1216,8 +1319,9 @@ def main():
             csv_rows.append((t['tree_id'], spec['id'], tree_segment.get(t['tree_id'], ''),
                              spec['zone'], t['lat'], t['lng'], t['species']))
 
-        print('  %-4s %2d blocks %4d trees   bounds: %s' % (spec['id'], len(segs),
-                                                            len(inside), spec['bounds']))
+        print('  %-4s %2d blocks %4d trees (%d off any segment)   bounds: %s'
+              % (spec['id'], len(segs), len(inside), props['off_segment'],
+                 spec['bounds']))
         print('       contains: %s' % props['contains'])
         for side in ('north', 'south', 'west', 'east'):
             if side in used:
