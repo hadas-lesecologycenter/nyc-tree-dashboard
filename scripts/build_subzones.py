@@ -13,13 +13,15 @@ of streets at once, so they sat several metres off the real roadway.
 Now each edge is a named street, placed by its own two rows of sidewalk trees
 and offset to that street's property line:
 
-  * the boundary for a numbered street runs immediately NORTH of it, so the
+  * the boundary for an east-west street runs immediately NORTH of it, so the
     street - both sidewalks - belongs to the sub-zone on the south side;
-  * the boundary for an avenue runs immediately EAST of it, so the avenue -
-    both sidewalks - belongs to the sub-zone on the west side.
+  * the boundary for a north-south street runs immediately EAST of it, so that
+    street belongs to the sub-zone on the west side.
 
-A sub-zone therefore owns its northern street and its eastern avenue, and the
-rule tiles CB3 without splitting any street down the middle.
+A sub-zone therefore owns its northern street and its eastern one, and the rule
+tiles CB3 without splitting any street down the middle - except the three
+dividers, Houston St, Grand St and East Broadway, which keep their centrelines.
+See DIVIDER.
 
 How the lines are placed
 ------------------------
@@ -32,9 +34,10 @@ the CB3 clip close them.
 
 Every other street is fitted from the census. Street trees stand in two rows,
 one per sidewalk, and those rows are startlingly straight - a least-squares
-line through one comes out with an RMS residual of 0.1-0.5 m. Fitting the two
-rows separately and averaging them gives a centreline good to well under a
-metre, which is a different thing from the old grid's family fit: that one took
+line through one comes out with an RMS residual of 0.34 m median in the East
+Village, 0.82 m in Two Bridges where the rows are shorter. Fitting the two rows
+separately and averaging them gives a centreline good to well under a metre,
+which is a different thing from the old grid's family fit: that one took
 whatever rows it could find, so E 14th St - whose north sidewalk is in CB6 and
 absent from the data - landed 9.5 m south of the real street, on top of its own
 south sidewalk.
@@ -144,12 +147,12 @@ SEED_TOLERANCE_M = 25.0
 # --------------------------------------------------------------- sub-zones --
 # Each of the four sides names the street whose boundary line closes it, NOT
 # the street the sub-zone starts at. Because every line runs immediately north
-# of its numbered street and immediately east of its avenue:
+# of its east-west street and immediately east of its north-south one:
 #
 #   'north'  the street is INSIDE - it sits south of its own line
 #   'south'  the street is OUTSIDE - it belongs to the sub-zone below
-#   'east'   the avenue is INSIDE - it sits west of its own line
-#   'west'   the avenue is OUTSIDE - it belongs to the sub-zone to the left
+#   'east'   that street is INSIDE - it sits west of its own line
+#   'west'   that street is OUTSIDE - it belongs to the sub-zone to the left
 #
 # So a sub-zone described as "Ave A to Ave B" has 'west': '1 AVE' - the line
 # east of 1st Ave is where Ave A's block begins. Naming the line rather than
@@ -188,6 +191,8 @@ REGION_BOUNDS = {
 # exactly zone 1, and Houston St is the only street the sub-zones split - which
 # is what the previous scheme did too.
 DIVIDER = 'DIVIDER:'
+DIVIDER_NAME = {'houston': 'E Houston St', 'grand': 'Grand St',
+                'eastBroadway': 'East Broadway'}
 
 # The 14th-to-10th band, west to east. Every one of these stops immediately
 # north of E 10th St, so E 10th St itself belongs to the band below.
@@ -1082,7 +1087,9 @@ def main():
                 lo, hi = column(('west', 'east'))
                 clear = min((abs(f['offset'] + f['slope'] * t['u'] - t['n'])
                              for t in region_trees if lo <= t['u'] <= hi), default=99.0)
-                used[side] = (name[len(DIVIDER):] + ' (zone divider)', f, 0.0, clear, 0.0)
+                key = name[len(DIVIDER):]
+                label = DIVIDER_NAME.get(key, key) + ' (divider)'
+                used[side] = (label, f, 0.0, clear, 0.0)
                 return f, 0.0
             if f['axis'] == 'ew':
                 lo, hi = column(('west', 'east'))
