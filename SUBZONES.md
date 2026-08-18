@@ -1,11 +1,10 @@
 # CB3 Sub-Zones
 
-**Status: zones 1 and 2 done, zone 3 to come.** Eighteen sub-zones cover the
-East Village and the Lower East Side, E 14th St down to Grand St — all 3,860 of
-those trees sit in exactly one sub-zone, so the sub-zone totals add up to the
-zone totals the dashboard reports. `data/subzones.geojson` holds only what has
-been defined, so south of Grand St shows no sub-zone yet. The 28 mid-block
-sub-zones this replaces are in the git history.
+**Status: all of CB3 is drawn.** Twenty-five sub-zones cover the district —
+**all 5,308 CB3 street trees sit in exactly one**, none in two, none in
+neither, and the per-zone totals come out at 2,597 / 1,263 / 1,448, exactly
+matching the three zones the dashboard reports. The 28 mid-block sub-zones this
+replaces are in the git history.
 
 ## The rule
 
@@ -55,6 +54,13 @@ street it is named for, so that street opens the band below: E 10th St closes
 | **2D** | 2 | Attorney St to the East River, Houston to Delancey | Houston to Rivington St · Attorney to Mangin St | 29 | 265 |
 | **2E** | 2 | Chrystie St to Essex St, Delancey to Grand | Delancey to Grand St · Chrystie to Essex St | 33 | 207 |
 | **2F** | 2 | Norfolk St to the East River, Delancey to Grand | Delancey to Grand St · Norfolk to Mangin St | 41 | 260 |
+| **3A** | 3 | Bowery to Essex St, Grand to Division St | Grand to Division St · Bowery to Essex St | 23 | 259 |
+| **3B** | 3 | Norfolk St to the East River, Grand to Division St | Grand to Division St · Norfolk St to FDR Dr | 26 | 182 |
+| **3C** | 3 | Catherine St to Pike St, E Broadway to Monroe St | E Broadway to Madison St · Catherine to Pike St | 13 | 152 |
+| **3D** | 3 | Rutgers St to Montgomery St, E Broadway to Monroe St | E Broadway to Madison St · Rutgers to Montgomery St | 22 | 223 |
+| **3E** | 3 | Gouverneur St to the East River, E Broadway to Monroe St | E Broadway to Madison St · Gouverneur to Jackson St | 12 | 171 |
+| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe to South St · Catherine to Pike St | 20 | 268 |
+| **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe to South St · Rutgers to Jackson St | 33 | 193 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
@@ -67,6 +73,19 @@ about 100 and another of 400. The column lines are Eldridge, Essex and Clinton,
 the wide named streets a crew would recognise, and Essex is shared by both
 bands so it runs unbroken through the zone. All six land between 174 and 265
 trees, inside the range zone 1 settled at.
+
+**Zone 3 is two street patterns, not one**, so it is divided as two. Grand St
+to Division St is the tail of the Lower East Side grid; south of East Broadway,
+Two Bridges turns about 35 degrees and runs on its own. They are fitted
+separately and cut separately, which is why the sub-zones do not line up across
+East Broadway — the streets do not either. The Chinatown strip is thin and
+holds 441 trees, so it splits east-west only, on Essex St; Two Bridges holds
+1,007 and takes five, three above Monroe St and two below, with Pike St shared
+by both bands.
+
+East Broadway is split down the middle, like Houston and Grand, but for a
+different reason: it is the seam between two grids rather than a zone divider,
+and it has no two-row fit to offset from.
 
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
@@ -122,10 +141,11 @@ no boundary to clip against, so no segment can come out undrawable. All 348 are
 drawn by construction, and the marks on the map are exactly the trees that
 carry a `segmentId`.
 
-Zone 2 leaves more trees off a segment than zone 1 — 256 of 1,263 against 218
-of 2,597 — because the Lower East Side has more ground with no street through
-it: Baruch, Seward Park, Masaryk and Hillman. Those trees belong to a sub-zone
-but to no block within it.
+How many trees sit on a segment falls off south through the district, and it is
+the housing that does it, not the method: zone 1 places 2,380 of 2,597 (92%),
+zone 2 1,007 of 1,263 (80%) past Baruch, Seward Park, Masaryk and Hillman, and
+zone 3 829 of 1,448 (57%) past Vladeck, Rutgers, Smith and LaGuardia and the
+waterfront. Those trees belong to a sub-zone but to no block within it.
 
 ## Where the lines come from
 

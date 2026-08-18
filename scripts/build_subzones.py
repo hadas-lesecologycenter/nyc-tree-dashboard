@@ -44,9 +44,9 @@ way, which puts it on the property line - "immediately north of E 10th St" in
 the literal sense - and nudged further out if a tree stands there, because a
 right of way is a constant and a street's planting is not. See EDGE_CLEAR_M.
 
-Sub-zones 1A to 1L cover zone 1, E 14th St down to E Houston St, and 2A to 2F
-cover zone 2, Houston down to Grand St. Zone 3 is still to come, and until it
-arrives data/subzones.geojson holds only what has been drawn.
+Twenty-five sub-zones cover all of CB3: 1A-1L the East Village, 2A-2F the Lower
+East Side, 3A-3G Grand St south across the Chinatown strip and Two Bridges.
+Every CB3 street tree falls in exactly one.
 
 Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
@@ -159,6 +159,23 @@ SEED_TOLERANCE_M = 25.0
 # CB3_EDGE means that side is the district boundary itself - the exact line -
 # rather than a fitted street.
 CB3_EDGE = 'CB3'
+
+# The half-planes that carve out each grid region, as (divider, keep_south).
+# These spell out exactly the test region_of() applies to a tree, so a sub-zone
+# covers precisely the trees filed under its region.
+#
+# Listing every divider rather than just the region's own two matters, because
+# the dividers are not parallel and two of them cross inside the district:
+# Grand St and East Broadway meet near lng -73.9827, and east of there East
+# Broadway runs NORTH of Grand. Bounding Two Bridges by East Broadway alone
+# therefore let 3E reach back up over the Lower East Side and claim 18 trees
+# that 2F already held.
+REGION_BOUNDS = {
+    'EV': [('houston', False)],
+    'LES': [('houston', True), ('grand', False)],
+    'CH': [('houston', True), ('grand', True), ('eastBroadway', False)],
+    'TB': [('houston', True), ('grand', True), ('eastBroadway', True)],
+}
 
 # DIVIDER + a key from the grid's `dividers` names one of the three lines that
 # split CB3 into its care zones: Houston St, Grand St, East Broadway. These are
@@ -340,6 +357,74 @@ SUBZONES = [
         'west': 'ESSEX ST',
         'east': CB3_EDGE,
         'bounds': 'Norfolk St to the East River, Delancey St to Grand St',
+    },
+
+    # ---- zone 3, Grand St south, across two grids --------------------------
+    # Zone 3 is two street patterns, not one. Grand St to Division St is the
+    # tail of the Lower East Side grid; south of East Broadway, Two Bridges
+    # turns about 35 degrees and runs on its own. They are fitted separately
+    # and divided separately, which is why the sub-zones do not line up across
+    # East Broadway - the streets do not either.
+    #
+    # The Chinatown strip holds 441 trees and is thin, so it splits east-west
+    # only, on Essex St. Two Bridges holds 1,007 and takes five: three between
+    # East Broadway and Monroe St, two below it, with Pike St shared by both
+    # bands.
+    {
+        'id': '3A', 'zone': 3, 'region': 'CH',
+        'north': DIVIDER + 'grand',
+        'south': DIVIDER + 'eastBroadway',
+        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
+        'east': 'ESSEX ST',
+        'bounds': 'Bowery to Essex St, Grand St to Division St',
+    },
+    {
+        'id': '3B', 'zone': 3, 'region': 'CH',
+        'north': DIVIDER + 'grand',
+        'south': DIVIDER + 'eastBroadway',
+        'west': 'ESSEX ST',
+        'east': CB3_EDGE,
+        'bounds': 'Norfolk St to the East River, Grand St to Division St',
+    },
+    {
+        'id': '3C', 'zone': 3, 'region': 'TB',
+        'north': DIVIDER + 'eastBroadway',
+        'south': 'MONROE ST',
+        'west': CB3_EDGE,
+        'east': 'PIKE ST',
+        'bounds': 'Catherine St to Pike St, East Broadway to Monroe St',
+    },
+    {
+        'id': '3D', 'zone': 3, 'region': 'TB',
+        'north': DIVIDER + 'eastBroadway',
+        'south': 'MONROE ST',
+        'west': 'PIKE ST',
+        'east': 'MONTGOMERY ST',
+        'bounds': 'Rutgers St to Montgomery St, East Broadway to Monroe St',
+    },
+    {
+        'id': '3E', 'zone': 3, 'region': 'TB',
+        'north': DIVIDER + 'eastBroadway',
+        'south': 'MONROE ST',
+        'west': 'MONTGOMERY ST',
+        'east': CB3_EDGE,
+        'bounds': 'Gouverneur St to the East River, East Broadway to Monroe St',
+    },
+    {
+        'id': '3F', 'zone': 3, 'region': 'TB',
+        'north': 'MONROE ST',
+        'south': CB3_EDGE,          # the East River waterfront
+        'west': CB3_EDGE,
+        'east': 'PIKE ST',
+        'bounds': 'Catherine St to Pike St, Monroe St to the waterfront',
+    },
+    {
+        'id': '3G', 'zone': 3, 'region': 'TB',
+        'north': 'MONROE ST',
+        'south': CB3_EDGE,
+        'west': 'PIKE ST',
+        'east': CB3_EDGE,
+        'bounds': 'Rutgers St to the East River, Monroe St to the waterfront',
     },
 ]
 
@@ -631,7 +716,12 @@ def family_slope(pts, axis):
         hist = collections.Counter(int(v // 1.0) for v in vals)
         return sum(c * c for c in hist.values())
 
-    coarse = max((score(k / 1000.0), k / 1000.0) for k in range(-400, 401, 2))[1]
+    # The range has to cover every bearing CB3 actually contains. Two Bridges
+    # runs at slope 0.70 in this frame - its streets meet the East Village grid
+    # at about 35 degrees - and a search that stopped at 0.40 could not see it,
+    # so it settled for a spurious alignment scoring less than half as well and
+    # left every Two Bridges avenue unfitted.
+    coarse = max((score(k / 1000.0), k / 1000.0) for k in range(-850, 851, 2))[1]
     return max((score(coarse + d / 10000.0), coarse + d / 10000.0)
                for d in range(-20, 21))[1]
 
@@ -1029,6 +1119,14 @@ def main():
         if west:
             f, half = west
             window = clip_halfplane(window, (-1.0, f['slope'], (f['offset'] + half)))
+
+        for div_key, keep_south in REGION_BOUNDS[rid]:
+            if len(window) < 3:
+                break
+            g = divider_lines[div_key]
+            window = clip_halfplane(window, (g['slope'], -1.0, g['offset'])
+                                    if keep_south
+                                    else (-g['slope'], 1.0, -g['offset']))
 
         if len(window) < 3:
             raise SystemExit('sub-zone %s: empty window' % spec['id'])
