@@ -2736,7 +2736,14 @@ const SEGMENTS_URL = 'data/subzone-segments.geojson';
 
 // Fetch a repo data file, preferring the same-origin copy and falling back to
 // the raw.githubusercontent mirror. Returns a Response; throws if both fail.
+// Always revalidate the repo's own data files. They are rewritten by the daily
+// scrapers and whenever the sub-zones are redrawn, and the host serves them
+// with a plain max-age, so the browser will happily keep showing yesterday's
+// copy — which is how a freshly merged zone 2 stayed invisible on the map.
+// 'no-cache' means a conditional request, not a re-download: unchanged files
+// come back 304 and cost nothing.
 async function fetchData(path, init) {
+  init = Object.assign({ cache: 'no-cache' }, init);
   const candidates = [path, DATA_FALLBACK_BASE + path];
   let lastErr;
   for (const url of candidates) {

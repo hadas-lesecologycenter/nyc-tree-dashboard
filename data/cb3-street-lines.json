@@ -8,6 +8,256 @@
   "anchor": "CB3 boundary, E 14th St"
  },
  "regions": {
+  "CH": {
+   "HESTER ST": {
+    "slope": -0.1257480365142261,
+    "offset": 1811.0898414754677,
+    "half_row_m": 4.520364473315567,
+    "rows": [
+     {
+      "slope": -0.1257480365142261,
+      "offset": 1806.569477002152,
+      "trees": 6,
+      "rms_m": 0.149
+     },
+     {
+      "slope": -0.1257480365142261,
+      "offset": 1815.6102059487832,
+      "trees": 6,
+      "rms_m": 0.146
+     }
+    ],
+    "name": "HESTER ST",
+    "axis": "ew"
+   },
+   "CANAL ST": {
+    "slope": -0.1257480365142261,
+    "offset": 1916.6067932390615,
+    "half_row_m": 7.021838234616439,
+    "rows": [
+     {
+      "slope": -0.1257480365142261,
+      "offset": 1909.584955004445,
+      "trees": 4,
+      "rms_m": 0.676
+     },
+     {
+      "slope": -0.1257480365142261,
+      "offset": 1923.6286314736778,
+      "trees": 8,
+      "rms_m": 0.836
+     }
+    ],
+    "name": "CANAL ST",
+    "axis": "ew"
+   },
+   "ALLEN ST": {
+    "slope": 0.1256870041293101,
+    "offset": -871.4405397301736,
+    "half_row_m": 6.171520284871349,
+    "rows": [
+     {
+      "slope": 0.1256870041293101,
+      "offset": -877.6120600150449,
+      "trees": 17,
+      "rms_m": 1.018
+     },
+     {
+      "slope": 0.1256870041293101,
+      "offset": -865.2690194453022,
+      "trees": 17,
+      "rms_m": 0.918
+     }
+    ],
+    "name": "ALLEN ST",
+    "axis": "ns"
+   },
+   "ESSEX ST": {
+    "slope": 0.1256870041293101,
+    "offset": -625.2491240300772,
+    "half_row_m": 4.558471976142471,
+    "rows": [
+     {
+      "slope": 0.1256870041293101,
+      "offset": -629.8075960062196,
+      "trees": 9,
+      "rms_m": 0.454
+     },
+     {
+      "slope": 0.1256870041293101,
+      "offset": -620.6906520539346,
+      "trees": 11,
+      "rms_m": 0.753
+     }
+    ],
+    "name": "ESSEX ST",
+    "axis": "ns"
+   },
+   "NORFOLK ST": {
+    "slope": 0.1256870041293101,
+    "offset": -534.7093996069773,
+    "half_row_m": 9.921125345816677,
+    "rows": [
+     {
+      "slope": 0.1256870041293101,
+      "offset": -544.630524952794,
+      "trees": 7,
+      "rms_m": 0.767
+     },
+     {
+      "slope": 0.1256870041293101,
+      "offset": -524.7882742611606,
+      "trees": 9,
+      "rms_m": 0.256
+     }
+    ],
+    "name": "NORFOLK ST",
+    "axis": "ns"
+   },
+   "SUFFOLK ST": {
+    "slope": 0.1256870041293101,
+    "offset": -486.8510156164057,
+    "half_row_m": 4.495550667786432,
+    "rows": [
+     {
+      "slope": 0.1256870041293101,
+      "offset": -491.34656628419214,
+      "trees": 4,
+      "rms_m": 0.784
+     },
+     {
+      "slope": 0.1256870041293101,
+      "offset": -482.3554649486193,
+      "trees": 7,
+      "rms_m": 0.177
+     }
+    ],
+    "name": "SUFFOLK ST",
+    "axis": "ns"
+   },
+   "MONTGOMERY ST": {
+    "slope": 0.1256870041293101,
+    "offset": -344.0751914988292,
+    "half_row_m": 8.956519671253147,
+    "rows": [
+     {
+      "slope": 0.1256870041293101,
+      "offset": -353.03171117008236,
+      "trees": 5,
+      "rms_m": 0.185
+     },
+     {
+      "slope": 0.1256870041293101,
+      "offset": -335.11867182757607,
+      "trees": 6,
+      "rms_m": 0.476
+     }
+    ],
+    "name": "MONTGOMERY ST",
+    "axis": "ns"
+   },
+   "BOWERY": {
+    "name": "BOWERY",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -1199.7150985324563,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "CHRYSTIE ST": {
+    "name": "CHRYSTIE ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -1120.09351365457,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "FORSYTH ST": {
+    "name": "FORSYTH ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -1040.4719287766836,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "ELDRIDGE ST": {
+    "name": "ELDRIDGE ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -960.850343897671,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "ORCHARD ST": {
+    "name": "ORCHARD ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -799.2648749604016,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "LUDLOW ST": {
+    "name": "LUDLOW ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -717.3009909010185,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "CLINTON ST": {
+    "name": "CLINTON ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -425.31589400696896,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "JACKSON ST": {
+    "name": "JACKSON ST",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -242.07441556854013,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "FDR DR": {
+    "name": "FDR DR",
+    "axis": "ns",
+    "slope": 0.1256870041293101,
+    "offset": -130.33286368424547,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "GRAND ST": {
+    "name": "GRAND ST",
+    "axis": "ew",
+    "slope": -0.16502630055189013,
+    "offset": 1671.0867498712107,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "divider": true
+   },
+   "DIVISION ST": {
+    "name": "DIVISION ST",
+    "axis": "ew",
+    "slope": -0.7518487914262592,
+    "offset": 1930.3061140212028,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "divider": true
+   }
+  },
   "EV": {
    "E 13 ST": {
     "slope": 0.0029972875216403884,
@@ -858,6 +1108,273 @@
     "axis": "ew",
     "slope": -0.16502630055189013,
     "offset": 1671.0867498712107,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "divider": true
+   }
+  },
+  "TB": {
+   "HENRY ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2031.5328979262706,
+    "half_row_m": 7.10429670327153,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2024.428601222999,
+      "trees": 43,
+      "rms_m": 0.82
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2038.6371946295421,
+      "trees": 38,
+      "rms_m": 0.413
+     }
+    ],
+    "name": "HENRY ST",
+    "axis": "ew"
+   },
+   "MADISON ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2113.09585860711,
+    "half_row_m": 6.719932164297461,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2106.3759264428127,
+      "trees": 13,
+      "rms_m": 0.975
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2119.8157907714076,
+      "trees": 36,
+      "rms_m": 1.063
+     }
+    ],
+    "name": "MADISON ST",
+    "axis": "ew"
+   },
+   "MONROE ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2225.236223175583,
+    "half_row_m": 7.0532307838952875,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2218.1829923916875,
+      "trees": 13,
+      "rms_m": 0.737
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2232.289453959478,
+      "trees": 18,
+      "rms_m": 0.28
+     }
+    ],
+    "name": "MONROE ST",
+    "axis": "ew"
+   },
+   "CHERRY ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2315.449108737177,
+    "half_row_m": 10.719840075641969,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2304.729268661535,
+      "trees": 14,
+      "rms_m": 0.865
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2326.168948812819,
+      "trees": 18,
+      "rms_m": 1.098
+     }
+    ],
+    "name": "CHERRY ST",
+    "axis": "ew"
+   },
+   "WATER ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2370.4158373036444,
+    "half_row_m": 4.425261096129816,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2365.9905762075146,
+      "trees": 11,
+      "rms_m": 0.824
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2374.841098399774,
+      "trees": 10,
+      "rms_m": 0.973
+     }
+    ],
+    "name": "WATER ST",
+    "axis": "ew"
+   },
+   "SOUTH ST": {
+    "slope": -0.7001588771040393,
+    "offset": 2459.135496514443,
+    "half_row_m": 8.93297401107543,
+    "rows": [
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2450.202522503367,
+      "trees": 8,
+      "rms_m": 0.707
+     },
+     {
+      "slope": -0.7001588771040393,
+      "offset": 2468.068470525518,
+      "trees": 7,
+      "rms_m": 1.07
+     }
+    ],
+    "name": "SOUTH ST",
+    "axis": "ew"
+   },
+   "MARKET ST": {
+    "slope": 0.6994975963938872,
+    "offset": -1911.5606524112982,
+    "half_row_m": 6.556220706883437,
+    "rows": [
+     {
+      "slope": 0.6994975963938872,
+      "offset": -1918.1168731181817,
+      "trees": 10,
+      "rms_m": 0.49
+     },
+     {
+      "slope": 0.6994975963938872,
+      "offset": -1905.0044317044149,
+      "trees": 16,
+      "rms_m": 0.331
+     }
+    ],
+    "name": "MARKET ST",
+    "axis": "ns"
+   },
+   "PIKE ST": {
+    "slope": 0.6994975963938872,
+    "offset": -1709.3279913942479,
+    "half_row_m": 4.3988517108474525,
+    "rows": [
+     {
+      "slope": 0.6994975963938872,
+      "offset": -1713.7268431050954,
+      "trees": 12,
+      "rms_m": 0.33
+     },
+     {
+      "slope": 0.6994975963938872,
+      "offset": -1704.9291396834005,
+      "trees": 9,
+      "rms_m": 0.465
+     }
+    ],
+    "name": "PIKE ST",
+    "axis": "ns"
+   },
+   "MONTGOMERY ST": {
+    "slope": 0.6994975963938872,
+    "offset": -947.647620209201,
+    "half_row_m": 13.176971168630587,
+    "rows": [
+     {
+      "slope": 0.6994975963938872,
+      "offset": -960.8245913778316,
+      "trees": 11,
+      "rms_m": 0.94
+     },
+     {
+      "slope": 0.6994975963938872,
+      "offset": -934.4706490405704,
+      "trees": 21,
+      "rms_m": 0.679
+     }
+    ],
+    "name": "MONTGOMERY ST",
+    "axis": "ns"
+   },
+   "JACKSON ST": {
+    "slope": 0.6994975963938872,
+    "offset": -513.1162692946107,
+    "half_row_m": 8.757034425339441,
+    "rows": [
+     {
+      "slope": 0.6994975963938872,
+      "offset": -521.8733037199502,
+      "trees": 10,
+      "rms_m": 1.039
+     },
+     {
+      "slope": 0.6994975963938872,
+      "offset": -504.3592348692713,
+      "trees": 16,
+      "rms_m": 1.231
+     }
+    ],
+    "name": "JACKSON ST",
+    "axis": "ns"
+   },
+   "CATHERINE ST": {
+    "name": "CATHERINE ST",
+    "axis": "ns",
+    "slope": 0.6994975963938872,
+    "offset": -2152.8945071258936,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "RUTGERS ST": {
+    "name": "RUTGERS ST",
+    "axis": "ns",
+    "slope": 0.6994975963938872,
+    "offset": -1465.1831238717282,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "JEFFERSON ST": {
+    "name": "JEFFERSON ST",
+    "axis": "ns",
+    "slope": 0.6994975963938872,
+    "offset": -1310.1219885432404,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "CLINTON ST": {
+    "name": "CLINTON ST",
+    "axis": "ns",
+    "slope": 0.6994975963938872,
+    "offset": -1155.0608532147526,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "GOUVERNEUR ST": {
+    "name": "GOUVERNEUR ST",
+    "axis": "ns",
+    "slope": 0.6994975963938872,
+    "offset": -722.0156855628569,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true
+   },
+   "E BROADWAY": {
+    "name": "E BROADWAY",
+    "axis": "ew",
+    "slope": -0.7518487914262592,
+    "offset": 1930.3061140212028,
     "half_row_m": 0.0,
     "rows": [],
     "seeded": true,
