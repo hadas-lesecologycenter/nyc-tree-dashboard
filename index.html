@@ -1696,7 +1696,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </label>
           <label class="cp-chk">
             <input type="checkbox" id="layer-subzones" onchange="toggleSubzonesFromPanel()">
-            🧭 Sub-Zones (~10 blocks)
+            🧭 Sub-Zones
           </label>
           <label class="cp-chk">
             <input type="checkbox" id="layer-segments" onchange="toggleSegmentsFromPanel()">
@@ -4506,11 +4506,11 @@ function toggleFireHydrantsFromPanel() {
 
 // ========== SUB-ZONES LAYER ==========
 // Source: data/subzones.geojson (see scripts/build_subzones.py). Every edge is
-// a named street, drawn immediately north of a numbered street or immediately
-// east of an avenue, so that street belongs whole — both sidewalks — to the
-// sub-zone on the near side. Where a sub-zone runs out to the edge of the
-// district the edge IS CB3's official boundary, which is why the western side
-// of the work area follows 4th Ave and the Bowery exactly.
+// a named street, drawn immediately north of an east-west street or
+// immediately east of a north-south one, so that street belongs whole — both
+// sidewalks — to the sub-zone on the near side. Where a sub-zone runs out to
+// the edge of the district the edge IS CB3's official boundary, which is why
+// the western side of the work area follows 4th Ave and the Bowery exactly.
 
 // Sub-zones inherit their zone's colour and separate from each other by
 // lightness, so the three zones stay readable as zones at a glance while

@@ -10,11 +10,14 @@ replaces are in the git history.
 
 Every edge is a named street, and it runs just outside that street's kerbline:
 
-* the boundary for a **numbered street runs immediately north of it**, so the
+* the boundary for an **east-west street runs immediately north of it**, so the
   street — roadway and both sidewalks — belongs to the sub-zone on the **south**
   side;
-* the boundary for an **avenue runs immediately east of it**, so the avenue
-  belongs to the sub-zone on the **west** side.
+* the boundary for a **north-south street runs immediately east of it**, so that
+  street belongs to the sub-zone on the **west** side.
+
+In the East Village those are the numbered streets and the avenues; south of
+Houston they are named streets both ways, but the rule is the same.
 
 So a sub-zone owns its northern street and its eastern avenue and neither of
 the other two, which tiles the district without ever splitting a street down
@@ -29,10 +32,12 @@ neighbours abut exactly: 1A's eastern edge and 1B's western edge are both
 
 ## The sub-zones
 
-Bands run north to south, and within a band the three sub-zones run west to
-east on the same three avenue columns. A band stops immediately north of the
-street it is named for, so that street opens the band below: E 10th St closes
-1A–1C by bounding them and then belongs to 1D–1F.
+Sub-zones are laid out in bands running north to south, cut into columns west
+to east. A band stops immediately north of the street it is named for, so that
+street opens the band below: E 10th St closes 1A–1C by bounding them and then
+belongs to 1D–1F. How many columns a band takes depends on the zone — zone 1
+uses three throughout, zone 2 four then two, zone 3 two and then three and two
+— because the three zones are not the same size or shape.
 
 | ID | Zone | Named | Works both sides of | Segments | Trees |
 |---|---|---|---|---|---|
@@ -83,22 +88,23 @@ holds 441 trees, so it splits east-west only, on Essex St; Two Bridges holds
 1,007 and takes five, three above Monroe St and two below, with Pike St shared
 by both bands.
 
-East Broadway is split down the middle, like Houston and Grand, but for a
-different reason: it is the seam between two grids rather than a zone divider,
-and it has no two-row fit to offset from.
-
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
 each: 2F is 41 segments averaging 6 trees, where 1A is 24 averaging 11. That is
 the street pattern, not the division.
 
-**Houston St is the one exception to the rule.** It is a zone divider, not just
-a street, and it keeps its centreline: the dashboard reports per-zone totals off
-that line, and pushing it north to keep the street whole would hand every tree
-on its north side to zone 2 and move those totals. So 1J–1L stop down the middle
-of Houston St, and it is the only street the sub-zones split — which is what the
-previous scheme did too. The cost is that the line passes within a metre of
-three trees on Houston's central plantings; the build reports them.
+**Three streets are exceptions to the rule, and they are the dividers.**
+Houston St and Grand St carry the split between the three care zones, and they
+keep their centrelines: the dashboard reports per-zone totals off those lines,
+and pushing one north to keep the street whole would hand every tree on its
+north side to the zone below and move those totals. East Broadway keeps its
+centreline for a different reason — it is the seam between the Lower East Side
+grid and Two Bridges, and has no two-row fit to offset from.
+
+So those three are the only streets the sub-zones split, which is what the
+previous scheme did too. The cost is that a divider cannot be nudged off
+whatever stands on it: Houston's central plantings leave 0.20 m of air at the
+tightest point and East Broadway 0.36 m. The build lists every such edge.
 
 1J's contents read "2nd Ave to 1st Ave" rather than naming the Bowery, because
 `BOWERY / 3 AVE` in the old grid is a single straight line standing in for two
@@ -111,7 +117,7 @@ the Bowery in the south. This affects only the wording and the segment count.
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 189 of them.
+layer in the map's Program Layers panel shows all 497 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they are numbered
@@ -132,12 +138,12 @@ Two things make the segmentation legible rather than merely present:
   end, so the gaps that make the segmentation countable are already in the data.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
-  identity is already on the map as the sub-zone polygon, and twelve sub-zones
-  is well past what colour can distinguish, so hue is spent on the one thing
-  nothing else shows.
+  identity is already on the map as the sub-zone polygon, and twenty-five
+  sub-zones is well past what colour can distinguish, so hue is spent on the
+  one thing nothing else shows.
 
 Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 348 are
+no boundary to clip against, so no segment can come out undrawable. All 497 are
 drawn by construction, and the marks on the map are exactly the trees that
 carry a `segmentId`.
 
@@ -158,8 +164,10 @@ those streets exactly.
 
 Everything else is fitted from the tree census. Street trees stand in two rows,
 one per sidewalk, and the rows are very straight — a least-squares line through
-one comes back with an RMS residual of 0.1–0.5 m. Fitting each row separately
-and averaging the pair gives a centreline good to well under a metre. The edge
+one comes back with an RMS residual of 0.34 m in the East Village, rising to
+0.82 m in Two Bridges where the rows are shorter and sparser. Fitting each row
+separately and averaging the pair gives a centreline good to well under a
+metre. The edge
 is that centreline pushed out by half a right of way (30 ft for the numbered
 side streets, 50 ft for the avenues) so it lands on the property line.
 
@@ -200,8 +208,8 @@ It prints every fitted centreline with the size and straightness of the two
 rows behind it, then each sub-zone with the offset of each of its four edges,
 how much air that leaves either side of the line, and whether the edge had to
 be nudged out past the property line to find it. It checks that no tree lands
-in two sub-zones and that no edge either cuts into the street it names or
-reaches the next street over.
+in two sub-zones, and lists any edge left with less than a metre of air as well
+as any that had to be nudged out past the property line to find it.
 
 To add a sub-zone, add an entry to `SUBZONES` in that script naming the four
 lines that close it and re-run. Reuse the neighbour's line verbatim — give the
@@ -215,8 +223,10 @@ are stated outright; that list is the place to add one if a width is known.
 ## Fitting a grid the frame is not aligned to
 
 The metric frame is aligned to the East Village grid, because that is where its
-one exact anchor is — CB3's own E 14th St run. Zone 2's grid sits about seven
-degrees off it, and three things in the fitting quietly assumed otherwise:
+one exact anchor is — CB3's own E 14th St run. Nothing else in the district
+runs that way: the Lower East Side sits about seven degrees off it and Two
+Bridges about thirty-five. Four things in the fitting quietly assumed
+otherwise:
 
 * the row finder started its search from a bearing of zero, which is right in
   the East Village and 0.124 out on the Lower East Side — enough to smear a row
@@ -229,11 +239,22 @@ degrees off it, and three things in the fitting quietly assumed otherwise:
   where it rejected every avenue for landing too far from its own seed;
 * the search window was tested against the raw coordinate while the values
   collected were de-trended, which is the same thing on an aligned grid and
-  165 m adrift on this one.
+  165 m adrift on the Lower East Side;
+* and the bearing scan itself stopped at slope 0.40, which cannot see Two
+  Bridges at 0.70. It settled for a spurious alignment scoring less than half
+  as well, leaving every Two Bridges avenue unfitted and 77% of its trees on no
+  street at all.
 
-Together those took zone 2 from 13 of 22 streets fitted, half its trees on no
-street at all, to 18 of 22 and 80% placed. Zone 1's sub-zone totals did not
-move; three trees changed segment.
+Together those took zone 2 from 13 of 22 streets fitted with half its trees on
+no street to 18 of 22 and 80% placed, and Two Bridges from 4 of 16 to 10 of 16
+and 55% placed. Zone 1's sub-zone totals did not move; three trees changed
+segment.
+
+A fifth thing was missing rather than wrong: sub-zones were not clipped to
+their grid region, which the mid-block scheme had done. Grand St and East
+Broadway cross near lng −73.9827, and east of there East Broadway runs NORTH of
+Grand, so bounding Two Bridges by East Broadway alone let 3E reach back over
+the Lower East Side and claim 18 trees 2F already held.
 
 ## Caveat
 
@@ -241,9 +262,13 @@ No street-centerline dataset is reachable from this repo's build environment
 (NYC Open Data, Census TIGER and the OSM endpoints are all blocked), so every
 street except E 14th St and 4th Ave / the Bowery is located from the trees
 standing along it. Two streets have no two-row fit and cannot be used as
-boundaries: E 14th St, for the reason above, and FDR Drive. In zone 2, Willett
-St / Bialystoker Pl and Columbia St have no fit either — Baruch Houses covers
-most of what would be their frontage. Housing
-superblocks (Tompkins Square, Baruch, Vladeck, Rutgers, Smith) have no interior
-streets to detect. If real centerline data ever lands in the repo, the fitting
+boundaries. In the East Village that is E 14th St, for the reason above, and
+FDR Drive; in zone 2, Willett St / Bialystoker Pl and Columbia St, where Baruch
+Houses covers most of what would be their frontage. Zone 3 loses the most: 11
+of 18 in the Chinatown strip and 6 of 16 in Two Bridges, among them Catherine,
+Rutgers, Jefferson, Clinton and Gouverneur. Those streets can still be named
+and walked; they simply cannot be used as sub-zone edges, which is why zone 3's
+divisions fall on Essex, Monroe, Pike and Montgomery. Housing superblocks (Tompkins Square,
+Baruch, Vladeck, Rutgers, Smith, LaGuardia) have no interior streets to
+detect. If real centerline data ever lands in the repo, the fitting
 step is the part to replace.
