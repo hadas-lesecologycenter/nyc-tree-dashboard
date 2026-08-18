@@ -117,7 +117,7 @@ the Bowery in the south. This affects only the wording and the segment count.
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 497 of them.
+layer in the map's Program Layers panel shows all 524 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they are numbered
@@ -143,15 +143,50 @@ Two things make the segmentation legible rather than merely present:
   one thing nothing else shows.
 
 Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 497 are
+no boundary to clip against, so no segment can come out undrawable. All 524 are
 drawn by construction, and the marks on the map are exactly the trees that
 carry a `segmentId`.
 
-How many trees sit on a segment falls off south through the district, and it is
-the housing that does it, not the method: zone 1 places 2,380 of 2,597 (92%),
-zone 2 1,007 of 1,263 (80%) past Baruch, Seward Park, Masaryk and Hillman, and
-zone 3 829 of 1,448 (57%) past Vladeck, Rutgers, Smith and LaGuardia and the
-waterfront. Those trees belong to a sub-zone but to no block within it.
+## Trees on no segment
+
+Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
+and the test is whether the tree is inside it. A **segment** is a stricter
+claim — it says which street the tree stands on — and 599 of the 5,308 (11.3%)
+cannot be given one. They are counted in their sub-zone's total, listed in
+`subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
+a crew planning a day is told how many trees it will find off the block faces.
+
+By zone: 2,408 of 2,597 on a segment in zone 1 (93%), 1,122 of 1,263 in zone 2
+(89%), 1,179 of 1,448 in zone 3 (81%). The gradient is the housing, not the
+method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
+LaGuardia all plant their frontage on housing-authority ground well inside the
+block, and the census still calls those street trees.
+
+A tree is on a street when it stands within that street's **reach** of its
+centreline, and the reach is measured rather than assumed: a row of trees is a
+spike in the profile of perpendicular distances and interior scatter is a flat
+background, so the outermost bin still holding a row's worth of trees is where
+the frontage ends. It is measured per side, because streets are not symmetrical
+— Delancey St has an ordinary 10 m row on its north side and its widened
+bridge-approach side 27 m out — and it is floored at 12 m, ceilinged at 28 m,
+and never allowed past 40% of the way to the next parallel street. Measuring it
+rather than using a flat 12 m recovered 314 trees: 146 in Two Bridges (East
+Broadway 33, South St 32, Pike St 20), 95 on the Lower East Side (E Houston 35,
+Delancey 28, Chrystie 19) and 59 in Chinatown, 20 of them on Allen St, which
+carries a central mall and stands its sidewalk rows 13 m out.
+
+Three known defects account for most of the rest, and none of them are fixed:
+
+* **E 1st St has no two-row fit** and falls back to the old grid's line, which
+  sits 34 m north of where its trees are — every East Village block is 73–83 m
+  and the seeded E 1st St stands 42 m from E 2nd St. 90 of zone 1's 189
+  unplaced trees are in that one band. The seed cannot simply be widened: the
+  fit rejects any answer more than 25 m from its seed, so a correct fit for
+  E 1st St would be thrown out for being right.
+* **The street list is the old grid's**, and it does not name every street.
+  Two Bridges in particular runs streets and slips the grid has never held, so
+  their frontage has nothing to match against.
+* **`BOWERY / 3 AVE` is one line for two roads**, as above.
 
 ## Where the lines come from
 
@@ -245,10 +280,9 @@ otherwise:
   as well, leaving every Two Bridges avenue unfitted and 77% of its trees on no
   street at all.
 
-Together those took zone 2 from 13 of 22 streets fitted with half its trees on
-no street to 18 of 22 and 80% placed, and Two Bridges from 4 of 16 to 10 of 16
-and 55% placed. Zone 1's sub-zone totals did not move; three trees changed
-segment.
+Together those took zone 2 from 13 of 22 streets fitted, with half its trees on
+no street at all, to 18 of 22, and Two Bridges from 4 of 16 to 10 of 16. Zone
+1's sub-zone totals did not move; three trees changed segment.
 
 A fifth thing was missing rather than wrong: sub-zones were not clipped to
 their grid region, which the mid-block scheme had done. Grand St and East

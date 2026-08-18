@@ -4547,6 +4547,10 @@ async function initSubzonesLayer() {
         <div style="font-size:11px;color:#6b6456;margin-top:4px">
           Zone ${p.zone} · ${p.region_label}<br>${p.blocks} blocks · ${p.tree_count} trees
         </div>
+        ${p.off_segment ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
+          ${p.off_segment} of them stand off the street grid — courtyards, housing-estate
+          paths and superblock interiors — and are counted here but not drawn on any
+          block segment.</div>` : ''}
       </div>`)
       .bindTooltip(p.subzone_id, { permanent: true, direction: 'center', className: 'subzone-tag' })
       .addTo(subzonesLayer);
