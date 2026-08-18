@@ -81,6 +81,11 @@ M_PER_DEG_LAT = 110540.0
 # The ring starts partway along 14th St, so the run wraps past the end.
 E14_RUN = [275, 276, 277] + list(range(0, 13))
 
+# The other exact run: CB3's western boundary, from Grand St up to E 14th St.
+# It follows the Bowery and then 4th Ave, and it is the only geometry this repo
+# has for either of them.
+WEST_RUN = list(range(227, 276))
+
 # How far off its centreline a street's boundary is drawn: far enough to clear
 # the whole right of way, so the line lands on the property line and the street
 # - roadway, both sidewalks, both rows of trees - sits wholly on one side.
@@ -93,7 +98,7 @@ E14_RUN = [275, 276, 277] + list(range(0, 13))
 FT = 0.3048
 ROW_HALF_M = {
     'E 14 ST': 100 * FT / 2,
-    'BOWERY / 3 AVE': 100 * FT / 2,
+    '3 AVE': 100 * FT / 2,
     '2 AVE': 100 * FT / 2,
     '1 AVE': 100 * FT / 2,
     'E HOUSTON ST': 100 * FT / 2,
@@ -143,6 +148,12 @@ def edge_offset(fit, floor, obstacles):
 # How far a fitted centreline may sit from where the old grid put it before the
 # fit is treated as having locked onto the wrong pair of rows.
 SEED_TOLERANCE_M = 25.0
+
+# The repair pass: how far into a band to step before looking, so the search
+# cannot re-find the neighbouring street's own sidewalk row, and how much clear
+# air a repaired line must leave around it to be believed.
+REPAIR_MARGIN_M = 15.0
+REPAIR_CLEAR_M = 40.0
 
 # --------------------------------------------------------------- sub-zones --
 # Each of the four sides names the street whose boundary line closes it, NOT
@@ -527,6 +538,7 @@ class Frame(object):
     and the mapping to lng/lat is affine, so straight edges stay straight."""
 
     def __init__(self, boundary):
+        self.boundary = boundary
         pts = [self._xy(boundary[i]) for i in E14_RUN]
         k = len(pts)
         sx = sum(p[0] for p in pts)
@@ -595,7 +607,52 @@ ROW_KERNEL_M = 2.0       # a sidewalk row is this thick
 SEP_MIN_M, SEP_MAX_M = 8.0, 28.0   # plausible distance between the two rows
 
 
-def find_rows(pts, seed, slope):
+def west_lines(frame):
+    """The two roads CB3's western boundary follows, taken from the boundary.
+
+    The old grid holds a single line called BOWERY / 3 AVE and gives it the
+    East Village avenue bearing. That bearing belongs to 3rd Ave, which is a
+    Commissioners' grid avenue like 2nd and 1st and fits here as cleanly as
+    they do - two rows 24 m apart, 216 m west of 2nd Ave, residuals of 31 cm.
+    It does not belong to the Bowery or to 4th Ave, which keep the old post
+    road's alignment: 0.22 and 0.34 across this frame against the avenues'
+    -0.006, which is why one straight line through all three ends up as much as
+    250 m from the road it is named for.
+
+    So 3rd Ave keeps the fit and its own name, and the other two are not fitted
+    from trees at all - the district boundary follows them exactly, and it is
+    the better source. The run is split at the bend that minimises the worse of
+    the two residuals; that lands on Cooper Square, where the Bowery becomes
+    4th Ave, and takes the residuals from 18.7 m for one line to 6.2 m each."""
+    pts = [frame.to_un(*frame.boundary[i]) for i in WEST_RUN]
+
+    def piece(seq):
+        m, c = linefit([(n, u) for u, n in seq])
+        rms = math.sqrt(sum((u - (m * n + c)) ** 2 for u, n in seq) / len(seq))
+        return m, c, rms / math.hypot(1.0, m)
+
+    best = None
+    for k in range(6, len(pts) - 6):
+        a, b = piece(pts[:k]), piece(pts[k:])
+        score = max(a[2], b[2])
+        if best is None or score < best[0]:
+            best = (score, k, a, b)
+    _, k, south, north = best
+    split = pts[k][1]
+    # Each piece exists only along the run it was taken from. Without that the
+    # Bowery's line runs on south past Chatham Square and lands in the middle
+    # of Two Bridges, a road nobody there has ever walked.
+    ends = (max(n for _, n in pts[:k]), min(n for _, n in pts[k:]))
+    out = []
+    for name, (m, c, rms), span in (('BOWERY', south, (split, ends[0])),
+                                    ('4 AVE', north, (ends[1], split))):
+        out.append({'name': name, 'axis': 'ns', 'slope': m, 'offset': c,
+                    'span': span, 'half_row_m': 0.0, 'rows': [],
+                    'from_boundary': True, 'rms_m': round(rms, 2)})
+    return out
+
+
+def find_rows(pts, seed, slope, half_window=HALF_WINDOW_M):
     """Locate a street's two sidewalk rows inside a window around `seed`.
 
     Gap-splitting the sorted offsets is the obvious way to do this and it is
@@ -614,7 +671,7 @@ def find_rows(pts, seed, slope):
     grid the frame is aligned to, and 165 m adrift on one that is not - it put
     every Lower East Side avenue two blocks west of itself."""
     sel = [d for d in (p[1] - slope * p[0] for p in pts)
-           if abs(d - seed) <= HALF_WINDOW_M]
+           if abs(d - seed) <= half_window]
     if len(sel) < 12:
         return None
     lo, hi = min(sel), max(sel)
@@ -650,7 +707,7 @@ def find_rows(pts, seed, slope):
     return a, b
 
 
-def fit_street(pts, seed, slope, free_slope):
+def fit_street(pts, seed, slope, free_slope, half_window=HALF_WINDOW_M):
     """Fit one street's centreline from its two rows of sidewalk trees.
 
     `pts` are (along, across) metre pairs; `across` is the coordinate the
@@ -663,7 +720,7 @@ def fit_street(pts, seed, slope, free_slope):
     junction sits at almost the same `across` as the sidewalk row but is not
     part of it, and a handful of them pull the fit off by a metre or two. They
     are dropped by the caller, which passes only mid-block stretches."""
-    found = find_rows(pts, seed, slope)
+    found = find_rows(pts, seed, slope, half_window)
     if found is None:
         return None
     rows = []
@@ -671,7 +728,7 @@ def fit_street(pts, seed, slope, free_slope):
         members = [p for p in pts
                    if abs((p[1] - slope * p[0]) - centre) <= ROW_KERNEL_M
                    and abs((p[1] - slope * p[0]) - seed)
-                   <= HALF_WINDOW_M + ROW_KERNEL_M]
+                   <= half_window + ROW_KERNEL_M]
         if len(members) < 5:
             return None
         if free_slope:
@@ -814,18 +871,104 @@ def fit_region_lines(frame, trees_un, grid_region, log):
 
     for name in ew_names:
         if name not in fitted_ew:
-            log.append('  no two-row fit for %s (kept out of the boundary set)' % name)
+            pass
         elif abs(fitted_ew[name]['offset'] - streets[name]) > SEED_TOLERANCE_M:
             log.append('  %s fitted %.1f m from its seed - rejected'
                        % (name, fitted_ew[name]['offset'] - streets[name]))
             del fitted_ew[name]
     for name in ns_names:
         if name not in fitted_ns:
-            log.append('  no two-row fit for %s (kept out of the boundary set)' % name)
+            pass
         elif abs(fitted_ns[name]['offset'] - avenues[name]) > SEED_TOLERANCE_M:
             log.append('  %s fitted %.1f m from its seed - rejected'
                        % (name, fitted_ns[name]['offset'] - avenues[name]))
             del fitted_ns[name]
+
+    # ---- repair pass -------------------------------------------------------
+    # A seed can be wrong by more than the search window is wide, and when it
+    # is, the street cannot be found from it at all - the rows are outside the
+    # window, and any fit that did reach them would be thrown out for landing
+    # too far from the seed. E 1st St is the case: the old grid puts it 42 m
+    # below E 2nd St where every other East Village block is 73-83 m, and its
+    # real rows stand 82 m below E 2nd St, well past the window's edge.
+    #
+    # So a street that has no fit is looked for again, seeded not from the old
+    # grid but from the GAP its neighbours leave. Streets come in a known order
+    # and the grid file lists them in it, so the band between the nearest line
+    # either side that is trusted - fitted here, or a zone divider taken from
+    # the district boundary - is where this street has to be if it is anywhere.
+    # The band is cut with the bounding LINES rather than with two numbers,
+    # because a divider keeps the boundary's own bearing and its de-trended
+    # position therefore slides along the street; cutting at one value of it
+    # clipped 11 of E 1st St's 15 southern trees off the end of the band.
+    #
+    # A street with no trusted line on one side is left alone. That is what
+    # protects E 14th St and FDR Drive, which top and tail their families and
+    # have one row of trees each: with nothing beyond them to close a band,
+    # there is nothing to search.
+    for entries, axis, seeds, slope, fam, mask_other in (
+            (grid_region['ew'], 'ew', streets, ew_slope, fitted_ew, mask_u),
+            (grid_region['ns'], 'ns', avenues, ns_slope, fitted_ns, mask_n)):
+        order = [s['name'] for s in entries]
+
+        def trusted(name):
+            """The line a repair may lean on: (slope, offset), or None."""
+            if name in fam:
+                return slope, fam[name]['offset']
+            entry = next(s for s in entries if s['name'] == name)
+            if entry.get('source') == 'divider':
+                return line_to_frame(frame, entry['line'], axis)
+            return None
+
+        for i, name in enumerate(order):
+            if name in fam:
+                continue
+            lo = next((t for j in range(i - 1, -1, -1)
+                       if (t := trusted(order[j])) is not None), None)
+            hi = next((t for j in range(i + 1, len(order))
+                       if (t := trusted(order[j])) is not None), None)
+            if lo is None or hi is None:
+                continue
+            # Trees strictly inside the band, each tested against the bounding
+            # lines where it actually stands, and stepped in by REPAIR_MARGIN_M
+            # so the search cannot simply re-find a neighbour's sidewalk row.
+            band = []
+            for u, n in trees_un:
+                a, b = (u, n) if axis == 'ew' else (n, u)
+                if b <= lo[0] * a + lo[1] + REPAIR_MARGIN_M * math.hypot(1.0, lo[0]):
+                    continue
+                if b >= hi[0] * a + hi[1] - REPAIR_MARGIN_M * math.hypot(1.0, hi[0]):
+                    continue
+                if any(abs(a - m) < (26.0 if axis == 'ew' else 20.0) for m in mask_other):
+                    continue
+                band.append((a, b))
+            if len(band) < 12:
+                continue
+            det = sorted(b - slope * a for a, b in band)
+            seed = det[len(det) // 2]
+            got = fit_street(band, seed, slope, False,
+                             max(abs(det[0] - seed), abs(det[-1] - seed)) + 1.0)
+            if got is None:
+                continue
+            clear = min((abs(got['offset'] - f['offset']) for f in fam.values()),
+                        default=99.0)
+            if clear < REPAIR_CLEAR_M:
+                log.append('  %s repaired to %.1f but only %.1f m clear of its '
+                           'neighbour - dropped' % (name, got['offset'], clear))
+                continue
+            got['name'] = name
+            got['axis'] = axis
+            got['repaired'] = round(got['offset'] - seeds[name], 1)
+            fam[name] = got
+            log.append('  %s had no fit from its seed; found in the gap at %.1f, '
+                       '%.1f m from where the old grid put it'
+                       % (name, got['offset'], got['offset'] - seeds[name]))
+
+    for names, fam in ((ew_names, fitted_ew), (ns_names, fitted_ns)):
+        missing = [n for n in names if n not in fam]
+        if missing:
+            log.append('  no two-row fit, so kept out of the boundary set: %s'
+                       % ', '.join(missing))
 
     fitted = {}
     fitted.update(fitted_ew)
@@ -857,6 +1000,24 @@ def fit_region_lines(frame, trees_un, grid_region, log):
             walk[s['name']] = {'name': s['name'], 'axis': axis, 'slope': slope,
                                'offset': offset, 'half_row_m': 0.0, 'rows': [],
                                'seeded': True, 'divider': True}
+
+    # 3rd Ave under its own name, and the two roads it was standing in for.
+    # 3rd Ave stops at Cooper Square, where the Bowery takes over, so it is
+    # given a span; without one it goes on claiming Bowery frontage half a
+    # block to its west for another 340 m.
+    boundary_lines = west_lines(frame)
+    split = boundary_lines[1]['span'][1]
+    if 'BOWERY / 3 AVE' in walk:
+        third = dict(walk.pop('BOWERY / 3 AVE'))
+        third['name'] = '3 AVE'
+        third['span'] = (-1e9, split)
+        walk['3 AVE'] = third
+        if 'BOWERY / 3 AVE' in fitted:
+            fitted['3 AVE'] = third
+            del fitted['BOWERY / 3 AVE']
+    for g in boundary_lines:
+        walk[g['name']] = dict(g)
+
     measure_reach(walk, trees_un)
     return fitted, walk
 
@@ -879,6 +1040,29 @@ def fit_region_lines(frame, trees_un, grid_region, log):
 # centreline, and both were being orphaned wholesale by a flat 12 m. So the
 # reach is MEASURED, per street and per side, from the trees themselves - the
 # same evidence the centrelines come from - and only ever widens the floor.
+def in_span(g, u, n):
+    """Is this line's road actually here?
+
+    Most streets run the whole width of their grid region and have no span.
+    The ones that do not are the roads the district boundary follows: the
+    Bowery becomes 4th Ave at Cooper Square, and 3rd Ave does not exist south
+    of it. Without a span the two would each go on claiming trees along the
+    other's run, and every block east of them would be counted past two lines
+    where there is only ever one road."""
+    span = g.get('span')
+    if not span:
+        return True
+    along = n if g['axis'] == 'ns' else u
+    return span[0] <= along <= span[1]
+
+
+def spans_overlap(a, b):
+    sa, sb = a.get('span'), b.get('span')
+    if not sa or not sb:
+        return True
+    return sa[0] <= sb[1] and sb[0] <= sa[1]
+
+
 SEGMENT_REACH_M = 12.0        # frontage always reaches at least this far
 SEGMENT_REACH_MAX_M = 28.0    # and never further: 185 ft kerb to kerb is nobody
 SEGMENT_PEAK_FRAC = 0.4       # a bin holds a ROW at this share of the side's best
@@ -922,7 +1106,8 @@ def measure_reach(walk, trees_un):
         for i, g in enumerate(fam):
             hyp = math.hypot(1.0, g['slope'])
             gaps = [abs(at[j] - at[i]) / hyp
-                    for j in (i - 1, i + 1) if 0 <= j < len(fam)]
+                    for j in (i - 1, i + 1) if 0 <= j < len(fam)
+                    and spans_overlap(g, fam[j])]
             cap = min([SEGMENT_REACH_MAX_M]
                       + [SEGMENT_GAP_FRAC * d for d in gaps if d > 0])
             caps[id(g)] = max(SEGMENT_REACH_M, cap)
@@ -931,6 +1116,8 @@ def measure_reach(walk, trees_un):
     hist = {id(g): ([0] * nbin, [0] * nbin) for g in lines}
     for u, n in trees_un:
         for g in lines:
+            if not in_span(g, u, n):
+                continue
             off = (n - (g['slope'] * u + g['offset']) if g['axis'] == 'ew'
                    else u - (g['slope'] * n + g['offset']))
             d = off / math.hypot(1.0, g['slope'])
@@ -963,6 +1150,8 @@ def nearest_line(walk, u, n):
     it."""
     best = None
     for name, g in walk.items():
+        if not in_span(g, u, n):
+            continue
         # Perpendicular distance, not the raw coordinate gap. They agree where
         # the frame is aligned to the grid and differ by the slope's hypotenuse
         # where it is not - 22% in Two Bridges, which was rejecting that whole
@@ -996,11 +1185,33 @@ def nearest_line(walk, u, n):
 # every counted segment is drawn by construction.
 
 
-def segment_feature(members, walk, ordered, name, axis, step, spec, seg_id):
-    cross_axis = 'ns' if axis == 'ew' else 'ew'
-    names = ordered[cross_axis]
-    ends = [pretty(names[step - 1]) if step > 0 else 'the district edge',
-            pretty(names[step]) if step < len(names) else 'the district edge']
+def brackets(walk, u, n, cross):
+    """The two cross lines a tree stands between, the low side first.
+
+    Counting how many cross lines a tree has passed is the obvious way to say
+    which block it is on, and it stops working the moment a line has a span:
+    the count then indexes a list that includes lines which are not there. So
+    the two lines are named instead. Positions are evaluated where the tree
+    stands rather than read off the offsets, because lines with different
+    bearings - the Bowery against the East Village avenues - do not keep the
+    same order along their run."""
+    val = u if cross == 'ns' else n
+    lo = hi = None
+    for name, g in walk.items():
+        if g['axis'] != cross or not in_span(g, u, n):
+            continue
+        pos = g['slope'] * n + g['offset'] if cross == 'ns' else g['slope'] * u + g['offset']
+        if pos <= val:
+            if lo is None or pos > lo[0]:
+                lo = (pos, name)
+        elif hi is None or pos < hi[0]:
+            hi = (pos, name)
+    return (lo[1] if lo else None, hi[1] if hi else None, lo[0] if lo else -1e9)
+
+
+def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id):
+    ends = [pretty(lo) if lo else 'the district edge',
+            pretty(hi) if hi else 'the district edge']
     return {
         'type': 'Feature',
         'properties': {
@@ -1097,6 +1308,12 @@ def main():
             print(line)
         for name in sorted(walk, key=lambda k: (walk[k]['axis'], walk[k]['offset'])):
             f = walk[name]
+            if f.get('from_boundary'):
+                print('  %-20s %s %8.2f + %+.5f   taken from the CB3 boundary, '
+                      'rms %.2f m'
+                      % (name, 'n=' if f['axis'] == 'ew' else 'u=', f['offset'],
+                         f['slope'], f['rms_m']))
+                continue
             if f.get('seeded'):
                 print('  %-20s %s %8.2f            seeded from the old grid, '
                       'not used as a boundary'
@@ -1259,37 +1476,33 @@ def main():
                         if g['axis'] == ax] for ax in ('ew', 'ns')}
         held_ew, held_ns = set(), set()
         segs = collections.defaultdict(list)
+        rank = {}
         for t in inside:
             name, axis = nearest_line(walk, t['u'], t['n'])
             if name is None:
                 continue
             (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
-            # How far along its street the tree is, counted in cross streets
-            # passed. Lines within a family are near-parallel, so counting them
-            # and ordering them by offset agree, and the two lines bracketing
-            # the tree are ordered[cross][step-1] and ordered[cross][step].
-            step = sum(1 for g in walk.values() if g['axis'] == cross
-                       and (t['u'] >= g['slope'] * t['n'] + g['offset'] if cross == 'ns'
-                            else t['n'] >= g['slope'] * t['u'] + g['offset']))
-            segs[(name, axis, step)].append(t)
+            lo, hi, at = brackets(walk, t['u'], t['n'], cross)
+            rank[(name, axis, lo, hi)] = at
+            segs[(name, axis, lo, hi)].append(t)
 
         # A stable identifier per segment: streets first, north to south, then
         # avenues west to east, numbered within the sub-zone. Ordering is by
         # RANK - which street comes before which - not by any fitted value, so
         # re-running the fit cannot renumber a crew's assignment under them.
         def seg_order(key):
-            name, axis, step = key
-            return (0 if axis == 'ew' else 1, walk[name]['offset'], step)
+            name, axis = key[0], key[1]
+            return (0 if axis == 'ew' else 1, walk[name]['offset'], rank[key])
 
         for i, key in enumerate(sorted(segs, key=seg_order), start=1):
-            name, axis, step = key
+            name, axis, lo, hi = key
             members = segs[key]
             seg_id = '%s-%02d' % (spec['id'], i)
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
-            segments.append(segment_feature(members, walk, ordered, name, axis,
-                                            step, spec, seg_id))
+            segments.append(segment_feature(members, walk, name, axis,
+                                            lo, hi, spec, seg_id))
 
         def in_order(names, axis):
             return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
