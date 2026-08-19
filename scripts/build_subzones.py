@@ -122,22 +122,27 @@ def row_half(name, fit):
 # held at 9.14 m runs straight down that row and splits it between two
 # sub-zones - which is the one thing every rule here exists to avoid.
 #
-# So each edge is nudged outward until it has clear air: of the offsets between
-# half a right of way and EDGE_SEARCH_M beyond it, take the SMALLEST that keeps
-# EDGE_CLEAR_M from every tree in the column that edge crosses, and failing
-# that the one that keeps the most. Smallest, so the line still hugs its
-# street; per column, because the planting changes along the street and a
-# single offset cannot suit all of it.
+# So each edge is placed in the gap between the trees that stand on its own
+# street and the trees that stand on the blocks beyond it. Half a right of way
+# is where it goes when that gap has room; otherwise it takes the middle of the
+# gap, however narrow. Per stretch, not per sub-zone, because the planting
+# changes along a street and a single offset cannot suit all of it - but two
+# sub-zones that share a boundary must share the offset, or the line steps
+# between them. See edge_stretches.
 EDGE_CLEAR_M = 1.0       # air a boundary should leave either side of itself
 EDGE_SEARCH_M = 6.0      # how far past the right of way it may be nudged
 
 
-def edge_offset(fit, floor, obstacles):
-    """Choose how far off its centreline a boundary sits.
+def edge_offset_outward(fit, floor, obstacles):
+    """The older rule, kept for the zone lines: search outward from half a
+    right of way for the first offset with clear air either side.
 
-    `obstacles` are distances, in metres, of the trees in this edge's column
-    from the centreline, measured on the side the boundary goes. Returns
-    (offset, clearance)."""
+    A zone line cannot use the gap rule. It is one line for the whole district
+    and the block it borders is not parallel to it - north of E Houston St the
+    wedge of short blocks up to E 1st St runs at the East Village bearing and
+    closes on Houston as it goes east, so there is no gap between Houston's own
+    row and the block beyond that holds along the run. Asking for one lands the
+    line 5 cm from a tree; asking for the best clear air lands it 55 cm away."""
     near = sorted(d for d in obstacles if 0 < d <= floor + EDGE_SEARCH_M + 4.0)
     top = floor + EDGE_SEARCH_M
     tries = [floor, top] + [(a + b) / 2.0 for a, b in zip(near, near[1:])]
@@ -145,6 +150,39 @@ def edge_offset(fit, floor, obstacles):
               for o in tries if floor <= o <= top]
     clear = [c for c in scored if c[1] >= EDGE_CLEAR_M]
     return min(clear, key=lambda c: c[0]) if clear else max(scored, key=lambda c: c[1])
+
+
+def edge_offset(fit, floor, own, others):
+    """Choose how far off its centreline a boundary sits.
+
+    The line has to land in the gap between the street's OWN planting and the
+    block beyond it, and the two ends of that gap are known: `own` holds the
+    distances of the trees standing on this street, `others` the trees standing
+    on a crossing street, both measured from the centreline on the side the
+    boundary goes. Half a right of way is where the line WANTS to sit, and it
+    takes that when the gap has room for it.
+
+    Searching outward from half a right of way, which is what this did before,
+    is right for an ordinary side street and wrong for a wide one. Delancey St
+    plants its north row 9.7 m out; adding a sidewalk width put the floor at
+    13.2 m, past the corner trees of the avenues at 11.5 and 13.0 m, and the
+    hunt for clear air then pushed it to 15.6. The line stood 6 m inside the
+    blocks north of Delancey and clipped a tree or two off the end of ten
+    avenue block faces. The gap it should have used - between Delancey's own
+    row at 10.0 and the first avenue tree at 11.5 - is 1.5 m wide, and no
+    search that starts at 13.2 and only goes outward can find it.
+
+    EDGE_SEARCH_M still caps how far out the line can go. Without it a street
+    whose reach claims set-back frontage takes the boundary with it: Pike St
+    holds trees 20 m off its centreline and the line followed them to 29 m,
+    most of a block away."""
+    top = floor + EDGE_SEARCH_M
+    inner = min(max([fit['half_row_m']] + [d for d in own if 0 < d <= top]), top)
+    beyond = [d for d in others if d > inner]
+    outer = min(beyond + [top])
+    off = (floor if inner + EDGE_CLEAR_M <= floor <= outer - EDGE_CLEAR_M
+           else min(max((inner + outer) / 2.0, fit['half_row_m']), top))
+    return off, min(off - inner, outer - off)
 
 # How far a fitted centreline may sit from where the old grid put it before the
 # fit is treated as having locked onto the wrong pair of rows.
@@ -770,7 +808,7 @@ def divider_corridors(frame, divs=None):
             hyp = math.hypot(1.0, got['slope'])
             floor = row_half(got['name'], got)
             obst = [(got['offset'] + got['slope'] * u - n) / hyp for u, n in pts]
-            off, clear = edge_offset(got, floor, obst)
+            off, clear = edge_offset_outward(got, floor, obst)
             got['edge_offset_m'] = off
             got['edge_clear_m'] = clear
             got['old_line'] = (m, c)
@@ -1302,7 +1340,14 @@ def nearest_line(walk, u, n):
     superblocks, and the nearest street can be 30 m away. Left unfiltered they
     put E 10th St in the contents of a sub-zone that stops a block short of
     it."""
+    # Two tiers. A tree standing inside a street's own road width is ON that
+    # street even if some side street's centreline happens to be nearer: the
+    # corner trees at Delancey St and Forsyth St sit 4 m from Forsyth and 5 m
+    # from Delancey, inside Delancey's 9.7 m half-road, and calling them
+    # Forsyth's put one tree of the Rivington-to-Delancey block face on the far
+    # side of the Delancey boundary from the other twenty.
     best = None
+    covered = None
     for name, g in walk.items():
         if not in_span(g, u, n):
             continue
@@ -1318,7 +1363,10 @@ def nearest_line(walk, u, n):
         d = abs(d)
         if d <= reach and (best is None or d < best[0]):
             best = (d, name, g['axis'])
-    return (best[1], best[2]) if best else (None, None)
+        if d <= g['half_row_m'] and (covered is None or d < covered[0]):
+            covered = (d, name, g['axis'])
+    hit = covered or best
+    return (hit[1], hit[2]) if hit else (None, None)
 
 
 # ---------------------------------------------------------------- segments --
@@ -1512,10 +1560,101 @@ def main():
 
     divider_lines = zone_lines
 
+    # Which street each tree stands on. An edge needs it to tell the trees on
+    # its own street from the trees on the block beyond, which is what fixes
+    # where the line goes.
+    for t in trees:
+        t['street'] = nearest_line(walk_lines[t['region']], t['u'], t['n'])[0]
+
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
     features, csv_rows, edge_records, segments = [], [], [], []
     tree_segment = {}
+
+    # ---- one offset per shared stretch of each boundary street -------------
+    # An edge's offset depends on the trees it crosses, so it has to be worked
+    # out over a stretch of the street rather than for the street as a whole:
+    # E 10th St stands at 9.14 m west of Ave C and 14.30 m east of it, where
+    # the Riis Houses plant their frontage 8-10 m out.
+    #
+    # But two sub-zones that share a boundary have to share the offset, and
+    # they do not always have the same column. North of Delancey St the band is
+    # cut into 2C (Essex to Clinton) and 2D (Clinton to the river); south of it
+    # 2F runs the whole way. Computing each one's offset over its own column
+    # put 15.17 m, 15.63 m and 15.30 m on the same boundary: the line stepped
+    # twice, and 2D reached 33 cm further into the block than 2F gave up.
+    #
+    # So the columns are grouped: any two that OVERLAP share one offset, worked
+    # out over the union of them. Columns that merely touch - 1A's and 1B's on
+    # E 10th St, which meet on 1st Ave - do not, which is what keeps the Riis
+    # nudge local to the sub-zones that need it.
+    def spec_column(spec, sides):
+        sign = -1.0 if sides[0] == 'north' else 1.0
+        bounds = []
+        for side in sides:
+            name = spec[side]
+            if name == CB3_EDGE:
+                bounds.append(None)
+                continue
+            f = (divider_lines[name[len(DIVIDER):]] if name.startswith(DIVIDER)
+                 else lines[spec['region']][name])
+            half = 0.0 if name.startswith(DIVIDER) else row_half(name, f)
+            bounds.append(f['offset'] + sign * half)
+        lo = bounds[0] if bounds[0] is not None else -BIG
+        hi = bounds[1] if bounds[1] is not None else BIG
+        return (lo, hi) if lo <= hi else (hi, lo)
+
+    SHARE_M = 1.0     # columns overlapping by less than this only touch
+    edge_cols = collections.defaultdict(list)
+    for spec in SUBZONES:
+        for sides, perp in ((('north', 'south'), ('west', 'east')),
+                            (('west', 'east'), ('north', 'south'))):
+            col = spec_column(spec, perp)
+            for side in sides:
+                name = spec[side]
+                if name == CB3_EDGE or name.startswith(DIVIDER):
+                    continue
+                edge_cols[(spec['region'], name)].append(col)
+
+    stretches = {}
+    for key, cols in edge_cols.items():
+        groups = []
+        for lo, hi in cols:
+            hit = [g for g in groups
+                   if min(hi, g[1]) - max(lo, g[0]) > SHARE_M]
+            merged = [min([lo] + [g[0] for g in hit]), max([hi] + [g[1] for g in hit])]
+            groups = [g for g in groups if g not in hit] + [merged]
+            # merging two groups can bring a third into reach
+            changed = True
+            while changed:
+                changed = False
+                for a in range(len(groups)):
+                    for b in range(a + 1, len(groups)):
+                        if min(groups[a][1], groups[b][1]) - max(groups[a][0], groups[b][0]) > SHARE_M:
+                            groups[a] = [min(groups[a][0], groups[b][0]),
+                                         max(groups[a][1], groups[b][1])]
+                            del groups[b]
+                            changed = True
+                            break
+                    if changed:
+                        break
+        stretches[key] = sorted(groups)
+
+    stretch_offset = {}
+    for (rid, name), groups in stretches.items():
+        f = lines[rid][name]
+        floor = row_half(name, f)
+        for lo, hi in groups:
+            if f['axis'] == 'ew':
+                dist = [(f['offset'] + f['slope'] * t['u'] - t['n'], t['street'])
+                        for t in trees if t['region'] == rid and lo <= t['u'] <= hi]
+            else:
+                dist = [(t['u'] - (f['offset'] + f['slope'] * t['n']), t['street'])
+                        for t in trees if t['region'] == rid and lo <= t['n'] <= hi]
+            own = [d for d, s in dist if s == name]
+            others = [d for d, s in dist if s is not None and s != name]
+            stretch_offset[(rid, name, lo, hi)] = edge_offset(f, floor, own, others)
+
     print('\n=== sub-zones')
     for spec in SUBZONES:
         rid = spec['region']
@@ -1580,16 +1719,13 @@ def main():
                 used[side] = (label, f, fit['edge_offset_m'], fit['edge_clear_m'],
                               row_half(fit['name'], fit))
                 return f, 0.0
-            if f['axis'] == 'ew':
-                lo, hi = column(('west', 'east'))
-                obst = [f['offset'] + f['slope'] * t['u'] - t['n'] for t in region_trees
-                        if lo <= t['u'] <= hi]
+            col = column(('west', 'east') if f['axis'] == 'ew' else ('north', 'south'))
+            for (lo, hi) in stretches[(rid, name)]:
+                if lo - 1.0 <= col[0] and col[1] <= hi + 1.0:
+                    half, clear = stretch_offset[(rid, name, lo, hi)]
+                    break
             else:
-                lo, hi = column(('north', 'south'))
-                lo, hi = (lo, hi) if lo <= hi else (hi, lo)
-                obst = [t['u'] - (f['offset'] + f['slope'] * t['n']) for t in region_trees
-                        if lo <= t['n'] <= hi]
-            half, clear = edge_offset(f, floor, obst)
+                raise SystemExit('sub-zone %s: %s is on no stretch' % (spec['id'], name))
             used[side] = (name, f, half, clear, floor)
             return f, half
 
