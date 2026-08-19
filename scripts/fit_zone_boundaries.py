@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 """
+SUPERSEDED by scripts/build_subzones.py, which prints the zone lines index.html
+uses under "=== zone lines". Kept for the record; do not re-run it to regenerate
+CB3_ZONES.
+
+Two things changed. The lines no longer run down the middle of Houston St and
+Grand St - they run immediately north of each, the same rule every sub-zone
+boundary follows, so neither street is split between two zones. And they are
+fitted from all 5,308 CB3 street trees rather than from the ~12 that carry an
+address on those two streets, which also ended the 54-tree disagreement between
+the zone a tree was drawn in and the zone it was counted in.
+
+The original note follows.
+
 Fit the CB3 zone boundaries (Houston St and Grand St) to the real street grid.
 
 Why this exists

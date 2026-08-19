@@ -8852,29 +8852,36 @@ function cb3Contains(lat, lng) {
 // off at the other end of the district, so each divider is modelled as a line
 // running parallel to the Lower East Side street grid instead.
 //
-// Slope and reference latitudes were fit from the addressed street trees in
-// data/trees.csv by scripts/fit_zone_boundaries.py. A single shared slope keeps
-// the dividers parallel so they can never cross inside CB3. Zone 1's northern
-// edge (14th St) needs no line of its own — it is the CB3 boundary itself,
-// which cb3Contains() already enforces.
-const CB3_GRID_SLOPE   = -0.2891;    // dLat per dLng along the LES street grid
+// Written by scripts/build_subzones.py, which prints these two lines under
+// "=== zone lines"; re-run it and paste if the fit changes. Each line runs
+// IMMEDIATELY NORTH of its street rather than down the middle of it, the same
+// rule every sub-zone boundary follows, so E Houston St sits wholly in zone 2
+// and Grand St wholly in zone 3 instead of being split down the roadway. Each
+// carries its own bearing, measured from its own tree rows; the two differ by
+// 0.0007 and stay 710 m apart across CB3, so they cannot cross inside it.
+// Zone 1's northern edge (14th St) needs no line of its own — it is the CB3
+// boundary itself, which cb3Contains() already enforces.
 const CB3_GRID_REF_LNG = -73.9850;   // meridian the edgeLat values below are quoted at
 const CB3_ZONES = [
-  // edgeLat = latitude of this zone's southern boundary street at CB3_GRID_REF_LNG
-  { id: 1, label: 'Zone 1', range: '14th–Houston',  color: '#2563eb', edgeLat: 40.72176 }, // E Houston St
-  { id: 2, label: 'Zone 2', range: 'Houston–Grand', color: '#0f9e6e', edgeLat: 40.71555 }, // Grand St
-  { id: 3, label: 'Zone 3', range: 'Grand & South', color: '#c0392b', edgeLat: -Infinity },
+  // edgeLat = latitude of this zone's southern boundary at CB3_GRID_REF_LNG,
+  // edgeSlope = dLat per dLng along it
+  { id: 1, label: 'Zone 1', range: '14th–Houston',  color: '#2563eb',
+    edgeLat: 40.722023, edgeSlope: -0.302933 },   // just north of E Houston St
+  { id: 2, label: 'Zone 2', range: 'Houston–Grand', color: '#0f9e6e',
+    edgeLat: 40.715635, edgeSlope: -0.302237 },   // just north of Grand St
+  { id: 3, label: 'Zone 3', range: 'Grand & South', color: '#c0392b',
+    edgeLat: -Infinity, edgeSlope: 0 },
 ];
 
-// Latitude of a zone boundary street at the given longitude.
-function cb3ZoneEdgeLat(edgeLat, lng) {
-  if (!isFinite(edgeLat)) return edgeLat;
+// Latitude of a zone boundary at the given longitude.
+function cb3ZoneEdgeLat(zone, lng) {
+  if (!isFinite(zone.edgeLat)) return zone.edgeLat;
   const l = isFinite(lng) ? lng : CB3_GRID_REF_LNG;
-  return edgeLat + CB3_GRID_SLOPE * (l - CB3_GRID_REF_LNG);
+  return zone.edgeLat + zone.edgeSlope * (l - CB3_GRID_REF_LNG);
 }
 
 function getZoneId(lat, lng) {
-  for (const z of CB3_ZONES) if (lat >= cb3ZoneEdgeLat(z.edgeLat, lng)) return z.id;
+  for (const z of CB3_ZONES) if (lat >= cb3ZoneEdgeLat(z, lng)) return z.id;
   return 3;
 }
 
@@ -9124,8 +9131,9 @@ function raRenderMap() {
   raUpdateStats();
 }
 
-// Draw the two divider streets (E Houston, Grand) so the zone edges can be
-// checked against the map rather than taken on trust.
+// Draw the two zone lines so the edges can be checked against the map rather
+// than taken on trust. Each runs just north of its street, so the street it is
+// named for lies wholly in the zone below it.
 function raDrawZoneBoundaries() {
   const toggle = document.getElementById('ra-show-zone-lines');
   if (toggle && !toggle.checked) return;
@@ -9133,11 +9141,11 @@ function raDrawZoneBoundaries() {
   const lngs = poly.map(p => p[0]);
   const west = Math.min.apply(null, lngs), east = Math.max.apply(null, lngs);
   [
-    { edgeLat: CB3_ZONES[0].edgeLat, label: 'E Houston St — Zone 1 / Zone 2' },
-    { edgeLat: CB3_ZONES[1].edgeLat, label: 'Grand St — Zone 2 / Zone 3' },
+    { zone: CB3_ZONES[0], label: 'Just north of E Houston St — Zone 1 / Zone 2' },
+    { zone: CB3_ZONES[1], label: 'Just north of Grand St — Zone 2 / Zone 3' },
   ].forEach(d => {
     const line = L.polyline(
-      [[cb3ZoneEdgeLat(d.edgeLat, west), west], [cb3ZoneEdgeLat(d.edgeLat, east), east]],
+      [[cb3ZoneEdgeLat(d.zone, west), west], [cb3ZoneEdgeLat(d.zone, east), east]],
       { color: '#374151', weight: 2, opacity: 0.55, dashArray: '7,6' }
     ).bindTooltip(d.label, { sticky: true });
     line.addTo(raMap);
