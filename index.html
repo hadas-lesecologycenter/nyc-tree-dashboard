@@ -3140,6 +3140,10 @@ function initMap() {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
+  // Block segment bands live under the tree markers so a tree's own colour is
+  // never covered. Made here rather than with the layer, so it exists whatever
+  // order things are switched on in.
+  mapInstance.createPane('segmentBands').style.zIndex = 350;
   // Stop Leaflet from intercepting touches on panels overlaid on the map.
   // map-tree-panel is intentionally excluded — disableClickPropagation on it
   // swallows clicks before they reach the reserve/report buttons inside.
@@ -4615,6 +4619,14 @@ async function initSegmentsLayer() {
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     segmentsData = await resp.json();
   }
+  // The bands go in the segmentBands pane, UNDER the tree markers (see
+  // initMap). The layer used to paint the trees themselves in the segment
+  // colour, which said what a segment holds and hid the one thing you most
+  // want to see on the same screen — what tier each of those trees is.
+  if (mapInstance && !mapInstance.getPane('segmentBands')) {
+    mapInstance.createPane('segmentBands').style.zIndex = 350;
+  }
+
   segmentsLayer = L.layerGroup();
   segmentLabels = L.layerGroup();
   segmentsData.features.forEach(f => {
@@ -4627,22 +4639,27 @@ async function initSegmentsLayer() {
         <div style="font-size:12px;color:#2c2a24;margin-top:4px">${p.tree_count} street ${p.tree_count === 1 ? 'tree' : 'trees'}, both sides</div>
         <div style="font-size:11px;color:#6b6456;margin-top:4px">Sub-Zone ${p.subzone_id} · Zone ${p.zone}</div>
       </div>`;
-    // A segment IS its trees. Marking them is the whole layer — no bar and no
-    // box, both of which read as a shape sitting on the street rather than as
-    // the work. The trees group themselves: two rows with nothing in the
-    // intersection at either end.
-    let lng = 0, lat = 0;
-    pts.forEach(c => {
-      lng += c[0]; lat += c[1];
-      L.circleMarker([c[1], c[0]], {
-        radius: 5, color: '#ffffff', weight: 1.5, opacity: 1,
-        fillColor: color, fillOpacity: 0.95,
-      })
-        .bindPopup(popup)
-        .bindTooltip(`${p.segment_id} · ${p.label} — ${p.tree_count} trees`)
-        .addTo(segmentsLayer);
+    const tip = `${p.segment_id} · ${p.label} — ${p.tree_count} trees`;
+
+    // A segment is drawn as a soft band lying under each of its runs of trees —
+    // one per sidewalk, because that is how a block face is planted. The band
+    // is straight: a block's trees are collinear by construction, so joining
+    // them in order only adds zigzags where one is out of line.
+    segmentRuns(pts).forEach(run => {
+      const shape = run.length > 1
+        ? L.polyline(run.map(c => [c[1], c[0]]), {
+            pane: 'segmentBands', color, weight: 16, opacity: 0.34,
+            lineCap: 'round', lineJoin: 'round',
+          })
+        : L.circleMarker([run[0][1], run[0][0]], {
+            pane: 'segmentBands', radius: 8, weight: 0,
+            fillColor: color, fillOpacity: 0.34,
+          });
+      shape.bindPopup(popup).bindTooltip(tip).addTo(segmentsLayer);
     });
 
+    let lng = 0, lat = 0;
+    pts.forEach(c => { lng += c[0]; lat += c[1]; });
     L.marker([lat / pts.length, lng / pts.length], {
       interactive: false,
       icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
@@ -4650,6 +4667,63 @@ async function initSegmentsLayer() {
     }).addTo(segmentLabels);
   });
   console.log(`Block segments: ${segmentsData.features.length} loaded`);
+}
+
+// The two ends of each sidewalk run in a block segment.
+//
+// A block face is two rows of trees with a roadway between them, and one band
+// down the middle of both would sit on the roadway rather than on the work. So
+// the points are split on the principal axis — the direction they mostly run
+// in — and each side of it becomes a run. Each run is then reduced to its two
+// extreme points along that axis, which is what makes the band straight.
+function segmentRuns(pts) {
+  if (pts.length < 3) return [pts];
+  const rad = Math.PI / 180;
+  const k = Math.cos(pts[0][1] * rad);
+  const xy = pts.map(c => [c[0] * k, c[1]]);
+  const cx = xy.reduce((s, q) => s + q[0], 0) / xy.length;
+  const cy = xy.reduce((s, q) => s + q[1], 0) / xy.length;
+  let sxx = 0, syy = 0, sxy = 0;
+  xy.forEach(q => {
+    sxx += (q[0] - cx) ** 2; syy += (q[1] - cy) ** 2;
+    sxy += (q[0] - cx) * (q[1] - cy);
+  });
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const ux = Math.cos(ang), uy = Math.sin(ang);
+  const proj = xy.map((q, i) => ({
+    along: (q[0] - cx) * ux + (q[1] - cy) * uy,
+    across: -(q[0] - cx) * uy + (q[1] - cy) * ux,
+    pt: pts[i],
+  }));
+  const mid = proj.map(q => q.across).sort((a, b) => a - b)[proj.length >> 1];
+  const sides = [proj.filter(q => q.across < mid), proj.filter(q => q.across >= mid)]
+    .filter(s => s.length);
+  // One row, or a knot of trees with no direction to speak of: one band.
+  if (sides.length < 2 || sides.some(s => s.length < 2)) sides.splice(0, 2, proj);
+  return sides.map(s => {
+    const lo = s.reduce((a, b) => (a.along <= b.along ? a : b));
+    const hi = s.reduce((a, b) => (a.along >= b.along ? a : b));
+    return lo === hi ? [lo.pt] : [lo.pt, hi.pt];
+  });
+}
+
+// A band is drawn in pixels, so its width has to follow the zoom or it stops
+// meaning anything: at z15 the two sidewalk runs of a block face are 4 px apart
+// and one fat band swallows both, at z19 they are 40 px apart and a thin one
+// leaves the trees stranded beside it.
+const SEGMENT_BAND_WEIGHT = { 19: 22, 18: 16, 17: 12, 16: 9 };
+let _segmentBandWeight = 0;
+
+function syncSegmentBands() {
+  if (!segmentsVisible || !segmentsLayer) return;
+  const z = mapInstance.getZoom();
+  const weight = SEGMENT_BAND_WEIGHT[Math.min(19, Math.max(16, z))] || 7;
+  if (weight === _segmentBandWeight) return;
+  _segmentBandWeight = weight;
+  segmentsLayer.eachLayer(l => {
+    if (l.setRadius) l.setRadius(weight / 2);
+    else l.setStyle({ weight });
+  });
 }
 
 // Segment IDs are shown only once the map is zoomed in far enough for them not
@@ -4673,7 +4747,9 @@ function toggleSegmentsFromPanel() {
     if (segmentLabels) segmentLabels.remove();
     return;
   }
-  if (segmentsLayer) { segmentsLayer.addTo(mapInstance); syncSegmentLabels(); return; }
+  if (segmentsLayer) {
+    segmentsLayer.addTo(mapInstance); syncSegmentLabels(); syncSegmentBands(); return;
+  }
   if (segmentsLoading) return;
   segmentsLoading = true;
   initSegmentsLayer()
@@ -4681,7 +4757,9 @@ function toggleSegmentsFromPanel() {
       if (!segmentsVisible) return;
       segmentsLayer.addTo(mapInstance);
       mapInstance.on('zoomend', syncSegmentLabels);
+      mapInstance.on('zoomend', syncSegmentBands);
       syncSegmentLabels();
+      syncSegmentBands();
     })
     .catch(err => {
       console.error('Block segments load failed:', err);
