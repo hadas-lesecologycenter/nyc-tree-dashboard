@@ -19,9 +19,9 @@ and offset to that street's property line:
     street belongs to the sub-zone on the west side.
 
 A sub-zone therefore owns its northern street and its eastern one, and the rule
-tiles CB3 without splitting any street down the middle - except the three
-dividers, Houston St, Grand St and East Broadway, which keep their centrelines.
-See DIVIDER.
+tiles CB3 without splitting any street down the middle. The three lines that
+also divide the CARE ZONES - Houston St, Grand St and East Broadway - follow
+the same rule, so no street is split by a zone edge either. See DIVIDER.
 
 How the lines are placed
 ------------------------
@@ -92,7 +92,9 @@ WEST_RUN = list(range(227, 276))
 #
 # The Commissioners' grid put the numbered side streets at 60 ft and the
 # lettered/numbered avenues at 100 ft, and ROW_HALF_M states the ones that are
-# certain. Everything else is measured instead: the sidewalk rows are known to
+# certain. E Houston St used to be listed here at 100 ft and is not: it is
+# measured at 32 m from its north row to its south row, and calling it 100 ft
+# put its boundary inside its own north sidewalk. Everything else is measured instead: the sidewalk rows are known to
 # well under a metre, and a row sits just inside the curb, so half a right of
 # way is that row plus a sidewalk. Both routes are checked in validation.
 FT = 0.3048
@@ -101,7 +103,6 @@ ROW_HALF_M = {
     '3 AVE': 100 * FT / 2,
     '2 AVE': 100 * FT / 2,
     '1 AVE': 100 * FT / 2,
-    'E HOUSTON ST': 100 * FT / 2,
 }
 SIDEWALK_M = 3.5             # curbside tree row to property line
 MIN_ROW_HALF_M = 60 * FT / 2  # never draw an edge inside a 60 ft right of way
@@ -192,15 +193,22 @@ REGION_BOUNDS = {
 }
 
 # DIVIDER + a key from the grid's `dividers` names one of the three lines that
-# split CB3 into its care zones: Houston St, Grand St, East Broadway. These are
-# the one exception to the offset rule, and they keep their CENTRELINES.
+# split CB3 into its care zones: Houston St, Grand St, East Broadway. They used
+# to be the one exception to the offset rule and to keep their CENTRELINES,
+# which split each of those streets down the roadway and handed half of it to
+# each zone - the one thing the whole scheme exists to avoid.
 #
-# The reason is that the zone split is older and wider than the sub-zones: the
-# dashboard reports per-zone totals off it, and pushing Houston St's line north
-# to keep the street whole would hand every tree on its north side to zone 2 and
-# move those totals. So Houston stays down the middle, zone 1's sub-zones cover
-# exactly zone 1, and Houston St is the only street the sub-zones split - which
-# is what the previous scheme did too.
+# They now follow the same rule as every other edge here: the line runs
+# immediately north of the street, so E Houston St sits wholly in zone 2, Grand
+# St wholly in zone 3, and East Broadway wholly in Two Bridges. Two things had
+# to change for that to work. The streets needed a centreline, which no region
+# could give them because each sees only one side - see divider_corridors.
+# And the offset has to be a SINGLE line for the whole district rather than one
+# per sub-zone column, because a zone line is also the test for which zone a
+# tree is in - see zone_line.
+#
+# index.html's getZoneId carries the same two lines and has to be updated with
+# them; the build prints them in lng/lat under "=== zone lines".
 DIVIDER = 'DIVIDER:'
 DIVIDER_NAME = {'houston': 'E Houston St', 'grand': 'Grand St',
                 'eastBroadway': 'East Broadway'}
@@ -602,6 +610,7 @@ def robust_line(pairs, iters=3):
     return m, c, len(pairs), rms
 
 
+FAMILY_TIE = 0.98        # bearings scoring this close to the best count as tied
 HALF_WINDOW_M = 30.0     # how far either side of the seed to look for the rows
 ROW_KERNEL_M = 2.0       # a sidewalk row is this thick
 SEP_MIN_M, SEP_MAX_M = 8.0, 28.0   # plausible distance between the two rows
@@ -650,6 +659,137 @@ def west_lines(frame):
                     'span': span, 'half_row_m': 0.0, 'rows': [],
                     'from_boundary': True, 'rms_m': round(rms, 2)})
     return out
+
+
+# A zone divider is not an ordinary side street and the two-row search cannot
+# read it. E Houston St plants THREE rows - north sidewalk, a planted median,
+# south sidewalk - 32 m from the outside of one to the outside of the other,
+# and a search for the densest pair a roadway apart finds the sidewalk and the
+# median and calls their midpoint the centre, 8 m out. Grand St does the same.
+#
+# So every row is found first, and the street is the run of them that holds
+# together: start at the strongest, and take in the next row out while it is
+# close enough to be the same street and still carries a real share of that
+# strength. On Houston the run stops exactly where it should - 65 and 37 trees
+# in the outer rows, 80 in the median, and the 11-tree scatter of the next
+# block over left outside.
+CORRIDOR_WINDOW_M = 60.0   # how far either side of the old line to look
+CORRIDOR_KERNEL_M = 2.0    # a row is this thick
+CORRIDOR_ROW_MIN = 8       # trees before a peak counts as a row at all
+CORRIDOR_GAP_M = 22.0      # rows further apart than this are different streets
+CORRIDOR_SHARE = 0.4       # and a row must hold this share of the strongest
+
+
+def fit_corridor(pts, seed_slope, seed_offset):
+    """Fit a wide street from every row it plants, not just from two."""
+    near = [(u, n) for u, n in pts
+            if abs(n - (seed_slope * u + seed_offset))
+            <= CORRIDOR_WINDOW_M * math.hypot(1.0, seed_slope)]
+    if len(near) < 3 * CORRIDOR_ROW_MIN:
+        return None
+    slope = family_slope(near, 'ew')
+    mid_u = sum(u for u, _ in near) / len(near)
+    seed = seed_offset + (seed_slope - slope) * mid_u
+    det = sorted(n - slope * u for u, n in near)
+
+    steps = int(2 * CORRIDOR_WINDOW_M / 0.5) + 1
+    grid = [seed - CORRIDOR_WINDOW_M + i * 0.5 for i in range(steps)]
+    dens = [sum(1 for v in det if abs(v - g) <= CORRIDOR_KERNEL_M) for g in grid]
+    peaks = []
+    for i, g in enumerate(grid):
+        if dens[i] < CORRIDOR_ROW_MIN:
+            continue
+        if (i and dens[i - 1] > dens[i]) or (i + 1 < len(dens) and dens[i + 1] > dens[i]):
+            continue
+        if peaks and g - peaks[-1][0] < 2 * CORRIDOR_KERNEL_M:
+            if dens[i] > peaks[-1][1]:
+                peaks[-1] = (g, dens[i])
+            continue
+        peaks.append((g, dens[i]))
+    if not peaks:
+        return None
+
+    start = max(range(len(peaks)), key=lambda i: peaks[i][1])
+    floor = CORRIDOR_SHARE * peaks[start][1]
+    lo = hi = start
+    while lo > 0 and peaks[lo][0] - peaks[lo - 1][0] <= CORRIDOR_GAP_M \
+            and peaks[lo - 1][1] >= floor:
+        lo -= 1
+    while hi + 1 < len(peaks) and peaks[hi + 1][0] - peaks[hi][0] <= CORRIDOR_GAP_M \
+            and peaks[hi + 1][1] >= floor:
+        hi += 1
+
+    rows = []
+    for g, _ in peaks[lo:hi + 1]:
+        members = [v for v in det if abs(v - g) <= CORRIDOR_KERNEL_M]
+        centre = sum(members) / len(members)
+        rms = math.sqrt(sum((v - centre) ** 2 for v in members) / len(members))
+        rows.append({'slope': slope, 'offset': centre, 'trees': len(members),
+                     'rms_m': round(rms, 3)})
+    a, b = rows[0]['offset'], rows[-1]['offset']
+    return {'slope': slope, 'offset': (a + b) / 2.0, 'half_row_m': (b - a) / 2.0,
+            'rows': rows, 'corridor': True}
+
+
+# Which region a divider street belongs to once its boundary moves north of it:
+# the one on the south side, because the boundary runs immediately north of the
+# street and the street therefore sits wholly in the zone below.
+DIVIDER_OWNER = {'houston': ('LES', 'E HOUSTON ST'),
+                 'grand': ('CH', 'GRAND ST'),
+                 'eastBroadway': ('TB', 'E BROADWAY')}
+
+_CORRIDORS = {}
+
+
+def divider_corridors(frame, divs=None):
+    """The three divider streets, fitted once from the trees on BOTH sides.
+
+    They cannot be fitted per region, which is the whole reason they used to
+    have no fit at all: each region sees one side of its own divider and half a
+    street does not have a centreline. Cached because every region asks."""
+    if not _CORRIDORS:
+        divs = divs or json.load(open(GRID_PATH))['dividers']
+        boundary = frame.boundary
+        pts = []
+        for t in json.load(open(CENSUS_PATH)):
+            if t.get('tree_type') != 'street' or t.get('status') != 'Full':
+                continue
+            try:
+                lat, lng = float(t['latitude']), float(t['longitude'])
+            except (TypeError, ValueError):
+                continue
+            if point_in_poly(lng, lat, boundary):
+                pts.append(frame.to_un(lng, lat))
+        for key, line in divs.items():
+            m, c = line_to_frame(frame, line, 'ew')
+            got = fit_corridor(pts, m, c)
+            if got is None:
+                continue
+            got['name'] = DIVIDER_OWNER[key][1]
+            got['axis'] = 'ew'
+            hyp = math.hypot(1.0, got['slope'])
+            floor = row_half(got['name'], got)
+            obst = [(got['offset'] + got['slope'] * u - n) / hyp for u, n in pts]
+            off, clear = edge_offset(got, floor, obst)
+            got['edge_offset_m'] = off
+            got['edge_clear_m'] = clear
+            got['old_line'] = (m, c)
+            got['mid_u'] = sum(u for u, _ in pts) / len(pts)
+            _CORRIDORS[key] = got
+    return _CORRIDORS
+
+
+def zone_line(fit):
+    """The boundary that goes with a divider street: immediately north of it.
+
+    One line for the whole run, not one per sub-zone column. Every other edge
+    in this file is nudged per column because the planting changes along the
+    street, but a zone line is also the test for which zone a tree is IN, and a
+    line that moves along its run would file a tree under one zone and draw it
+    inside another."""
+    return {'name': fit['name'], 'axis': 'ew', 'slope': fit['slope'],
+            'offset': fit['offset'] - fit['edge_offset_m'] * math.hypot(1.0, fit['slope']),
+            'half_row_m': 0.0, 'rows': []}
 
 
 def find_rows(pts, seed, slope, half_window=HALF_WINDOW_M):
@@ -760,7 +900,7 @@ def median(vals):
     return s[k // 2] if k % 2 else (s[k // 2 - 1] + s[k // 2]) / 2.0
 
 
-def family_slope(pts, axis):
+def family_slope(pts, axis, prefer=None):
     """The bearing a region's streets run at, measured off the trees.
 
     The row finder de-trends by this before looking for rows, and it cannot
@@ -783,7 +923,19 @@ def family_slope(pts, axis):
     # at about 35 degrees - and a search that stopped at 0.40 could not see it,
     # so it settled for a spurious alignment scoring less than half as well and
     # left every Two Bridges avenue unfitted.
-    coarse = max((score(k / 1000.0), k / 1000.0) for k in range(-850, 851, 2))[1]
+    # Two bearings can score within a whisker of each other. Chinatown is the
+    # case: 441 trees, and +0.065 and +0.129 come out 1481 to 1481. Which one
+    # wins is then decided by a handful of trees, and moving the Grand St line
+    # by 19 m was enough to flip it and leave twelve Chinatown avenues unfitted.
+    # So near-ties are broken towards the bearing the old grid already has,
+    # which is never more than 0.01 off - a tie-break, not an override: a
+    # candidate has to score within a couple of percent of the best to be
+    # considered at all.
+    scored = [(score(k / 1000.0), k / 1000.0) for k in range(-850, 851, 2)]
+    top = max(scored)[0]
+    close = [s for c, s in scored if c >= FAMILY_TIE * top]
+    coarse = (min(close, key=lambda s: abs(s - prefer)) if prefer is not None
+              else max(scored)[1])
     return max((score(coarse + d / 10000.0), coarse + d / 10000.0)
                for d in range(-20, 21))[1]
 
@@ -832,8 +984,12 @@ def fit_region_lines(frame, trees_un, grid_region, log):
     streets = {n: line_to_frame(frame, ew_seed[n]['line'], 'ew')[1] for n in ew_names}
     avenues = {n: line_to_frame(frame, ns_seed[n]['line'], 'ns')[1] for n in ns_names}
     fitted_ew, fitted_ns = {}, {}
-    ew_slope = family_slope(trees_un, 'ew')
-    ns_slope = family_slope(trees_un, 'ns')
+    seed_bearing = {}
+    for ax, names, seeds in (('ew', ew_names, ew_seed), ('ns', ns_names, ns_seed)):
+        got = sorted(line_to_frame(frame, seeds[n]['line'], ax)[0] for n in names)
+        seed_bearing[ax] = got[len(got) // 2] if got else None
+    ew_slope = family_slope(trees_un, 'ew', seed_bearing['ew'])
+    ns_slope = family_slope(trees_un, 'ns', seed_bearing['ns'])
     log.append('  bearings off the tree rows: streets %+.5f, avenues %+.5f'
                % (ew_slope, ns_slope))
 
@@ -987,19 +1143,17 @@ def fit_region_lines(frame, trees_un, grid_region, log):
                               'offset': seeds[name], 'half_row_m': 0.0,
                               'rows': [], 'seeded': True}
 
-    # The zone dividers belong here too. They are not fitted and never bound a
-    # cell, but a sub-zone at the bottom of a zone holds one side of one, and
-    # without a line to match against, every tree on it reads as standing on no
-    # street at all - which left E Houston St out of the contents of the three
-    # sub-zones that work it.
-    for entries, axis in ((grid_region['ew'], 'ew'), (grid_region['ns'], 'ns')):
-        for s in entries:
-            if s.get('source') != 'divider':
-                continue
-            slope, offset = line_to_frame(frame, s['line'], axis)
-            walk[s['name']] = {'name': s['name'], 'axis': axis, 'slope': slope,
-                               'offset': offset, 'half_row_m': 0.0, 'rows': [],
-                               'seeded': True, 'divider': True}
+    # The divider streets belong here too, but only to the region that HOLDS
+    # them. A zone line now runs immediately north of its street, the way every
+    # sub-zone line does, so E Houston St sits wholly in the Lower East Side,
+    # Grand St wholly in Chinatown and East Broadway wholly in Two Bridges. The
+    # region on the north side no longer has any of that street's trees and
+    # must not carry its line, or it would claim them back across the boundary.
+    corridors = divider_corridors(frame)
+    for key, fit in corridors.items():
+        owner, name = DIVIDER_OWNER[key]
+        if owner == grid_region['id']:
+            walk[name] = dict(fit)
 
     # 3rd Ave under its own name, and the two roads it was standing in for.
     # 3rd Ave stops at Cooper Square, where the Bowery takes over, so it is
@@ -1285,15 +1439,37 @@ def main():
                           'species': t.get('spc_common', ''), 'u': u, 'n': n})
     print('Loaded %d live CB3 street trees.' % len(trees))
 
-    def region_of(lng, lat):
+    # The zone lines, and the streets they run north of.
+    corridors = divider_corridors(frame, divs)
+    zone_lines = {k: zone_line(f) for k, f in corridors.items()}
+    print('\n=== zone lines')
+    for key in ('houston', 'grand', 'eastBroadway'):
+        f, g = corridors[key], zone_lines[key]
+        m0, c0 = f['old_line']
+        mid = f.get('mid_u', 0.0)
+        moved = ((c0 + m0 * mid) - (g['offset'] + g['slope'] * mid)) / math.hypot(1.0, g['slope'])
+        print('  %-14s %d rows %s  half-road %5.2f m' %
+              (pretty(f['name']), len(f['rows']),
+               '/'.join(str(r['trees']) for r in f['rows']), f['half_row_m']))
+        print('     boundary runs %.2f m north of its centreline, %.2f m of clear air; '
+              'the old line down the middle was %.1f m south of it'
+              % (f['edge_offset_m'], f['edge_clear_m'], moved))
+        # The same line in lng/lat, which is the form index.html's getZoneId
+        # wants: a latitude at the reference meridian and a slope in dLat/dLng.
+        a, b = [frame.to_lnglat(u, g['slope'] * u + g['offset']) for u in (-1500.0, 1500.0)]
+        dlat = (b[1] - a[1]) / (b[0] - a[0])
+        print('     in lng/lat: lat = %.6f %+.6f * (lng - %.4f)'
+              % (a[1] + dlat * (REF_LNG - a[0]), dlat, REF_LNG))
+
+    def region_of(u, n):
         for key, rid in (('houston', 'EV'), ('grand', 'LES'), ('eastBroadway', 'CH')):
-            slope, inter = divs[key]
-            if lat >= inter + slope * (lng - REF_LNG):
+            g = zone_lines[key]
+            if n <= g['slope'] * u + g['offset']:
                 return rid
         return 'TB'
 
     for t in trees:
-        t['region'] = region_of(t['lng'], t['lat'])
+        t['region'] = region_of(t['u'], t['n'])
 
     # Only regions that a sub-zone actually names need fitting.
     wanted = sorted({z['region'] for z in SUBZONES})
@@ -1334,14 +1510,7 @@ def main():
               open(OUT_LINES, 'w'), indent=1)
     print('\nwrote %s' % os.path.relpath(OUT_LINES, ROOT))
 
-    # The zone dividers, carried into the frame. They are stored in lng/lat, so
-    # sample two points and refit; the mapping is affine, so the line stays a
-    # line and this is exact.
-    divider_lines = {}
-    for key, line in divs.items():
-        slope, offset = line_to_frame(frame, line, 'ew')
-        divider_lines[key] = {'name': key, 'axis': 'ew', 'slope': slope,
-                              'offset': offset, 'half_row_m': 0.0, 'rows': []}
+    divider_lines = zone_lines
 
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
@@ -1400,14 +1569,16 @@ def main():
             if f is None:
                 return None
             if name.startswith(DIVIDER):
-                # A zone divider is fixed: it sits on its centreline and is not
-                # nudged, so report the air it happens to have and move on.
-                lo, hi = column(('west', 'east'))
-                clear = min((abs(f['offset'] + f['slope'] * t['u'] - t['n'])
-                             for t in region_trees if lo <= t['u'] <= hi), default=99.0)
+                # A zone line is already offset - north of its own street, the
+                # same rule as every other edge here - and it is offset ONCE
+                # for the whole district rather than per column, because it is
+                # also the test for which zone a tree is in. So it is not
+                # nudged again; report the air it has and move on.
                 key = name[len(DIVIDER):]
-                label = DIVIDER_NAME.get(key, key) + ' (divider)'
-                used[side] = (label, f, 0.0, clear, 0.0)
+                fit = corridors[key]
+                label = DIVIDER_NAME.get(key, key)
+                used[side] = (label, f, fit['edge_offset_m'], fit['edge_clear_m'],
+                              row_half(fit['name'], fit))
                 return f, 0.0
             if f['axis'] == 'ew':
                 lo, hi = column(('west', 'east'))
