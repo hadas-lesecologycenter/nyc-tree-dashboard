@@ -4648,12 +4648,12 @@ async function initSegmentsLayer() {
     segmentRuns(pts).forEach(run => {
       const shape = run.length > 1
         ? L.polyline(run.map(c => [c[1], c[0]]), {
-            pane: 'segmentBands', color, weight: 16, opacity: 0.34,
+            pane: 'segmentBands', color, weight: 20, opacity: 0.5,
             lineCap: 'round', lineJoin: 'round',
           })
         : L.circleMarker([run[0][1], run[0][0]], {
-            pane: 'segmentBands', radius: 8, weight: 0,
-            fillColor: color, fillOpacity: 0.34,
+            pane: 'segmentBands', radius: 10, weight: 0,
+            fillColor: color, fillOpacity: 0.5,
           });
       shape.bindPopup(popup).bindTooltip(tip).addTo(segmentsLayer);
     });
@@ -4707,17 +4707,25 @@ function segmentRuns(pts) {
   });
 }
 
-// A band is drawn in pixels, so its width has to follow the zoom or it stops
-// meaning anything: at z15 the two sidewalk runs of a block face are 4 px apart
-// and one fat band swallows both, at z19 they are 40 px apart and a thin one
-// leaves the trees stranded beside it.
-const SEGMENT_BAND_WEIGHT = { 19: 22, 18: 16, 17: 12, 16: 9 };
+// A band lies UNDER the trees, so it is only visible in the margin it leaves
+// around them — which means its width has to be measured against the tree
+// markers, not against the street. A band as wide as the row of dots is
+// perfectly hidden by it: at the default zoom the dots are 9 px and touching,
+// and a 9 px band vanished under them everywhere the block was fully planted,
+// which is everywhere it matters.
+//
+// So the width is the marker's own diameter plus a margin that always shows,
+// widening with the zoom because the two sidewalk runs pull apart as you go in
+// and the band can afford the room.
+const SEGMENT_BAND_MARGIN = 11;
+const SEGMENT_BAND_ZOOM_BONUS = { 19: 10, 18: 6, 17: 2 };
 let _segmentBandWeight = 0;
 
 function syncSegmentBands() {
   if (!segmentsVisible || !segmentsLayer) return;
   const z = mapInstance.getZoom();
-  const weight = SEGMENT_BAND_WEIGHT[Math.min(19, Math.max(16, z))] || 7;
+  const weight = getMarkerSize() + SEGMENT_BAND_MARGIN +
+                 (SEGMENT_BAND_ZOOM_BONUS[z] || 0);
   if (weight === _segmentBandWeight) return;
   _segmentBandWeight = weight;
   segmentsLayer.eachLayer(l => {
