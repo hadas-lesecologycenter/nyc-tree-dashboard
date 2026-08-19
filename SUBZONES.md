@@ -51,19 +51,19 @@ uses three throughout, zone 2 four then two, zone 3 two and then three and two
 | **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 155 |
 | **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 248 |
 | **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 214 |
-| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 175 |
-| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 195 |
+| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 176 |
+| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 196 |
 | **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 221 |
-| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 204 |
+| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 203 |
 | **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 206 |
-| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 302 |
+| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 301 |
 | **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 187 |
-| **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 244 |
-| **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 249 |
-| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 202 |
-| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 167 |
-| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 29 | 232 |
-| **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 164 |
+| **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 246 |
+| **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 252 |
+| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 203 |
+| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 164 |
+| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 231 |
+| **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 162 |
 | **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 272 |
 | **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 36 | 190 |
 
@@ -113,11 +113,29 @@ in zone 2, and the boundary between those two sets was nothing on the ground.
 
 Now each line is fitted from **every tree on its own street, from both sides**,
 and then offset north of it by the same rule as every other boundary here. So
-E Houston St sits wholly in zone 2 (195 trees), Grand St wholly in zone 3 (57)
-and East Broadway wholly in Two Bridges (73). No street in CB3 is split by any
-boundary, sub-zone or zone.
+E Houston St sits wholly in zone 2, Grand St wholly in zone 3 and East Broadway
+wholly in Two Bridges. No street in CB3 is split by any boundary, sub-zone or
+zone.
 
-Two things had to change to make that work.
+Each line sits in the **gap between its own street's planting and the block
+beyond**, like every other edge: 18.96 m from Houston's centreline, 16.37 m
+from Grand's, 13.82 m from East Broadway's — 2.6 to 3.7 m past each street's
+outermost tree row. They used to stand 4.1, 5.4 and 8.0 m past it, which put
+East Broadway's line most of a sidewalk into the block north of it.
+
+Placing them that way needs to know which trees near a line stand on the
+divider street and which stand on the block beyond, and that is only known once
+the regions are split and fitted — which needs the line. So it is done twice:
+a first pass places each line far enough out to have clear air, which is close
+enough to sort the trees, and a second uses the sorting to put the line where
+it belongs. The sorting is done against the streets of **both** regions a line
+divides, not just the one a tree currently falls in. Otherwise moving the line
+moves trees between regions, which changes the streets they are tested against,
+which moves the line: Houston oscillated between 19.48 and 20.39 m and never
+settled. Testing both sides makes a tree's street the same answer whichever
+side of the line it is on, and the second pass is then the last one.
+
+Two more things had to change to make it work at all.
 
 * **A divider street had no centreline, and could not have one.** Each grid
   region sees one side of its own divider, and half a street does not have a
@@ -130,11 +148,11 @@ Two things had to change to make that work.
   that holds together: 65, 80 and 37 trees on Houston, and the 11-tree scatter
   of the next block over left outside. Grand St has four rows, East Broadway
   two.
-* **A zone line is offset once for the whole district**, not per sub-zone
-  column like every other edge. An ordinary edge is nudged column by column
-  because the planting changes along the street; a zone line is also the test
-  for which zone a tree is *in*, and a line that moved along its run would file
-  a tree under one zone and draw it inside another.
+* **A zone line is offset once for the whole district**, not per stretch like
+  every other edge. An ordinary edge is placed stretch by stretch because the
+  planting changes along the street; a zone line is also the test for which
+  zone a tree is *in*, and a line that moved along its run would file a tree
+  under one zone and draw it inside another.
 
 The dashboard's `getZoneId` carries the same two lines, and the build prints
 them in lng/lat under `=== zone lines` to be pasted in. Before this they were
@@ -142,11 +160,18 @@ different lines from the ones the sub-zones used — the grid's bearing was
 −0.2683 and the dashboard's −0.2891 — and **54 trees were counted in one zone
 and drawn in another**. That is now zero of 5,308.
 
-The cost is Houston's clearance. Its boundary has 0.55 m of air rather than the
-metre the rule asks for: the trees just north of it are the wedge of short
-blocks between Houston and E 1st St, which run at the East Village bearing and
-so never line up parallel to Houston. There is no clean gap to find. The build
-lists every edge that ends up under a metre.
+The cost is clearance. Houston's boundary has 0.33 m of air rather than the
+metre the rule asks for, and East Broadway's 0.36 m: the trees just north of
+Houston are the wedge of short blocks up to E 1st St, which run at the East
+Village bearing and so never line up parallel to it, and there is no clean gap
+to find. The build lists every edge that ends up under a metre.
+
+What a zone line cannot fix is a corner. Each still has trees of other streets
+inside it — 14 on Houston, 11 on Grand, 4 on East Broadway — and they are not
+there because the line is too far out. They are the corner trees where an
+avenue meets the divider, interleaved with the divider's own frontage: on
+Houston they run from 14.7 m out, inside Houston's own planting, which reaches
+19.3 m. No line parallel to Houston can separate them.
 
 ## The road on the western edge
 
@@ -179,7 +204,7 @@ one road. 1A, 1D and 1G now read "4th Ave to 1st Ave" and 1J reads "Bowery to
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 513 of them.
+layer in the map's Program Layers panel shows all 512 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they are numbered
@@ -205,7 +230,7 @@ Two things make the segmentation legible rather than merely present:
   one thing nothing else shows.
 
 Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 513 are
+no boundary to clip against, so no segment can come out undrawable. All 512 are
 drawn by construction, and the marks on the map are exactly the trees that
 carry a `segmentId`.
 
@@ -213,13 +238,13 @@ carry a `segmentId`.
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 510 of the 5,308 (9.6%)
+claim — it says which street the tree stands on — and 509 of the 5,308 (9.6%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
 
-By zone: 2,382 of 2,468 on a segment in zone 1 (97%), 1,240 of 1,364 in zone 2
-(91%), 1,176 of 1,476 in zone 3 (80%). The gradient is the housing, not the
+By zone: 2,383 of 2,470 on a segment in zone 1 (96%), 1,239 of 1,364 in zone 2
+(91%), 1,177 of 1,474 in zone 3 (80%). The gradient is the housing, not the
 method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
 block, and the census still calls those street trees.
