@@ -43,29 +43,29 @@ uses three throughout, zone 2 four then two, zone 3 two and then three and two
 |---|---|---|---|---|---|
 | **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 259 |
 | **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
-| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to Ave D | 15 | 169 |
-| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · 4th Ave to 1st Ave | 19 | 232 |
+| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 175 |
+| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · 4th Ave to 1st Ave | 19 | 234 |
 | **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 126 |
-| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 15 | 268 |
-| **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · 4th Ave to 1st Ave | 19 | 177 |
+| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 262 |
+| **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · 4th Ave to 1st Ave | 17 | 175 |
 | **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 155 |
-| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 4th St · Ave C to FDR Dr | 16 | 249 |
+| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 248 |
 | **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 214 |
 | **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 175 |
-| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 194 |
-| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 21 | 220 |
-| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 202 |
-| **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 205 |
-| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 298 |
-| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 32 | 190 |
-| **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 39 | 249 |
-| **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 19 | 249 |
-| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 31 | 202 |
-| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Catherine St to Pike St | 15 | 167 |
-| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 30 | 232 |
-| **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Monroe St · Montgomery St to Jackson St | 17 | 165 |
-| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 21 | 268 |
-| **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 38 | 193 |
+| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 195 |
+| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 221 |
+| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 204 |
+| **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 206 |
+| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 302 |
+| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 187 |
+| **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 244 |
+| **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 249 |
+| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 202 |
+| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 167 |
+| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 29 | 232 |
+| **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 164 |
+| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 272 |
+| **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 36 | 190 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
@@ -179,7 +179,7 @@ one road. 1A, 1D and 1G now read "4th Ave to 1st Ave" and 1J reads "Bowery to
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 526 of them.
+layer in the map's Program Layers panel shows all 513 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they are numbered
@@ -205,7 +205,7 @@ Two things make the segmentation legible rather than merely present:
   one thing nothing else shows.
 
 Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 526 are
+no boundary to clip against, so no segment can come out undrawable. All 513 are
 drawn by construction, and the marks on the map are exactly the trees that
 carry a `segmentId`.
 
@@ -277,10 +277,38 @@ can, because a right of way is a constant and a street's planting is not. As
 far as Ave C the north side of E 10th St is an ordinary sidewalk row 5.4 m out;
 east of it the Jacob Riis Houses set their frontage back and plant it 8–10 m
 out, past the property line. A boundary held at 9.14 m ran straight down that
-row. So each edge is nudged outward until it has clear air: the smallest offset
-that keeps a metre from every tree in the column that edge crosses. The nudge
-is per column, since a single offset cannot suit the whole street, which is why
-the E 10th St boundary steps out by 5 m at Ave B.
+row.
+
+So an edge is placed in the **gap between the trees standing on its own street
+and the trees standing on the block beyond it** — both of which are known,
+because every tree has already been told which street it is on. Half a right of
+way is used when the gap has room for it, and the middle of the gap otherwise.
+That is what keeps a boundary from cutting a block face in two, and it is not
+the same as hunting outward for clear air, which is what this did before:
+Delancey St plants its north row 9.7 m out, adding a sidewalk width put the
+floor at 13.2 m — past the corner trees of the avenues at 11.5 and 13.0 m — and
+the hunt for air then pushed the line to 15.6 m. It stood 6 m inside the blocks
+north of Delancey and clipped a tree or two off the end of ten avenue block
+faces. The gap it should have used, between Delancey's own row at 10.0 m and
+the first avenue tree at 11.5 m, is 1.5 m wide and no outward search starting
+at 13.2 m can find it.
+
+The offset is worked out per **stretch** of a street, not for the street as a
+whole, because the planting changes along it: E 10th St stands at 9.14 m west
+of Ave B and 10.19 m east of it. But two sub-zones that share a boundary have
+to share the offset, and they do not always have the same column — north of
+Delancey the band is cut into 2C (Essex to Clinton) and 2D (Clinton to the
+river), while 2F runs the whole way below it. Computing each one over its own
+column put 15.17 m, 15.63 m and 15.30 m on the same boundary: the line stepped
+twice, and 2D reached 33 cm further into the block than 2F gave up. So columns
+that **overlap** share one offset, worked out over the union of them; columns
+that merely touch — 1A's and 1B's on E 10th St, which meet on 1st Ave — do not,
+which is what keeps the Riis nudge local to the sub-zones that need it.
+
+Some gaps are narrow. The build lists every edge that ends up with less than a
+metre of air, and the tightest are the ones where a wide street meets blocks
+that are not parallel to it: E Houston St at 0.55 m, Delancey St at 0.74 m,
+E 10th St at 0.35 m. No tree is cut by any of them.
 
 This is a different construction from the old `cb3-street-grid.json`, which fit
 whole families of streets at once. That fit put E 14th St 9.5 m south of the
