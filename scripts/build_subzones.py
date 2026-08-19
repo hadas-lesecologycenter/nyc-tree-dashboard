@@ -776,6 +776,11 @@ DIVIDER_OWNER = {'houston': ('LES', 'E HOUSTON ST'),
                  'grand': ('CH', 'GRAND ST'),
                  'eastBroadway': ('TB', 'E BROADWAY')}
 
+# The two regions each line divides, north first.
+DIVIDER_SIDES = {'houston': ('EV', 'LES'),
+                 'grand': ('LES', 'CH'),
+                 'eastBroadway': ('CH', 'TB')}
+
 _CORRIDORS = {}
 
 
@@ -1488,8 +1493,65 @@ def main():
     print('Loaded %d live CB3 street trees.' % len(trees))
 
     # The zone lines, and the streets they run north of.
+    #
+    # Placing one needs to know which trees near it stand on the divider street
+    # and which stand on the block beyond, and that is only known after the
+    # regions are split and fitted - which needs the line. So it is done twice:
+    # the first pass places each line by the older rule, far enough out to have
+    # clear air, which is close enough to sort the trees; the second uses the
+    # sorting to put the line in the gap where it belongs.
+    #
+    # The sorting is done against the streets of BOTH regions the line divides,
+    # not just the one the tree currently falls in. Otherwise moving the line
+    # moves trees between regions, which changes the streets they are tested
+    # against, which moves the line: Houston St oscillated between 19.48 and
+    # 20.39 m and never settled. Testing against both sides makes a tree's
+    # street the same answer whichever side of the line it is on, and the
+    # second pass is then the last one - a third and fourth change nothing.
     corridors = divider_corridors(frame, divs)
     zone_lines = {k: zone_line(f) for k, f in corridors.items()}
+
+    def region_of(u, n):
+        """Which grid region a tree is in, by the same half-planes the
+        sub-zones are clipped with.
+
+        Testing the three lines in order and taking the first that says north
+        is not the same thing, because two of them cross: the Grand St and East
+        Broadway lines meet at lng -73.98245, and east of there East Broadway
+        runs NORTH of Grand. A cascade files everything in that wedge under Two
+        Bridges. No tree falls in it today - the two tests agree on all 5,308 -
+        but the sub-zone polygons are clipped with these half-planes, so the
+        tree that decides which zone it is in should be tested with them too."""
+        for rid, bounds in REGION_BOUNDS.items():
+            if all((n > zone_lines[key]['slope'] * u + zone_lines[key]['offset'])
+                   == south for key, south in bounds):
+                return rid
+        return 'TB'
+
+    wanted = sorted({z['region'] for z in SUBZONES})
+    for t in trees:
+        t['region'] = region_of(t['u'], t['n'])
+    first = {}
+    for rid in wanted:
+        first[rid] = fit_region_lines(frame, [(t['u'], t['n']) for t in trees
+                                              if t['region'] == rid], regions[rid], [])[1]
+    for key, f in corridors.items():
+        both = dict(first[DIVIDER_SIDES[key][0]])
+        both.update(first[DIVIDER_SIDES[key][1]])
+        hyp = math.hypot(1.0, f['slope'])
+        own, others = [], []
+        for t in trees:
+            d = (f['offset'] + f['slope'] * t['u'] - t['n']) / hyp
+            if d <= 0:
+                continue
+            on = nearest_line(both, t['u'], t['n'])[0]
+            if on is None:
+                continue
+            (own if on == f['name'] else others).append(d)
+        f['edge_offset_m'], f['edge_clear_m'] = edge_offset(
+            f, row_half(f['name'], f), own, others)
+    zone_lines = {k: zone_line(f) for k, f in corridors.items()}
+
     print('\n=== zone lines')
     for key in ('houston', 'grand', 'eastBroadway'):
         f, g = corridors[key], zone_lines[key]
@@ -1509,18 +1571,10 @@ def main():
         print('     in lng/lat: lat = %.6f %+.6f * (lng - %.4f)'
               % (a[1] + dlat * (REF_LNG - a[0]), dlat, REF_LNG))
 
-    def region_of(u, n):
-        for key, rid in (('houston', 'EV'), ('grand', 'LES'), ('eastBroadway', 'CH')):
-            g = zone_lines[key]
-            if n <= g['slope'] * u + g['offset']:
-                return rid
-        return 'TB'
-
     for t in trees:
         t['region'] = region_of(t['u'], t['n'])
 
     # Only regions that a sub-zone actually names need fitting.
-    wanted = sorted({z['region'] for z in SUBZONES})
     lines, walk_lines = {}, {}
     for rid in wanted:
         log = []
