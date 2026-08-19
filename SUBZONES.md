@@ -215,24 +215,31 @@ so "which trees are in 1A-03" is a lookup rather than a guess.
 
 Two things make the segmentation legible rather than merely present:
 
-* **A segment is drawn as its trees.** The layer marks the trees themselves, in
-  the segment's colour, and nothing else — the shaded area *is* the set of trees
-  in the segment because there is no shaded area, only the trees. Two shapes
-  were tried before this and both read as a box sitting on the street rather
-  than as the work: a thick bar along the centreline, then a corridor polygon
-  wide enough to enclose both sidewalk rows. The trees group themselves anyway —
-  a block's trees stand in two rows with nothing in the intersection at either
-  end, so the gaps that make the segmentation countable are already in the data.
+* **A segment is drawn as a band lying under its trees.** One band per run of
+  trees — two for an ordinary block face, because that is how a block face is
+  planted — in a pane below the markers, so every tree keeps its own colour.
+  That is the point of the shape: the map's whole job on the same screen is to
+  say what *tier* each tree is, and the layer used to paint the trees
+  themselves in the segment colour, which covered exactly that.
+
+  The band is straight. A block's trees are collinear by construction, so
+  joining them in order only adds a zigzag wherever one is out of line: the
+  points are split on their principal axis into the two sidewalk runs, and each
+  run is reduced to its two extreme points along that axis. Two earlier shapes
+  read as a box sitting on the street rather than as the work — a thick bar
+  down the centreline, then a corridor polygon wide enough to enclose both
+  rows. A band under one row is neither: it lies where the trees are.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twenty-five
   sub-zones is well past what colour can distinguish, so hue is spent on the
-  one thing nothing else shows.
+  one thing nothing else shows. The ramp is blue and the tiers are red, orange
+  and green, so a band never reads as a tier.
 
-Drawing the trees also removes a class of failure: there is no span to trim and
-no boundary to clip against, so no segment can come out undrawable. All 512 are
-drawn by construction, and the marks on the map are exactly the trees that
-carry a `segmentId`.
+Drawing bands from the trees removes a class of failure too: there is no span
+to trim and no boundary to clip against, so no segment can come out undrawable.
+All 512 are drawn by construction — 888 bands, since most block faces have two
+runs — and every tree that carries a `segmentId` lies on one.
 
 ## Trees on no segment
 
