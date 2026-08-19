@@ -229,6 +229,14 @@ Two things make the segmentation legible rather than merely present:
   read as a box sitting on the street rather than as the work — a thick bar
   down the centreline, then a corridor polygon wide enough to enclose both
   rows. A band under one row is neither: it lies where the trees are.
+
+  Its width is measured against the **tree markers**, not the street, because
+  lying under them it is only visible in the margin it leaves around them. A
+  band as wide as the row of dots is perfectly hidden by it — at the default
+  zoom the markers are 9 px and touching, and a 9 px band disappeared wherever
+  a block was fully planted, which is everywhere it matters. So the width is
+  the marker's own diameter plus 11 px, widening to plus 21 px at z19 where the
+  two runs have pulled apart and the band can afford the room.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twenty-five
