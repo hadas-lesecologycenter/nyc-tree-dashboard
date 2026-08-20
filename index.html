@@ -4620,6 +4620,7 @@ async function initSegmentsLayer() {
 
   segmentsLayer = L.layerGroup();
   segmentLabels = L.layerGroup();
+  segmentHits = [];
   segmentsData.features.forEach(f => {
     const p = f.properties;
     const color = segmentColor(p.tree_count);
@@ -4637,16 +4638,25 @@ async function initSegmentsLayer() {
     // is straight: a block's trees are collinear by construction, so joining
     // them in order only adds zigzags where one is out of line.
     segmentRuns(pts).forEach(run => {
-      const shape = run.length > 1
-        ? L.polyline(run.map(c => [c[1], c[0]]), {
+      const ends = run.map(c => L.latLng(c[1], c[0]));
+      const shape = ends.length > 1
+        ? L.polyline(ends, {
             pane: 'segmentBands', color, weight: 20, opacity: 0.5,
-            lineCap: 'round', lineJoin: 'round',
+            lineCap: 'round', lineJoin: 'round', interactive: false,
           })
-        : L.circleMarker([run[0][1], run[0][0]], {
+        : L.circleMarker(ends[0], {
             pane: 'segmentBands', radius: 10, weight: 0,
-            fillColor: color, fillOpacity: 0.5,
+            fillColor: color, fillOpacity: 0.5, interactive: false,
           });
-      shape.bindPopup(popup).bindTooltip(tip).addTo(segmentsLayer);
+      shape.addTo(segmentsLayer);
+      // Hit-tested by hand rather than bound to the shape - see segmentAt.
+      segmentHits.push({
+        a: ends[0], b: ends[ends.length - 1], popup, tip,
+        south: Math.min(ends[0].lat, ends[ends.length - 1].lat),
+        north: Math.max(ends[0].lat, ends[ends.length - 1].lat),
+        west: Math.min(ends[0].lng, ends[ends.length - 1].lng),
+        east: Math.max(ends[0].lng, ends[ends.length - 1].lng),
+      });
     });
 
     let lng = 0, lat = 0;
@@ -4664,6 +4674,63 @@ async function initSegmentsLayer() {
     `${pane ? pane.className : 'MISSING'} ` +
     `(z ${pane ? getComputedStyle(pane).zIndex : '-'}, ` +
     `sibling of tiles: ${!!pane && !!tiles && pane.parentElement === tiles.parentElement})`);
+}
+
+// Hovering and clicking a band.
+//
+// The band cannot be asked to do this itself. It is drawn below the tree
+// markers, and those are drawn on a canvas that covers the whole viewport and
+// takes every pointer event before anything underneath sees it - hover a band
+// and document.elementFromPoint returns the canvas, not the band. Raising the
+// band above the canvas would fix the events and undo the point of the layer.
+//
+// So the events are taken from the MAP instead. Leaflet's canvas renderer only
+// swallows a click that actually lands on a marker; anything else reaches the
+// map, which is exactly the split that is wanted here - a click on a tree
+// opens the tree, a click on the band beside it opens the segment.
+let segmentHits = [];
+let segmentTip = null;
+
+function segmentAt(latlng) {
+  if (!segmentsVisible || !segmentHits.length) return null;
+  const pad = 0.0004;   // a coarse cut, so only a handful get projected
+  const p = mapInstance.latLngToLayerPoint(latlng);
+  const r = (_segmentBandWeight || 20) / 2 + 2;
+  let best = null;
+  for (const h of segmentHits) {
+    if (latlng.lat < h.south - pad || latlng.lat > h.north + pad ||
+        latlng.lng < h.west - pad || latlng.lng > h.east + pad) continue;
+    const d = L.LineUtil.pointToSegmentDistance(
+      p, mapInstance.latLngToLayerPoint(h.a), mapInstance.latLngToLayerPoint(h.b));
+    if (d <= r && (!best || d < best.d)) best = { d, h };
+  }
+  return best && best.h;
+}
+
+function segmentPointerMove(e) {
+  if (!segmentsVisible) return;
+  const hit = segmentAt(e.latlng);
+  const container = mapInstance.getContainer();
+  if (!hit) {
+    if (segmentTip) { mapInstance.closeTooltip(segmentTip); segmentTip = null; }
+    if (container.style.cursor === 'pointer') container.style.cursor = '';
+    return;
+  }
+  container.style.cursor = 'pointer';
+  if (!segmentTip) segmentTip = L.tooltip({ sticky: false, direction: 'top', offset: [0, -8] });
+  segmentTip.setLatLng(e.latlng).setContent(hit.tip);
+  if (!mapInstance.hasLayer(segmentTip)) segmentTip.addTo(mapInstance);
+}
+
+function segmentPointerOut() {
+  if (segmentTip) { mapInstance.closeTooltip(segmentTip); segmentTip = null; }
+  mapInstance.getContainer().style.cursor = '';
+}
+
+function segmentPointerClick(e) {
+  if (!segmentsVisible) return;
+  const hit = segmentAt(e.latlng);
+  if (hit) L.popup().setLatLng(e.latlng).setContent(hit.popup).openOn(mapInstance);
 }
 
 // The pane the bands are drawn in: below the tree markers, so a tree's own
@@ -4776,6 +4843,8 @@ function toggleSegmentsFromPanel() {
   if (!segmentsVisible) {
     if (segmentsLayer) segmentsLayer.remove();
     if (segmentLabels) segmentLabels.remove();
+    if (segmentTip) { mapInstance.closeTooltip(segmentTip); segmentTip = null; }
+    mapInstance.getContainer().style.cursor = '';
     return;
   }
   if (segmentsLayer) {
@@ -4790,6 +4859,9 @@ function toggleSegmentsFromPanel() {
       segmentsLayer.addTo(mapInstance);
       mapInstance.on('zoomend', syncSegmentLabels);
       mapInstance.on('zoomend', syncSegmentBands);
+      mapInstance.on('mousemove', segmentPointerMove);
+      mapInstance.on('mouseout', segmentPointerOut);
+      mapInstance.on('click', segmentPointerClick);
       syncSegmentLabels();
       syncSegmentBands();
     })
