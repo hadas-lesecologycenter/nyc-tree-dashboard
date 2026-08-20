@@ -230,6 +230,15 @@ Two things make the segmentation legible rather than merely present:
   down the centreline, then a corridor polygon wide enough to enclose both
   rows. A band under one row is neither: it lies where the trees are.
 
+  Hovering and clicking a band is done by hit-testing the map's own pointer
+  events rather than by binding to the shape. A band is drawn below the tree
+  markers, and those are on a canvas covering the whole viewport that takes
+  every pointer event before anything underneath sees it — hover a band and
+  `document.elementFromPoint` returns the canvas. Leaflet's canvas renderer
+  only swallows a click that lands on a marker, so everything else reaches the
+  map, which gives exactly the split the layer wants: a click on a tree opens
+  the tree, a click on the band beside it opens the segment.
+
   Its width is measured against the **tree markers**, not the street, because
   lying under them it is only visible in the margin it leaves around them. A
   band as wide as the row of dots is perfectly hidden by it — at the default
