@@ -3140,10 +3140,7 @@ function initMap() {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
-  // Block segment bands live under the tree markers so a tree's own colour is
-  // never covered. Made here rather than with the layer, so it exists whatever
-  // order things are switched on in.
-  mapInstance.createPane('segmentBands').style.zIndex = 350;
+  ensureSegmentBandPane();
   // Stop Leaflet from intercepting touches on panels overlaid on the map.
   // map-tree-panel is intentionally excluded — disableClickPropagation on it
   // swallows clicks before they reach the reserve/report buttons inside.
@@ -4619,13 +4616,7 @@ async function initSegmentsLayer() {
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     segmentsData = await resp.json();
   }
-  // The bands go in the segmentBands pane, UNDER the tree markers (see
-  // initMap). The layer used to paint the trees themselves in the segment
-  // colour, which said what a segment holds and hid the one thing you most
-  // want to see on the same screen — what tier each of those trees is.
-  if (mapInstance && !mapInstance.getPane('segmentBands')) {
-    mapInstance.createPane('segmentBands').style.zIndex = 350;
-  }
+  ensureSegmentBandPane();
 
   segmentsLayer = L.layerGroup();
   segmentLabels = L.layerGroup();
@@ -4666,7 +4657,39 @@ async function initSegmentsLayer() {
                         iconSize: [44, 16], iconAnchor: [22, 8] }),
     }).addTo(segmentLabels);
   });
-  console.log(`Block segments: ${segmentsData.features.length} loaded`);
+  const pane = mapInstance && mapInstance.getPane('segmentBands');
+  const tiles = mapInstance && mapInstance.getPane('tilePane');
+  console.log(`Block segments: ${segmentsData.features.length} loaded, ` +
+    `${segmentsLayer.getLayers().length} bands drawn in pane ` +
+    `${pane ? pane.className : 'MISSING'} ` +
+    `(z ${pane ? getComputedStyle(pane).zIndex : '-'}, ` +
+    `sibling of tiles: ${!!pane && !!tiles && pane.parentElement === tiles.parentElement})`);
+}
+
+// The pane the bands are drawn in: below the tree markers, so a tree's own
+// colour is never covered, but above the basemap so the band can be seen at
+// all.
+//
+// It has to be created as a SIBLING OF THE TILE PANE rather than left wherever
+// createPane puts it. This map is built with rotate:true, and the rotate
+// plugin moves Leaflet's standard panes inside a rotate pane of its own; a
+// pane made without a parent stays outside it, where its z-index is no longer
+// being compared against the tile pane's 200 but against the rotate pane's
+// 400 — so the basemap covers it and the bands vanish. The segment ID labels
+// are ordinary markers and go in the standard marker pane, inside the rotate
+// pane, which is why they kept showing when the bands did not.
+//
+// Re-homed on every call, because the plugin can restructure the panes after
+// the map is built.
+function ensureSegmentBandPane() {
+  if (!mapInstance) return null;
+  const tiles = mapInstance.getPane('tilePane');
+  const host = (tiles && tiles.parentElement) || mapInstance.getPane('mapPane');
+  let pane = mapInstance.getPane('segmentBands');
+  if (!pane) pane = mapInstance.createPane('segmentBands', host);
+  else if (host && pane.parentElement !== host) host.appendChild(pane);
+  pane.style.zIndex = 350;
+  return pane;
 }
 
 // The two ends of each sidewalk run in a block segment.
@@ -4756,6 +4779,7 @@ function toggleSegmentsFromPanel() {
     return;
   }
   if (segmentsLayer) {
+    ensureSegmentBandPane();
     segmentsLayer.addTo(mapInstance); syncSegmentLabels(); syncSegmentBands(); return;
   }
   if (segmentsLoading) return;
