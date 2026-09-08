@@ -2734,6 +2734,14 @@ const CB3_BOUNDARY_URL = 'data/cb3-boundary.json';
 const SUBZONES_URL = 'data/subzones.geojson';
 const SEGMENTS_URL = 'data/subzone-segments.geojson';
 
+// CARTO stamps an "API key required" watermark across its raster basemap tiles
+// unless the request carries a key. This is a public, client-side key by
+// design — it travels in the tile URL the browser fetches, exactly like the
+// style path does, and is scoped to basemap tiles only. Every map on the page
+// pulls from here so the key lives in one place.
+const CARTO_BASEMAP_KEY = 'cb1_32d0_1_ca12900d5364dd85c30eeaec';
+const CARTO_BASEMAP_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=' + CARTO_BASEMAP_KEY;
+
 // Fetch a repo data file, preferring the same-origin copy and falling back to
 // the raw.githubusercontent mirror. Returns a Response; throws if both fail.
 // Always revalidate the repo's own data files. They are rewritten by the daily
@@ -3136,7 +3144,7 @@ function initMapControlsSidebar() {
 
 function initMap() {
   mapInstance = L.map('map', { center: [40.7195, -73.9845], zoom: 15, zoomControl: true, rotate: true, bearing: 0, rotateControl: false, touchRotate: true });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer(CARTO_BASEMAP_URL, {
     attribution: '© OpenStreetMap © CARTO', maxZoom: 19
   }).addTo(mapInstance);
   markersLayer = L.layerGroup().addTo(mapInstance);
@@ -4978,7 +4986,7 @@ function tcRenderCareMap() {
       return L.latLngBounds([40.710, -74.010], [40.730, -73.968]);
     })();
     tcCareMap = L.map('tc-care-map', { rotateControl: false }).fitBounds(cb3Bounds);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer(CARTO_BASEMAP_URL, {
       attribution: '© OpenStreetMap contributors © CARTO', maxZoom: 19
     }).addTo(tcCareMap);
   }
@@ -8686,7 +8694,7 @@ function load311Calls() {
       // Init map on first load; just invalidate size on subsequent calls
       if (!calls311Map) {
         calls311Map = L.map('calls-map-container', { center: [40.7195, -73.9845], zoom: 14, rotateControl: false, zoomControl: true });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer(CARTO_BASEMAP_URL, {
           attribution: '© OpenStreetMap © CARTO', maxZoom: 19
         }).addTo(calls311Map);
         calls311Markers = L.layerGroup().addTo(calls311Map);
@@ -9409,7 +9417,7 @@ function raInit() {
   if (!mapEl) return;
 
   raMap = L.map('ra-map', { zoomControl: true }).setView([40.7208, -73.9841], 14);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer(CARTO_BASEMAP_URL, {
     attribution: '&copy; OpenStreetMap &copy; CARTO',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(raMap);
