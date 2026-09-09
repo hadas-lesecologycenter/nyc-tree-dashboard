@@ -2285,7 +2285,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🔍</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Health Assessment</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2023, 2024, 2025, and 2026 plantings (2023 is off by default — tick it in the sidebar to survey that cohort). Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2023, 2024, 2025, and 2026 plantings. The 2023 cohort is street trees only and is off by default — tick it in the sidebar when that survey starts. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</div>
             </div>
           </div>
         </div>
@@ -2363,8 +2363,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Tree Cohort <span style="font-weight:400;color:var(--text3);text-transform:none">(ring color)</span></div>
             <div style="display:flex;flex-direction:column;gap:7px">
               <!-- 2023 starts unticked: the cohort is loaded and ready to survey, but
-                   until it is ticked it stays out of the map and every progress figure. -->
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
+                   until it is ticked it stays out of the map and every progress figure.
+                   Street trees only — see RA_YEARS. -->
+              <label title="2023 street trees. Park trees planted that year are not part of this survey." style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text)">
                 <input type="checkbox" id="ra-show-2023" onchange="raRenderMap()">
                 <span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid #ec4899;flex-shrink:0"></span>
                 2023 trees
@@ -6166,7 +6167,7 @@ function updateMissingButton(tree) {
 function updateMapAssessBtn(tree) {
   const btn = document.getElementById('mtp-assess-btn');
   if (!btn) return;
-  const eligible = raIsAssessYear(raPlantYear(tree));
+  const eligible = raIsAssessable(tree);
   btn.style.display = eligible ? 'block' : 'none';
   if (eligible) btn.style.marginTop = '14px';
 }
@@ -9148,11 +9149,17 @@ function raGetZoneChecks() {
 
 // The planting cohorts the Health Assessment covers, in display order, with
 // the ring colour and the starting state of each cohort's sidebar checkbox.
-// 2023 is carried by the tool but starts unticked: the 2023 survey has not
-// begun, and 420 unassessed trees would swamp the progress numbers for the
-// cohorts being worked now. Tick it in the sidebar when that survey starts.
+//
+// 2023 is carried by the tool but starts unticked: that survey has not begun,
+// and 373 unassessed trees would swamp the progress numbers for the cohorts
+// being worked now. Tick it in the sidebar when the survey starts.
+//
+// noPark limits a cohort to street trees. The 2023 survey is street-tree only,
+// so the 47 park trees planted that year are left out of it. The earlier
+// cohorts were built without that distinction and keep every tree they have —
+// dropping their park trees now would move progress figures already in use.
 const RA_YEARS = [
-  { year: 2023, color: '#ec4899', on: false },
+  { year: 2023, color: '#ec4899', on: false, noPark: true },
   { year: 2024, color: '#f59e0b', on: true },
   { year: 2025, color: '#06b6d4', on: true },
   { year: 2026, color: '#a855f7', on: true },
@@ -9162,23 +9169,32 @@ function raPlantYear(tree) {
   return parseInt(tree && (tree.tree_cen_date || tree.planteddate) || 0);
 }
 
-function raIsAssessYear(yr) {
-  return RA_YEARS.some(y => y.year === yr);
+function raCohort(yr) {
+  return RA_YEARS.find(y => y.year === yr) || null;
+}
+
+// Whether a tree belongs to a cohort this tool assesses at all — the test the
+// map markers and the main map's assessment button both apply. Park trees fail
+// it for a street-only cohort, so they are never offered the form.
+function raIsAssessable(tree) {
+  const c = raCohort(raPlantYear(tree));
+  if (!c) return false;
+  return !(c.noPark && tree && tree.tree_type === 'park');
 }
 
 function raYearColor(yr) {
-  const y = RA_YEARS.find(y => y.year === yr);
-  return y ? y.color : '#9ca3af';
+  const c = raCohort(yr);
+  return c ? c.color : '#9ca3af';
 }
 
 // A cohort's checkbox state, falling back to the cohort's default when the
 // sidebar is not in the DOM yet — the main map asks this before the Health
 // Assessment tab has ever been opened.
 function raYearShown(yr) {
-  const y = RA_YEARS.find(y => y.year === yr);
-  if (!y) return false;
+  const c = raCohort(yr);
+  if (!c) return false;
   const box = document.getElementById('ra-show-' + yr);
-  return box ? box.checked : y.on;
+  return box ? box.checked : c.on;
 }
 
 // Every cohort ticked in the sidebar. This is the tab's single year filter:
@@ -9191,7 +9207,7 @@ function raShownYears() {
 function raGetYoungTrees() {
   if (typeof allTrees === 'undefined') return [];
   return allTrees.filter(t => {
-    if (!raIsAssessYear(raPlantYear(t))) return false;
+    if (!raIsAssessable(t)) return false;
     return cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude));
   });
 }
