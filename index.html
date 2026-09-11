@@ -1647,6 +1647,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <input type="checkbox" id="f-care-needed" onchange="applyFilters()">
             🔧 Care Needed (To-Do list)
           </label>
+          <div style="margin-bottom:8px">
+            <label class="cp-chk">
+              <input type="checkbox" id="f-cared-for" onchange="applyFilters()">
+              💧 Cared For by Me
+            </label>
+            <div class="cp-field" style="margin-left:22px;margin-bottom:4px">
+              <label for="f-cared-for-year">Care year</label>
+              <select id="f-cared-for-year" onchange="applyFilters()">
+                <option value="">All time</option>
+              </select>
+            </div>
+          </div>
           <label class="cp-chk">
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
@@ -3052,6 +3064,7 @@ function applyFilters(reload = false) {
   const selAge = filterSel.age;
   const streetTreesOnly = document.getElementById('f-street-trees-only')?.checked || false;
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
+  const caredForOnly = document.getElementById('f-cared-for')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
@@ -3073,6 +3086,10 @@ function applyFilters(reload = false) {
   if (careNeededOnly) {
     const careNeededIds = getCareNeededTreeIds();
     base = base.filter(t => careNeededIds.has(String(t.tree_id)));
+  }
+  if (caredForOnly) {
+    const caredForIds = getCaredForTreeIds();
+    base = base.filter(t => caredForIds.has(String(t.tree_id)));
   }
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
@@ -3126,6 +3143,8 @@ function updateReservedParent() {
 function clearAllFilters() {
   document.getElementById('f-health').value = '';
   document.getElementById('f-care-needed').checked = false;
+  document.getElementById('f-cared-for').checked = false;
+  resetCareYearSelect();
   document.getElementById('f-tree-guards').checked = false;
   document.getElementById('f-reserved').checked = false;
   document.getElementById('f-reserved-person').checked = false;
@@ -3327,17 +3346,87 @@ function getMarkerSize(tree) {
   return window.innerWidth <= 768 ? 14 : 9;
 }
 
-// Returns a Set of tree_ids that have at least one scraped care event.
-function getCaredForTreeIds() {
+// The care year chosen in the map filter panel. '' means every year.
+// Reads the panel when it exists so the map and the filter never disagree;
+// before the panel is built it falls back to the current year, which is what
+// the cared-for highlight has always shown.
+function getSelectedCareYear() {
+  const sel = document.getElementById('f-cared-for-year');
+  if (!sel) return String(new Date().getFullYear());
+  return sel.value;
+}
+
+// Returns a Set of tree_ids with at least one logged care event in `year`
+// ('' or 'all' means any year). Care reported through "Report Care Manually"
+// is appended to data/activities.csv, so it arrives here with the synced
+// NYC Tree Map log; locally held areas are also scanned for care the sync has
+// not picked up yet. Polygon care areas cover a block rather than a single
+// tree, so they carry no tree id and cannot be attributed here.
+function getCaredForTreeIds(year) {
   const ids = new Set();
-  const thisYear = String(new Date().getFullYear());
-  if (!_tcScrapedAreas || !_tcScrapedAreas.length) return ids;
-  _tcScrapedAreas.forEach(area => {
-    if (!area._fromScraper || !area._treeId) return;
-    const hasThisYear = (area.careEvents || []).some(ev => (ev.date || '').startsWith(thisYear));
-    if (hasThisYear) ids.add(String(area._treeId));
-  });
+  const want = (year === undefined) ? getSelectedCareYear() : String(year);
+  const wantYear = (!want || want === 'all') ? null : want;
+  const add = (treeId, careEvents) => {
+    if (!treeId) return;
+    if (wantYear && !(careEvents || []).some(ev => (ev.date || '').startsWith(wantYear))) return;
+    ids.add(String(treeId));
+  };
+  (_tcScrapedAreas || []).forEach(area => add(area._treeId, area.careEvents));
+  try {
+    tcLoad().forEach(area => { if (!area._fromScraper) add(area._treeId, area.careEvents); });
+  } catch (e) { /* localStorage unreadable — synced data alone still works */ }
   return ids;
+}
+
+// Fills the care-year dropdown from the years actually present in the care
+// log, newest first. Runs against every copy of the panel because the controls
+// sidebar is cloned from #priority-sidebar, duplicating the ids.
+function populateCareYearOptions() {
+  const years = new Set();
+  const collect = areas => (areas || []).forEach(area => {
+    if (!area._treeId) return;
+    (area.careEvents || []).forEach(ev => {
+      const y = (ev.date || '').slice(0, 4);
+      if (/^\d{4}$/.test(y)) years.add(y);
+    });
+  });
+  collect(_tcScrapedAreas);
+  try { collect(tcLoad().filter(a => !a._fromScraper)); } catch (e) { /* ignore */ }
+  if (!years.size) return;
+
+  const sorted = [...years].sort().reverse();
+  document.querySelectorAll('select#f-cared-for-year').forEach(sel => {
+    // Keep whatever the user already picked, if it still exists.
+    const prev = sel.dataset.populated ? sel.value : careYearDefault(years);
+    const chosen = sorted.includes(prev) ? prev : '';
+    const opt = (value, label) =>
+      `<option value="${value}"${value === chosen ? ' selected' : ''}>${label}</option>`;
+    // selected is written into the markup, not set via .value, so the clone
+    // that builds #map-controls-content keeps the current choice.
+    sel.innerHTML = opt('', 'All time') + sorted.map(y => opt(y, y)).join('');
+    sel.dataset.populated = '1';
+  });
+}
+
+// Default care year: this year when it has any logged care, else all time.
+function careYearDefault(years) {
+  const thisYear = String(new Date().getFullYear());
+  return years.has(thisYear) ? thisYear : '';
+}
+
+function resetCareYearSelect() {
+  document.querySelectorAll('select#f-cared-for-year').forEach(sel => {
+    const years = new Set([...sel.options].map(o => o.value).filter(Boolean));
+    sel.value = careYearDefault(years);
+  });
+}
+
+// Called once the care log finishes loading: the year list and, when the
+// filter is already on, the filtered tree set both depend on it.
+function refreshCaredForFilter() {
+  populateCareYearOptions();
+  if (document.getElementById('f-cared-for')?.checked) applyFilters();
+  else updateMap();
 }
 
 function updateMap() {
@@ -4168,7 +4257,7 @@ function switchView(view, evt) {
         renderClaimedBlocksSidebar();
         tcUpdateProgress();
         tcRenderCareMap();
-        updateMap();
+        refreshCaredForFilter();
       });
     }
     if (view === 'risk') { setTimeout(raInit, 50); }
@@ -5315,6 +5404,7 @@ async function tcRefreshCareTab() {
   try {
     await tcSyncScrapedActivities();
     tcRenderCareMap();
+    refreshCaredForFilter();
   } catch (e) {
     console.error('Failed to refresh care tab:', e);
   }
@@ -7813,7 +7903,7 @@ window.addEventListener('load', async () => {
       renderClaimedBlocksSidebar();
       tcUpdateProgress();
       tcRenderMain();
-      updateMap(); // highlight cared-for trees on the main map
+      refreshCaredForFilter(); // year list + cared-for highlight on the main map
       updateStats();
       tcRenderCareMap(); // populate care map in Tree Care tab (also renders reservations)
       tcShowSyncStatus('✓ Loaded ' + _tcScrapedAreas.length + ' area' + (_tcScrapedAreas.length > 1 ? 's' : '') + ' from NYC Tree Map');
