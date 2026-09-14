@@ -28,29 +28,38 @@ Original NYC tree care dashboard functionality
 ### 🌱 Upcoming Plantings map
 `plantings-map.html` is a standalone map of planned plantings, separate from the
 main dashboard. These trees aren't in the NYC tree census yet, so the page plots
-coordinates from its own data file rather than census markers.
+its own data rather than census markers.
 
-Planted trees live in `data/upcoming-plantings.csv` (address, borough, area,
-species). To add some, append rows leaving the coordinate columns blank, then
-geocode them:
+**Just open it** — no setup, no build step:
+- <https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/plantings-map.html>
+- or double-click the file
+
+The page geocodes the street addresses in your browser via the
+[NYC Planning Labs GeoSearch API](https://geosearch.planninglabs.nyc) the first
+time it loads, then caches the results in `localStorage`, so later visits are
+instant and don't hit the API again. If an address can't be resolved the page says
+which one and greys it out in the list, rather than guessing a location.
+
+Leaflet is vendored in `vendor/` (extracted from the copy already bundled in
+`index.html`), so the only third-party requests are basemap tiles and the
+geocoder.
+
+#### Editing the list
+The roster lives in two places, both plain text:
+- `data/upcoming-plantings.csv` — the source of truth
+- a `FALLBACK_PLANTINGS` array near the top of the page's script, used when the
+  CSV can't be fetched (opening the file straight off disk)
+
+Keep them in step when you add or remove trees.
+
+#### Optional: freezing coordinates
+If you'd rather the page not call the geocoder at all, bake the coordinates in:
 
 ```bash
 python3 scripts/geocode_plantings.py
 ```
 
-The script fills in `latitude`/`longitude` from the NYC Planning Labs GeoSearch API,
-rewrites the CSV in place, and mirrors the rows into `data/upcoming-plantings.js`.
-Commit both files. Use `--dry-run` to preview and `--force` to re-geocode rows that
-already have coordinates.
-
-Rows that fail to geocode keep blank coordinates and are reported on the console —
-the map skips them rather than guessing a location.
-
-Open the page either way:
-- **Served** — <https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/plantings-map.html>,
-  or locally via `python3 -m http.server`
-- **Straight off disk** — double-click the file. This is why the script writes the
-  `.js` mirror: a `file://` page may load a script but not `fetch` a CSV.
-
-Leaflet is vendored in `vendor/` (extracted from the copy already bundled in
-`index.html`), so the only third-party request the page makes is for basemap tiles.
+It fills `latitude`/`longitude` in the CSV from the same API, mirrors the rows
+into `data/upcoming-plantings.js`, and the page prefers those over live lookups.
+Commit both files. `--dry-run` previews; `--force` re-geocodes rows that already
+have coordinates.

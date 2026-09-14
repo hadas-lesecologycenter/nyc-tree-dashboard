@@ -19,9 +19,7 @@
     --text2: #6b6456;
     --text3: #8a8474;
     --border: #e2ddd1;
-    --les: #2f7d5d;
-    --ev: #c17d1f;
-    --north: #4a6fa5;
+    --warn: #9c4221;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -35,7 +33,7 @@
   }
   header {
     flex: 0 0 auto;
-    padding: 14px 20px;
+    padding: 13px 20px;
     background: var(--panel);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -50,6 +48,7 @@
     margin: 0;
   }
   .sub { font-size: 12px; color: var(--text2); }
+  .sub.warn { color: var(--warn); font-weight: 600; }
   main { flex: 1 1 auto; display: flex; min-height: 0; }
   #sidebar {
     flex: 0 0 300px;
@@ -84,6 +83,8 @@
     color: var(--text);
   }
   .tree:hover, .tree:focus-visible { background: #f0ece2; border-left-color: var(--text3); outline: none; }
+  .tree[disabled] { cursor: default; opacity: .5; }
+  .tree[disabled]:hover { background: none; border-left-color: transparent; }
   .tree .sp { font-size: 13px; font-weight: 600; display: block; }
   .tree .ad { font-size: 11px; color: var(--text2); display: block; }
   #map { flex: 1 1 auto; min-width: 0; background: #e8e4da; }
@@ -94,24 +95,44 @@
     border-top: 1px solid var(--border);
     font-size: 11px;
     color: var(--text3);
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    flex-wrap: wrap;
   }
-  .empty {
-    margin: auto;
-    max-width: 520px;
-    padding: 28px;
-    text-align: left;
+  footer .note { flex: 1 1 340px; min-width: 0; }
+  .linkbtn {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: var(--text2);
+    text-decoration: underline;
+    cursor: pointer;
+    flex: 0 0 auto;
   }
-  .empty h2 { font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 16px; margin: 0 0 10px; }
-  .empty p { font-size: 13px; color: var(--text2); line-height: 1.55; margin: 0 0 12px; }
-  .empty code, pre {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12px;
-    background: #efebe1;
-    border: 1px solid var(--border);
-    border-radius: 5px;
+  .linkbtn:hover { color: var(--text); }
+  #splash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    z-index: 500;
+    padding: 24px;
   }
-  .empty code { padding: 1px 5px; }
-  pre { padding: 10px 12px; overflow-x: auto; margin: 0 0 12px; }
+  .splash-inner { max-width: 440px; }
+  .splash-inner h2 {
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    font-size: 16px;
+    margin: 0 0 10px;
+  }
+  .splash-inner p { font-size: 13px; color: var(--text2); line-height: 1.55; margin: 0 0 12px; }
+  .bar { height: 5px; background: #e4dfd3; border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+  .bar > div { height: 100%; width: 0; background: #2f7d5d; transition: width .25s ease; }
+  .fail { font-size: 12px; color: var(--warn); line-height: 1.5; }
+  .fail ul { margin: 6px 0 0; padding-left: 18px; }
   .pop { font-family: 'Nunito', system-ui, sans-serif; min-width: 170px; }
   .pop h3 { font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 13px; margin: 0 0 4px; }
   .pop .ad { font-size: 11px; color: var(--text2); }
@@ -130,26 +151,72 @@
   <span class="sub" id="count"></span>
 </header>
 
-<main>
+<main style="position:relative">
   <div id="sidebar"></div>
   <div id="map"></div>
+  <div id="splash">
+    <div class="splash-inner">
+      <h2 id="splash-title">Locating trees…</h2>
+      <div class="bar"><div id="splash-bar"></div></div>
+      <p id="splash-msg">Looking up street addresses with the NYC Planning Labs GeoSearch API.</p>
+    </div>
+  </div>
 </main>
 
-<footer id="foot"></footer>
+<footer>
+  <span class="note" id="foot"></span>
+  <button class="linkbtn" id="dl" hidden>Download geocoded CSV</button>
+</footer>
 
-<!-- Written by scripts/geocode_plantings.py. Loaded as a script rather than
-     fetched so this page also works opened straight off disk, where fetch()
-     is blocked but a script tag is not. Absent until the script has run. -->
+<!-- Optional. Written by scripts/geocode_plantings.py when you want to freeze
+     coordinates into the repo. Absent by default; the page geocodes instead. -->
 <script src="data/upcoming-plantings.js" onerror="void 0"></script>
 <script src="vendor/leaflet.js"></script>
 <script>
+// ── The roster ────────────────────────────────────────────────────────────────
+// Mirrors data/upcoming-plantings.csv. Embedded so the page always has the tree
+// list, including when opened straight off disk where fetch() is blocked.
+// Coordinates are not stored here — they are resolved at load time (see below).
+var FALLBACK_PLANTINGS = [
+  { id: '1',  address: '645 Water Street',  area: 'Lower East Side / Chinatown', species: 'red oak' },
+  { id: '2',  address: '645 Water Street',  area: 'Lower East Side / Chinatown', species: 'littleleaf linden' },
+  { id: '3',  address: '645 Water Street',  area: 'Lower East Side / Chinatown', species: 'serviceberry' },
+  { id: '4',  address: '645 Water Street',  area: 'Lower East Side / Chinatown', species: 'Sargent cherry' },
+  { id: '5',  address: '645 Water Street',  area: 'Lower East Side / Chinatown', species: 'Peking lilac' },
+  { id: '6',  address: '415 Grand Street',  area: 'Lower East Side / Chinatown', species: 'chestnut oak' },
+  { id: '7',  address: '415 Grand Street',  area: 'Lower East Side / Chinatown', species: 'white oak' },
+  { id: '8',  address: '271 Henry Street',  area: 'Lower East Side / Chinatown', species: 'serviceberry' },
+  { id: '9',  address: '296 E 4th Street',  area: 'East Village',  species: 'Daimyo oak' },
+  { id: '10', address: '601 E 6th Street',  area: 'East Village',  species: 'silver linden' },
+  { id: '11', address: '74 Avenue A',       area: 'East Village',  species: 'Kentucky coffeetree' },
+  { id: '12', address: '649 E 9th Street',  area: 'East Village',  species: 'chestnut oak' },
+  { id: '13', address: '420 E 12th Street', area: 'East Village',  species: 'swamp white oak' },
+  { id: '14', address: '420 E 12th Street', area: 'East Village',  species: 'American linden' },
+  { id: '15', address: '438 E 12th Street', area: 'East Village',  species: 'red oak' },
+  { id: '16', address: '437 E 12th Street', area: 'East Village',  species: 'silver linden' },
+  { id: '17', address: '136 E 26th Street', area: 'Farther north', species: 'Hungarian oak' },
+  { id: '18', address: '545 3rd Avenue',    area: 'Farther north', species: 'Peking lilac' },
+  { id: '19', address: '1039 2nd Avenue',   area: 'Farther north', species: 'American linden' },
+  { id: '20', address: '1039 2nd Avenue',   area: 'Farther north', species: 'Kentucky coffeetree' },
+  { id: '21', address: '351 E 51st Street', area: 'Farther north', species: 'bur oak' },
+  { id: '22', address: '351 E 51st Street', area: 'Farther north', species: 'serviceberry' }
+].map(function (r) { return { id: r.id, address: r.address, borough: 'Manhattan', area: r.area, species: r.species }; });
+
+// ── Config ────────────────────────────────────────────────────────────────────
 // Same public, client-side CARTO basemap key the dashboard uses. It travels in
 // the tile URL the browser requests and is scoped to basemap tiles only.
 var CARTO_KEY = 'cb1_32d0_1_ca12900d5364dd85c30eeaec';
 var CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY;
-var CSV_PATH = 'data/upcoming-plantings.csv';
+var CSV_PATH  = 'data/upcoming-plantings.csv';
 
-// Colour per area, matched between the sidebar and the map markers.
+// NYC Planning Labs GeoSearch — the city's own address geocoder. Free, no key,
+// CORS-enabled, built for exactly this. Results are cached in localStorage, so
+// the lookups happen once per address and not again on later visits.
+var GEOSEARCH  = 'https://geosearch.planninglabs.nyc/v2/search';
+var CACHE_KEY  = 'lesec_plantings_geocode_v1';
+var CACHE_DAYS = 120;
+var REQ_GAP_MS = 120;   // be polite between lookups
+
 var AREA_COLORS = {
   'Lower East Side / Chinatown': '#2f7d5d',
   'East Village': '#c17d1f',
@@ -159,9 +226,11 @@ var FALLBACK_COLOR = '#6b6456';
 
 // Several trees usually share one street address. Stacked on the identical
 // point all but the top marker would be unclickable, so co-located trees are
-// fanned onto a ~4m ring. Display offset only — the data keeps the address
-// coordinate, and the popup says so.
+// fanned onto a ~4m ring. Display offset only — the underlying position stays
+// the address coordinate, and the popup says so.
 var FAN_METERS = 4;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fanOffset(lat, i, n) {
   if (n < 2) return [0, 0];
@@ -170,6 +239,12 @@ function fanOffset(lat, i, n) {
     (FAN_METERS / 111320) * Math.sin(a),
     (FAN_METERS / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(a)
   ];
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
 }
 
 function parseCSVLine(line) {
@@ -185,8 +260,8 @@ function parseCSVLine(line) {
 }
 
 function parseCSV(text) {
-  var lines = text.trim().split('\n').filter(function (l) { return l.trim(); });
-  if (!lines.length) return [];
+  var lines = String(text).trim().split('\n').filter(function (l) { return l.trim(); });
+  if (lines.length < 2) return [];
   var head = parseCSVLine(lines[0]).map(function (h) { return h.toLowerCase(); });
   return lines.slice(1).map(function (line) {
     var cells = parseCSVLine(line), row = {};
@@ -195,61 +270,136 @@ function parseCSV(text) {
   });
 }
 
-// Prefer the generated script file; fall back to fetching the CSV when the page
-// is served over http(s) and the script file has not been generated yet.
-function loadRows() {
-  if (window.UPCOMING_PLANTINGS && window.UPCOMING_PLANTINGS.length) {
-    return Promise.resolve(window.UPCOMING_PLANTINGS);
-  }
-  if (location.protocol === 'file:') return Promise.resolve([]);
-  return fetch(CSV_PATH)
-    .then(function (r) { return r.ok ? r.text() : ''; })
-    .then(parseCSV)
-    .catch(function () { return []; });
-}
-
 function hasCoords(r) {
   return r.latitude && r.longitude &&
          !isNaN(parseFloat(r.latitude)) && !isNaN(parseFloat(r.longitude));
 }
 
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+function keyFor(r) { return (r.address || '').trim() + '|' + (r.borough || 'Manhattan').trim(); }
+
+// localStorage can throw (private mode, blocked site data) — never let that
+// break the page, just geocode again next time.
+function cacheRead() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+    var cutoff = Date.now() - CACHE_DAYS * 864e5;
+    Object.keys(raw).forEach(function (k) { if (!(raw[k].ts > cutoff)) delete raw[k]; });
+    return raw;
+  } catch (e) { return {}; }
+}
+
+function cacheWrite(cache) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch (e) { /* fine */ }
+}
+
+// ── Roster ────────────────────────────────────────────────────────────────────
+// Prefer a generated/committed source when there is one, so frozen coordinates
+// win over live lookups. Otherwise fall back to the embedded roster.
+function loadRoster() {
+  if (window.UPCOMING_PLANTINGS && window.UPCOMING_PLANTINGS.length) {
+    return Promise.resolve(window.UPCOMING_PLANTINGS);
+  }
+  if (location.protocol === 'file:') return Promise.resolve(FALLBACK_PLANTINGS);
+  return fetch(CSV_PATH)
+    .then(function (r) { return r.ok ? r.text() : ''; })
+    .then(function (t) { var rows = parseCSV(t); return rows.length ? rows : FALLBACK_PLANTINGS; })
+    .catch(function () { return FALLBACK_PLANTINGS; });
+}
+
+// ── Geocoding ─────────────────────────────────────────────────────────────────
+
+function geocodeOne(address, borough) {
+  var url = GEOSEARCH + '?text=' + encodeURIComponent(address + ', ' + borough + ', NY') + '&size=1';
+  return fetch(url)
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (json) {
+      var f = (json.features || [])[0];
+      var c = f && f.geometry && f.geometry.coordinates;
+      if (!c || c.length !== 2) throw new Error('no match');
+      return { lat: c[1], lng: c[0], label: (f.properties && f.properties.label) || address };
+    });
+}
+
+// Resolve every row's coordinates: committed value first, then cache, then a
+// live lookup. One lookup per distinct address, however many trees share it.
+function resolveCoords(rows, onProgress) {
+  var cache = cacheRead();
+  var pending = [];
+
+  rows.forEach(function (r) {
+    if (hasCoords(r)) return;
+    var k = keyFor(r);
+    if (cache[k]) {
+      r.latitude = cache[k].lat; r.longitude = cache[k].lng;
+      r.geocodedaddress = cache[k].label;
+      return;
+    }
+    if (pending.indexOf(k) === -1) pending.push(k);
+  });
+
+  var failures = [];
+  if (!pending.length) return Promise.resolve({ rows: rows, failures: failures, looked_up: 0 });
+
+  var done = 0;
+  onProgress(0, pending.length);
+
+  // Sequential, with a small gap — 14 addresses, once, then cached.
+  return pending.reduce(function (chain, k) {
+    return chain.then(function () {
+      var parts = k.split('|');
+      return geocodeOne(parts[0], parts[1])
+        .then(function (hit) {
+          cache[k] = { lat: hit.lat, lng: hit.lng, label: hit.label, ts: Date.now() };
+          rows.forEach(function (r) {
+            if (keyFor(r) === k) {
+              r.latitude = hit.lat; r.longitude = hit.lng; r.geocodedaddress = hit.label;
+            }
+          });
+        })
+        .catch(function (err) { failures.push({ address: parts[0], why: err.message }); })
+        .then(function () {
+          onProgress(++done, pending.length);
+          return new Promise(function (res) { setTimeout(res, REQ_GAP_MS); });
+        });
+    });
+  }, Promise.resolve()).then(function () {
+    cacheWrite(cache);
+    return { rows: rows, failures: failures, looked_up: pending.length };
   });
 }
 
-function showEmpty(total) {
-  document.getElementById('sidebar').style.display = 'none';
-  document.getElementById('map').innerHTML =
-    '<div class="empty">' +
-      '<h2>No coordinates yet</h2>' +
-      '<p>' + (total ? total + ' trees are listed in <code>data/upcoming-plantings.csv</code>, but none have coordinates.'
-                     : 'No planting rows were found.') + '</p>' +
-      '<p>Geocode them, then reload this page:</p>' +
-      '<pre>python3 scripts/geocode_plantings.py</pre>' +
-      '<p>Opening this file straight off disk? The page reads ' +
-      '<code>data/upcoming-plantings.js</code>, which that script writes. ' +
-      'Until it has run there is nothing to plot.</p>' +
-    '</div>';
-  document.getElementById('map').style.display = 'flex';
-  document.getElementById('count').textContent = '';
-  document.getElementById('foot').textContent = '';
+// ── Rendering ─────────────────────────────────────────────────────────────────
+
+function showSplashError(title, html) {
+  document.getElementById('splash-title').textContent = title;
+  document.querySelector('.bar').hidden = true;
+  document.getElementById('splash-msg').innerHTML = html;
 }
 
-function render(rows) {
+function render(rows, failures) {
   var plotted = rows.filter(hasCoords);
-  var skipped = rows.length - plotted.length;
 
-  if (!plotted.length) { showEmpty(rows.length); return; }
+  if (!plotted.length) {
+    showSplashError('Could not locate these trees', 
+      '<span class="fail">The NYC GeoSearch lookup failed for every address, so there is nothing to plot. ' +
+      'This is usually a dropped connection — reload to try again.' +
+      (failures.length ? '<ul>' + failures.slice(0, 5).map(function (f) {
+        return '<li>' + esc(f.address) + ' — ' + esc(f.why) + '</li>';
+      }).join('') + '</ul>' : '') + '</span>');
+    return;
+  }
+
+  document.getElementById('splash').remove();
 
   var map = L.map('map', { zoomControl: true, scrollWheelZoom: true });
   L.tileLayer(CARTO_URL, { attribution: '© OpenStreetMap © CARTO', maxZoom: 19 }).addTo(map);
 
-  // Group by exact coordinate so the fan-out knows how many share each spot.
   var byPoint = {};
   plotted.forEach(function (r) {
-    var k = r.latitude + ',' + r.longitude;
+    var k = parseFloat(r.latitude).toFixed(6) + ',' + parseFloat(r.longitude).toFixed(6);
     (byPoint[k] = byPoint[k] || []).push(r);
   });
 
@@ -261,7 +411,7 @@ function render(rows) {
       var off = fanOffset(lat, i, group.length);
       var ll = [lat + off[0], lng + off[1]];
       var color = AREA_COLORS[r.area] || FALLBACK_COLOR;
-      var m = L.marker(ll, {
+      markerFor[r.id] = L.marker(ll, {
         icon: L.divIcon({
           className: '',
           html: '<div style="width:13px;height:13px;background:' + color +
@@ -279,16 +429,14 @@ function render(rows) {
             : '') +
         '</div>'
       ).addTo(map);
-      markerFor[r.id] = m;
       bounds.push(ll);
     });
   });
 
   map.fitBounds(bounds, { padding: [45, 45] });
 
-  // Sidebar, in the order the areas appear in the data.
   var order = [], byArea = {};
-  plotted.forEach(function (r) {
+  rows.forEach(function (r) {
     var a = r.area || 'Other';
     if (!byArea[a]) { byArea[a] = []; order.push(a); }
     byArea[a].push(r);
@@ -300,9 +448,10 @@ function render(rows) {
     html += '<div class="group-head"><span class="dot" style="background:' + color + '"></span>' +
             esc(area) + ' (' + byArea[area].length + ')</div>';
     byArea[area].forEach(function (r) {
-      html += '<button class="tree" data-id="' + esc(r.id) + '">' +
+      var ok = !!markerFor[r.id];
+      html += '<button class="tree" data-id="' + esc(r.id) + '"' + (ok ? '' : ' disabled') + '>' +
                 '<span class="sp">' + esc(r.species) + '</span>' +
-                '<span class="ad">' + esc(r.address) + '</span>' +
+                '<span class="ad">' + esc(r.address) + (ok ? '' : ' — not located') + '</span>' +
               '</button>';
     });
   });
@@ -310,24 +459,59 @@ function render(rows) {
   sidebar.innerHTML = html;
   sidebar.addEventListener('click', function (e) {
     var btn = e.target.closest('.tree');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     var m = markerFor[btn.getAttribute('data-id')];
     if (!m) return;
     map.setView(m.getLatLng(), Math.max(map.getZoom(), 18));
     m.openPopup();
   });
 
-  var addresses = Object.keys(byPoint).length;
-  document.getElementById('count').textContent =
-    plotted.length + ' trees at ' + addresses + ' addresses' +
-    (skipped ? ' — ' + skipped + ' not plotted (no coordinates)' : '');
+  var missing = rows.length - plotted.length;
+  var counter = document.getElementById('count');
+  counter.textContent = plotted.length + ' trees at ' + Object.keys(byPoint).length + ' addresses' +
+                        (missing ? ' — ' + missing + ' could not be located' : '');
+  if (missing) counter.className = 'sub warn';
+
   document.getElementById('foot').textContent =
-    'Planned plantings, not yet in the NYC tree census. Trees sharing an address are ' +
-    'drawn a few metres apart so each marker stays clickable; the underlying position ' +
-    'is the address itself. Source: data/upcoming-plantings.csv.';
+    'Planned plantings, not yet in the NYC tree census. Addresses geocoded in your browser via NYC ' +
+    'Planning Labs GeoSearch. Trees sharing an address are drawn a few metres apart so each marker ' +
+    'stays clickable; the underlying position is the address itself.';
+
+  // Optional: freeze what the browser resolved, to commit into the repo.
+  var dl = document.getElementById('dl');
+  dl.hidden = false;
+  dl.addEventListener('click', function () {
+    var cols = ['id', 'address', 'borough', 'area', 'species', 'latitude', 'longitude', 'geocodedAddress'];
+    var lines = [cols.join(',')].concat(rows.map(function (r) {
+      return cols.map(function (c) {
+        var v = String(r[c.toLowerCase()] == null ? '' : r[c.toLowerCase()]);
+        return /[",]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(',');
+    }));
+    var url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'text/csv' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = 'upcoming-plantings.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
 }
 
-loadRows().then(render);
+// ── Go ────────────────────────────────────────────────────────────────────────
+
+loadRoster()
+  .then(function (rows) {
+    return resolveCoords(rows, function (done, total) {
+      document.getElementById('splash-bar').style.width = Math.round(100 * done / total) + '%';
+      document.getElementById('splash-msg').textContent =
+        'Looking up ' + total + ' street addresses with the NYC Planning Labs GeoSearch API… (' +
+        done + '/' + total + ')';
+    });
+  })
+  .then(function (res) { render(res.rows, res.failures); })
+  .catch(function (err) {
+    showSplashError('Could not load the plantings',
+      '<span class="fail">' + esc(err.message) + '</span>');
+  });
 </script>
 </body>
 </html>
