@@ -30,9 +30,11 @@ Original NYC tree care dashboard functionality
 main dashboard. These trees aren't in the NYC tree census yet, so the page plots
 its own data rather than census markers.
 
-**Just open it** — no setup, no build step:
-- <https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/plantings-map.html>
-- or double-click the file
+No setup, no build step — open it either way:
+- **Locally**: double-click `plantings-map.html`
+- **Published**: <https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/plantings-map.html>
+  — live once the file is on `main`, which is the branch GitHub Pages serves.
+  On a feature branch the link 404s.
 
 The page geocodes the street addresses in your browser via the
 [NYC Planning Labs GeoSearch API](https://geosearch.planninglabs.nyc) the first
