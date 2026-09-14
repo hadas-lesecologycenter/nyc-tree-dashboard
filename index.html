@@ -1707,10 +1707,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
             🏆 Coolest Block 2025
           </label>
           <label class="cp-chk">
-            <input type="checkbox" id="layer-upcoming-plantings" onchange="toggleUpcomingPlantingsFromPanel()">
-            🌱 Upcoming Plantings
-          </label>
-          <label class="cp-chk">
             <input type="checkbox" id="layer-subzones" onchange="toggleSubzonesFromPanel()">
             🧭 Sub-Zones
           </label>
@@ -2834,9 +2830,6 @@ let coolestBlocksVisible = false;
 let hydrantLayer = null;
 let hydrantVisible = false;
 let hydrantLoading = false;
-let plantingsLayer = null;
-let plantingsVisible = false;
-let plantingsLoading = false;
 let subzonesLayer = null;
 let subzonesVisible = false;
 let subzonesLoading = false;
@@ -4616,113 +4609,6 @@ function toggleFireHydrantsFromPanel() {
       hydrantVisible = false;
     })
     .finally(() => { hydrantLoading = false; });
-}
-
-// ========== UPCOMING PLANTINGS LAYER ==========
-// Source: data/upcoming-plantings.csv. These trees are not in the census yet —
-// they are planned plantings keyed by street address, so the layer plots the
-// CSV's own coordinates rather than census markers. Coordinates are filled in
-// by scripts/geocode_plantings.py; rows still missing them are skipped.
-
-const UPCOMING_PLANTINGS_PATH = 'data/upcoming-plantings.csv';
-
-// Several trees usually share one address. Stacking them on the identical point
-// makes all but the top marker unclickable, so co-located trees are fanned out
-// on a ~4m ring. This is a display offset only — the CSV keeps the address
-// coordinate, and the popup says so.
-const PLANTING_FAN_METERS = 4;
-
-function plantingFanOffset(lat, index, count) {
-  if (count < 2) return [0, 0];
-  const angle = (2 * Math.PI * index) / count;
-  const dLat = PLANTING_FAN_METERS / 111320;
-  const dLng = PLANTING_FAN_METERS / (111320 * Math.cos(lat * Math.PI / 180));
-  return [dLat * Math.sin(angle), dLng * Math.cos(angle)];
-}
-
-async function initUpcomingPlantingsLayer() {
-  const resp = await fetch(UPCOMING_PLANTINGS_PATH);
-  if (!resp.ok) throw new Error('HTTP ' + resp.status);
-  const text = await resp.text();
-
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  const header = tcParseCSVLine(lines[0]).map(h => h.toLowerCase());
-  const rows = lines.slice(1).map(line => {
-    const cells = tcParseCSVLine(line);
-    const row = {};
-    header.forEach((h, i) => { row[h] = cells[i] || ''; });
-    return row;
-  });
-
-  const plotted = rows.filter(r => r.latitude && r.longitude &&
-                                   !isNaN(parseFloat(r.latitude)) && !isNaN(parseFloat(r.longitude)));
-  const skipped = rows.length - plotted.length;
-  console.log(`Upcoming plantings: ${plotted.length} plotted, ${skipped} without coordinates`);
-
-  // Group by exact coordinate so the fan-out knows how many share each spot.
-  const byPoint = {};
-  plotted.forEach(r => {
-    const key = r.latitude + ',' + r.longitude;
-    (byPoint[key] = byPoint[key] || []).push(r);
-  });
-
-  plantingsLayer = L.layerGroup();
-  Object.values(byPoint).forEach(group => {
-    group.forEach((r, i) => {
-      const lat = parseFloat(r.latitude), lng = parseFloat(r.longitude);
-      const [dLat, dLng] = plantingFanOffset(lat, i, group.length);
-      L.marker([lat + dLat, lng + dLng], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="width:13px;height:13px;background:#3f9d5a;border:2px dashed #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>',
-          iconSize: [17, 17],
-          iconAnchor: [8, 8]
-        })
-      }).bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
-        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🌱 Upcoming Planting</div>
-        <div style="font-size:12px;font-weight:600;margin:4px 0">${r.species || ''}</div>
-        <div style="font-size:11px;color:#6b6456">${r.address || ''}</div>
-        ${r.area ? `<div style="font-size:11px;color:#6b6456">${r.area}</div>` : ''}
-        ${group.length > 1 ? `<div style="font-size:10px;color:#8a8474;margin-top:4px;font-style:italic">${group.length} trees at this address — markers spread apart to stay clickable</div>` : ''}
-      </div>`).addTo(plantingsLayer);
-    });
-  });
-
-  return { plotted: plotted.length, skipped };
-}
-
-function toggleUpcomingPlantingsFromPanel() {
-  const cb = document.getElementById('layer-upcoming-plantings');
-  const shouldShow = !!(cb && cb.checked);
-  if (shouldShow === plantingsVisible) return;
-  plantingsVisible = shouldShow;
-  if (!plantingsVisible) {
-    if (plantingsLayer) plantingsLayer.remove();
-    return;
-  }
-  if (plantingsLayer) { plantingsLayer.addTo(mapInstance); return; }
-  if (plantingsLoading) return;
-  plantingsLoading = true;
-  initUpcomingPlantingsLayer()
-    .then(({ plotted, skipped }) => {
-      if (!plotted) {
-        // Nothing has coordinates yet — say so rather than silently doing nothing.
-        if (cb) cb.checked = false;
-        plantingsVisible = false;
-        plantingsLayer = null;
-        alert('No upcoming plantings have coordinates yet.\n\nRun scripts/geocode_plantings.py to geocode data/upcoming-plantings.csv, then commit the result.');
-        return;
-      }
-      if (skipped) console.warn(`Upcoming plantings: ${skipped} row(s) skipped for missing coordinates`);
-      if (plantingsVisible) plantingsLayer.addTo(mapInstance);
-    })
-    .catch(err => {
-      console.error('Upcoming plantings load failed:', err);
-      if (cb) cb.checked = false;
-      plantingsVisible = false;
-      plantingsLayer = null;
-    })
-    .finally(() => { plantingsLoading = false; });
 }
 
 // ========== SUB-ZONES LAYER ==========

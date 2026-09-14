@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upcoming Plantings — LES Ecology Center</title>
+<!-- Leaflet 1.9.4, vendored from the copy already bundled in index.html so this
+     page needs no CDN and works opened straight off disk. -->
+<link rel="stylesheet" href="vendor/leaflet.css">
+<!-- Same fonts as the dashboard, loaded non-blocking. Every rule below carries a
+     fallback stack, so the page is fine if these never arrive. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --panel: #fffdf8;
+    --text: #2c2a24;
+    --text2: #6b6456;
+    --text3: #8a8474;
+    --border: #e2ddd1;
+    --les: #2f7d5d;
+    --ev: #c17d1f;
+    --north: #4a6fa5;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .sub { font-size: 12px; color: var(--text2); }
+  main { flex: 1 1 auto; display: flex; min-height: 0; }
+  #sidebar {
+    flex: 0 0 300px;
+    overflow-y: auto;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 6px 0 24px;
+  }
+  .group-head {
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text2);
+    padding: 16px 16px 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  .tree {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-left: 3px solid transparent;
+    padding: 7px 16px 7px 33px;
+    font: inherit;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .tree:hover, .tree:focus-visible { background: #f0ece2; border-left-color: var(--text3); outline: none; }
+  .tree .sp { font-size: 13px; font-weight: 600; display: block; }
+  .tree .ad { font-size: 11px; color: var(--text2); display: block; }
+  #map { flex: 1 1 auto; min-width: 0; background: #e8e4da; }
+  footer {
+    flex: 0 0 auto;
+    padding: 8px 20px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .empty {
+    margin: auto;
+    max-width: 520px;
+    padding: 28px;
+    text-align: left;
+  }
+  .empty h2 { font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 16px; margin: 0 0 10px; }
+  .empty p { font-size: 13px; color: var(--text2); line-height: 1.55; margin: 0 0 12px; }
+  .empty code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    background: #efebe1;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+  .empty code { padding: 1px 5px; }
+  pre { padding: 10px 12px; overflow-x: auto; margin: 0 0 12px; }
+  .pop { font-family: 'Nunito', system-ui, sans-serif; min-width: 170px; }
+  .pop h3 { font-family: 'Lora', Georgia, 'Times New Roman', serif; font-size: 13px; margin: 0 0 4px; }
+  .pop .ad { font-size: 11px; color: var(--text2); }
+  .pop .note { font-size: 10px; color: var(--text3); font-style: italic; margin-top: 5px; }
+  @media (max-width: 720px) {
+    main { flex-direction: column; }
+    #sidebar { flex: 0 0 auto; max-height: 34vh; border-right: 0; border-bottom: 1px solid var(--border); }
+    #map { min-height: 300px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌱 Upcoming Plantings</h1>
+  <span class="sub" id="count"></span>
+</header>
+
+<main>
+  <div id="sidebar"></div>
+  <div id="map"></div>
+</main>
+
+<footer id="foot"></footer>
+
+<!-- Written by scripts/geocode_plantings.py. Loaded as a script rather than
+     fetched so this page also works opened straight off disk, where fetch()
+     is blocked but a script tag is not. Absent until the script has run. -->
+<script src="data/upcoming-plantings.js" onerror="void 0"></script>
+<script src="vendor/leaflet.js"></script>
+<script>
+// Same public, client-side CARTO basemap key the dashboard uses. It travels in
+// the tile URL the browser requests and is scoped to basemap tiles only.
+var CARTO_KEY = 'cb1_32d0_1_ca12900d5364dd85c30eeaec';
+var CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY;
+var CSV_PATH = 'data/upcoming-plantings.csv';
+
+// Colour per area, matched between the sidebar and the map markers.
+var AREA_COLORS = {
+  'Lower East Side / Chinatown': '#2f7d5d',
+  'East Village': '#c17d1f',
+  'Farther north': '#4a6fa5'
+};
+var FALLBACK_COLOR = '#6b6456';
+
+// Several trees usually share one street address. Stacked on the identical
+// point all but the top marker would be unclickable, so co-located trees are
+// fanned onto a ~4m ring. Display offset only — the data keeps the address
+// coordinate, and the popup says so.
+var FAN_METERS = 4;
+
+function fanOffset(lat, i, n) {
+  if (n < 2) return [0, 0];
+  var a = (2 * Math.PI * i) / n;
+  return [
+    (FAN_METERS / 111320) * Math.sin(a),
+    (FAN_METERS / (111320 * Math.cos(lat * Math.PI / 180))) * Math.cos(a)
+  ];
+}
+
+function parseCSVLine(line) {
+  var out = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') inQ = !inQ;
+    else if (ch === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function parseCSV(text) {
+  var lines = text.trim().split('\n').filter(function (l) { return l.trim(); });
+  if (!lines.length) return [];
+  var head = parseCSVLine(lines[0]).map(function (h) { return h.toLowerCase(); });
+  return lines.slice(1).map(function (line) {
+    var cells = parseCSVLine(line), row = {};
+    head.forEach(function (h, i) { row[h] = cells[i] || ''; });
+    return row;
+  });
+}
+
+// Prefer the generated script file; fall back to fetching the CSV when the page
+// is served over http(s) and the script file has not been generated yet.
+function loadRows() {
+  if (window.UPCOMING_PLANTINGS && window.UPCOMING_PLANTINGS.length) {
+    return Promise.resolve(window.UPCOMING_PLANTINGS);
+  }
+  if (location.protocol === 'file:') return Promise.resolve([]);
+  return fetch(CSV_PATH)
+    .then(function (r) { return r.ok ? r.text() : ''; })
+    .then(parseCSV)
+    .catch(function () { return []; });
+}
+
+function hasCoords(r) {
+  return r.latitude && r.longitude &&
+         !isNaN(parseFloat(r.latitude)) && !isNaN(parseFloat(r.longitude));
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+function showEmpty(total) {
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('map').innerHTML =
+    '<div class="empty">' +
+      '<h2>No coordinates yet</h2>' +
+      '<p>' + (total ? total + ' trees are listed in <code>data/upcoming-plantings.csv</code>, but none have coordinates.'
+                     : 'No planting rows were found.') + '</p>' +
+      '<p>Geocode them, then reload this page:</p>' +
+      '<pre>python3 scripts/geocode_plantings.py</pre>' +
+      '<p>Opening this file straight off disk? The page reads ' +
+      '<code>data/upcoming-plantings.js</code>, which that script writes. ' +
+      'Until it has run there is nothing to plot.</p>' +
+    '</div>';
+  document.getElementById('map').style.display = 'flex';
+  document.getElementById('count').textContent = '';
+  document.getElementById('foot').textContent = '';
+}
+
+function render(rows) {
+  var plotted = rows.filter(hasCoords);
+  var skipped = rows.length - plotted.length;
+
+  if (!plotted.length) { showEmpty(rows.length); return; }
+
+  var map = L.map('map', { zoomControl: true, scrollWheelZoom: true });
+  L.tileLayer(CARTO_URL, { attribution: '© OpenStreetMap © CARTO', maxZoom: 19 }).addTo(map);
+
+  // Group by exact coordinate so the fan-out knows how many share each spot.
+  var byPoint = {};
+  plotted.forEach(function (r) {
+    var k = r.latitude + ',' + r.longitude;
+    (byPoint[k] = byPoint[k] || []).push(r);
+  });
+
+  var markerFor = {}, bounds = [];
+  Object.keys(byPoint).forEach(function (k) {
+    var group = byPoint[k];
+    group.forEach(function (r, i) {
+      var lat = parseFloat(r.latitude), lng = parseFloat(r.longitude);
+      var off = fanOffset(lat, i, group.length);
+      var ll = [lat + off[0], lng + off[1]];
+      var color = AREA_COLORS[r.area] || FALLBACK_COLOR;
+      var m = L.marker(ll, {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="width:13px;height:13px;background:' + color +
+                ';border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
+          iconSize: [17, 17],
+          iconAnchor: [8, 8]
+        })
+      }).bindPopup(
+        '<div class="pop">' +
+          '<h3>' + esc(r.species) + '</h3>' +
+          '<div class="ad">' + esc(r.address) + '</div>' +
+          (r.area ? '<div class="ad">' + esc(r.area) + '</div>' : '') +
+          (group.length > 1
+            ? '<div class="note">' + group.length + ' trees at this address — markers spread apart to stay clickable</div>'
+            : '') +
+        '</div>'
+      ).addTo(map);
+      markerFor[r.id] = m;
+      bounds.push(ll);
+    });
+  });
+
+  map.fitBounds(bounds, { padding: [45, 45] });
+
+  // Sidebar, in the order the areas appear in the data.
+  var order = [], byArea = {};
+  plotted.forEach(function (r) {
+    var a = r.area || 'Other';
+    if (!byArea[a]) { byArea[a] = []; order.push(a); }
+    byArea[a].push(r);
+  });
+
+  var html = '';
+  order.forEach(function (area) {
+    var color = AREA_COLORS[area] || FALLBACK_COLOR;
+    html += '<div class="group-head"><span class="dot" style="background:' + color + '"></span>' +
+            esc(area) + ' (' + byArea[area].length + ')</div>';
+    byArea[area].forEach(function (r) {
+      html += '<button class="tree" data-id="' + esc(r.id) + '">' +
+                '<span class="sp">' + esc(r.species) + '</span>' +
+                '<span class="ad">' + esc(r.address) + '</span>' +
+              '</button>';
+    });
+  });
+  var sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = html;
+  sidebar.addEventListener('click', function (e) {
+    var btn = e.target.closest('.tree');
+    if (!btn) return;
+    var m = markerFor[btn.getAttribute('data-id')];
+    if (!m) return;
+    map.setView(m.getLatLng(), Math.max(map.getZoom(), 18));
+    m.openPopup();
+  });
+
+  var addresses = Object.keys(byPoint).length;
+  document.getElementById('count').textContent =
+    plotted.length + ' trees at ' + addresses + ' addresses' +
+    (skipped ? ' — ' + skipped + ' not plotted (no coordinates)' : '');
+  document.getElementById('foot').textContent =
+    'Planned plantings, not yet in the NYC tree census. Trees sharing an address are ' +
+    'drawn a few metres apart so each marker stays clickable; the underlying position ' +
+    'is the address itself. Source: data/upcoming-plantings.csv.';
+}
+
+loadRows().then(render);
+</script>
+</body>
+</html>

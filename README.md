@@ -25,20 +25,32 @@ Start here → **[START_HERE.md](START_HERE.md)**
 ### 🎯 Tree Dashboard
 Original NYC tree care dashboard functionality
 
-### 🌱 Upcoming Plantings layer
-Planned plantings live in `data/upcoming-plantings.csv` and appear on the main map
-under **Program Layers → Upcoming Plantings**. These trees aren't in the census yet,
-so the layer plots the CSV's own coordinates rather than census markers.
+### 🌱 Upcoming Plantings map
+`plantings-map.html` is a standalone map of planned plantings, separate from the
+main dashboard. These trees aren't in the NYC tree census yet, so the page plots
+coordinates from its own data file rather than census markers.
 
-To add plantings: append rows (address, borough, area, species — leave the coordinate
-columns blank), then geocode them:
+Planted trees live in `data/upcoming-plantings.csv` (address, borough, area,
+species). To add some, append rows leaving the coordinate columns blank, then
+geocode them:
 
 ```bash
 python3 scripts/geocode_plantings.py
 ```
 
-The script fills in `latitude`/`longitude` from the NYC Planning Labs GeoSearch API
-and rewrites the CSV in place. Commit the result. Rows that fail to geocode keep
-blank coordinates and are reported on the console — the map layer skips them rather
-than guessing a location. Use `--dry-run` to preview and `--force` to re-geocode
-rows that already have coordinates.
+The script fills in `latitude`/`longitude` from the NYC Planning Labs GeoSearch API,
+rewrites the CSV in place, and mirrors the rows into `data/upcoming-plantings.js`.
+Commit both files. Use `--dry-run` to preview and `--force` to re-geocode rows that
+already have coordinates.
+
+Rows that fail to geocode keep blank coordinates and are reported on the console —
+the map skips them rather than guessing a location.
+
+Open the page either way:
+- **Served** — <https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/plantings-map.html>,
+  or locally via `python3 -m http.server`
+- **Straight off disk** — double-click the file. This is why the script writes the
+  `.js` mirror: a `file://` page may load a script but not `fetch` a CSV.
+
+Leaflet is vendored in `vendor/` (extracted from the copy already bundled in
+`index.html`), so the only third-party request the page makes is for basemap tiles.
