@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""
+Geocode data/upcoming-plantings.csv with the NYC Planning Labs GeoSearch API
+and write the coordinates back into the same file.
+
+The dashboard's "Upcoming Plantings" map layer reads latitude/longitude straight
+out of that CSV, so rows without coordinates simply don't get plotted. Run this
+once after adding new rows:
+
+    python3 scripts/geocode_plantings.py
+
+Rows that already have coordinates are left alone unless --force is passed, so
+re-running is cheap and safe. Nothing is written for an address that fails to
+geocode — those rows keep their blank coordinates and are reported at the end,
+so a bad address is visible instead of silently landing somewhere wrong.
+
+Options:
+    --force      re-geocode every row, including ones that already have coords
+    --dry-run    show what would change without touching the file
+
+Needs only the standard library, and needs outbound access to
+geosearch.planninglabs.nyc (it is not reachable from the Claude Code sandbox,
+which is why this runs on your machine rather than in CI).
+"""
+
+import argparse, csv, json, os, sys, time, urllib.parse, urllib.request
+from datetime import datetime, timezone
+
+# ── Config ────────────────────────────────────────────────────────────────────
+
+CSV_PATH  = os.path.join(os.path.dirname(__file__), '..', 'data', 'upcoming-plantings.csv')
+SEARCH_URL = 'https://geosearch.planninglabs.nyc/v2/search'
+USER_AGENT = 'lesecologycenter-nyc-tree-dashboard/1.0 (geocode_plantings.py)'
+PAUSE_SEC  = 0.3    # be polite between unique addresses
+TIMEOUT    = 20
+
+# A GeoSearch hit is only trusted as a plantable location if it resolved to an
+# actual address. 'street' / 'locality' hits mean the house number was dropped,
+# which would put the marker at a block or neighborhood centroid.
+GOOD_LAYERS = {'address', 'building'}
+
+
+def geocode(address, borough):
+    """Return (lat, lng, label, warnings) for one address, or None if no usable hit."""
+    query = f'{address}, {borough}, NY'
+    url = SEARCH_URL + '?' + urllib.parse.urlencode({'text': query, 'size': 3})
+    req = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        payload = json.load(resp)
+
+    features = payload.get('features') or []
+    if not features:
+        return None
+
+    top = features[0]
+    coords = (top.get('geometry') or {}).get('coordinates') or []
+    if len(coords) != 2:
+        return None
+    lng, lat = float(coords[0]), float(coords[1])
+
+    props = top.get('properties') or {}
+    label = props.get('label') or query
+
+    # Surface anything that suggests the hit is not the address we asked for.
+    warnings = []
+    layer = props.get('layer')
+    if layer and layer not in GOOD_LAYERS:
+        warnings.append(f'matched a "{layer}", not a street address')
+    got_borough = props.get('borough')
+    if got_borough and got_borough.lower() != borough.lower():
+        warnings.append(f'borough came back as "{got_borough}", expected "{borough}"')
+    match_type = props.get('match_type')
+    if match_type and match_type != 'exact':
+        warnings.append(f'match_type "{match_type}"')
+
+    return lat, lng, label, warnings
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--force', action='store_true',
+                    help='re-geocode rows that already have coordinates')
+    ap.add_argument('--dry-run', action='store_true',
+                    help='report results without writing the CSV')
+    args = ap.parse_args()
+
+    path = os.path.abspath(CSV_PATH)
+    with open(path, newline='', encoding='utf-8') as fh:
+        reader = csv.DictReader(fh)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    for col in ('address', 'borough', 'latitude', 'longitude'):
+        if col not in (fieldnames or []):
+            sys.exit(f'{path} is missing the required "{col}" column')
+
+    todo = [r for r in rows if args.force or not (r['latitude'] and r['longitude'])]
+    if not todo:
+        print(f'All {len(rows)} rows already have coordinates. Use --force to redo them.')
+        return 0
+
+    # One lookup per distinct address, however many trees share it.
+    keys = []
+    for r in todo:
+        k = (r['address'].strip(), r['borough'].strip())
+        if k not in keys:
+            keys.append(k)
+
+    print(f'{len(todo)} row(s) to geocode across {len(keys)} distinct address(es).\n')
+
+    resolved, failed = {}, []
+    for i, (address, borough) in enumerate(keys):
+        if i:
+            time.sleep(PAUSE_SEC)
+        try:
+            hit = geocode(address, borough)
+        except Exception as exc:
+            print(f'  ✗ {address} — request failed: {exc}')
+            failed.append((address, str(exc)))
+            continue
+        if hit is None:
+            print(f'  ✗ {address} — no result from GeoSearch')
+            failed.append((address, 'no result'))
+            continue
+        lat, lng, label, warnings = hit
+        resolved[(address, borough)] = (lat, lng, label)
+        flag = '  ⚠ ' + '; '.join(warnings) if warnings else ''
+        print(f'  ✓ {address} → {lat:.6f}, {lng:.6f}  [{label}]{flag}')
+
+    stamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    updated = 0
+    for r in todo:
+        hit = resolved.get((r['address'].strip(), r['borough'].strip()))
+        if not hit:
+            continue
+        lat, lng, label = hit
+        r['latitude'] = f'{lat:.6f}'
+        r['longitude'] = f'{lng:.6f}'
+        if 'geocodedAddress' in r:
+            r['geocodedAddress'] = label
+        if 'geocodedAt' in r:
+            r['geocodedAt'] = stamp
+        updated += 1
+
+    print()
+    if args.dry_run:
+        print(f'--dry-run: would update {updated} row(s); {path} left unchanged.')
+    else:
+        with open(path, 'w', newline='', encoding='utf-8') as fh:
+            writer = csv.DictWriter(fh, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f'Updated {updated} row(s) in {os.path.relpath(path)}.')
+
+    if failed:
+        print(f'\n{len(failed)} address(es) did not geocode and were left blank:')
+        for address, why in failed:
+            print(f'  - {address}: {why}')
+        print('Fix the address in the CSV and re-run. Trees without coordinates '
+              'are skipped by the map layer.')
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
