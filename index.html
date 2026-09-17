@@ -2359,6 +2359,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button onclick="exportTableCSV('ra-table','health-assessments.csv')" class="toggle-btn" title="Export table to CSV" style="display:none" id="ra-export-btn">⬇ CSV</button>
           </div>
         </div>
+        <!-- Shown only when the assessment records could not be loaded. Without
+             it a failed load looked exactly like a survey nobody had started:
+             every tree on the map painted grey, every count read zero. -->
+        <div id="ra-load-warning" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;
+             background:#fdecea;border:1px solid #c0392b;color:#8d2a20;font-size:12px;font-weight:600;
+             font-family:'Nunito',sans-serif"></div>
       </div>
       <div id="ra-map-container" style="display:flex;flex:1;overflow:hidden">
       <div id="ra-sidebar-backdrop" onclick="raToggleSidebar()"></div>
@@ -5612,7 +5618,14 @@ async function sheetsRead(sheetName) {
     const res = await fetch(TREE_CARE_SCRIPT_URL + '?sheet=' + sheetName);
     if (!res.ok) return null;
     const json = await res.json();
-    if (!json.data || json.data.length < 2) return [];
+    // The Apps Script answers a failure with { error: … } and a genuinely empty
+    // sheet with { data: [] }. Both used to collapse to [], so a quota error, a
+    // timeout or a renamed sheet was indistinguishable from "nobody has recorded
+    // anything" — and because every write rewrites the whole table, the next
+    // save built on that answer erased everyone else's rows. A failure is now
+    // null, which every caller already treats as "change nothing".
+    if (!json || json.error || !Array.isArray(json.data)) return null;
+    if (json.data.length < 2) return [];
     const [headers, ...rows] = json.data;
     return rows.map(row => {
       const obj = {};
@@ -9004,7 +9017,12 @@ async function raFlushToSheet() {
     // narrows the collision window from "since the page was opened" to the few
     // seconds of this flush.
     const current = await sheetsRead('RiskAssessments');
-    if (current && raAdoptServerRecords(current)) raRenderMap();
+    // A write replaces the entire sheet, so it is only safe on top of a table we
+    // have actually read. If that read failed we do not know what is up there,
+    // and writing would delete every row we cannot see. The records stay queued
+    // on this device and the next flush tries again.
+    if (current === null) throw new Error('could not read the Sheet before saving, so nothing was overwritten');
+    if (raAdoptServerRecords(current)) raRenderMap();
 
     await sheetsWriteOrThrow('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
     const server = await sheetsRead('RiskAssessments');
@@ -9328,31 +9346,67 @@ function raLatestAssessment(treeId) {
   return forTree.sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1))[0];
 }
 
+// Google Sheets parses a "2026-09-16" cell into a date, and Apps Script hands it
+// back as "2026-09-16T00:00:00.000Z". <input type="date"> rejects that form, so
+// opening such a record to edit it silently blanked the date field and re-saved
+// the assessment with no date at all. Trim it to the yyyy-mm-dd both the form
+// and the table expect.
+function raNormalizeRow(r) {
+  const d = r && r.date;
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(d)) {
+    return Object.assign({}, r, { date: d.slice(0, 10) });
+  }
+  return r;
+}
+
+// Set when the last read of the Sheet failed, so the tab can say so instead of
+// presenting an empty survey as fact.
+let _raLoadFailed = false;
+
+function raShowLoadState() {
+  const el = document.getElementById('ra-load-warning');
+  if (!el) return;
+  if (!_raLoadFailed) { el.style.display = 'none'; return; }
+  const mine = raPendingCount();
+  el.textContent = '⚠️ Could not load the assessment records from Google Sheets, so trees already ' +
+    'assessed may be showing as unassessed. This is a display problem only — nothing has been lost' +
+    (mine ? ', and ' + mine + ' assessment' + (mine === 1 ? '' : 's') + ' from this device are still queued to sync' : '') +
+    '. Reload the page when you have a signal.';
+  el.style.display = 'block';
+}
+
 async function raLoadAssessments() {
   const rows = await sheetsRead('RiskAssessments');
-  if (rows) raAssessments = rows;
-  const deduped = raDeduplicateAssessments(raAssessments);
-  if (deduped.length < raAssessments.length) {
-    raAssessments = deduped;
-    const headers = ['timestamp','treeId','address','species','season','plantYear','assessorName','date','structural','pestDisease','soilSite','growthVitality','stewardship','overallRisk','notes','careNeeded','careOther'];
-    sheetsWrite('RiskAssessments', headers, raAssessments, r => headers.map(h => r[h] || ''));
-  }
-  // Anything of ours the Sheet has lost since we last confirmed it — another
-  // device overwriting the table, a manual edit — is queued for re-sending.
+  // null means the read failed. Keeping what is already in memory beats
+  // replacing it with nothing: a failed read used to repaint every assessed
+  // tree as unassessed, with no error anywhere on screen, and then hand that
+  // empty picture to the next full-table write.
+  _raLoadFailed = (rows === null);
   if (rows) {
+    raAssessments = rows.map(raNormalizeRow);
+    // Anything of ours the Sheet has lost since we last confirmed it — another
+    // device overwriting the table, a manual edit — is queued for re-sending.
     const requeued = raRequeueMissing(rows);
     if (requeued) console.warn('Re-queued ' + requeued + ' assessment(s) missing from the Sheet');
   }
+  // Duplicates are collapsed for display only. This used to write the shortened
+  // table straight back to the Sheet, so merely opening the tab could delete a
+  // colleague's field work with nothing asked and nothing said.
+  raAssessments = raDeduplicateAssessments(raAssessments);
   // Work recorded on this device that the Sheet has not confirmed comes back in,
   // then we retry pushing it. Nothing recorded in the field is ever only remote.
   raMergeLocalIntoMemory();
+  raShowLoadState();
   raRenderMap();
   raFlushToSheet();
 }
 
 function raDeduplicateAssessments(list) {
-  // Remove duplicates created by the broken edit flow (same tree+assessor+all ratings = keep newest only)
-  const key = a => a.treeId + '|' + a.assessorName + '|' + a.overallRisk + '|' + a.structural + '|' + a.pestDisease + '|' + a.soilSite + '|' + a.growthVitality + '|' + a.stewardship;
+  // Remove duplicates created by the broken edit flow (same tree+assessor+all ratings = keep newest only).
+  // The assessment date is part of the key: without it, re-surveying a tree and
+  // finding it unchanged looked identical to a double submission, so the earlier
+  // visit was discarded — which is exactly the history this tool exists to keep.
+  const key = a => (a.date || '').slice(0, 10) + '|' + a.treeId + '|' + a.assessorName + '|' + a.overallRisk + '|' + a.structural + '|' + a.pestDisease + '|' + a.soilSite + '|' + a.growthVitality + '|' + a.stewardship;
   const sorted = [...list].sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1));
   const seen = new Set();
   return sorted.filter(a => {
