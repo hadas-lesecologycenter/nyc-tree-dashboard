@@ -3790,8 +3790,10 @@ function renderTierPieChart() {
 // ── Daily heat map (GitHub-style calendar) ──────────────────────
 let _heatmapDaily = {};   // { 'YYYY-MM-DD': trees }
 let _heatmapYear = null;  // selected year string
+// Fixed buckets of 10 trees, identical across years: 0, 1–10, 11–20, …, 71+.
 // Sequential single-hue ramp (light → dark accent green); index 0 = no care.
-const HEATMAP_RAMP = ['var(--bg4)', '#c6dfcb', '#8dbf99', '#5a9468', '#35633f'];
+const HEATMAP_BUCKET = 10;
+const HEATMAP_RAMP = ['var(--bg4)', '#bfdfc6', '#9fcdab', '#80ba8f', '#62a374', '#478b5a', '#317143', '#1f572f', '#113c1d'];
 
 function renderDailyHeatmap() {
   const el = document.getElementById('s-heatmap');
@@ -3821,19 +3823,10 @@ function renderDailyHeatmap() {
     }).join('');
   }
 
-  // Bucket thresholds from quartiles of this year's non-zero days, so a few
-  // very large days don't wash every other day out to the lightest shade.
-  const yearVals = days.filter(d => d.startsWith(yr)).map(d => _heatmapDaily[d]).sort((a, b) => a - b);
-  const q = p => yearVals[Math.min(yearVals.length - 1, Math.floor(p * yearVals.length))];
-  const cuts = [...new Set([q(0.25), q(0.5), q(0.75)])]; // upper bounds of buckets 1..n
-  const levelOf = v => {
-    if (!v) return 0;
-    for (let i = 0; i < cuts.length; i++) if (v <= cuts[i]) return i + 1;
-    return cuts.length + 1;
-  };
-  // Map levels onto the ramp's darkest end-inclusive steps when there are fewer buckets.
-  const nLevels = cuts.length + 1;
-  const colorOf = lvl => lvl === 0 ? HEATMAP_RAMP[0] : HEATMAP_RAMP[HEATMAP_RAMP.length - nLevels + lvl - 1];
+  const yearVals = days.filter(d => d.startsWith(yr)).map(d => _heatmapDaily[d]);
+  const maxLevel = HEATMAP_RAMP.length - 1;
+  const levelOf = v => v ? Math.min(maxLevel, Math.ceil(v / HEATMAP_BUCKET)) : 0;
+  const colorOf = lvl => HEATMAP_RAMP[lvl];
 
   // Summary line
   const total = yearVals.reduce((s, v) => s + v, 0);
@@ -3874,9 +3867,10 @@ function renderDailyHeatmap() {
 
   // Legend with the actual count ranges each shade stands for
   const bounds = [];
-  let lo = 1;
-  cuts.forEach(c => { bounds.push(lo === c ? String(c) : lo + '–' + c); lo = c + 1; });
-  bounds.push(lo + '+');
+  for (let i = 1; i <= maxLevel; i++) {
+    const lo = (i - 1) * HEATMAP_BUCKET + 1, hi = i * HEATMAP_BUCKET;
+    bounds.push(i === maxLevel ? lo + '+' : lo + '–' + hi);
+  }
   const legend = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:var(--text3);font-family:'Nunito',sans-serif">
     <span>Trees per day:</span>
     <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:${HEATMAP_RAMP[0]}"></span>0</span>
