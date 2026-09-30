@@ -3789,6 +3789,7 @@ function renderTierPieChart() {
 
 // ── Daily heat map (GitHub-style calendar) ──────────────────────
 let _heatmapDaily = {};   // { 'YYYY-MM-DD': trees }
+let _heatmapUnique = {};  // { 'YYYY': unique trees cared for that year }
 let _heatmapYears = [];   // selected year strings; more than one = compare mode
 // Fixed buckets of 10 trees, identical across years: 0, 1–10, 11–20, …, 71+.
 // Sequential single-hue ramp (light → dark accent green); index 0 = no care.
@@ -3861,59 +3862,52 @@ function renderDailyHeatmap() {
   if (sumEl) {
     if (!compare) {
       const s = stats[sel[0]];
-      sumEl.innerHTML = `<b>${s.careDays}</b> care day${s.careDays !== 1 ? 's' : ''} in ${sel[0]} · <b>${s.total.toLocaleString()}</b> tree-days · busiest: <b>${fmtDay(s.best)}</b> (${_heatmapDaily[s.best].toLocaleString()} trees)`;
+      sumEl.innerHTML = `<b>${s.careDays}</b> care day${s.careDays !== 1 ? 's' : ''} in ${sel[0]} · <b>${s.total.toLocaleString()}</b> tree visits (${(_heatmapUnique[sel[0]] || 0).toLocaleString()} unique trees — a tree cared for on several days counts once per day) · busiest: <b>${fmtDay(s.best)}</b> (${_heatmapDaily[s.best].toLocaleString()} trees)`;
     } else {
       const a = stats[sel[0]].toDate, b = stats[sel[1]].toDate;
       const chg = b ? Math.round((a - b) / b * 100) : null;
       const chgTxt = chg === null ? '' : ` · <b style="color:${chg >= 0 ? 'var(--accent)' : '#c0392b'}">${chg >= 0 ? '+' : ''}${chg}%</b> ${sel[0]} vs ${sel[1]}`;
-      sumEl.innerHTML = `Trees cared for Jan 1 – ${todayLabel}: ` +
+      sumEl.innerHTML = `Tree visits Jan 1 – ${todayLabel}: ` +
         sel.map(y => `${y} <b>${stats[y].toDate.toLocaleString()}</b>`).join(' · ') + chgTxt;
     }
   }
 
-  // Grid: columns = weeks (Sun–Sat), rows = weekdays, grouped into one block
-  // per month with a gap between blocks. A week that spans two months is split
-  // so each column holds a single month's days. In compare mode the years stack
-  // and each month block is as wide as its widest year so months line up.
-  // Work in UTC to dodge DST.
-  const CELL = 12, GAP = 3, STEP = CELL + GAP, TOP = 16, MONTH_GAP = 10;
-  const LEFT = compare ? 36 : 28;
-  const ROW_H = 7 * STEP + (compare ? 26 : 0);
-  const colsIn = (yr, m) => Math.ceil((new Date(Date.UTC(+yr, m, 1)).getUTCDay() + new Date(Date.UTC(+yr, m + 1, 0)).getUTCDate()) / 7);
-  const monthX = [];
-  let x = LEFT;
-  for (let m = 0; m < 12; m++) {
-    monthX.push(x);
-    x += Math.max(...sel.map(y => colsIn(y, m))) * STEP + MONTH_GAP;
-  }
-  const width = x - MONTH_GAP, height = TOP + sel.length * ROW_H;
+  // Grid: one mini calendar per month, laid out left to right (Jan → Dec).
+  // Inside a month, columns are weekdays (Mon–Sun) and rows are weeks; every
+  // month gets 6 week rows so months line up. In compare mode each year is its
+  // own row of months, newest on top. Work in UTC to dodge DST.
+  const CELL = 10, GAP = 2, STEP = CELL + GAP, MONTH_GAP = 12;
+  const LEFT = compare ? 36 : 0;
+  const HEAD = 24;                         // month name + weekday letters
+  const GRID_H = 6 * STEP;
+  const ROW_H = GRID_H + (compare ? 26 : 4);
+  const MONTH_W = 7 * STEP - GAP;
+  const monthX = m => LEFT + m * (MONTH_W + MONTH_GAP);
+  const width = monthX(12) - MONTH_GAP, height = HEAD + sel.length * ROW_H;
 
   let cells = '', lbls = '', todayX = null;
   for (let m = 0; m < 12; m++) {
-    lbls += `<text x="${monthX[m]}" y="10" font-size="9" fill="var(--text2)" font-weight="600">${new Date(Date.UTC(2000, m, 1)).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}</text>`;
+    lbls += `<text x="${monthX(m)}" y="9" font-size="10" fill="var(--text2)" font-weight="700">${new Date(Date.UTC(2000, m, 1)).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}</text>`;
+    lbls += ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) =>
+      `<text x="${monthX(m) + i * STEP + CELL / 2}" y="20" font-size="7" text-anchor="middle" fill="var(--text3)">${l}</text>`).join('');
   }
   sel.forEach((yr, row) => {
-    const top = TOP + row * ROW_H;
+    const top = HEAD + row * ROW_H;
     if (compare) {
-      lbls += `<text x="0" y="${top + 3 * STEP + CELL - 2}" font-size="11" font-weight="700" fill="var(--text)">${yr}</text>`;
+      lbls += `<text x="0" y="${top + GRID_H / 2 + 4}" font-size="11" font-weight="700" fill="var(--text)">${yr}</text>`;
       const s = stats[yr];
-      lbls += `<text x="${LEFT}" y="${top + 7 * STEP + 11}" font-size="10" fill="var(--text3)">${s.careDays} care days · ${s.total.toLocaleString()} trees · by ${todayLabel}: ${s.toDate.toLocaleString()} · busiest ${fmtShort(s.best)} (${_heatmapDaily[s.best]})</text>`;
-    } else {
-      lbls += [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) =>
-        `<text x="0" y="${top + d * STEP + CELL - 2}" font-size="9" fill="var(--text3)">${l}</text>`).join('');
+      lbls += `<text x="${LEFT}" y="${top + GRID_H + 12}" font-size="10" fill="var(--text3)">${s.careDays} care days · ${s.total.toLocaleString()} tree visits (${(_heatmapUnique[yr] || 0).toLocaleString()} unique trees) · by ${todayLabel}: ${s.toDate.toLocaleString()} · busiest ${fmtShort(s.best)} (${_heatmapDaily[s.best]} trees)</text>`;
     }
     for (let m = 0; m < 12; m++) {
-      const firstDow = new Date(Date.UTC(+yr, m, 1)).getUTCDay();
+      const firstDow = (new Date(Date.UTC(+yr, m, 1)).getUTCDay() + 6) % 7; // Mon = 0
       const nDays = new Date(Date.UTC(+yr, m + 1, 0)).getUTCDate();
-      let col = 0;
       for (let day = 1; day <= nDays; day++) {
-        const dow = (firstDow + day - 1) % 7;
-        if (dow === 0 && day > 1) col++;
+        const idx = firstDow + day - 1;
+        const cx = monthX(m) + (idx % 7) * STEP, cy = top + Math.floor(idx / 7) * STEP;
         const key = yr + '-' + pad(m + 1) + '-' + pad(day);
         const v = _heatmapDaily[key] || 0;
-        const cx = monthX[m] + col * STEP;
         if (key === todayKey) todayX = cx;
-        cells += `<rect x="${cx}" y="${top + dow * STEP}" width="${CELL}" height="${CELL}" rx="2"
+        cells += `<rect x="${cx}" y="${cy}" width="${CELL}" height="${CELL}" rx="2"
           fill="${colorOf(levelOf(v))}" data-day="${key}" data-v="${v}" style="cursor:${v ? 'pointer' : 'default'}"></rect>`;
       }
     }
@@ -4129,18 +4123,24 @@ function updateStats() {
   // Same counting rule as the monthly chart, at day granularity: per area per
   // day take the max tree count across that day's events, then sum areas.
   const dailyTreeTotals = {}; // { 'YYYY-MM-DD': trees }
+  const uniqueByYear = {};    // { 'YYYY': trees } — each area counted once per year
   tcAreas.forEach(area => {
     const maxPerDay = {};
+    const maxPerYear = {};
     (area.careEvents || []).forEach(ev => {
       const day = (ev.date || '').slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
       maxPerDay[day] = Math.max(maxPerDay[day] || 0, tcEventTreeCount(area, ev));
+      const y = day.slice(0, 4);
+      maxPerYear[y] = Math.max(maxPerYear[y] || 0, tcEventTreeCount(area, ev));
     });
+    Object.entries(maxPerYear).forEach(([y, c]) => { uniqueByYear[y] = (uniqueByYear[y] || 0) + c; });
     Object.entries(maxPerDay).forEach(([day, count]) => {
       dailyTreeTotals[day] = (dailyTreeTotals[day] || 0) + count;
     });
   });
   _heatmapDaily = dailyTreeTotals;
+  _heatmapUnique = uniqueByYear;
   renderDailyHeatmap();
 
   const mtCtx = document.getElementById('monthly-trees-chart');
