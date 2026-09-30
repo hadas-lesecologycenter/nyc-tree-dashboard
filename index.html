@@ -1788,6 +1788,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="chart-wrap" style="height:200px"><canvas id="monthly-activities-chart"></canvas></div>
       </div>
     </div>
+    <div class="chart-card full" style="margin-bottom:20px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+        <div class="chart-title" style="margin:0">Trees Cared For — by Day</div>
+        <div id="s-heatmap-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div id="s-heatmap-summary" style="font-size:12px;color:var(--text2);margin-bottom:10px;font-family:'Nunito',sans-serif"></div>
+      <div id="s-heatmap" style="overflow-x:auto;padding-bottom:4px"></div>
+      <div id="s-heatmap-tip" style="position:absolute;display:none;pointer-events:none;background:#2c2a24;color:#fff;font-size:11px;font-family:'Nunito',sans-serif;padding:5px 8px;border-radius:5px;white-space:nowrap;z-index:5"></div>
+    </div>
     <div id="s-tier-breakdown" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <div style="font-family:'Lora',serif;font-size:14px;font-weight:700">Trees Cared For by Priority Tier</div>
@@ -3778,6 +3787,131 @@ function renderTierPieChart() {
   }
 }
 
+// ── Daily heat map (GitHub-style calendar) ──────────────────────
+let _heatmapDaily = {};   // { 'YYYY-MM-DD': trees }
+let _heatmapYear = null;  // selected year string
+// Fixed buckets of 10 trees, identical across years: 0, 1–10, 11–20, …, 71+.
+// Sequential single-hue ramp (light → dark accent green); index 0 = no care.
+const HEATMAP_BUCKET = 10;
+const HEATMAP_RAMP = ['var(--bg4)', '#bfdfc6', '#9fcdab', '#80ba8f', '#62a374', '#478b5a', '#317143', '#1f572f', '#113c1d'];
+
+function renderDailyHeatmap() {
+  const el = document.getElementById('s-heatmap');
+  const pillsEl = document.getElementById('s-heatmap-pills');
+  const sumEl = document.getElementById('s-heatmap-summary');
+  if (!el) return;
+  const days = Object.keys(_heatmapDaily).filter(d => _heatmapDaily[d] > 0);
+  const years = [...new Set(days.map(d => d.slice(0, 4)))].sort().reverse();
+  if (!years.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">No data yet</div>';
+    if (pillsEl) pillsEl.innerHTML = '';
+    if (sumEl) sumEl.textContent = '';
+    return;
+  }
+  if (!_heatmapYear || years.indexOf(_heatmapYear) === -1) {
+    _heatmapYear = years.indexOf('2026') !== -1 ? '2026' : years[0];
+  }
+  const yr = _heatmapYear;
+
+  if (pillsEl) {
+    pillsEl.innerHTML = years.map(y => {
+      const on = y === yr;
+      return `<button onclick="_heatmapYear='${y}';renderDailyHeatmap()"
+        style="font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};
+               background:${on ? 'var(--accent)' : 'transparent'};color:${on ? '#fff' : 'var(--text2)'};
+               cursor:pointer;font-family:inherit">${y}</button>`;
+    }).join('');
+  }
+
+  const yearVals = days.filter(d => d.startsWith(yr)).map(d => _heatmapDaily[d]);
+  const maxLevel = HEATMAP_RAMP.length - 1;
+  const levelOf = v => v ? Math.min(maxLevel, Math.ceil(v / HEATMAP_BUCKET)) : 0;
+  const colorOf = lvl => HEATMAP_RAMP[lvl];
+
+  // Summary line
+  const total = yearVals.reduce((s, v) => s + v, 0);
+  let bestDay = null;
+  days.forEach(d => { if (d.startsWith(yr) && (!bestDay || _heatmapDaily[d] > _heatmapDaily[bestDay])) bestDay = d; });
+  const fmtDay = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  if (sumEl) {
+    sumEl.innerHTML = `<b>${yearVals.length}</b> care day${yearVals.length !== 1 ? 's' : ''} in ${yr} · <b>${total.toLocaleString()}</b> tree-days · busiest: <b>${fmtDay(bestDay)}</b> (${_heatmapDaily[bestDay].toLocaleString()} trees)`;
+  }
+
+  // Grid: columns = weeks (Sun–Sat), rows = weekdays. Work in UTC to dodge DST.
+  const CELL = 12, GAP = 3, STEP = CELL + GAP, LEFT = 28, TOP = 16;
+  const jan1 = new Date(Date.UTC(+yr, 0, 1));
+  const start = new Date(jan1); start.setUTCDate(1 - jan1.getUTCDay());
+  const dec31 = new Date(Date.UTC(+yr, 11, 31));
+  const nWeeks = Math.floor((dec31 - start) / 86400000 / 7) + 1;
+  const width = LEFT + nWeeks * STEP, height = TOP + 7 * STEP;
+
+  let cells = '', monthLbls = '';
+  let lastMonth = -1;
+  for (let w = 0; w < nWeeks; w++) {
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(start); dt.setUTCDate(start.getUTCDate() + w * 7 + d);
+      if (dt.getUTCFullYear() !== +yr) continue;
+      const key = dt.toISOString().slice(0, 10);
+      const v = _heatmapDaily[key] || 0;
+      // Label a month over the week column holding its 1st day
+      if (dt.getUTCMonth() !== lastMonth) {
+        lastMonth = dt.getUTCMonth();
+        monthLbls += `<text x="${LEFT + w * STEP}" y="10" font-size="9" fill="var(--text3)">${dt.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}</text>`;
+      }
+      cells += `<rect x="${LEFT + w * STEP}" y="${TOP + d * STEP}" width="${CELL}" height="${CELL}" rx="2"
+        fill="${colorOf(levelOf(v))}" data-day="${key}" data-v="${v}" style="cursor:${v ? 'pointer' : 'default'}"></rect>`;
+    }
+  }
+  const dayLbls = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) =>
+    `<text x="0" y="${TOP + d * STEP + CELL - 2}" font-size="9" fill="var(--text3)">${l}</text>`).join('');
+
+  // Legend with the actual count ranges each shade stands for
+  const bounds = [];
+  for (let i = 1; i <= maxLevel; i++) {
+    const lo = (i - 1) * HEATMAP_BUCKET + 1, hi = i * HEATMAP_BUCKET;
+    bounds.push(i === maxLevel ? lo + '+' : lo + '–' + hi);
+  }
+  const legend = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:var(--text3);font-family:'Nunito',sans-serif">
+    <span>Trees per day:</span>
+    <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:${HEATMAP_RAMP[0]}"></span>0</span>
+    ${bounds.map((b, i) => `<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:${colorOf(i + 1)}"></span>${b}</span>`).join('')}
+    <span style="margin-left:auto">Click a day to see its care activities</span>
+  </div>`;
+
+  el.innerHTML = `<svg width="${width}" height="${height}" style="display:block;font-family:'Nunito',sans-serif" role="img"
+    aria-label="Trees cared for per day in ${yr}">${monthLbls}${dayLbls}${cells}</svg>${legend}`;
+
+  // On narrow screens the grid scrolls sideways; for the current year start
+  // at the most recent weeks rather than January.
+  if (+yr === new Date().getFullYear()) {
+    const todayX = LEFT + Math.floor((Date.now() - start) / 86400000 / 7) * STEP;
+    el.scrollLeft = Math.max(0, todayX - el.clientWidth + 4 * STEP);
+  }
+
+  // Hover tooltip + click-to-query
+  const svg = el.querySelector('svg');
+  const tip = document.getElementById('s-heatmap-tip');
+  const card = el.parentElement;
+  svg.addEventListener('mousemove', e => {
+    const r = e.target.closest('rect');
+    if (!r || !tip) { if (tip) tip.style.display = 'none'; return; }
+    const v = +r.dataset.v;
+    tip.innerHTML = `<b>${v.toLocaleString()}</b> tree${v !== 1 ? 's' : ''} · ${fmtDay(r.dataset.day)}`;
+    const cb = card.getBoundingClientRect(), rb = r.getBoundingClientRect();
+    tip.style.display = 'block';
+    const x = Math.max(4, Math.min(cb.width - tip.offsetWidth - 4, rb.left - cb.left + CELL / 2 - tip.offsetWidth / 2));
+    tip.style.left = x + 'px';
+    tip.style.top = (rb.top - cb.top - tip.offsetHeight - 6) + 'px';
+  });
+  svg.addEventListener('mouseleave', () => { if (tip) tip.style.display = 'none'; });
+  svg.addEventListener('click', e => {
+    const r = e.target.closest('rect');
+    if (!r || !+r.dataset.v) return;
+    const input = document.getElementById('nl-query-input');
+    if (input) { input.value = r.dataset.day; queryData(r.dataset.day); input.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  });
+}
+
 function updateStats() {
   // Stats are based on street trees only (not all trees, which include park /
   // unknown sites) and are independent of the map's current filter state.
@@ -3937,6 +4071,24 @@ function updateStats() {
   });
 
   const sortedMonths = Object.keys(monthlyTreeTotals).sort();
+
+  // ── Daily trees heat map ──────────────────────────────────────
+  // Same counting rule as the monthly chart, at day granularity: per area per
+  // day take the max tree count across that day's events, then sum areas.
+  const dailyTreeTotals = {}; // { 'YYYY-MM-DD': trees }
+  tcAreas.forEach(area => {
+    const maxPerDay = {};
+    (area.careEvents || []).forEach(ev => {
+      const day = (ev.date || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+      maxPerDay[day] = Math.max(maxPerDay[day] || 0, tcEventTreeCount(area, ev));
+    });
+    Object.entries(maxPerDay).forEach(([day, count]) => {
+      dailyTreeTotals[day] = (dailyTreeTotals[day] || 0) + count;
+    });
+  });
+  _heatmapDaily = dailyTreeTotals;
+  renderDailyHeatmap();
 
   const mtCtx = document.getElementById('monthly-trees-chart');
   if (mtCtx) {
