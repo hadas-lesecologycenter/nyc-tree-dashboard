@@ -3837,31 +3837,32 @@ function renderDailyHeatmap() {
     sumEl.innerHTML = `<b>${yearVals.length}</b> care day${yearVals.length !== 1 ? 's' : ''} in ${yr} · <b>${total.toLocaleString()}</b> tree-days · busiest: <b>${fmtDay(bestDay)}</b> (${_heatmapDaily[bestDay].toLocaleString()} trees)`;
   }
 
-  // Grid: columns = weeks (Sun–Sat), rows = weekdays. Work in UTC to dodge DST.
-  const CELL = 12, GAP = 3, STEP = CELL + GAP, LEFT = 28, TOP = 16;
-  const jan1 = new Date(Date.UTC(+yr, 0, 1));
-  const start = new Date(jan1); start.setUTCDate(1 - jan1.getUTCDay());
-  const dec31 = new Date(Date.UTC(+yr, 11, 31));
-  const nWeeks = Math.floor((dec31 - start) / 86400000 / 7) + 1;
-  const width = LEFT + nWeeks * STEP, height = TOP + 7 * STEP;
-
-  let cells = '', monthLbls = '';
-  let lastMonth = -1;
-  for (let w = 0; w < nWeeks; w++) {
-    for (let d = 0; d < 7; d++) {
-      const dt = new Date(start); dt.setUTCDate(start.getUTCDate() + w * 7 + d);
-      if (dt.getUTCFullYear() !== +yr) continue;
-      const key = dt.toISOString().slice(0, 10);
+  // Grid: columns = weeks (Sun–Sat), rows = weekdays, grouped into one block
+  // per month with a gap between blocks. A week that spans two months is split
+  // so each column holds a single month's days. Work in UTC to dodge DST.
+  const CELL = 12, GAP = 3, STEP = CELL + GAP, LEFT = 28, TOP = 16, MONTH_GAP = 10;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  let cells = '', monthLbls = '', x = LEFT, todayX = null;
+  for (let m = 0; m < 12; m++) {
+    const first = new Date(Date.UTC(+yr, m, 1));
+    const nDays = new Date(Date.UTC(+yr, m + 1, 0)).getUTCDate();
+    const firstDow = first.getUTCDay();
+    monthLbls += `<text x="${x}" y="10" font-size="9" fill="var(--text2)" font-weight="600">${first.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}</text>`;
+    let col = 0;
+    for (let day = 1; day <= nDays; day++) {
+      const dow = (firstDow + day - 1) % 7;
+      if (dow === 0 && day > 1) col++;
+      const key = yr + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
       const v = _heatmapDaily[key] || 0;
-      // Label a month over the week column holding its 1st day
-      if (dt.getUTCMonth() !== lastMonth) {
-        lastMonth = dt.getUTCMonth();
-        monthLbls += `<text x="${LEFT + w * STEP}" y="10" font-size="9" fill="var(--text3)">${dt.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })}</text>`;
-      }
-      cells += `<rect x="${LEFT + w * STEP}" y="${TOP + d * STEP}" width="${CELL}" height="${CELL}" rx="2"
+      const cx = x + col * STEP;
+      if (key === todayKey) todayX = cx;
+      cells += `<rect x="${cx}" y="${TOP + dow * STEP}" width="${CELL}" height="${CELL}" rx="2"
         fill="${colorOf(levelOf(v))}" data-day="${key}" data-v="${v}" style="cursor:${v ? 'pointer' : 'default'}"></rect>`;
     }
+    x += (col + 1) * STEP + MONTH_GAP;
   }
+  const width = x - MONTH_GAP, height = TOP + 7 * STEP;
+
   const dayLbls = [[1, 'Mon'], [3, 'Wed'], [5, 'Fri']].map(([d, l]) =>
     `<text x="0" y="${TOP + d * STEP + CELL - 2}" font-size="9" fill="var(--text3)">${l}</text>`).join('');
 
@@ -3883,8 +3884,7 @@ function renderDailyHeatmap() {
 
   // On narrow screens the grid scrolls sideways; for the current year start
   // at the most recent weeks rather than January.
-  if (+yr === new Date().getFullYear()) {
-    const todayX = LEFT + Math.floor((Date.now() - start) / 86400000 / 7) * STEP;
+  if (todayX !== null) {
     el.scrollLeft = Math.max(0, todayX - el.clientWidth + 4 * STEP);
   }
 
