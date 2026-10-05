@@ -1659,6 +1659,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
               </select>
             </div>
           </div>
+          <div style="margin-bottom:8px">
+            <label class="cp-chk">
+              <input type="checkbox" id="f-planted" onchange="applyFilters()">
+              🌷 Planted (flowers in tree bed)
+            </label>
+            <div class="cp-field" style="margin-left:22px;margin-bottom:4px">
+              <label for="f-planted-season">Planting season</label>
+              <select id="f-planted-season" onchange="applyFilters()">
+                <option value="">All time</option>
+              </select>
+            </div>
+          </div>
           <label class="cp-chk">
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
@@ -3081,6 +3093,7 @@ function applyFilters(reload = false) {
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const caredForOnly = document.getElementById('f-cared-for')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
+  const plantedOnly = document.getElementById('f-planted')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
   const reservedGeneralOnly = document.getElementById('f-reserved-general')?.checked || false;
@@ -3088,6 +3101,7 @@ function applyFilters(reload = false) {
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
   let base = [...allTrees];
+  if (plantedOnly) base = base.concat(getPlantedExtraTrees());
   if (streetTreesOnly) base = base.filter(isStreetTree);
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (selSpecies.size) base = base.filter(t => selSpecies.has(t.spc_common || ''));
@@ -3105,6 +3119,10 @@ function applyFilters(reload = false) {
   if (caredForOnly) {
     const caredForIds = getCaredForTreeIds();
     base = base.filter(t => caredForIds.has(String(t.tree_id)));
+  }
+  if (plantedOnly) {
+    const plantedIds = getPlantedTreeIds();
+    base = base.filter(t => plantedIds.has(String(t.tree_id)));
   }
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
@@ -3160,6 +3178,8 @@ function clearAllFilters() {
   document.getElementById('f-care-needed').checked = false;
   document.getElementById('f-cared-for').checked = false;
   resetCareYearSelect();
+  document.getElementById('f-planted').checked = false;
+  document.querySelectorAll('select#f-planted-season').forEach(sel => { sel.value = ''; });
   document.getElementById('f-tree-guards').checked = false;
   document.getElementById('f-reserved').checked = false;
   document.getElementById('f-reserved-person').checked = false;
@@ -3436,11 +3456,95 @@ function resetCareYearSelect() {
   });
 }
 
+// ── Planted filter: trees with a "Landscaped/Planted Flowers" care event ──
+// Season by month: Spring Mar–Jun, Summer Jul–Aug, Fall Sep–Dec, Winter Jan–Feb.
+const PLANT_SEASON_ORDER = ['Fall', 'Summer', 'Spring', 'Winter']; // newest first within a year
+function plantSeason(month) {
+  if (month >= 3 && month <= 6) return 'Spring';
+  if (month >= 7 && month <= 8) return 'Summer';
+  if (month >= 9) return 'Fall';
+  return 'Winter';
+}
+
+// Calls fn(treeId, 'YYYY', season) for every planting event in the care log.
+function forEachPlanting(fn) {
+  const scan = areas => (areas || []).forEach(area => {
+    if (!area._treeId) return;
+    (area.careEvents || []).forEach(ev => {
+      if (!(ev.activities || []).includes('planting')) return;
+      const d = ev.date || '';
+      const year = d.slice(0, 4), month = parseInt(d.slice(5, 7), 10);
+      if (!/^\d{4}$/.test(year) || !month) return;
+      fn(String(area._treeId), year, plantSeason(month));
+    });
+  });
+  scan(_tcScrapedAreas);
+  try { scan(tcLoad().filter(a => !a._fromScraper)); } catch (e) { /* ignore */ }
+}
+
+// Selected value is '' (all time), 'YYYY' (whole year) or 'YYYY-Season'.
+function getPlantedTreeIds() {
+  const want = document.getElementById('f-planted-season')?.value || '';
+  const ids = new Set();
+  forEachPlanting((tid, year, season) => {
+    if (!want || want === year || want === year + '-' + season) ids.add(tid);
+  });
+  return ids;
+}
+
+// Planted trees the main map doesn't load (outside the CB3 boundary, or now a
+// stump/retired in the census), so the Planted filter can still show them.
+// Uses the census record when there is one, else the trees.csv coordinates.
+function getPlantedExtraTrees() {
+  const have = new Set(allTrees.map(t => String(t.tree_id)));
+  const census = new Map((CENSUS_DATA || []).map(t => [String(t.tree_id), t]));
+  const extras = [];
+  forEachPlanting(tid => {
+    if (have.has(tid)) return;
+    have.add(tid);
+    let t = census.get(tid);
+    if (!t) {
+      const c = _tcTreeCoords[tid];
+      if (!c || !c.lat || !c.lng) return;
+      t = { tree_id: tid, latitude: c.lat, longitude: c.lng, address: c.address, spc_common: c.species };
+    }
+    extras.push({ ...t, _priority: calcPriority(t) });
+  });
+  return extras;
+}
+
+// Fills the planting-season dropdown with the years/seasons in the care log,
+// newest first, each with its tree count. Runs on every copy of the panel
+// (the controls sidebar is cloned from #priority-sidebar).
+function populatePlantingOptions() {
+  const byKey = {}; // 'YYYY' and 'YYYY-Season' → Set of tree ids
+  const all = new Set();
+  forEachPlanting((tid, year, season) => {
+    all.add(tid);
+    (byKey[year] = byKey[year] || new Set()).add(tid);
+    (byKey[year + '-' + season] = byKey[year + '-' + season] || new Set()).add(tid);
+  });
+  if (!all.size) return;
+  const years = Object.keys(byKey).filter(k => !k.includes('-')).sort().reverse();
+  document.querySelectorAll('select#f-planted-season').forEach(sel => {
+    const prev = sel.value;
+    const opt = (value, label) =>
+      `<option value="${value}"${value === prev ? ' selected' : ''}>${label}</option>`;
+    sel.innerHTML = opt('', `All time (${all.size})`) + years.map(y =>
+      `<optgroup label="${y}">` + opt(y, `${y} — all seasons (${byKey[y].size})`) +
+      PLANT_SEASON_ORDER.filter(sn => byKey[y + '-' + sn])
+        .map(sn => opt(y + '-' + sn, `${sn} ${y} (${byKey[y + '-' + sn].size})`)).join('') +
+      '</optgroup>'
+    ).join('');
+  });
+}
+
 // Called once the care log finishes loading: the year list and, when the
 // filter is already on, the filtered tree set both depend on it.
 function refreshCaredForFilter() {
   populateCareYearOptions();
-  if (document.getElementById('f-cared-for')?.checked) applyFilters();
+  populatePlantingOptions();
+  if (document.getElementById('f-cared-for')?.checked || document.getElementById('f-planted')?.checked) applyFilters();
   else updateMap();
 }
 
@@ -5271,143 +5375,6 @@ function tcYearColor(year) {
 let tcCareMap        = null;
 let tcCareYearLayers = {}; // year → L.LayerGroup
 
-// ── Planting layer: trees with a "Landscaped/Planted Flowers" event, by year + season ──
-const TC_PLANT_SEASONS = [ // order shown in legend within a year
-  { key: 'Spring', color: '#d81b60' }, // Mar–Jun
-  { key: 'Summer', color: '#f9a825' }, // Jul–Aug
-  { key: 'Fall',   color: '#6d4c41' }, // Sep–Dec
-  { key: 'Winter', color: '#1e88e5' }, // Jan–Feb
-];
-function tcPlantSeason(month) {
-  if (month >= 3 && month <= 6) return 'Spring';
-  if (month >= 7 && month <= 8) return 'Summer';
-  if (month >= 9) return 'Fall';
-  return 'Winter';
-}
-function tcPlantSeasonColor(season) {
-  return (TC_PLANT_SEASONS.find(s => s.key === season) || {}).color || '#d81b60';
-}
-let tcPlantingLayers  = {};        // 'YYYY-Season' → L.LayerGroup
-let tcPlantingVisible = new Set(); // keys toggled on (layer is off by default)
-
-function tcTogglePlanting(key, visible) {
-  if (visible) tcPlantingVisible.add(key); else tcPlantingVisible.delete(key);
-  if (!tcCareMap || !tcPlantingLayers[key]) return;
-  if (visible) tcCareMap.addLayer(tcPlantingLayers[key]);
-  else         tcCareMap.removeLayer(tcPlantingLayers[key]);
-}
-function tcTogglePlantingAll(visible) {
-  Object.keys(tcPlantingLayers).forEach(key => tcTogglePlanting(key, visible));
-  document.querySelectorAll('#tc-care-map-legend input[data-plant-key]').forEach(cb => { cb.checked = visible; });
-}
-// Sync the "All plantings" checkbox after a single row changes
-function tcSyncPlantingAllBox() {
-  const boxes = [...document.querySelectorAll('#tc-care-map-legend input[data-plant-key]')];
-  const all = document.getElementById('tc-plant-all');
-  if (!all || !boxes.length) return;
-  const on = boxes.filter(b => b.checked).length;
-  all.checked = on === boxes.length;
-  all.indeterminate = on > 0 && on < boxes.length;
-}
-
-// Coordinates for a tree: trees.csv first, census as fallback
-function tcCareTreeCoords(tid) {
-  let coords = _tcTreeCoords[tid];
-  if ((!coords || !coords.lat || !coords.lng) && typeof allTrees !== 'undefined') {
-    const ct = allTrees.find(t => String(t.tree_id) === tid);
-    if (ct && ct.latitude && ct.longitude) {
-      coords = { lat: parseFloat(ct.latitude), lng: parseFloat(ct.longitude), address: ct.address || '', species: ct.spc_common || '' };
-    }
-  }
-  return coords && coords.lat && coords.lng ? coords : null;
-}
-
-// Builds one layer per year+season. Returns legend rows data, newest year first.
-function tcBuildPlantingLayers() {
-  Object.values(tcPlantingLayers).forEach(ly => { ly.clearLayers(); tcCareMap.removeLayer(ly); });
-  tcPlantingLayers = {};
-
-  // key → treeId → { dates, area }
-  const groups = {};
-  _tcScrapedAreas.forEach(area => {
-    if (!area._fromScraper || !area._treeId) return;
-    const tid = String(area._treeId);
-    (area.careEvents || []).forEach(ev => {
-      if (!(ev.activities || []).includes('planting')) return;
-      const d = (ev.date || '').slice(0, 10);
-      const year = d.slice(0, 4), month = parseInt(d.slice(5, 7), 10);
-      if (!year || !month) return;
-      const key = year + '-' + tcPlantSeason(month);
-      if (!groups[key]) groups[key] = {};
-      if (!groups[key][tid]) groups[key][tid] = { dates: [], area };
-      groups[key][tid].dates.push(d);
-    });
-  });
-
-  const rows = [];
-  Object.entries(groups).forEach(([key, trees]) => {
-    const [year, season] = key.split('-');
-    const color = tcPlantSeasonColor(season);
-    const label = season + ' ' + year;
-    const layer = L.layerGroup();
-    tcPlantingLayers[key] = layer;
-    let count = 0;
-
-    Object.entries(trees).forEach(([tid, { dates, area }]) => {
-      const coords = tcCareTreeCoords(tid);
-      if (!coords) return;
-      count++;
-      const { lat, lng, address, species } = coords;
-      const name = address || 'Tree #' + tid;
-      const dateList = [...new Set(dates)].sort().join(', ');
-      // Diamond marker so plantings stand out from the round care-by-year dots
-      const icon = L.divIcon({
-        className: '',
-        iconSize: [14, 14], iconAnchor: [7, 7],
-        html: `<div style="width:10px;height:10px;margin:2px;transform:rotate(45deg);background:${color};border:2px solid #fff;box-shadow:0 0 0 1.5px ${color},0 1px 4px rgba(0,0,0,0.3);cursor:pointer"></div>`
-      });
-      L.marker([lat, lng], { icon, zIndexOffset: 1000 })
-        .bindTooltip(`<strong>${name}</strong><br>${species ? `<span style="font-size:10px;color:#666">${species}</span><br>` : ''}<span style="font-size:10px;color:${color}">🌷 Planted · ${label}</span><br><span style="font-size:10px;color:#888">${dateList}</span>`, { sticky: true })
-        .on('click', () => tcSelectArea(area.id))
-        .addTo(layer);
-    });
-
-    if (tcPlantingVisible.has(key)) layer.addTo(tcCareMap);
-    if (count) rows.push({ key, year, season, color, count });
-  });
-
-  const seasonIdx = s => TC_PLANT_SEASONS.findIndex(x => x.key === s);
-  rows.sort((a, b) => b.year.localeCompare(a.year) || seasonIdx(a.season) - seasonIdx(b.season));
-  return rows;
-}
-
-function tcPlantingLegendHTML(rows) {
-  if (!rows.length) return '';
-  const total = rows.reduce((n, r) => n + r.count, 0);
-  const anyOn = rows.some(r => tcPlantingVisible.has(r.key));
-  const allOn = rows.every(r => tcPlantingVisible.has(r.key));
-  let html = `<div style="margin-top:7px;padding-top:7px;border-top:1px solid #e0dbd3">
-    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:4px;font-size:11px;font-weight:700;color:var(--text)">
-      <input type="checkbox" id="tc-plant-all" ${allOn ? 'checked' : ''} onchange="tcTogglePlantingAll(this.checked)" style="margin:0;cursor:pointer">
-      🌷 Plantings <span style="color:#999;font-weight:400">(${total})</span>
-    </label>`;
-  let lastYear = null;
-  rows.forEach(({ key, year, season, color, count }) => {
-    if (year !== lastYear) {
-      html += `<div style="font-size:10px;font-weight:700;color:#888;margin:4px 0 2px 18px">${year}</div>`;
-      lastYear = year;
-    }
-    html += `<label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin:0 0 3px 18px;font-size:11px">
-      <input type="checkbox" data-plant-key="${key}" ${tcPlantingVisible.has(key) ? 'checked' : ''} onchange="tcTogglePlanting('${key}',this.checked);tcSyncPlantingAllBox()" style="margin:0;cursor:pointer">
-      <span style="display:inline-block;width:8px;height:8px;margin:0 1.5px;transform:rotate(45deg);background:${color};flex-shrink:0"></span>
-      <span>${season} <span style="color:#999">(${count})</span></span>
-    </label>`;
-  });
-  html += '</div>';
-  if (anyOn && !allOn) setTimeout(tcSyncPlantingAllBox, 0);
-  return html;
-}
-
 function tcToggleCareYear(year, visible) {
   if (!tcCareMap || !tcCareYearLayers[year]) return;
   if (visible) tcCareMap.addLayer(tcCareYearLayers[year]);
@@ -5493,8 +5460,15 @@ function tcRenderCareMap() {
     layer.addTo(tcCareMap);
 
     Object.entries(bucket).forEach(([tid, { events, area, latestYear }]) => {
-      const coords = tcCareTreeCoords(tid);
-      if (!coords) return;
+      let coords = _tcTreeCoords[tid];
+      // Fall back to census data if trees.csv doesn't have this tree
+      if ((!coords || !coords.lat || !coords.lng) && typeof allTrees !== 'undefined') {
+        const ct = allTrees.find(t => String(t.tree_id) === tid);
+        if (ct && ct.latitude && ct.longitude) {
+          coords = { lat: parseFloat(ct.latitude), lng: parseFloat(ct.longitude), address: ct.address || '', species: ct.spc_common || '' };
+        }
+      }
+      if (!coords || !coords.lat || !coords.lng) return;
       const { lat, lng, address, species } = coords;
       allLatLngs.push([lat, lng]);
 
@@ -5528,7 +5502,6 @@ function tcRenderCareMap() {
   addBucketLayer('2026',    by2026,    '#c62828', '2026');
   addBucketLayer('2025',    by2025,    '#e65100', '2025');
   addBucketLayer('earlier', byEarlier, '#78909c', 'Earlier');
-  const plantingRows = tcBuildPlantingLayers();
 
   // Build legend — 3 rows only
   const legendRows = [
@@ -5551,7 +5524,7 @@ function tcRenderCareMap() {
       </div>`
     : '';
   if (legendEl) {
-    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}${resLegendRow}${tcPlantingLegendHTML(plantingRows)}`;
+    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}${resLegendRow}`;
     legendEl.style.display = 'block';
   }
   tcRenderReservationsOnCareMap();
