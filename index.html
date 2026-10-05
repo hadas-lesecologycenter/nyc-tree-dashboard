@@ -3101,6 +3101,7 @@ function applyFilters(reload = false) {
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
   let base = [...allTrees];
+  if (plantedOnly) base = base.concat(getPlantedExtraTrees());
   if (streetTreesOnly) base = base.filter(isStreetTree);
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
   if (selSpecies.size) base = base.filter(t => selSpecies.has(t.spc_common || ''));
@@ -3489,6 +3490,27 @@ function getPlantedTreeIds() {
     if (!want || want === year || want === year + '-' + season) ids.add(tid);
   });
   return ids;
+}
+
+// Planted trees the main map doesn't load (outside the CB3 boundary, or now a
+// stump/retired in the census), so the Planted filter can still show them.
+// Uses the census record when there is one, else the trees.csv coordinates.
+function getPlantedExtraTrees() {
+  const have = new Set(allTrees.map(t => String(t.tree_id)));
+  const census = new Map((CENSUS_DATA || []).map(t => [String(t.tree_id), t]));
+  const extras = [];
+  forEachPlanting(tid => {
+    if (have.has(tid)) return;
+    have.add(tid);
+    let t = census.get(tid);
+    if (!t) {
+      const c = _tcTreeCoords[tid];
+      if (!c || !c.lat || !c.lng) return;
+      t = { tree_id: tid, latitude: c.lat, longitude: c.lng, address: c.address, spc_common: c.species };
+    }
+    extras.push({ ...t, _priority: calcPriority(t) });
+  });
+  return extras;
 }
 
 // Fills the planting-season dropdown with the years/seasons in the care log,
