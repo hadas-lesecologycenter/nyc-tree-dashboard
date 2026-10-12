@@ -1552,7 +1552,7 @@
     "axis": "ew",
     "reach": [
      24.0,
-     12.0
+     32.0
     ]
    },
    "MONROE ST": {
@@ -1651,8 +1651,8 @@
     "name": "SOUTH ST",
     "axis": "ew",
     "reach": [
-     28.0,
-     28.0
+     60.0,
+     60.0
     ]
    },
    "MARKET ST": {

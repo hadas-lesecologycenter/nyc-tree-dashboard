@@ -1300,6 +1300,10 @@ def fit_region_lines(frame, trees_un, grid_region, log, pins=None):
             g['slope'], g['offset'] = pin['slope'], pin['offset']
 
     measure_reach(walk, trees_un)
+    for name, g in walk.items():
+        wide = REACH_OVERRIDE_M.get('%s|%s' % (grid_region['id'], name))
+        if wide:
+            g['reach'] = [max(g['reach'][0], wide[0]), max(g['reach'][1], wide[1])]
     return fitted, walk
 
 
@@ -1345,6 +1349,20 @@ def spans_overlap(a, b):
 
 
 SEGMENT_REACH_M = 12.0        # frontage always reaches at least this far
+# Streets whose planting stands further out than measure_reach will find, in
+# metres per side: [north or west, south or east]. A floor only - a measured
+# reach that comes out wider still wins. South St has no parallel street on
+# its river side and a 70 m block on the other; its esplanade trees and the
+# set-back rows of the Smith Houses and Lands End stand 28-60 m out, are
+# spread too evenly across that band to show up as one row, and were left on
+# no segment at all. Madison St's south side has the same set-back planting
+# 12-32 m out (200 Madison St among it), under a row of 41 on its kerb that
+# the measurement takes as the only one. Widening these two claims 86 trees
+# that had no segment and moves none that had one.
+REACH_OVERRIDE_M = {
+    'TB|SOUTH ST': (60.0, 60.0),
+    'TB|MADISON ST': (24.0, 32.0),
+}
 SEGMENT_REACH_MAX_M = 28.0    # and never further: 185 ft kerb to kerb is nobody
 SEGMENT_PEAK_FRAC = 0.4       # a bin holds a ROW at this share of the side's best
 SEGMENT_GAP_FRAC = 0.4        # and never this far towards the next parallel street
