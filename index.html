@@ -5101,8 +5101,9 @@ async function initSegmentsLayer() {
     // one per sidewalk, because that is how a block face is planted. The band
     // is straight and runs with the street: joining the trees in order only
     // adds zigzags where one is out of line.
-    segmentRows(pts, p.bearing).forEach(ring => {
-      const corners = ring.map(c => L.latLng(c[1], c[0]));
+    const runs = segmentRows(pts, p.bearing);
+    runs.forEach(run => {
+      const corners = run.corners.map(c => L.latLng(c[1], c[0]));
       const shape = corners.length > 1
         ? L.polygon(corners, {
             pane: 'segmentBands', color, fillColor: color, weight: 20,
@@ -5123,9 +5124,13 @@ async function initSegmentsLayer() {
       });
     });
 
+    // The ID goes on the middle of the segment's busiest run. The middle of all
+    // its trees can be a block away from every band once they are split by
+    // row and by gap, and sometimes nearer another segment's band than its own.
+    const main = runs.reduce((a, b) => (b.trees > a.trees ? b : a));
     let lng = 0, lat = 0;
-    pts.forEach(c => { lng += c[0]; lat += c[1]; });
-    L.marker([lat / pts.length, lng / pts.length], {
+    main.corners.forEach(c => { lng += c[0]; lat += c[1]; });
+    L.marker([lat / main.corners.length, lng / main.corners.length], {
       interactive: false,
       icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
                         iconSize: [44, 16], iconAnchor: [22, 8] }),
@@ -5159,20 +5164,35 @@ function segmentAt(latlng) {
   if (!segmentsVisible || !segmentHits.length) return null;
   const pad = 0.0004;   // a coarse cut, so only a handful get projected
   const p = mapInstance.latLngToLayerPoint(latlng);
-  const r = (_segmentBandWeight || 20) / 2 + 2;
+  const half = (_segmentBandWeight || 20) / 2;
   let best = null;
-  for (const h of segmentHits) {
+  // Last drawn first. The bands are opaque within their faded pane, so where
+  // two overlap only the one on top is seen, and that is the one to name.
+  for (let n = segmentHits.length - 1; n >= 0; n--) {
+    const h = segmentHits[n];
     if (latlng.lat < h.south - pad || latlng.lat > h.north + pad ||
         latlng.lng < h.west - pad || latlng.lng > h.east + pad) continue;
-    // Distance to the band's outline. No band is wider than SEGMENT_ROW_MAX_M,
-    // 22 px even at zoom 19, so a point inside one is never more than 11 px
-    // from its outline - always within r.
     const pp = h.corners.map(c => mapInstance.latLngToLayerPoint(c));
-    const d = pp.length === 1 ? p.distanceTo(pp[0]) : Math.min(...pp.map((a, i) =>
-      L.LineUtil.pointToSegmentDistance(p, a, pp[(i + 1) % pp.length])));
-    if (d <= r && (!best || d < best.d)) best = { d, h };
+    const d = pp.length === 1 ? p.distanceTo(pp[0])
+      : insideConvex(p, pp) ? 0
+      : Math.min(...pp.map((a, i) => L.LineUtil.pointToSegmentDistance(p, a, pp[(i + 1) % pp.length])));
+    if (d <= half) return h;
+    // A couple of pixels' grace past the painted edge.
+    if (d <= half + 2 && (!best || d < best.d)) best = { d, h };
   }
   return best && best.h;
+}
+
+function insideConvex(p, pp) {
+  let sign = 0;
+  for (let i = 0; i < pp.length; i++) {
+    const a = pp[i], b = pp[(i + 1) % pp.length];
+    const c = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+    if (Math.abs(c) < 1e-9) continue;
+    if (sign && Math.sign(c) !== sign) return false;
+    sign = Math.sign(c);
+  }
+  return sign !== 0;
 }
 
 function segmentPointerMove(e) {
@@ -5191,6 +5211,7 @@ function segmentPointerMove(e) {
 }
 
 function segmentPointerOut() {
+  if (!segmentsVisible) return;
   if (segmentTip) { mapInstance.closeTooltip(segmentTip); segmentTip = null; }
   mapInstance.getContainer().style.cursor = '';
 }
@@ -5233,8 +5254,9 @@ function ensureSegmentBandPane() {
   return pane;
 }
 
-// The outline of each run of trees in a block segment: four [lng, lat]
-// corners, or a single point for a tree on its own.
+// Each run of trees in a block segment, as { corners, trees }: the run's
+// outline - four [lng, lat] corners, or a single point for a tree on its own -
+// and how many trees it holds.
 //
 // A block face is planted in rows — one per sidewalk, and one down the mall
 // where a street has one — with a roadway between them, and one band down the
@@ -5246,43 +5268,68 @@ function ensureSegmentBandPane() {
 // only a line down the row's middle let any tree a couple of metres off that
 // line hang over its edge once the map was zoomed in.
 //
-// The rows are found in three steps.
-//
-// First the long straight rows: SEGMENT_LINE_MIN or more trees within
-// SEGMENT_LINE_FIT_M of one line at least SEGMENT_LINE_SPAN_M long, turned no
-// more than SEGMENT_LINE_TILT degrees off the street. Each is drawn along its
-// own line. The street's direction (p.bearing, from the build) is one fitted
-// line per street, and on Water St, South St, Pitt St and Allen St the trees
-// run 5-7 degrees off it, and E Houston St bends near the FDR; laid along the
-// street's line, one row there drifted across the next and the two were cut
-// up together into a slab over the roadway.
-//
-// Then the rest, split at the widest gap across the street, again and again,
-// until no row is wider than SEGMENT_ROW_MAX_M. The closest two kerb rows in
-// CB3, on Pike St and Water St, are 7.2 m apart, so they always come apart.
-// This is measured against the longest row found, or failing that the
-// street. Never against the trees' own spread: a short or unevenly planted
+// The rows are measured against the street's direction (p.bearing, from the
+// build), never against the trees' own spread: a short or unevenly planted
 // block tips tens of degrees off the street that way, and its bands crossed
-// the roadway on the diagonal and each other in an X.
+// the roadway on the diagonal and each other in an X. But the bearing is one
+// fitted line per street. On Water St, South St, Pitt St and Allen St the
+// trees run 4-8 degrees off it, and by Cooper Square and the FDR the streets
+// turn; laid along the fitted line, one row there drifted into the next and
+// the two were cut up together into a slab over the roadway. So a segment of
+// SEGMENT_TILT_MIN_TREES or more trees is turned, by up to SEGMENT_TILT_MAX
+// degrees, to the angle that best lines its trees up with each other: every
+// pair counts, by how close the two fall across the street on a scale of
+// SEGMENT_ALIGN_M, less SEGMENT_TILT_COST for each degree turned, so a block
+// whose trees say little stays on its street. Scoring all the trees at once,
+// both sidewalks together, is what keeps a chance line through a few of them
+// from winning. Picking out straight lines of trees one at a time, as this
+// once did, found one on Madison St running from the grounds north of the
+// street through both kerb rows.
 //
-// Last, a row is cut wherever SEGMENT_ROW_GAP_M passes without a tree, so a
-// band does not run on along a frontage with nothing on it, or straight
-// across the inside of a bend from one end of it to the other.
+// The trees are then split at the widest gap across the street, again and
+// again, until no row is wider than SEGMENT_ROW_MAX_M. The closest two kerb
+// rows in CB3, on Pike St, are 7.2 m apart, so they always come apart. Last,
+// a row is cut wherever SEGMENT_ROW_GAP_M passes without a tree, so a band
+// does not run on along a frontage with nothing on it, or straight across the
+// inside of a bend from one end of it to the other.
 const SEGMENT_ROW_MAX_M = 5;
 const SEGMENT_ROW_GAP_M = 40;
-const SEGMENT_LINE_MIN = 5;
-const SEGMENT_LINE_FIT_M = 0.75;
-const SEGMENT_LINE_SPAN_M = 40;
-const SEGMENT_LINE_TILT = 10;
+const SEGMENT_TILT_MIN_TREES = 5;
+const SEGMENT_TILT_MAX = 10;
+const SEGMENT_TILT_COST = 0.2;
+const SEGMENT_ALIGN_M = 0.5;
 
 function segmentRows(pts, bearing) {
   const rad = Math.PI / 180;
   const M = 111320;   // metres per degree of latitude, near enough for a block
   const k = Math.cos(pts[0][1] * rad);
   const xy = pts.map(c => [(c[0] - pts[0][0]) * k * M, (c[1] - pts[0][1]) * M]);
-  let street;   // unit vector along the street
+  const along = (q, u) => q[0] * u[0] + q[1] * u[1];
+  const across = (q, u) => q[1] * u[0] - q[0] * u[1];
+  const unit = deg => [Math.sin(deg * rad), Math.cos(deg * rad)];
+  let dir;   // unit vector along the rows
   if (bearing != null) {
-    street = [Math.sin(bearing * rad), Math.cos(bearing * rad)];
+    const lined = u => {
+      const c = xy.map(q => across(q, u)).sort((a, b) => a - b);
+      let s = 0;
+      for (let i = 0; i < c.length; i++) {
+        for (let j = i + 1; j < c.length && c[j] - c[i] < 3 * SEGMENT_ALIGN_M; j++) {
+          s += Math.exp(-(((c[j] - c[i]) / SEGMENT_ALIGN_M) ** 2) / 2);
+        }
+      }
+      return s;
+    };
+    let turn = 0;
+    if (xy.length >= SEGMENT_TILT_MIN_TREES) {
+      let best = lined(unit(bearing));
+      for (let t = 0.5; t <= SEGMENT_TILT_MAX; t += 0.5) {
+        for (const d of [t, -t]) {
+          const s = lined(unit(bearing + d)) - SEGMENT_TILT_COST * t;
+          if (s > best + 1e-9) { best = s; turn = d; }
+        }
+      }
+    }
+    dir = unit(bearing + turn);
   } else {
     // A file without bearings (the raw.githubusercontent fallback can serve an
     // older one): the trees' own principal axis is the best there is.
@@ -5294,36 +5341,13 @@ function segmentRows(pts, bearing) {
       sxy += (q[0] - cx) * (q[1] - cy);
     });
     const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-    street = [Math.cos(ang), Math.sin(ang)];
-  }
-  const along = (q, u) => q[0] * u[0] + q[1] * u[1];
-  const across = (q, u) => q[1] * u[0] - q[0] * u[1];
-  const rows = [];   // [unit vector along the row, its trees]
-
-  const minCos = Math.cos(SEGMENT_LINE_TILT * rad);
-  let left = xy;
-  while (left.length >= SEGMENT_LINE_MIN) {
-    let best = null;
-    for (let i = 0; i < left.length; i++) {
-      for (let j = i + 1; j < left.length; j++) {
-        const dx = left[j][0] - left[i][0], dy = left[j][1] - left[i][1];
-        const len = Math.hypot(dx, dy);
-        if (len < SEGMENT_LINE_SPAN_M ||
-            Math.abs(dx * street[0] + dy * street[1]) < len * minCos) continue;
-        const u = [dx / len, dy / len], off = across(left[i], u);
-        const on = left.filter(q => Math.abs(across(q, u) - off) <= SEGMENT_LINE_FIT_M);
-        if (on.length >= SEGMENT_LINE_MIN && (!best || on.length > best.on.length)) best = { u, on };
-      }
-    }
-    if (!best) break;
-    rows.push([best.u, best.on]);
-    left = left.filter(q => !best.on.includes(q));
+    dir = [Math.cos(ang), Math.sin(ang)];
   }
 
-  const dir = rows.length ? rows[0][0] : street;
+  const rows = [];
   const split = row => {
     if (across(row[row.length - 1], dir) - across(row[0], dir) <= SEGMENT_ROW_MAX_M) {
-      rows.push([dir, row]);
+      rows.push(row);
       return;
     }
     let at = 1;
@@ -5333,33 +5357,35 @@ function segmentRows(pts, bearing) {
     }
     split(row.slice(0, at)); split(row.slice(at));
   };
-  if (left.length) split(left.slice().sort((a, b) => across(a, dir) - across(b, dir)));
+  split(xy.slice().sort((a, b) => across(a, dir) - across(b, dir)));
 
   const runs = [];
-  rows.forEach(([u, row]) => {
-    const line = row.slice().sort((a, b) => along(a, u) - along(b, u));
+  rows.forEach(row => {
+    const line = row.slice().sort((a, b) => along(a, dir) - along(b, dir));
     let run = [line[0]];
     for (let i = 1; i < line.length; i++) {
-      if (along(line[i], u) - along(line[i - 1], u) > SEGMENT_ROW_GAP_M) {
-        runs.push([u, run]);
+      if (along(line[i], dir) - along(line[i - 1], dir) > SEGMENT_ROW_GAP_M) {
+        runs.push(run);
         run = [];
       }
       run.push(line[i]);
     }
-    runs.push([u, run]);
+    runs.push(run);
   });
 
-  return runs.map(([u, run]) => {
-    const lngLat = (a, c) => [
-      pts[0][0] + (a * u[0] - c * u[1]) / (k * M),
-      pts[0][1] + (a * u[1] + c * u[0]) / M,
-    ];
-    const lo = along(run[0], u), hi = along(run[run.length - 1], u);
+  const lngLat = (a, c) => [
+    pts[0][0] + (a * dir[0] - c * dir[1]) / (k * M),
+    pts[0][1] + (a * dir[1] + c * dir[0]) / M,
+  ];
+  return runs.map(run => {
+    const lo = along(run[0], dir), hi = along(run[run.length - 1], dir);
     let inner = Infinity, outer = -Infinity;
-    run.forEach(q => { inner = Math.min(inner, across(q, u)); outer = Math.max(outer, across(q, u)); });
+    run.forEach(q => { inner = Math.min(inner, across(q, dir)); outer = Math.max(outer, across(q, dir)); });
     // Trees standing on top of each other: a dot, not a shape too small to draw.
-    if (hi - lo < 0.5 && outer - inner < 0.5) return [lngLat((lo + hi) / 2, (inner + outer) / 2)];
-    return [lngLat(lo, inner), lngLat(hi, inner), lngLat(hi, outer), lngLat(lo, outer)];
+    const corners = hi - lo < 0.5 && outer - inner < 0.5
+      ? [lngLat((lo + hi) / 2, (inner + outer) / 2)]
+      : [lngLat(lo, inner), lngLat(hi, inner), lngLat(hi, outer), lngLat(lo, outer)];
+    return { corners, trees: run.length };
   });
 }
 
@@ -5421,13 +5447,16 @@ function toggleSegmentsFromPanel() {
   segmentsLoading = true;
   initSegmentsLayer()
     .then(() => {
-      if (!segmentsVisible) return;
-      segmentsLayer.addTo(mapInstance);
+      // Listened for even if the layer was switched off while loading: this
+      // is the only place they are added, and every handler checks
+      // segmentsVisible itself.
       mapInstance.on('zoomend', syncSegmentLabels);
       mapInstance.on('zoomend', syncSegmentBands);
       mapInstance.on('mousemove', segmentPointerMove);
       mapInstance.on('mouseout', segmentPointerOut);
       mapInstance.on('click', segmentPointerClick);
+      if (!segmentsVisible) return;
+      segmentsLayer.addTo(mapInstance);
       syncSegmentLabels();
       syncSegmentBands();
     })
