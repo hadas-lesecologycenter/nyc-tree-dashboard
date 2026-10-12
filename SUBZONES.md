@@ -74,25 +74,25 @@ between E 7th and E 10th, and park trees are not street trees.
 
 **Zone 2 is cut differently from zone 1, because it is shaped differently.**
 Delancey St is the one street here anybody navigates by and it splits the zone
-800 trees to 463, so the north band takes four sub-zones and the south two —
+938 trees to 434, so the north band takes four sub-zones and the south two —
 forcing zone 1's three columns onto both would have produced one sub-zone of
 about 100 and another of 400. The column lines are Eldridge, Essex and Clinton,
 the wide named streets a crew would recognise, and Essex is shared by both
-bands so it runs unbroken through the zone. All six land between 174 and 265
-trees, inside the range zone 1 settled at.
+bands so it runs unbroken through the zone. All six land between 188 and 305
+trees, against zone 1's 124 to 263.
 
 **Zone 3 is two street patterns, not one**, so it is divided as two. Grand St
 to Division St is the tail of the Lower East Side grid; south of East Broadway,
 Two Bridges turns about 35 degrees and runs on its own. They are fitted
 separately and cut separately, which is why the sub-zones do not line up across
 East Broadway — the streets do not either. The Chinatown strip is thin and
-holds 441 trees, so it splits east-west only, on Essex St; Two Bridges holds
-1,007 and takes five, three above Monroe St and two below, with Pike St shared
+holds 454 trees, so it splits east-west only, on Essex St; Two Bridges holds
+1,016 and takes five, three above Monroe St and two below, with Pike St shared
 by both bands.
 
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
-each: 2F is 41 segments averaging 6 trees, where 1A is 24 averaging 11. That is
+each: 2F is 35 segments averaging 5 trees, where 1A is 25 averaging 10. That is
 the street pattern, not the division.
 
 ## The zone lines
@@ -219,11 +219,14 @@ rebuild the north and south sidewalks of E 5th St east of Cooper Square,
 1G-07 and 1G-06, would have swapped numbers. So **every ID ever issued is
 kept in `data/segment-ids.json`**, against the segment's sub-zone, street and
 two cross streets — by the build's own street names and by the printed label,
-so renaming either alone does not lose it. A segment the ledger knows keeps
+so a change in how labels are printed does not lose it (a street renamed in the
+build's grid itself gets new IDs, its old numbers kept out of use). A segment
+the ledger knows keeps
 its ID, even after builds it was missing from (a block whose only tree dies
 and is replanted comes back under its old number). A segment it has never
 seen gets its sub-zone's next number, after the highest that sub-zone has
-ever issued, so a number is never handed to a different block. Replaying
+ever issued, so a number is never handed to a different block; the build
+stops, naming the file, if the ledger is damaged rather than renumber. Replaying
 every weekly census since August through the build ends on exactly today's
 IDs. `data/subzones.csv` carries a `segmentId` on every tree, so "which trees
 are in 1A-03" is a lookup rather than a guess.
@@ -234,10 +237,13 @@ coordinates of the vertices they start and end on, not by their index in the
 ring: the census workflow refetches `data/cb3-boundary.json`, and on
 2026-08-24 seven vertices on the ring's East River side were replaced by
 fifteen, moving every index past them by eight. A rebuild on the old indices
-would have fitted the frame 4° off. The build stops rather than fit the wrong
-run if either end vertex goes missing, if a run goes more than half way round
-the ring (a ring stored the other way round), or if E 14th St comes out more
-than 2 m from straight.
+would have fitted the frame 4° off. The walk also always starts the ring at the
+vertex it started on in August, whatever a refetched ring starts on: the first
+fit counted that vertex twice, and counting another one twice turns the frame
+by hundredths of a degree, enough to move a hundred trees. The build stops
+rather than fit the wrong run if either end vertex goes missing, if a run goes
+more than half way round the ring (a ring stored the other way round), or if
+the frame comes out at any bearing but the one it has always had.
 
 Two things make the segmentation legible rather than merely present:
 
