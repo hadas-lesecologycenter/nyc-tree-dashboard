@@ -57,6 +57,9 @@ Output:
   data/subzones.csv          — treeId,subzoneId,segmentId,zone,lat,lng,species
   data/subzone-segments.geojson — one MultiPoint per block segment: its trees,
                                and the bearing of the street they stand on
+  data/segment-ids.json      — every segment ID ever issued, by sub-zone, street
+                               and the two cross streets; read and extended by
+                               each build so an ID stays on its block
 """
 
 import collections
@@ -73,19 +76,34 @@ OUT_LINES = os.path.join(ROOT, 'data', 'cb3-street-lines.json')
 OUT_GEOJSON = os.path.join(ROOT, 'data', 'subzones.geojson')
 OUT_CSV = os.path.join(ROOT, 'data', 'subzones.csv')
 OUT_SEGMENTS = os.path.join(ROOT, 'data', 'subzone-segments.geojson')
+SEGMENT_IDS = os.path.join(ROOT, 'data', 'segment-ids.json')
 
 REF_LNG, REF_LAT = -73.9850, 40.7200
 M_PER_DEG_LNG = 84400.0
 M_PER_DEG_LAT = 110540.0
 
-# Index range of the CB3 boundary ring that runs along E 14th St, west to east.
-# The ring starts partway along 14th St, so the run wraps past the end.
-E14_RUN = [275, 276, 277] + list(range(0, 13))
+# The run of the CB3 boundary ring that follows E 14th St, west to east, named
+# by the vertices it starts and ends on. The ring starts partway along 14th
+# St, so the run wraps past the end.
+#
+# These used to be index ranges, and the census workflow refetches the
+# boundary: on 2026-08-24 seven vertices on the East River side of NYC's ring
+# were replaced by fifteen, every index past them moved by eight, and a
+# rebuild would have fitted the frame to part of E 14th St and the 4th Ave
+# stretch below it - 4 degrees off and 23 m from straight. A vertex that is no
+# longer in the ring stops the build instead (see boundary_run).
+E14_RUN = ((-73.9899044043667, 40.7344430508388), (-73.9803415163641, 40.7304507216317))
+
+# The vertex the ring started on when the frame was first fitted (see
+# boundary_run), and the bearing that fit gave. The build stops if the frame
+# comes out any different.
+RING_SEAM = (-73.9887807611186, 40.7339736608904)
+FRAME_BEARING_DEG = -28.732159298489
 
 # The other exact run: CB3's western boundary, from Grand St up to E 14th St.
 # It follows the Bowery and then 4th Ave, and it is the only geometry this repo
 # has for either of them.
-WEST_RUN = list(range(227, 276))
+WEST_RUN = ((-73.9958105689716, 40.71665291722), (-73.9899044043667, 40.7344430508388))
 
 # How far off its centreline a street's boundary is drawn: far enough to clear
 # the whole right of way, so the line lands on the property line and the street
@@ -577,6 +595,45 @@ def poly_area_m2(ring):
 
 # ------------------------------------------------------------------ frame ---
 
+def boundary_run(boundary, start, end):
+    """The boundary vertices from the one at `start` to the one at `end`,
+    inclusive, going round the ring in the direction it is stored.
+
+    The frame was first fitted over the ring as stored then, closing copy and
+    all, and the run along E 14th St crossed the seam - so RING_SEAM, the
+    vertex the ring started on, was counted twice. A refetched ring can start
+    anywhere, or come without its closing copy, and counting a different
+    vertex twice turns the frame by up to 0.03 degrees, enough to move a
+    hundred trees between segments. So the walk always puts the seam at
+    RING_SEAM and counts it twice, wherever the stored ring starts.
+
+    The build stops rather than fit a run that has silently moved: if a vertex
+    is not in the ring exactly once, or if the walk goes more than half way
+    round, which is what a ring stored in the opposite direction does."""
+    ring = boundary[:-1] if len(boundary) > 1 and boundary[0] == boundary[-1] else boundary
+
+    def find(pt):
+        hits = [i for i, p in enumerate(ring)
+                if abs(p[0] - pt[0]) < 1e-9 and abs(p[1] - pt[1]) < 1e-9]
+        if len(hits) != 1:
+            raise SystemExit('CB3 boundary: vertex %r is there %d times, not once - '
+                             'has the boundary changed along E 14th St or the Bowery?'
+                             % (pt, len(hits)))
+        return hits[0]
+    k = find(RING_SEAM)
+    ring = ring[k:] + ring[:k] + [ring[k]]
+    i, j = find(start), find(end)
+    run = [i]
+    while i != j:
+        i = (i + 1) % len(ring)
+        run.append(i)
+    if len(run) > len(ring) // 2:
+        raise SystemExit('CB3 boundary: the run from %r to %r goes %d vertices of %d '
+                         'round the ring - is the ring stored the other way round?'
+                         % (start, end, len(run), len(ring)))
+    return [ring[i] for i in run]
+
+
 class Frame(object):
     """Local metric frame aligned to the street grid.
 
@@ -586,7 +643,7 @@ class Frame(object):
 
     def __init__(self, boundary):
         self.boundary = boundary
-        pts = [self._xy(boundary[i]) for i in E14_RUN]
+        pts = [self._xy(p) for p in boundary_run(boundary, *E14_RUN)]
         k = len(pts)
         sx = sum(p[0] for p in pts)
         sy = sum(p[1] for p in pts)
@@ -672,7 +729,7 @@ def west_lines(frame):
     the better source. The run is split at the bend that minimises the worse of
     the two residuals; that lands on Cooper Square, where the Bowery becomes
     4th Ave, and takes the residuals from 18.7 m for one line to 6.2 m each."""
-    pts = [frame.to_un(*frame.boundary[i]) for i in WEST_RUN]
+    pts = [frame.to_un(*p) for p in boundary_run(frame.boundary, *WEST_RUN)]
 
     def piece(seq):
         m, c = linefit([(n, u) for u, n in seq])
@@ -709,9 +766,9 @@ def west_lines(frame):
 # So every row is found first, and the street is the run of them that holds
 # together: start at the strongest, and take in the next row out while it is
 # close enough to be the same street and still carries a real share of that
-# strength. On Houston the run stops exactly where it should - 65 and 37 trees
-# in the outer rows, 80 in the median, and the 11-tree scatter of the next
-# block over left outside.
+# strength. On Houston the run stops exactly where it should - 66 and 39 trees
+# in the outer rows, 81 in the median (2026-09-28 census), and the 11-tree
+# scatter of the next block over left outside.
 CORRIDOR_WINDOW_M = 60.0   # how far either side of the old line to look
 CORRIDOR_KERNEL_M = 2.0    # a row is this thick
 CORRIDOR_ROW_MIN = 8       # trees before a peak counts as a row at all
@@ -1420,13 +1477,14 @@ def brackets(walk, u, n, cross):
 def street_bearing(frame, g):
     """Compass bearing of a fitted line: degrees clockwise from north, 0-180.
 
-    The map lays a segment's bands along this rather than reading a direction
-    off the trees. The trees cannot be trusted for it: a short block holds two
-    rows not much further apart than the block is long - Catherine St from
-    Water St to South St is 42 m of street with its rows 36 m apart - and an
-    uneven planting tips the trees' own axis off the street. Of the 420
-    segments with three or more trees, 99 came out more than 10 degrees off
-    and 14 more than 60, pointing nearly across the street."""
+    The map finds a segment's rows of trees against this rather than against a
+    direction read off the trees. The trees cannot be trusted for it: a short
+    block's two rows can be nearly as far apart as the block is long - the
+    trees of Catherine St from Water St to South St spread 43 m along it and
+    36 m across - and an uneven planting tips the trees' own axis off the
+    street. Of the 420 segments with three or more trees, 101 came out more
+    than 10 degrees off and 14 more than 60, pointing nearly across the
+    street."""
     s, c = g['slope'], g['offset']
     if g['axis'] == 'ew':
         a, b = frame.to_lnglat(0.0, c), frame.to_lnglat(100.0, s * 100.0 + c)
@@ -1436,9 +1494,17 @@ def street_bearing(frame, g):
                                    (b[1] - a[1]) * M_PER_DEG_LAT)) % 180.0
 
 
-def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
-    ends = [pretty(lo) if lo else 'the district edge',
+def segment_ends(lo, hi):
+    return [pretty(lo) if lo else 'the district edge',
             pretty(hi) if hi else 'the district edge']
+
+
+def segment_label(name, lo, hi):
+    return '%s, %s to %s' % ((pretty(name),) + tuple(segment_ends(lo, hi)))
+
+
+def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
+    ends = segment_ends(lo, hi)
     return {
         'type': 'Feature',
         'properties': {
@@ -1448,7 +1514,7 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
             'street': pretty(name),
             'from': ends[0],
             'to': ends[1],
-            'label': '%s, %s to %s' % (pretty(name), ends[0], ends[1]),
+            'label': segment_label(name, lo, hi),
             'tree_count': len(members),
             'bearing': round(street_bearing(frame, walk[name]), 1),
         },
@@ -1495,9 +1561,18 @@ def main():
     divs = grid['dividers']
 
     frame = Frame(boundary)
+    # Every fitted line, sub-zone edge and segment is measured in this frame,
+    # and a turn of hundredths of a degree moves trees between segments and
+    # new IDs into data/segment-ids.json for good. So a frame that is not the
+    # one this has always used stops the build: if NYC's E 14th St geometry
+    # really changes, refit on purpose and update FRAME_BEARING_DEG.
+    if frame.e14_rms > 2.0 or abs(frame.bearing - FRAME_BEARING_DEG) > 1e-6:
+        raise SystemExit('CB3 boundary: the frame comes out at %.6f deg, %.2f m from '
+                         'straight, not %.6f deg - the E 14th St run has changed'
+                         % (frame.bearing, frame.e14_rms, FRAME_BEARING_DEG))
     print('Grid frame from CB3\'s own E 14th St run: bearing %.4f deg, '
           'straight to %.2f m RMS over %d boundary vertices'
-          % (frame.bearing, frame.e14_rms, len(E14_RUN)))
+          % (frame.bearing, frame.e14_rms, len(boundary_run(boundary, *E14_RUN))))
 
     trees = []
     for t in json.load(open(CENSUS_PATH)):
@@ -1540,7 +1615,8 @@ def main():
         is not the same thing, because two of them cross: the Grand St and East
         Broadway lines meet at lng -73.98245, and east of there East Broadway
         runs NORTH of Grand. A cascade files everything in that wedge under Two
-        Bridges. No tree falls in it today - the two tests agree on all 5,308 -
+        Bridges. No tree fell in it when this was written - the two tests
+        agreed on all 5,308 trees of the August 2026 census -
         but the sub-zone polygons are clipped with these half-planes, so the
         tree that decides which zone it is in should be tested with them too."""
         for rid, bounds in REGION_BOUNDS.items():
@@ -1644,6 +1720,33 @@ def main():
     # ---- build each sub-zone from its four named edges ---------------------
     BIG = 4000.0
     features, csv_rows, edge_records, segments = [], [], [], []
+
+    # Every segment ID ever issued - see seg_order. Before the ledger existed
+    # the IDs lived only in the published segments file, so the first build to
+    # write it takes all of that file's IDs, by label, including those of
+    # segments this build does not find.
+    if os.path.exists(SEGMENT_IDS):
+        try:
+            ledger = json.load(open(SEGMENT_IDS))
+        except ValueError as e:
+            raise SystemExit('%s is not valid JSON (%s) - restore it from git rather '
+                             'than let the build reissue IDs' % (SEGMENT_IDS, e))
+        if not (isinstance(ledger, dict) and
+                all(isinstance(ledger.get(k), dict) for k in ('ids', 'labels', 'high'))):
+            raise SystemExit('%s needs "ids", "labels" and "high" - restore it from git '
+                             'rather than let the build reissue IDs' % SEGMENT_IDS)
+    else:
+        ledger = {'ids': {}, 'labels': {}, 'high': {}}
+        if os.path.exists(OUT_SEGMENTS):
+            for f in json.load(open(OUT_SEGMENTS))['features']:
+                p = f['properties']
+                ledger['labels']['%s|%s' % (p['subzone_id'], p['label'])] = p['segment_id']
+    # Never number below an ID already issued, whatever 'high' says.
+    issued = set(ledger['ids'].values()) | set(ledger['labels'].values())
+    for seg_id in issued:
+        sid, n = seg_id.rsplit('-', 1)
+        ledger['high'][sid] = max(ledger['high'].get(sid, 0), int(n))
+    taken = set()
     tree_segment = {}
 
     # ---- one offset per shared stretch of each boundary street -------------
@@ -1866,21 +1969,49 @@ def main():
             (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
             lo, hi, at = brackets(walk, t['u'], t['n'], cross)
-            rank[(name, axis, lo, hi)] = at
+            # The least, not whichever tree came last: census row order must
+            # not decide which of two new segments is numbered first.
+            rank[(name, axis, lo, hi)] = min(at, rank.get((name, axis, lo, hi), at))
             segs[(name, axis, lo, hi)].append(t)
 
         # A stable identifier per segment: streets first, north to south, then
         # avenues west to east, numbered within the sub-zone. Ordering is by
-        # RANK - which street comes before which - not by any fitted value, so
-        # re-running the fit cannot renumber a crew's assignment under them.
+        # RANK - which street comes before which - not by any fitted value.
+        #
+        # Rank alone did not keep an ID on its block from one build to the
+        # next, though. It held the position of whichever of a segment's trees
+        # came last in census order, and the census comes back reshuffled: on
+        # the first rebuild the north and south sidewalks of E 5th St east of
+        # Cooper Square, 1G-07 and 1G-06, swapped numbers. (It now holds the
+        # least, so it only orders segments that are new in the same build.)
+        # So every ID issued is kept in data/segment-ids.json against its
+        # sub-zone, street and two cross streets - by the build's own names,
+        # and by the printed label as well, so a change in how labels are
+        # printed does not lose it (a street renamed in the grid itself does
+        # get new IDs; its old numbers stay reserved) - and a segment found
+        # there keeps its ID even if it was missing from the builds in
+        # between. A segment never seen before gets
+        # the sub-zone's next number, after the highest it has ever issued, so
+        # a number is never handed to a different block.
         def seg_order(key):
             name, axis = key[0], key[1]
             return (0 if axis == 'ew' else 1, walk[name]['offset'], rank[key])
 
-        for i, key in enumerate(sorted(segs, key=seg_order), start=1):
+        for key in sorted(segs, key=seg_order):
             name, axis, lo, hi = key
             members = segs[key]
-            seg_id = '%s-%02d' % (spec['id'], i)
+            ident = '|'.join((spec['id'], name, lo or '', hi or ''))
+            label = '%s|%s' % (spec['id'], segment_label(name, lo, hi))
+            seg_id = ledger['ids'].get(ident) or ledger['labels'].get(label)
+            while seg_id is None or seg_id in taken or (
+                    seg_id not in (ledger['ids'].get(ident), ledger['labels'].get(label))
+                    and seg_id in issued):
+                ledger['high'][spec['id']] = ledger['high'].get(spec['id'], 0) + 1
+                seg_id = '%s-%02d' % (spec['id'], ledger['high'][spec['id']])
+            taken.add(seg_id)
+            issued.add(seg_id)
+            ledger['ids'][ident] = seg_id
+            ledger['labels'][label] = seg_id
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
             segments.append(segment_feature(members, walk, name, axis,
@@ -1964,15 +2095,25 @@ def main():
                   % (sid, side, pretty(name), half, floor, clear))
     print('%s' % ('no overlaps' if problems == 0 else '%d problem(s)' % problems))
 
+    ids = [f['properties']['segment_id'] for f in segments]
+    if len(ids) != len(set(ids)):
+        raise SystemExit('two segments share an ID: %s - nothing written'
+                         % sorted(i for i in set(ids) if ids.count(i) > 1))
     with open(OUT_GEOJSON, 'w') as fh:
         json.dump({'type': 'FeatureCollection', 'features': features}, fh)
     with open(OUT_SEGMENTS, 'w') as fh:
         json.dump({'type': 'FeatureCollection', 'features': segments}, fh)
+    with open(SEGMENT_IDS, 'w') as fh:
+        json.dump(ledger, fh, indent=1, sort_keys=True)
+        fh.write('\n')
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.writer(fh)
         w.writerow(['treeId', 'subzoneId', 'segmentId', 'zone',
                     'latitude', 'longitude', 'species'])
-        w.writerows(csv_rows)
+        # By sub-zone, then tree ID, not in census order: the census comes
+        # back reshuffled each week, and a rebuild that moved 13 trees showed
+        # as a diff of all 5,306.
+        w.writerows(sorted(csv_rows, key=lambda r: (r[1], len(str(r[0])), str(r[0]))))
     print('\nwrote %s (%d sub-zones), %s (%d trees) and %s (%d segments)'
           % (os.path.relpath(OUT_GEOJSON, ROOT), len(features),
              os.path.relpath(OUT_CSV, ROOT), len(csv_rows),
