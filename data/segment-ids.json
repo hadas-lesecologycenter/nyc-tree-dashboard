@@ -24,7 +24,7 @@
   "3D": 28,
   "3E": 16,
   "3F": 24,
-  "3G": 36
+  "3G": 37
  },
  "ids": {
   "1A|1 AVE|E 11 ST|E 10 ST": "1A-25",
@@ -533,6 +533,7 @@
   "3G|SOUTH ST|GOUVERNEUR ST|JACKSON ST": "3G-19",
   "3G|SOUTH ST|JACKSON ST|": "3G-20",
   "3G|SOUTH ST|JEFFERSON ST|CLINTON ST": "3G-17",
+  "3G|SOUTH ST|MONTGOMERY ST|GOUVERNEUR ST": "3G-37",
   "3G|SOUTH ST|PIKE ST|RUTGERS ST": "3G-16",
   "3G|WATER ST|CLINTON ST|MONTGOMERY ST": "3G-12",
   "3G|WATER ST|GOUVERNEUR ST|JACKSON ST": "3G-14",
@@ -1047,6 +1048,7 @@
   "3G|South St, Gouverneur St to Jackson St": "3G-19",
   "3G|South St, Jackson St to the district edge": "3G-20",
   "3G|South St, Jefferson St to Clinton St": "3G-17",
+  "3G|South St, Montgomery St to Gouverneur St": "3G-37",
   "3G|South St, Pike St to Rutgers St": "3G-16",
   "3G|Water St, Clinton St to Montgomery St": "3G-12",
   "3G|Water St, Gouverneur St to Jackson St": "3G-14",
