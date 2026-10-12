@@ -1,0 +1,77 @@
+{
+ "CH|CHRYSTIE ST": {
+  "axis": "ns",
+  "offset": -1120.0935136545695,
+  "slope": 0.1305465822276979
+ },
+ "CH|CLINTON ST": {
+  "axis": "ns",
+  "offset": -425.31589400696845,
+  "slope": 0.1305465822276979
+ },
+ "CH|ELDRIDGE ST": {
+  "axis": "ns",
+  "offset": -960.8503438976704,
+  "slope": 0.1305465822276979
+ },
+ "CH|FDR DR": {
+  "axis": "ns",
+  "offset": -130.33286368424507,
+  "slope": 0.1305465822276979
+ },
+ "CH|FORSYTH ST": {
+  "axis": "ns",
+  "offset": -1040.4719287766832,
+  "slope": 0.1305465822276979
+ },
+ "CH|JACKSON ST": {
+  "axis": "ns",
+  "offset": -242.07441556853962,
+  "slope": 0.1305465822276979
+ },
+ "CH|LUDLOW ST": {
+  "axis": "ns",
+  "offset": -717.300990901018,
+  "slope": 0.1305465822276979
+ },
+ "CH|ORCHARD ST": {
+  "axis": "ns",
+  "offset": -799.264874960401,
+  "slope": 0.1305465822276979
+ },
+ "EV|E 14 ST": {
+  "axis": "ew",
+  "offset": 10.951475713682449,
+  "slope": 0.00299871512301833
+ },
+ "EV|FDR DR": {
+  "axis": "ns",
+  "offset": 620.9854355524345,
+  "slope": -0.006394702684259408
+ },
+ "LES|COLUMBIA ST": {
+  "axis": "ns",
+  "offset": 262.5922755153846,
+  "slope": 0.12868951308452917
+ },
+ "TB|CATHERINE ST": {
+  "axis": "ns",
+  "offset": -2152.8945071258922,
+  "slope": 0.6994975963938562
+ },
+ "TB|CLINTON ST": {
+  "axis": "ns",
+  "offset": -1155.0608532147517,
+  "slope": 0.6994975963938562
+ },
+ "TB|JEFFERSON ST": {
+  "axis": "ns",
+  "offset": -1310.1219885432397,
+  "slope": 0.6994975963938562
+ },
+ "TB|RUTGERS ST": {
+  "axis": "ns",
+  "offset": -1465.183123871728,
+  "slope": 0.6994975963938562
+ }
+}

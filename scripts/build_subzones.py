@@ -60,6 +60,9 @@ Output:
   data/segment-ids.json      — every segment ID ever issued, by sub-zone, street
                                and the two cross streets; read and extended by
                                each build so an ID stays on its block
+  data/pinned-street-lines.json — where each street with no fit of its own is
+                               drawn; read and extended by each build so a new
+                               census cannot slide it (see PINNED_LINES)
 """
 
 import collections
@@ -77,6 +80,7 @@ OUT_GEOJSON = os.path.join(ROOT, 'data', 'subzones.geojson')
 OUT_CSV = os.path.join(ROOT, 'data', 'subzones.csv')
 OUT_SEGMENTS = os.path.join(ROOT, 'data', 'subzone-segments.geojson')
 SEGMENT_IDS = os.path.join(ROOT, 'data', 'segment-ids.json')
+PINNED_LINES = os.path.join(ROOT, 'data', 'pinned-street-lines.json')
 
 REF_LNG, REF_LAT = -73.9850, 40.7200
 M_PER_DEG_LNG = 84400.0
@@ -1057,7 +1061,7 @@ def line_to_frame(frame, line, axis):
     return s, b1 - s * a1
 
 
-def fit_region_lines(frame, trees_un, grid_region, log):
+def fit_region_lines(frame, trees_un, grid_region, log, pins=None):
     """Fit every named street and avenue in a grid region.
 
     Three passes. The first uses the old grid's lines as seeds, masks out
@@ -1235,6 +1239,15 @@ def fit_region_lines(frame, trees_un, grid_region, log):
     # and seeded from the old grid where not. Nothing is cut with these - they
     # exist so a tree can be told which street it is on, which only has to be
     # right to within half a block.
+    #
+    # A seeded line has no trees of its own to hold it, so it used to take the
+    # family's fitted slope through the old grid's offset - and an offset is
+    # where the line crosses the frame's origin axis, E 14th St, nearly 2 km
+    # north of Chinatown. The 2026-10-12 census tipped the Chinatown avenues by
+    # 0.0048, and that slid Ludlow and Orchard St 9 m across their blocks and
+    # emptied 3A-07 and 3B-24. So the first build to place a seeded line pins
+    # it in data/pinned-street-lines.json, and every later build draws it
+    # exactly there. To move one on purpose, delete its entry and rebuild.
     walk = dict(fitted)
     for names, axis, seeds, slope in ((ew_names, 'ew', streets, ew_slope),
                                       (ns_names, 'ns', avenues, ns_slope)):
@@ -1272,6 +1285,19 @@ def fit_region_lines(frame, trees_un, grid_region, log):
             del fitted['BOWERY / 3 AVE']
     for g in boundary_lines:
         walk[g['name']] = dict(g)
+
+    # Every line still seeded now is drawn where it is pinned (see above).
+    if pins is not None:
+        for name, g in walk.items():
+            if not g.get('seeded'):
+                continue
+            key = '%s|%s' % (grid_region['id'], name)
+            pin = pins.setdefault(key, {'axis': g['axis'], 'slope': g['slope'],
+                                        'offset': g['offset']})
+            if pin['axis'] != g['axis']:
+                raise SystemExit('%s: %s is pinned as %s, but the grid has it as %s'
+                                 % (PINNED_LINES, key, pin['axis'], g['axis']))
+            g['slope'], g['offset'] = pin['slope'], pin['offset']
 
     measure_reach(walk, trees_un)
     return fitted, walk
@@ -1625,13 +1651,31 @@ def main():
                 return rid
         return 'TB'
 
+    # Where each seeded street is drawn - see fit_region_lines. The pins are in
+    # this frame, which the bearing check above holds fixed.
+    if os.path.exists(PINNED_LINES):
+        try:
+            pins = json.load(open(PINNED_LINES))
+        except ValueError as e:
+            raise SystemExit('%s is not valid JSON (%s) - restore it from git rather '
+                             'than let the build re-seed those streets' % (PINNED_LINES, e))
+        if not (isinstance(pins, dict) and all(
+                isinstance(v, dict) and v.get('axis') in ('ew', 'ns')
+                and all(isinstance(v.get(k), (int, float)) for k in ('slope', 'offset'))
+                for v in pins.values())):
+            raise SystemExit('%s needs an axis, slope and offset for every street - '
+                             'restore it from git' % PINNED_LINES)
+    else:
+        pins = {}
+
     wanted = sorted({z['region'] for z in SUBZONES})
     for t in trees:
         t['region'] = region_of(t['u'], t['n'])
     first = {}
     for rid in wanted:
         first[rid] = fit_region_lines(frame, [(t['u'], t['n']) for t in trees
-                                              if t['region'] == rid], regions[rid], [])[1]
+                                              if t['region'] == rid], regions[rid], [],
+                                     dict(pins))[1]
     for key, f in corridors.items():
         both = dict(first[DIVIDER_SIDES[key][0]])
         both.update(first[DIVIDER_SIDES[key][1]])
@@ -1678,7 +1722,7 @@ def main():
         sub = [(t['u'], t['n']) for t in trees if t['region'] == rid]
         print('\n=== %s (%s): fitting street centrelines from %d trees'
               % (rid, regions[rid]['label'], len(sub)))
-        got, walk = fit_region_lines(frame, sub, regions[rid], log)
+        got, walk = fit_region_lines(frame, sub, regions[rid], log, pins)
         for line in log:
             print(line)
         for name in sorted(walk, key=lambda k: (walk[k]['axis'], walk[k]['offset'])):
@@ -1690,7 +1734,7 @@ def main():
                          f['slope'], f['rms_m']))
                 continue
             if f.get('seeded'):
-                print('  %-20s %s %8.2f            seeded from the old grid, '
+                print('  %-20s %s %8.2f            pinned (seeded from the old grid), '
                       'not used as a boundary'
                       % (name, 'n=' if f['axis'] == 'ew' else 'u=', f['offset']))
                 continue
@@ -2105,6 +2149,9 @@ def main():
         json.dump({'type': 'FeatureCollection', 'features': segments}, fh)
     with open(SEGMENT_IDS, 'w') as fh:
         json.dump(ledger, fh, indent=1, sort_keys=True)
+        fh.write('\n')
+    with open(PINNED_LINES, 'w') as fh:
+        json.dump(pins, fh, indent=1, sort_keys=True)
         fh.write('\n')
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.writer(fh)
