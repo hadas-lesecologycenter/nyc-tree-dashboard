@@ -5086,6 +5086,14 @@ async function initSegmentsLayer() {
   segmentLabels = L.layerGroup();
   segmentHits = [];
   const bands = [];
+  // Where the IDs placed so far sit, and how big one is at zoom 18 - 44 x 16
+  // px - in metres, to keep two from landing on top of each other.
+  const placed = [];
+  const clashes = c => placed.some(q => {
+    const mPerPx = 156543.03392 * Math.cos(c[1] * Math.PI / 180) / 2 ** 18;
+    return Math.abs(q[0] - c[0]) * 111320 * Math.cos(c[1] * Math.PI / 180) < 44 * mPerPx &&
+           Math.abs(q[1] - c[1]) * 111320 < 16 * mPerPx;
+  });
   segmentsData.features.forEach(f => {
     const p = f.properties;
     const color = segmentColor(p.tree_count);
@@ -5105,23 +5113,32 @@ async function initSegmentsLayer() {
     const runs = segmentRows(pts, p.bearing);
     runs.forEach(run => bands.push({ run, color, popup, tip }));
 
-    // The ID goes on the middle of the segment's busiest run. The middle of all
-    // its trees can be a block away from every band once they are split by
-    // row and by gap, and sometimes nearer another segment's band than its own.
-    const main = runs.reduce((a, b) => (b.trees > a.trees ? b : a));
-    let lng = 0, lat = 0;
-    main.corners.forEach(c => { lng += c[0]; lat += c[1]; });
-    L.marker([lat / main.corners.length, lng / main.corners.length], {
+    // The ID goes on the middle of one of the segment's own runs: the busiest
+    // that does not land on an ID already placed, or failing that the busiest.
+    // The middle of all its trees can be a block away from every band once
+    // they are split by row and by gap, and sometimes nearer another segment's
+    // band than its own.
+    const centre = r => [
+      r.corners.reduce((t, c) => t + c[0], 0) / r.corners.length,
+      r.corners.reduce((t, c) => t + c[1], 0) / r.corners.length,
+    ];
+    const byTrees = runs.slice().sort((a, b) => b.trees - a.trees);
+    const main = byTrees.find(r => !clashes(centre(r))) || byTrees[0];
+    main.labelled = true;
+    const [lng, lat] = centre(main);
+    placed.push([lng, lat]);
+    L.marker([lat, lng], {
       interactive: false,
       icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
                         iconSize: [44, 16], iconAnchor: [22, 8] }),
     }).addTo(segmentLabels);
   });
 
-  // Busiest runs at the bottom, lone trees on top. In feature order a corner
+  // Busiest runs at the bottom, lone trees on top, and among runs of the same
+  // size the one carrying its segment's ID last. In feature order a corner
   // segment's single dot could be drawn under the next street's band and
-  // vanish, its label left sitting on someone else's band.
-  bands.sort((a, b) => b.run.trees - a.run.trees);
+  // vanish, its ID left sitting on someone else's band.
+  bands.sort((a, b) => (b.run.trees - a.run.trees) || (!!a.run.labelled - !!b.run.labelled));
   bands.forEach(({ run, color, popup, tip }) => {
     const corners = run.corners.map(c => L.latLng(c[1], c[0]));
     const shape = corners.length > 1
@@ -5305,16 +5322,26 @@ function ensureSegmentBandPane() {
 //
 // The trees are then split at the widest gap across the street, again and
 // again, until no row is wider than SEGMENT_ROW_MAX_M. The closest two kerb
-// rows in CB3, on Pike St, are 7.2 m apart, so they always come apart. Last,
+// rows in CB3, on Pike St, are 7.2 m apart, so they always come apart. Then
 // a row is cut wherever SEGMENT_ROW_GAP_M passes without a tree, so a band
 // does not run on along a frontage with nothing on it, or straight across the
 // inside of a bend from one end of it to the other.
+//
+// Last, a street that bends inside one segment - E Houston St swinging down
+// to the FDR - runs in two directions, and the one the segment is turned to
+// leaves the other arm's rows cut into short pieces. So the trees left in
+// runs of three or fewer get a turn of their own, up to SEGMENT_BEND_MAX
+// degrees, and are regrouped. That is kept only if it leaves fewer runs, each
+// a thin row no wider than SEGMENT_BEND_ROW_M, so it cannot sweep corner
+// trees set back from the kerb into one wide band.
 const SEGMENT_ROW_MAX_M = 5;
 const SEGMENT_ROW_GAP_M = 40;
 const SEGMENT_TILT_MIN_TREES = 5;
 const SEGMENT_TILT_MAX = 10;
 const SEGMENT_TILT_COST = 0.2;
 const SEGMENT_ALIGN_M = 0.5;
+const SEGMENT_BEND_MAX = 15;
+const SEGMENT_BEND_ROW_M = 2.5;
 
 function segmentRows(pts, bearing) {
   const rad = Math.PI / 180;
@@ -5324,10 +5351,16 @@ function segmentRows(pts, bearing) {
   const along = (q, u) => q[0] * u[0] + q[1] * u[1];
   const across = (q, u) => q[1] * u[0] - q[0] * u[1];
   const unit = deg => [Math.sin(deg * rad), Math.cos(deg * rad)];
-  let dir;   // unit vector along the rows
-  if (bearing != null) {
+  const width = ({ dir, trees }) => {
+    const c = trees.map(q => across(q, dir));
+    return Math.max(...c) - Math.min(...c);
+  };
+
+  // The direction, at most maxTurn degrees off the street, that best lines
+  // these trees up with each other.
+  const turned = (trees, maxTurn) => {
     const lined = u => {
-      const c = xy.map(q => across(q, u)).sort((a, b) => a - b);
+      const c = trees.map(q => across(q, u)).sort((a, b) => a - b);
       let s = 0;
       for (let i = 0; i < c.length; i++) {
         for (let j = i + 1; j < c.length && c[j] - c[i] < 3 * SEGMENT_ALIGN_M; j++) {
@@ -5337,16 +5370,62 @@ function segmentRows(pts, bearing) {
       return s;
     };
     let turn = 0;
-    if (xy.length >= SEGMENT_TILT_MIN_TREES) {
+    if (trees.length >= SEGMENT_TILT_MIN_TREES) {
       let best = lined(unit(bearing));
-      for (let t = 0.5; t <= SEGMENT_TILT_MAX; t += 0.5) {
+      for (let t = 0.5; t <= maxTurn; t += 0.5) {
         for (const d of [t, -t]) {
           const s = lined(unit(bearing + d)) - SEGMENT_TILT_COST * t;
           if (s > best + 1e-9) { best = s; turn = d; }
         }
       }
     }
-    dir = unit(bearing + turn);
+    return unit(bearing + turn);
+  };
+
+  // These trees as runs along dir: rows split across it, then cut at gaps.
+  const runsAlong = (trees, dir) => {
+    const rows = [];
+    const split = row => {
+      if (across(row[row.length - 1], dir) - across(row[0], dir) <= SEGMENT_ROW_MAX_M) {
+        rows.push(row);
+        return;
+      }
+      let at = 1;
+      for (let i = 2; i < row.length; i++) {
+        if (across(row[i], dir) - across(row[i - 1], dir) >
+            across(row[at], dir) - across(row[at - 1], dir)) at = i;
+      }
+      split(row.slice(0, at)); split(row.slice(at));
+    };
+    split(trees.slice().sort((a, b) => across(a, dir) - across(b, dir)));
+    const runs = [];
+    rows.forEach(row => {
+      const line = row.slice().sort((a, b) => along(a, dir) - along(b, dir));
+      let run = [line[0]];
+      for (let i = 1; i < line.length; i++) {
+        if (along(line[i], dir) - along(line[i - 1], dir) > SEGMENT_ROW_GAP_M) {
+          runs.push({ dir, trees: run });
+          run = [];
+        }
+        run.push(line[i]);
+      }
+      runs.push({ dir, trees: run });
+    });
+    return runs;
+  };
+
+  let runs;
+  if (bearing != null) {
+    runs = runsAlong(xy, turned(xy, SEGMENT_TILT_MAX));
+    const short = runs.filter(r => r.trees.length <= 3);
+    const loose = [].concat(...short.map(r => r.trees));
+    if (loose.length >= SEGMENT_TILT_MIN_TREES) {
+      const again = runsAlong(loose, turned(loose, SEGMENT_BEND_MAX));
+      if (again.length < short.length &&
+          again.every(r => r.trees.length === 1 || width(r) <= SEGMENT_BEND_ROW_M)) {
+        runs = runs.filter(r => r.trees.length > 3).concat(again);
+      }
+    }
   } else {
     // A file without bearings (the raw.githubusercontent fallback can serve an
     // older one): the trees' own principal axis is the best there is.
@@ -5358,43 +5437,14 @@ function segmentRows(pts, bearing) {
       sxy += (q[0] - cx) * (q[1] - cy);
     });
     const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-    dir = [Math.cos(ang), Math.sin(ang)];
+    runs = runsAlong(xy, [Math.cos(ang), Math.sin(ang)]);
   }
 
-  const rows = [];
-  const split = row => {
-    if (across(row[row.length - 1], dir) - across(row[0], dir) <= SEGMENT_ROW_MAX_M) {
-      rows.push(row);
-      return;
-    }
-    let at = 1;
-    for (let i = 2; i < row.length; i++) {
-      if (across(row[i], dir) - across(row[i - 1], dir) >
-          across(row[at], dir) - across(row[at - 1], dir)) at = i;
-    }
-    split(row.slice(0, at)); split(row.slice(at));
-  };
-  split(xy.slice().sort((a, b) => across(a, dir) - across(b, dir)));
-
-  const runs = [];
-  rows.forEach(row => {
-    const line = row.slice().sort((a, b) => along(a, dir) - along(b, dir));
-    let run = [line[0]];
-    for (let i = 1; i < line.length; i++) {
-      if (along(line[i], dir) - along(line[i - 1], dir) > SEGMENT_ROW_GAP_M) {
-        runs.push(run);
-        run = [];
-      }
-      run.push(line[i]);
-    }
-    runs.push(run);
-  });
-
-  const lngLat = (a, c) => [
-    pts[0][0] + (a * dir[0] - c * dir[1]) / (k * M),
-    pts[0][1] + (a * dir[1] + c * dir[0]) / M,
-  ];
-  return runs.map(run => {
+  return runs.map(({ dir, trees: run }) => {
+    const lngLat = (a, c) => [
+      pts[0][0] + (a * dir[0] - c * dir[1]) / (k * M),
+      pts[0][1] + (a * dir[1] + c * dir[0]) / M,
+    ];
     const lo = along(run[0], dir), hi = along(run[run.length - 1], dir);
     let inner = Infinity, outer = -Infinity;
     run.forEach(q => { inner = Math.min(inner, across(q, dir)); outer = Math.max(outer, across(q, dir)); });
