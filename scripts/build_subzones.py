@@ -1420,13 +1420,14 @@ def brackets(walk, u, n, cross):
 def street_bearing(frame, g):
     """Compass bearing of a fitted line: degrees clockwise from north, 0-180.
 
-    The map lays a segment's bands along this rather than reading a direction
-    off the trees. The trees cannot be trusted for it: a short block holds two
-    rows not much further apart than the block is long - Catherine St from
-    Water St to South St is 42 m of street with its rows 36 m apart - and an
-    uneven planting tips the trees' own axis off the street. Of the 420
-    segments with three or more trees, 99 came out more than 10 degrees off
-    and 14 more than 60, pointing nearly across the street."""
+    The map finds a segment's rows of trees against this rather than against a
+    direction read off the trees. The trees cannot be trusted for it: a short
+    block's two rows can be nearly as far apart as the block is long - the
+    trees of Catherine St from Water St to South St spread 43 m along it and
+    36 m across - and an uneven planting tips the trees' own axis off the
+    street. Of the 420 segments with three or more trees, 101 came out more
+    than 10 degrees off and 14 more than 60, pointing nearly across the
+    street."""
     s, c = g['slope'], g['offset']
     if g['axis'] == 'ew':
         a, b = frame.to_lnglat(0.0, c), frame.to_lnglat(100.0, s * 100.0 + c)
