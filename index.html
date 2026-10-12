@@ -5085,6 +5085,7 @@ async function initSegmentsLayer() {
   segmentsLayer = L.layerGroup();
   segmentLabels = L.layerGroup();
   segmentHits = [];
+  const bands = [];
   segmentsData.features.forEach(f => {
     const p = f.properties;
     const color = segmentColor(p.tree_count);
@@ -5102,27 +5103,7 @@ async function initSegmentsLayer() {
     // is straight and runs with the street: joining the trees in order only
     // adds zigzags where one is out of line.
     const runs = segmentRows(pts, p.bearing);
-    runs.forEach(run => {
-      const corners = run.corners.map(c => L.latLng(c[1], c[0]));
-      const shape = corners.length > 1
-        ? L.polygon(corners, {
-            pane: 'segmentBands', color, fillColor: color, weight: 20,
-            opacity: 1, fillOpacity: 1, lineCap: 'round', lineJoin: 'round',
-            smoothFactor: 0, interactive: false,
-          })
-        : L.circleMarker(corners[0], {
-            pane: 'segmentBands', radius: 10, weight: 0, fillColor: color,
-            fillOpacity: 1, interactive: false,
-          });
-      shape.addTo(segmentsLayer);
-      // Hit-tested by hand rather than bound to the shape - see segmentAt.
-      const lats = corners.map(c => c.lat), lngs = corners.map(c => c.lng);
-      segmentHits.push({
-        corners, popup, tip,
-        south: Math.min(...lats), north: Math.max(...lats),
-        west: Math.min(...lngs), east: Math.max(...lngs),
-      });
-    });
+    runs.forEach(run => bands.push({ run, color, popup, tip }));
 
     // The ID goes on the middle of the segment's busiest run. The middle of all
     // its trees can be a block away from every band once they are split by
@@ -5135,6 +5116,32 @@ async function initSegmentsLayer() {
       icon: L.divIcon({ className: 'segment-id', html: p.segment_id,
                         iconSize: [44, 16], iconAnchor: [22, 8] }),
     }).addTo(segmentLabels);
+  });
+
+  // Busiest runs at the bottom, lone trees on top. In feature order a corner
+  // segment's single dot could be drawn under the next street's band and
+  // vanish, its label left sitting on someone else's band.
+  bands.sort((a, b) => b.run.trees - a.run.trees);
+  bands.forEach(({ run, color, popup, tip }) => {
+    const corners = run.corners.map(c => L.latLng(c[1], c[0]));
+    const shape = corners.length > 1
+      ? L.polygon(corners, {
+          pane: 'segmentBands', color, fillColor: color, weight: 20,
+          opacity: 1, fillOpacity: 1, lineCap: 'round', lineJoin: 'round',
+          smoothFactor: 0, interactive: false,
+        })
+      : L.circleMarker(corners[0], {
+          pane: 'segmentBands', radius: 10, weight: 0, fillColor: color,
+          fillOpacity: 1, interactive: false,
+        });
+    shape.addTo(segmentsLayer);
+    // Hit-tested by hand rather than bound to the shape - see segmentAt.
+    const lats = corners.map(c => c.lat), lngs = corners.map(c => c.lng);
+    segmentHits.push({
+      corners, popup, tip,
+      south: Math.min(...lats), north: Math.max(...lats),
+      west: Math.min(...lngs), east: Math.max(...lngs),
+    });
   });
   const pane = mapInstance && mapInstance.getPane('segmentBands');
   const tiles = mapInstance && mapInstance.getPane('tilePane');
@@ -5162,9 +5169,17 @@ let segmentTip = null;
 
 function segmentAt(latlng) {
   if (!segmentsVisible || !segmentHits.length) return null;
-  const pad = 0.0004;   // a coarse cut, so only a handful get projected
-  const p = mapInstance.latLngToLayerPoint(latlng);
   const half = (_segmentBandWeight || 20) / 2;
+  // A coarse cut, so only a handful get projected: as far as the stroke
+  // reaches at this zoom, in degrees of longitude (the wider of the two). A
+  // fixed 0.0004 was narrower than the stroke at zoom 15, the map's default,
+  // and the outer part of a band answered with another segment or nothing.
+  const cos = Math.cos(latlng.lat * Math.PI / 180);
+  const mPerPx = 156543.03392 * cos / Math.pow(2, mapInstance.getZoom());
+  const pad = (half + 4) * mPerPx / (111320 * cos);
+  // Not rounded to a whole pixel the way latLngToLayerPoint does: on a
+  // rotated map whole screen pixels are not whole layer pixels.
+  const p = mapInstance.project(latlng).subtract(mapInstance.getPixelOrigin());
   let best = null;
   // Last drawn first. The bands are opaque within their faded pane, so where
   // two overlap only the one on top is seen, and that is the one to name.
@@ -5176,9 +5191,11 @@ function segmentAt(latlng) {
     const d = pp.length === 1 ? p.distanceTo(pp[0])
       : insideConvex(p, pp) ? 0
       : Math.min(...pp.map((a, i) => L.LineUtil.pointToSegmentDistance(p, a, pp[(i + 1) % pp.length])));
-    if (d <= half) return h;
+    // How far the band is painted: the SVG renderer rounds a dot's radius.
+    const reach = pp.length === 1 ? Math.max(Math.round(half), 1) : half;
+    if (d <= reach + 1e-6) return h;
     // A couple of pixels' grace past the painted edge.
-    if (d <= half + 2 && (!best || d < best.d)) best = { d, h };
+    if (d <= reach + 2 && (!best || d < best.d)) best = { d, h };
   }
   return best && best.h;
 }
