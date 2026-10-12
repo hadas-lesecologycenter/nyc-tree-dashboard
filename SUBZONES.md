@@ -1,9 +1,11 @@
 # CB3 Sub-Zones
 
 **Status: all of CB3 is drawn.** Twenty-five sub-zones cover the district —
-**all 5,308 CB3 street trees sit in exactly one**, none in two, none in
-neither, and the per-zone totals come out at 2,597 / 1,263 / 1,448, exactly
-matching the three zones the dashboard reports. The 28 mid-block sub-zones this
+**all 5,306 CB3 street trees sit in exactly one** (census of 2026-09-28), none
+in two, none in neither, and the per-zone totals come out at 2,464 / 1,372 /
+1,470, exactly matching the three zones the dashboard reports. The worked
+examples of how the method was arrived at below (the address check, the reach
+measurement, the corner trees) are figures from the August 2026 build. The 28 mid-block sub-zones this
 replaces are in the git history.
 
 ## The rule
@@ -41,30 +43,30 @@ uses three throughout, zone 2 four then two, zone 3 two and then three and two
 
 | ID | Zone | Named | Works both sides of | Segments | Trees |
 |---|---|---|---|---|---|
-| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 259 |
+| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 256 |
 | **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
 | **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 175 |
 | **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · 4th Ave to 1st Ave | 19 | 234 |
-| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 126 |
-| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 262 |
+| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 124 |
+| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 263 |
 | **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · 4th Ave to 1st Ave | 17 | 175 |
-| **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 155 |
-| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 248 |
-| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 214 |
-| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 176 |
-| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 196 |
-| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 221 |
-| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 203 |
+| **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 154 |
+| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 246 |
+| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 216 |
+| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 174 |
+| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 197 |
+| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 222 |
+| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 205 |
 | **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 206 |
-| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 301 |
-| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 187 |
+| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 305 |
+| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 188 |
 | **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 246 |
 | **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 252 |
-| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 203 |
-| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 164 |
-| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 231 |
+| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 202 |
+| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 163 |
+| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 230 |
 | **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 162 |
-| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 272 |
+| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 271 |
 | **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 36 | 190 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
@@ -72,25 +74,25 @@ between E 7th and E 10th, and park trees are not street trees.
 
 **Zone 2 is cut differently from zone 1, because it is shaped differently.**
 Delancey St is the one street here anybody navigates by and it splits the zone
-800 trees to 463, so the north band takes four sub-zones and the south two —
+938 trees to 434, so the north band takes four sub-zones and the south two —
 forcing zone 1's three columns onto both would have produced one sub-zone of
 about 100 and another of 400. The column lines are Eldridge, Essex and Clinton,
 the wide named streets a crew would recognise, and Essex is shared by both
-bands so it runs unbroken through the zone. All six land between 174 and 265
-trees, inside the range zone 1 settled at.
+bands so it runs unbroken through the zone. All six land between 188 and 305
+trees, against zone 1's 124 to 263.
 
 **Zone 3 is two street patterns, not one**, so it is divided as two. Grand St
 to Division St is the tail of the Lower East Side grid; south of East Broadway,
 Two Bridges turns about 35 degrees and runs on its own. They are fitted
 separately and cut separately, which is why the sub-zones do not line up across
 East Broadway — the streets do not either. The Chinatown strip is thin and
-holds 441 trees, so it splits east-west only, on Essex St; Two Bridges holds
-1,007 and takes five, three above Monroe St and two below, with Pike St shared
+holds 454 trees, so it splits east-west only, on Essex St; Two Bridges holds
+1,016 and takes five, three above Monroe St and two below, with Pike St shared
 by both bands.
 
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
-each: 2F is 41 segments averaging 6 trees, where 1A is 24 averaging 11. That is
+each: 2F is 35 segments averaging 5 trees, where 1A is 25 averaging 10. That is
 the street pattern, not the division.
 
 ## The zone lines
@@ -118,8 +120,8 @@ wholly in Two Bridges. No street in CB3 is split by any boundary, sub-zone or
 zone.
 
 Each line sits in the **gap between its own street's planting and the block
-beyond**, like every other edge: 18.96 m from Houston's centreline, 16.37 m
-from Grand's, 13.82 m from East Broadway's — 2.6 to 3.7 m past each street's
+beyond**, like every other edge: 18.83 m from Houston's centreline, 16.37 m
+from Grand's, 13.76 m from East Broadway's — 2.6 to 3.5 m past each street's
 outermost tree row. They used to stand 4.1, 5.4 and 8.0 m past it, which put
 East Broadway's line most of a sidewalk into the block north of it.
 
@@ -145,7 +147,7 @@ Two more things had to change to make it work at all.
   sidewalk, 32 m from the outside of one to the outside of the other. A search
   for the densest pair a roadway apart finds a sidewalk and the median and puts
   the centre 8 m out. So every row is found, and the street is the run of them
-  that holds together: 65, 80 and 37 trees on Houston, and the 11-tree scatter
+  that holds together: 66, 81 and 39 trees on Houston, and the 11-tree scatter
   of the next block over left outside. Grand St has four rows, East Broadway
   two.
 * **A zone line is offset once for the whole district**, not per stretch like
@@ -158,16 +160,17 @@ The dashboard's `getZoneId` carries the same two lines, and the build prints
 them in lng/lat under `=== zone lines` to be pasted in. Before this they were
 different lines from the ones the sub-zones used — the grid's bearing was
 −0.2683 and the dashboard's −0.2891 — and **54 trees were counted in one zone
-and drawn in another**. That is now zero of 5,308.
+and drawn in another**. That is now zero of 5,306.
 
-The cost is clearance. Houston's boundary has 0.33 m of air rather than the
+The cost is clearance. Houston's boundary has 0.37 m of air rather than the
 metre the rule asks for, and East Broadway's 0.36 m: the trees just north of
 Houston are the wedge of short blocks up to E 1st St, which run at the East
 Village bearing and so never line up parallel to it, and there is no clean gap
 to find. The build lists every edge that ends up under a metre.
 
-What a zone line cannot fix is a corner. Each still has trees of other streets
-inside it — 14 on Houston, 11 on Grand, 4 on East Broadway — and they are not
+What a zone line cannot fix is a corner. In the August 2026 build each still had
+trees of other streets inside it — 14 on Houston, 11 on Grand, 4 on East
+Broadway — and they are not
 there because the line is too far out. They are the corner trees where an
 avenue meets the divider, interleaved with the divider's own frontage: on
 Houston they run from 14.7 m out, inside Houston's own planting, which reaches
@@ -207,28 +210,72 @@ actually handed, so it is drawn as well as counted. The **Block Segments**
 layer in the map's Program Layers panel shows all 512 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
-assigned, radioed and reported by name. Within a sub-zone they are numbered
-streets first, north to south, then avenues west to east. The numbering is by
-rank, not by any fitted value, so re-running the fit cannot renumber a crew's
-assignment under them. `data/subzones.csv` carries a `segmentId` on every tree,
-so "which trees are in 1A-03" is a lookup rather than a guess.
+assigned, radioed and reported by name. Within a sub-zone they were first
+numbered streets first, north to south, then avenues west to east, by rank
+rather than by any fitted value. Rank alone does not hold an ID to its block
+from one build to the next: it rests on whichever of a segment's trees comes
+last in the census, which comes back reshuffled every week, and on the first
+rebuild the north and south sidewalks of E 5th St east of Cooper Square,
+1G-07 and 1G-06, would have swapped numbers. So **every ID ever issued is
+kept in `data/segment-ids.json`**, against the segment's sub-zone, street and
+two cross streets — by the build's own street names and by the printed label,
+so a change in how labels are printed does not lose it (a street renamed in the
+build's grid itself gets new IDs, its old numbers kept out of use). A segment
+the ledger knows keeps
+its ID, even after builds it was missing from (a block whose only tree dies
+and is replanted comes back under its old number). A segment it has never
+seen gets its sub-zone's next number, after the highest that sub-zone has
+ever issued, so a number is never handed to a different block; the build
+stops, naming the file, if the ledger is damaged rather than renumber. Replaying
+every weekly census since August through the build ends on exactly today's
+IDs. `data/subzones.csv` carries a `segmentId` on every tree, so "which trees
+are in 1A-03" is a lookup rather than a guess.
+
+The build fits its street frame to CB3's own E 14th St boundary and takes the
+Bowery and 4th Ave from its western boundary. Those runs are found by the
+coordinates of the vertices they start and end on, not by their index in the
+ring: the census workflow refetches `data/cb3-boundary.json`, and on
+2026-08-24 seven vertices on the ring's East River side were replaced by
+fifteen, moving every index past them by eight. A rebuild on the old indices
+would have fitted the frame 4° off. The walk also always starts the ring at the
+vertex it started on in August, whatever a refetched ring starts on: the first
+fit counted that vertex twice, and counting another one twice turns the frame
+by hundredths of a degree, enough to move a hundred trees. The build stops
+rather than fit the wrong run if either end vertex goes missing, if a run goes
+more than half way round the ring (a ring stored the other way round), or if
+the frame comes out at any bearing but the one it has always had.
 
 Two things make the segmentation legible rather than merely present:
 
-* **A segment is drawn as a band lying under its trees.** One band per run of
-  trees — two for an ordinary block face, because that is how a block face is
-  planted — in a pane below the markers, so every tree keeps its own colour.
-  That is the point of the shape: the map's whole job on the same screen is to
-  say what *tier* each tree is, and the layer used to paint the trees
-  themselves in the segment colour, which covered exactly that.
+* **A segment is drawn as bands lying under its trees.** One band per row of
+  trees — two for an ordinary block face, three where a street has a mall —
+  in a pane below the markers, so every tree keeps its own colour. That is the
+  point of the shape: the map's whole job on the same screen is to say what
+  *tier* each tree is, and the layer used to paint the trees themselves in the
+  segment colour, which covered exactly that.
 
-  The band is straight. A block's trees are collinear by construction, so
-  joining them in order only adds a zigzag wherever one is out of line: the
-  points are split on their principal axis into the two sidewalk runs, and each
-  run is reduced to its two extreme points along that axis. Two earlier shapes
-  read as a box sitting on the street rather than as the work — a thick bar
-  down the centreline, then a corridor polygon wide enough to enclose both
-  rows. A band under one row is neither: it lies where the trees are.
+  A band is the rectangle, lined up with its row, from the row's first tree to
+  its last and from its innermost tree to its outermost, drawn with a thick
+  rounded stroke so it pads every tree by the same margin. So **every tree on
+  a segment is inside its band at every zoom**. An earlier band was a line
+  down the middle of the row, and any tree a metre or two off that line hung
+  over its edge once the map was zoomed in.
+
+  The rows are found against the **street's own direction**, which the build
+  writes on each segment (`bearing`, from the street's fitted centreline) —
+  never against the trees' spread alone. Read off the trees, a short or
+  unevenly planted block tips tens of degrees off its street, and bands crossed
+  the roadway on the diagonal and each other in an X. But a fitted line is one
+  bearing for a whole street, and on Water St, South St, Pitt St and Allen St
+  the planted rows run 4–8° off it; so a segment of five or more trees is
+  turned, by up to 10°, to the angle that best lines all its trees up with
+  each other, at a small cost per degree so a block whose trees say little
+  stays on its street. Then the trees are split at the widest gap across the
+  street until no row is wider than 5 m (the closest kerb rows in CB3, on Pike
+  St, are 7.2 m apart), and a row is cut wherever 40 m pass without a tree.
+  Where a street bends inside one segment — E Houston St swinging down to the
+  FDR — the trees left in short pieces get a turn of their own, kept only if it
+  joins them into fewer, thin rows.
 
   Hovering and clicking a band is done by hit-testing the map's own pointer
   events rather than by binding to the shape. A band is drawn below the tree
@@ -237,15 +284,20 @@ Two things make the segmentation legible rather than merely present:
   `document.elementFromPoint` returns the canvas. Leaflet's canvas renderer
   only swallows a click that lands on a marker, so everything else reaches the
   map, which gives exactly the split the layer wants: a click on a tree opens
-  the tree, a click on the band beside it opens the segment.
+  the tree, a click on the band beside it opens the segment. The bands are
+  opaque inside a pane that is faded as a whole — so an overlap is the colour
+  of the band on top rather than a darker patch that reads as more trees — and
+  hover names that top band. Busy rows are drawn first and lone trees last.
 
   Its width is measured against the **tree markers**, not the street, because
   lying under them it is only visible in the margin it leaves around them. A
   band as wide as the row of dots is perfectly hidden by it — at the default
   zoom the markers are 9 px and touching, and a 9 px band disappeared wherever
-  a block was fully planted, which is everywhere it matters. So the width is
-  the marker's own diameter plus 11 px, widening to plus 21 px at z19 where the
-  two runs have pulled apart and the band can afford the room.
+  a block was fully planted, which is everywhere it matters. So the stroke is
+  the marker's own diameter plus 11 px, widening to plus 21 px at z19.
+
+  Each segment's ID label sits on the middle of its busiest band that does not
+  land on a label already placed at z18, so it is always on its own segment.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twenty-five
@@ -255,20 +307,20 @@ Two things make the segmentation legible rather than merely present:
 
 Drawing bands from the trees removes a class of failure too: there is no span
 to trim and no boundary to clip against, so no segment can come out undrawable.
-All 512 are drawn by construction — 888 bands, since most block faces have two
-runs — and every tree that carries a `segmentId` lies on one.
+All 512 are drawn by construction — 1,146 bands and dots — and every tree that
+carries a `segmentId` lies inside one.
 
 ## Trees on no segment
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 509 of the 5,308 (9.6%)
+claim — it says which street the tree stands on — and 506 of the 5,306 (9.5%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
 
-By zone: 2,383 of 2,470 on a segment in zone 1 (96%), 1,239 of 1,364 in zone 2
-(91%), 1,177 of 1,474 in zone 3 (80%). The gradient is the housing, not the
+By zone: 2,377 of 2,464 on a segment in zone 1 (96%), 1,245 of 1,372 in zone 2
+(91%), 1,178 of 1,470 in zone 3 (80%). The gradient is the housing, not the
 method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
 block, and the census still calls those street trees.
