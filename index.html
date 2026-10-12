@@ -5097,29 +5097,29 @@ async function initSegmentsLayer() {
       </div>`;
     const tip = `${p.segment_id} · ${p.label} — ${p.tree_count} trees`;
 
-    // A segment is drawn as a soft band lying under each of its runs of trees —
+    // A segment is drawn as a soft band lying under each of its rows of trees —
     // one per sidewalk, because that is how a block face is planted. The band
-    // is straight: a block's trees are collinear by construction, so joining
-    // them in order only adds zigzags where one is out of line.
-    segmentRuns(pts).forEach(run => {
-      const ends = run.map(c => L.latLng(c[1], c[0]));
-      const shape = ends.length > 1
-        ? L.polyline(ends, {
-            pane: 'segmentBands', color, weight: 20, opacity: 0.5,
-            lineCap: 'round', lineJoin: 'round', interactive: false,
+    // is straight and runs with the street: joining the trees in order only
+    // adds zigzags where one is out of line.
+    segmentRows(pts, p.bearing).forEach(ring => {
+      const corners = ring.map(c => L.latLng(c[1], c[0]));
+      const shape = corners.length > 1
+        ? L.polygon(corners, {
+            pane: 'segmentBands', color, fillColor: color, weight: 20,
+            opacity: 1, fillOpacity: 1, lineCap: 'round', lineJoin: 'round',
+            smoothFactor: 0, interactive: false,
           })
-        : L.circleMarker(ends[0], {
-            pane: 'segmentBands', radius: 10, weight: 0,
-            fillColor: color, fillOpacity: 0.5, interactive: false,
+        : L.circleMarker(corners[0], {
+            pane: 'segmentBands', radius: 10, weight: 0, fillColor: color,
+            fillOpacity: 1, interactive: false,
           });
       shape.addTo(segmentsLayer);
       // Hit-tested by hand rather than bound to the shape - see segmentAt.
+      const lats = corners.map(c => c.lat), lngs = corners.map(c => c.lng);
       segmentHits.push({
-        a: ends[0], b: ends[ends.length - 1], popup, tip,
-        south: Math.min(ends[0].lat, ends[ends.length - 1].lat),
-        north: Math.max(ends[0].lat, ends[ends.length - 1].lat),
-        west: Math.min(ends[0].lng, ends[ends.length - 1].lng),
-        east: Math.max(ends[0].lng, ends[ends.length - 1].lng),
+        corners, popup, tip,
+        south: Math.min(...lats), north: Math.max(...lats),
+        west: Math.min(...lngs), east: Math.max(...lngs),
       });
     });
 
@@ -5164,8 +5164,12 @@ function segmentAt(latlng) {
   for (const h of segmentHits) {
     if (latlng.lat < h.south - pad || latlng.lat > h.north + pad ||
         latlng.lng < h.west - pad || latlng.lng > h.east + pad) continue;
-    const d = L.LineUtil.pointToSegmentDistance(
-      p, mapInstance.latLngToLayerPoint(h.a), mapInstance.latLngToLayerPoint(h.b));
+    // Distance to the band's outline. No row is wider than SEGMENT_ROW_MAX_M,
+    // 22 px even at zoom 19, so a point inside a band is never more than 11 px
+    // from its outline - always within r.
+    const pp = h.corners.map(c => mapInstance.latLngToLayerPoint(c));
+    const d = pp.length === 1 ? p.distanceTo(pp[0]) : Math.min(...pp.map((a, i) =>
+      L.LineUtil.pointToSegmentDistance(p, a, pp[(i + 1) % pp.length])));
     if (d <= r && (!best || d < best.d)) best = { d, h };
   }
   return best && best.h;
@@ -5220,44 +5224,89 @@ function ensureSegmentBandPane() {
   if (!pane) pane = mapInstance.createPane('segmentBands', host);
   else if (host && pane.parentElement !== host) host.appendChild(pane);
   pane.style.zIndex = 350;
+  // The bands are drawn opaque and the PANE is faded, not each band. A band is
+  // a fill under a stroke, and fading them separately darkens the rim where
+  // they overlap; so would two bands overlapping, and darker is what this
+  // layer uses to say "more trees". Faded together, an overlap is just the
+  // colour of the band on top.
+  pane.style.opacity = 0.5;
   return pane;
 }
 
-// The two ends of each sidewalk run in a block segment.
+// The outline of each row of trees in a block segment: four [lng, lat]
+// corners, or a single point for a row of one tree.
 //
-// A block face is two rows of trees with a roadway between them, and one band
-// down the middle of both would sit on the roadway rather than on the work. So
-// the points are split on the principal axis — the direction they mostly run
-// in — and each side of it becomes a run. Each run is then reduced to its two
-// extreme points along that axis, which is what makes the band straight.
-function segmentRuns(pts) {
-  if (pts.length < 3) return [pts];
+// A block face is planted in rows — one per sidewalk, and one down the mall
+// where a street has one — with a roadway between them, and one band down the
+// middle of them all would sit on the roadway rather than on the work. So
+// each row gets a band of its own: the rectangle, lined up with the street,
+// that runs from the row's first tree to its last and from its innermost tree
+// to its outermost. The band's stroke then pads it by the same margin all round,
+// so every tree in the segment is inside its band at every zoom. A band that
+// was only a line down the row's middle let any tree a couple of metres off
+// that line hang over its edge once the map was zoomed in.
+//
+// The direction is the street's, from the build (p.bearing), not the trees'.
+// Read off the trees, a short or unevenly planted block tips tens of degrees
+// off the street, and its bands crossed the roadway on the diagonal and each
+// other in an X.
+//
+// The rows are found by splitting the trees at the widest gap across the
+// street, again and again, until no row is wider than SEGMENT_ROW_MAX_M. The
+// closest two sidewalks in CB3 are 8.5 m apart, so they always come apart; a
+// planted row is a metre or two wide, so it is only cut where its trees
+// really do stray. Splitting at the MEDIAN
+// tree, as this once did, put part of a seven-tree sidewalk in with the two
+// trees across the street from it.
+const SEGMENT_ROW_MAX_M = 5;
+
+function segmentRows(pts, bearing) {
   const rad = Math.PI / 180;
+  const M = 111320;   // metres per degree of latitude, near enough for a block
   const k = Math.cos(pts[0][1] * rad);
-  const xy = pts.map(c => [c[0] * k, c[1]]);
-  const cx = xy.reduce((s, q) => s + q[0], 0) / xy.length;
-  const cy = xy.reduce((s, q) => s + q[1], 0) / xy.length;
-  let sxx = 0, syy = 0, sxy = 0;
-  xy.forEach(q => {
-    sxx += (q[0] - cx) ** 2; syy += (q[1] - cy) ** 2;
-    sxy += (q[0] - cx) * (q[1] - cy);
-  });
-  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
-  const ux = Math.cos(ang), uy = Math.sin(ang);
-  const proj = xy.map((q, i) => ({
-    along: (q[0] - cx) * ux + (q[1] - cy) * uy,
-    across: -(q[0] - cx) * uy + (q[1] - cy) * ux,
-    pt: pts[i],
-  }));
-  const mid = proj.map(q => q.across).sort((a, b) => a - b)[proj.length >> 1];
-  const sides = [proj.filter(q => q.across < mid), proj.filter(q => q.across >= mid)]
-    .filter(s => s.length);
-  // One row, or a knot of trees with no direction to speak of: one band.
-  if (sides.length < 2 || sides.some(s => s.length < 2)) sides.splice(0, 2, proj);
-  return sides.map(s => {
-    const lo = s.reduce((a, b) => (a.along <= b.along ? a : b));
-    const hi = s.reduce((a, b) => (a.along >= b.along ? a : b));
-    return lo === hi ? [lo.pt] : [lo.pt, hi.pt];
+  const xy = pts.map(c => [(c[0] - pts[0][0]) * k * M, (c[1] - pts[0][1]) * M]);
+  let ux, uy;
+  if (bearing != null) {
+    ux = Math.sin(bearing * rad); uy = Math.cos(bearing * rad);
+  } else {
+    // A file without bearings (the raw.githubusercontent fallback can serve an
+    // older one): the trees' own principal axis is the best there is.
+    const cx = xy.reduce((s, q) => s + q[0], 0) / xy.length;
+    const cy = xy.reduce((s, q) => s + q[1], 0) / xy.length;
+    let sxx = 0, syy = 0, sxy = 0;
+    xy.forEach(q => {
+      sxx += (q[0] - cx) ** 2; syy += (q[1] - cy) ** 2;
+      sxy += (q[0] - cx) * (q[1] - cy);
+    });
+    const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+    ux = Math.cos(ang); uy = Math.sin(ang);
+  }
+  const proj = xy.map(q => ({ along: q[0] * ux + q[1] * uy, across: -q[0] * uy + q[1] * ux }))
+    .sort((a, b) => a.across - b.across);
+  const rows = [];
+  const split = row => {
+    if (row[row.length - 1].across - row[0].across <= SEGMENT_ROW_MAX_M) {
+      rows.push(row);
+      return;
+    }
+    let at = 1;
+    for (let i = 2; i < row.length; i++) {
+      if (row[i].across - row[i - 1].across > row[at].across - row[at - 1].across) at = i;
+    }
+    split(row.slice(0, at)); split(row.slice(at));
+  };
+  split(proj);
+  const lngLat = (along, across) => [
+    pts[0][0] + (along * ux - across * uy) / (k * M),
+    pts[0][1] + (along * uy + across * ux) / M,
+  ];
+  return rows.map(row => {
+    const inner = row[0].across, outer = row[row.length - 1].across;
+    let lo = Infinity, hi = -Infinity;
+    row.forEach(q => { lo = Math.min(lo, q.along); hi = Math.max(hi, q.along); });
+    // Trees standing on top of each other: a dot, not a shape too small to draw.
+    if (hi - lo < 0.5 && outer - inner < 0.5) return [lngLat((lo + hi) / 2, (inner + outer) / 2)];
+    return [lngLat(lo, inner), lngLat(hi, inner), lngLat(hi, outer), lngLat(lo, outer)];
   });
 }
 
