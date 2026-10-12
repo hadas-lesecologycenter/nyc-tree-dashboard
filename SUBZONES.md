@@ -1,9 +1,9 @@
 # CB3 Sub-Zones
 
 **Status: all of CB3 is drawn.** Twenty-five sub-zones cover the district —
-**all 5,308 CB3 street trees sit in exactly one**, none in two, none in
-neither, and the per-zone totals come out at 2,597 / 1,263 / 1,448, exactly
-matching the three zones the dashboard reports. The 28 mid-block sub-zones this
+**all 5,306 CB3 street trees sit in exactly one** (census of 2026-09-28), none
+in two, none in neither, and the per-zone totals come out at 2,464 / 1,372 /
+1,470, exactly matching the three zones the dashboard reports. The 28 mid-block sub-zones this
 replaces are in the git history.
 
 ## The rule
@@ -158,7 +158,7 @@ The dashboard's `getZoneId` carries the same two lines, and the build prints
 them in lng/lat under `=== zone lines` to be pasted in. Before this they were
 different lines from the ones the sub-zones used — the grid's bearing was
 −0.2683 and the dashboard's −0.2891 — and **54 trees were counted in one zone
-and drawn in another**. That is now zero of 5,308.
+and drawn in another**. That is now zero of 5,306.
 
 The cost is clearance. Houston's boundary has 0.33 m of air rather than the
 metre the rule asks for, and East Broadway's 0.36 m: the trees just north of
@@ -207,28 +207,59 @@ actually handed, so it is drawn as well as counted. The **Block Segments**
 layer in the map's Program Layers panel shows all 512 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
-assigned, radioed and reported by name. Within a sub-zone they are numbered
-streets first, north to south, then avenues west to east. The numbering is by
-rank, not by any fitted value, so re-running the fit cannot renumber a crew's
-assignment under them. `data/subzones.csv` carries a `segmentId` on every tree,
-so "which trees are in 1A-03" is a lookup rather than a guess.
+assigned, radioed and reported by name. Within a sub-zone they were first
+numbered streets first, north to south, then avenues west to east, by rank
+rather than by any fitted value. Rank alone did not hold an ID to its block
+from one census to the next — two segments sharing a street and an end can
+change places when a tree is planted or lost, and the two E 5th St blocks
+1G-06 and 1G-07 would have swapped on the first rebuild — so the build now
+reads the IDs it published last time and keeps each one on the segment with
+the same sub-zone, street and two ends. Only a segment the last build did not
+have gets a new number, after the highest its sub-zone has used, and a number
+is never handed to a different block. `data/subzones.csv` carries a
+`segmentId` on every tree, so "which trees are in 1A-03" is a lookup rather
+than a guess.
+
+The build fits its street frame to CB3's own E 14th St boundary and takes the
+Bowery and 4th Ave from its western boundary. Those runs are found by the
+coordinates of the vertices they start and end on, not by their index in the
+ring: the census workflow refetches `data/cb3-boundary.json`, and when NYC's
+ring gained eight vertices on its East River side on 2026-08-24, every index
+past them moved. A rebuild on the old indices would have fitted the frame 4°
+off. If either end vertex ever goes missing the build stops rather than fit
+the wrong run.
 
 Two things make the segmentation legible rather than merely present:
 
-* **A segment is drawn as a band lying under its trees.** One band per run of
-  trees — two for an ordinary block face, because that is how a block face is
-  planted — in a pane below the markers, so every tree keeps its own colour.
-  That is the point of the shape: the map's whole job on the same screen is to
-  say what *tier* each tree is, and the layer used to paint the trees
-  themselves in the segment colour, which covered exactly that.
+* **A segment is drawn as bands lying under its trees.** One band per row of
+  trees — two for an ordinary block face, three where a street has a mall —
+  in a pane below the markers, so every tree keeps its own colour. That is the
+  point of the shape: the map's whole job on the same screen is to say what
+  *tier* each tree is, and the layer used to paint the trees themselves in the
+  segment colour, which covered exactly that.
 
-  The band is straight. A block's trees are collinear by construction, so
-  joining them in order only adds a zigzag wherever one is out of line: the
-  points are split on their principal axis into the two sidewalk runs, and each
-  run is reduced to its two extreme points along that axis. Two earlier shapes
-  read as a box sitting on the street rather than as the work — a thick bar
-  down the centreline, then a corridor polygon wide enough to enclose both
-  rows. A band under one row is neither: it lies where the trees are.
+  A band is the rectangle, lined up with its row, from the row's first tree to
+  its last and from its innermost tree to its outermost, drawn with a thick
+  rounded stroke so it pads every tree by the same margin. So **every tree on
+  a segment is inside its band at every zoom**. An earlier band was a line
+  down the middle of the row, and any tree a metre or two off that line hung
+  over its edge once the map was zoomed in.
+
+  The rows are found against the **street's own direction**, which the build
+  writes on each segment (`bearing`, from the street's fitted centreline) —
+  never against the trees' spread alone. Read off the trees, a short or
+  unevenly planted block tips tens of degrees off its street, and bands crossed
+  the roadway on the diagonal and each other in an X. But a fitted line is one
+  bearing for a whole street, and on Water St, South St, Pitt St and Allen St
+  the planted rows run 4–8° off it; so a segment of five or more trees is
+  turned, by up to 10°, to the angle that best lines all its trees up with
+  each other, at a small cost per degree so a block whose trees say little
+  stays on its street. Then the trees are split at the widest gap across the
+  street until no row is wider than 5 m (the closest kerb rows in CB3, on Pike
+  St, are 7.2 m apart), and a row is cut wherever 40 m pass without a tree.
+  Where a street bends inside one segment — E Houston St swinging down to the
+  FDR — the trees left in short pieces get a turn of their own, kept only if it
+  joins them into fewer, thin rows.
 
   Hovering and clicking a band is done by hit-testing the map's own pointer
   events rather than by binding to the shape. A band is drawn below the tree
@@ -237,15 +268,20 @@ Two things make the segmentation legible rather than merely present:
   `document.elementFromPoint` returns the canvas. Leaflet's canvas renderer
   only swallows a click that lands on a marker, so everything else reaches the
   map, which gives exactly the split the layer wants: a click on a tree opens
-  the tree, a click on the band beside it opens the segment.
+  the tree, a click on the band beside it opens the segment. The bands are
+  opaque inside a pane that is faded as a whole — so an overlap is the colour
+  of the band on top rather than a darker patch that reads as more trees — and
+  hover names that top band. Busy rows are drawn first and lone trees last.
 
   Its width is measured against the **tree markers**, not the street, because
   lying under them it is only visible in the margin it leaves around them. A
   band as wide as the row of dots is perfectly hidden by it — at the default
   zoom the markers are 9 px and touching, and a 9 px band disappeared wherever
-  a block was fully planted, which is everywhere it matters. So the width is
-  the marker's own diameter plus 11 px, widening to plus 21 px at z19 where the
-  two runs have pulled apart and the band can afford the room.
+  a block was fully planted, which is everywhere it matters. So the stroke is
+  the marker's own diameter plus 11 px, widening to plus 21 px at z19.
+
+  Each segment's ID label sits on the middle of its busiest band that does not
+  land on a label already placed at z18, so it is always on its own segment.
 * **Colour carries how many trees are on the block**, on a single-hue ramp from
   pale (1–4) to navy (30+), with a legend under the layer's checkbox. Sub-zone
   identity is already on the map as the sub-zone polygon, and twenty-five
@@ -255,20 +291,20 @@ Two things make the segmentation legible rather than merely present:
 
 Drawing bands from the trees removes a class of failure too: there is no span
 to trim and no boundary to clip against, so no segment can come out undrawable.
-All 512 are drawn by construction — 888 bands, since most block faces have two
-runs — and every tree that carries a `segmentId` lies on one.
+All 512 are drawn by construction — 1,146 bands and dots — and every tree that
+carries a `segmentId` lies inside one.
 
 ## Trees on no segment
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 509 of the 5,308 (9.6%)
+claim — it says which street the tree stands on — and 506 of the 5,306 (9.5%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
 
-By zone: 2,383 of 2,470 on a segment in zone 1 (96%), 1,239 of 1,364 in zone 2
-(91%), 1,177 of 1,474 in zone 3 (80%). The gradient is the housing, not the
+By zone: 2,377 of 2,464 on a segment in zone 1 (96%), 1,245 of 1,372 in zone 2
+(91%), 1,178 of 1,470 in zone 3 (80%). The gradient is the housing, not the
 method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
 block, and the census still calls those street trees.
