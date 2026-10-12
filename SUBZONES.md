@@ -1,9 +1,9 @@
 # CB3 Sub-Zones
 
 **Status: all of CB3 is drawn.** Twenty-five sub-zones cover the district —
-**all 5,306 CB3 street trees sit in exactly one** (census of 2026-09-28), none
-in two, none in neither, and the per-zone totals come out at 2,464 / 1,372 /
-1,470, exactly matching the three zones the dashboard reports. The worked
+**all 5,300 CB3 street trees sit in exactly one** (census of 2026-10-12), none
+in two, none in neither, and the per-zone totals come out at 2,466 / 1,368 /
+1,466, exactly matching the three zones the dashboard reports. The worked
 examples of how the method was arrived at below (the address check, the reach
 measurement, the corner trees) are figures from the August 2026 build. The 28 mid-block sub-zones this
 replaces are in the git history.
@@ -160,7 +160,7 @@ The dashboard's `getZoneId` carries the same two lines, and the build prints
 them in lng/lat under `=== zone lines` to be pasted in. Before this they were
 different lines from the ones the sub-zones used — the grid's bearing was
 −0.2683 and the dashboard's −0.2891 — and **54 trees were counted in one zone
-and drawn in another**. That is now zero of 5,306.
+and drawn in another**. That is now zero of 5,300.
 
 The cost is clearance. Houston's boundary has 0.37 m of air rather than the
 metre the rule asks for, and East Broadway's 0.36 m: the trees just north of
@@ -207,7 +207,7 @@ one road. 1A, 1D and 1G now read "4th Ave to 1st Ave" and 1J reads "Bowery to
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 512 of them.
+layer in the map's Program Layers panel shows all 511 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they were first
@@ -244,6 +244,22 @@ by hundredths of a degree, enough to move a hundred trees. The build stops
 rather than fit the wrong run if either end vertex goes missing, if a run goes
 more than half way round the ring (a ring stored the other way round), or if
 the frame comes out at any bearing but the one it has always had.
+
+A street with no two-row fit of its own — Chrystie, Forsyth, Eldridge, Orchard,
+Ludlow, Clinton, Jackson and the FDR in Chinatown; Catherine, Rutgers,
+Jefferson and Clinton in Two Bridges; Columbia St; E 14th St and the FDR in the
+East Village — is seeded from the old grid. It used to take the fitted slope of
+its family through the old grid's offset, and an offset is where the line
+crosses E 14th St, nearly 2 km north of Chinatown, so the 2026-10-12 census,
+which tipped the Chinatown avenues by 0.0048, slid Ludlow and Orchard St 9 m
+across their blocks and would have emptied 3A-07 and 3B-24. **Those lines are
+now pinned in `data/pinned-street-lines.json`**: the first build to place a
+seeded line records it there, and every later build draws it exactly there,
+whatever the census does. The pins were taken from the 2026-09-28 build, which
+the pinned build reproduces byte for byte. To move one on purpose, delete its
+entry and rebuild. Against that build, the 2026-10-12 census moves 4 corner
+trees (at Canal and Essex, and Canal and Norfolk) and retires 3A-07, whose only
+tree now counts on Essex St; its number stays reserved.
 
 Two things make the segmentation legible rather than merely present:
 
@@ -307,20 +323,20 @@ Two things make the segmentation legible rather than merely present:
 
 Drawing bands from the trees removes a class of failure too: there is no span
 to trim and no boundary to clip against, so no segment can come out undrawable.
-All 512 are drawn by construction — 1,146 bands and dots — and every tree that
+All of them are drawn by construction, as bands and dots, and every tree that
 carries a `segmentId` lies inside one.
 
 ## Trees on no segment
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 506 of the 5,306 (9.5%)
+claim — it says which street the tree stands on — and 507 of the 5,300 (9.6%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
 
-By zone: 2,377 of 2,464 on a segment in zone 1 (96%), 1,245 of 1,372 in zone 2
-(91%), 1,178 of 1,470 in zone 3 (80%). The gradient is the housing, not the
+By zone: 2,380 of 2,466 on a segment in zone 1 (97%), 1,241 of 1,368 in zone 2
+(91%), 1,172 of 1,466 in zone 3 (80%). The gradient is the housing, not the
 method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
 block, and the census still calls those street trees.
@@ -427,6 +443,8 @@ street names and as a starting guess for each fit.
 | `data/subzone-segments.geojson` | One MultiPoint per block segment — the trees it holds |
 | `data/cb3-street-lines.json` | The fitted centrelines, for inspection |
 | `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
+| `data/segment-ids.json` | Every segment ID ever issued; commit it with the data |
+| `data/pinned-street-lines.json` | Where each seeded street is drawn; commit it with the data |
 
 ## Rebuilding
 
