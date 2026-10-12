@@ -9720,7 +9720,7 @@ function cb3Contains(lat, lng) {
 // rule every sub-zone boundary follows, so E Houston St sits wholly in zone 2
 // and Grand St wholly in zone 3 instead of being split down the roadway. Each
 // carries its own bearing, measured from its own tree rows; the two differ by
-// 0.0007 and stay 710 m apart across CB3, so they cannot cross inside it.
+// 0.0005 and stay 710 m apart across CB3, so they cannot cross inside it.
 // Zone 1's northern edge (14th St) needs no line of its own — it is the CB3
 // boundary itself, which cb3Contains() already enforces.
 const CB3_GRID_REF_LNG = -73.9850;   // meridian the edgeLat values below are quoted at

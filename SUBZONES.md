@@ -3,7 +3,9 @@
 **Status: all of CB3 is drawn.** Twenty-five sub-zones cover the district —
 **all 5,306 CB3 street trees sit in exactly one** (census of 2026-09-28), none
 in two, none in neither, and the per-zone totals come out at 2,464 / 1,372 /
-1,470, exactly matching the three zones the dashboard reports. The 28 mid-block sub-zones this
+1,470, exactly matching the three zones the dashboard reports. The worked
+examples of how the method was arrived at below (the address check, the reach
+measurement, the corner trees) are figures from the August 2026 build. The 28 mid-block sub-zones this
 replaces are in the git history.
 
 ## The rule
@@ -41,30 +43,30 @@ uses three throughout, zone 2 four then two, zone 3 two and then three and two
 
 | ID | Zone | Named | Works both sides of | Segments | Trees |
 |---|---|---|---|---|---|
-| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 259 |
+| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 256 |
 | **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
 | **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 175 |
 | **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · 4th Ave to 1st Ave | 19 | 234 |
-| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 126 |
-| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 262 |
+| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 124 |
+| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 263 |
 | **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · 4th Ave to 1st Ave | 17 | 175 |
-| **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 155 |
-| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 248 |
-| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 214 |
-| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 176 |
-| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 196 |
-| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 221 |
-| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 203 |
+| **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 154 |
+| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 246 |
+| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 216 |
+| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 174 |
+| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 197 |
+| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 222 |
+| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 205 |
 | **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 206 |
-| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 301 |
-| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 187 |
+| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 305 |
+| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 188 |
 | **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 246 |
 | **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 252 |
-| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 203 |
-| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 164 |
-| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 231 |
+| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 202 |
+| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 163 |
+| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 230 |
 | **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 162 |
-| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 272 |
+| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 271 |
 | **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 36 | 190 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
@@ -118,8 +120,8 @@ wholly in Two Bridges. No street in CB3 is split by any boundary, sub-zone or
 zone.
 
 Each line sits in the **gap between its own street's planting and the block
-beyond**, like every other edge: 18.96 m from Houston's centreline, 16.37 m
-from Grand's, 13.82 m from East Broadway's — 2.6 to 3.7 m past each street's
+beyond**, like every other edge: 18.83 m from Houston's centreline, 16.37 m
+from Grand's, 13.76 m from East Broadway's — 2.6 to 3.5 m past each street's
 outermost tree row. They used to stand 4.1, 5.4 and 8.0 m past it, which put
 East Broadway's line most of a sidewalk into the block north of it.
 
@@ -145,7 +147,7 @@ Two more things had to change to make it work at all.
   sidewalk, 32 m from the outside of one to the outside of the other. A search
   for the densest pair a roadway apart finds a sidewalk and the median and puts
   the centre 8 m out. So every row is found, and the street is the run of them
-  that holds together: 65, 80 and 37 trees on Houston, and the 11-tree scatter
+  that holds together: 66, 81 and 39 trees on Houston, and the 11-tree scatter
   of the next block over left outside. Grand St has four rows, East Broadway
   two.
 * **A zone line is offset once for the whole district**, not per stretch like
@@ -160,14 +162,15 @@ different lines from the ones the sub-zones used — the grid's bearing was
 −0.2683 and the dashboard's −0.2891 — and **54 trees were counted in one zone
 and drawn in another**. That is now zero of 5,306.
 
-The cost is clearance. Houston's boundary has 0.33 m of air rather than the
+The cost is clearance. Houston's boundary has 0.37 m of air rather than the
 metre the rule asks for, and East Broadway's 0.36 m: the trees just north of
 Houston are the wedge of short blocks up to E 1st St, which run at the East
 Village bearing and so never line up parallel to it, and there is no clean gap
 to find. The build lists every edge that ends up under a metre.
 
-What a zone line cannot fix is a corner. Each still has trees of other streets
-inside it — 14 on Houston, 11 on Grand, 4 on East Broadway — and they are not
+What a zone line cannot fix is a corner. In the August 2026 build each still had
+trees of other streets inside it — 14 on Houston, 11 on Grand, 4 on East
+Broadway — and they are not
 there because the line is too far out. They are the corner trees where an
 avenue meets the divider, interleaved with the divider's own frontage: on
 Houston they run from 14.7 m out, inside Houston's own planting, which reaches
@@ -209,25 +212,32 @@ layer in the map's Program Layers panel shows all 512 of them.
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they were first
 numbered streets first, north to south, then avenues west to east, by rank
-rather than by any fitted value. Rank alone did not hold an ID to its block
-from one census to the next — two segments sharing a street and an end can
-change places when a tree is planted or lost, and the two E 5th St blocks
-1G-06 and 1G-07 would have swapped on the first rebuild — so the build now
-reads the IDs it published last time and keeps each one on the segment with
-the same sub-zone, street and two ends. Only a segment the last build did not
-have gets a new number, after the highest its sub-zone has used, and a number
-is never handed to a different block. `data/subzones.csv` carries a
-`segmentId` on every tree, so "which trees are in 1A-03" is a lookup rather
-than a guess.
+rather than by any fitted value. Rank alone does not hold an ID to its block
+from one build to the next: it rests on whichever of a segment's trees comes
+last in the census, which comes back reshuffled every week, and on the first
+rebuild the north and south sidewalks of E 5th St east of Cooper Square,
+1G-07 and 1G-06, would have swapped numbers. So **every ID ever issued is
+kept in `data/segment-ids.json`**, against the segment's sub-zone, street and
+two cross streets — by the build's own street names and by the printed label,
+so renaming either alone does not lose it. A segment the ledger knows keeps
+its ID, even after builds it was missing from (a block whose only tree dies
+and is replanted comes back under its old number). A segment it has never
+seen gets its sub-zone's next number, after the highest that sub-zone has
+ever issued, so a number is never handed to a different block. Replaying
+every weekly census since August through the build ends on exactly today's
+IDs. `data/subzones.csv` carries a `segmentId` on every tree, so "which trees
+are in 1A-03" is a lookup rather than a guess.
 
 The build fits its street frame to CB3's own E 14th St boundary and takes the
 Bowery and 4th Ave from its western boundary. Those runs are found by the
 coordinates of the vertices they start and end on, not by their index in the
-ring: the census workflow refetches `data/cb3-boundary.json`, and when NYC's
-ring gained eight vertices on its East River side on 2026-08-24, every index
-past them moved. A rebuild on the old indices would have fitted the frame 4°
-off. If either end vertex ever goes missing the build stops rather than fit
-the wrong run.
+ring: the census workflow refetches `data/cb3-boundary.json`, and on
+2026-08-24 seven vertices on the ring's East River side were replaced by
+fifteen, moving every index past them by eight. A rebuild on the old indices
+would have fitted the frame 4° off. The build stops rather than fit the wrong
+run if either end vertex goes missing, if a run goes more than half way round
+the ring (a ring stored the other way round), or if E 14th St comes out more
+than 2 m from straight.
 
 Two things make the segmentation legible rather than merely present:
 

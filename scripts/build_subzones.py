@@ -57,6 +57,9 @@ Output:
   data/subzones.csv          — treeId,subzoneId,segmentId,zone,lat,lng,species
   data/subzone-segments.geojson — one MultiPoint per block segment: its trees,
                                and the bearing of the street they stand on
+  data/segment-ids.json      — every segment ID ever issued, by sub-zone, street
+                               and the two cross streets; read and extended by
+                               each build so an ID stays on its block
 """
 
 import collections
@@ -73,6 +76,7 @@ OUT_LINES = os.path.join(ROOT, 'data', 'cb3-street-lines.json')
 OUT_GEOJSON = os.path.join(ROOT, 'data', 'subzones.geojson')
 OUT_CSV = os.path.join(ROOT, 'data', 'subzones.csv')
 OUT_SEGMENTS = os.path.join(ROOT, 'data', 'subzone-segments.geojson')
+SEGMENT_IDS = os.path.join(ROOT, 'data', 'segment-ids.json')
 
 REF_LNG, REF_LAT = -73.9850, 40.7200
 M_PER_DEG_LNG = 84400.0
@@ -83,11 +87,11 @@ M_PER_DEG_LAT = 110540.0
 # St, so the run wraps past the end.
 #
 # These used to be index ranges, and the census workflow refetches the
-# boundary: on 2026-08-24 NYC's ring gained eight vertices on its East River
-# side, every index past them moved, and a rebuild would have fitted the
-# frame to part of E 14th St and the next stretch of the Bowery - 4 degrees off
-# and 23 m from straight. A vertex that is no longer in the ring stops the
-# build instead (see boundary_run).
+# boundary: on 2026-08-24 seven vertices on the East River side of NYC's ring
+# were replaced by fifteen, every index past them moved by eight, and a
+# rebuild would have fitted the frame to part of E 14th St and the 4th Ave
+# stretch below it - 4 degrees off and 23 m from straight. A vertex that is no
+# longer in the ring stops the build instead (see boundary_run).
 E14_RUN = ((-73.9899044043667, 40.7344430508388), (-73.9803415163641, 40.7304507216317))
 
 # The other exact run: CB3's western boundary, from Grand St up to E 14th St.
@@ -590,11 +594,16 @@ def boundary_run(boundary, start, end):
     `end`, inclusive, wrapping past the end of the list.
 
     The ring is walked as it is stored, closing vertex and all - which is how
-    the frame was first fitted, so the same vertices give the same frame. A
-    vertex that is not in the ring exactly once stops the build: a run that
-    has silently moved is worse than no build at all."""
+    the frame was first fitted, so the same vertices give the same frame. The
+    build stops rather than fit a run that has silently moved: if a vertex is
+    not in the ring exactly once (the closing copy of the first aside), or if
+    the walk goes more than half way round, which is what a ring stored in
+    the opposite direction does."""
+    closed = len(boundary) > 1 and boundary[0] == boundary[-1]
+    ring = boundary[:-1] if closed else boundary
+
     def find(pt):
-        hits = [i for i, p in enumerate(boundary)
+        hits = [i for i, p in enumerate(ring)
                 if abs(p[0] - pt[0]) < 1e-9 and abs(p[1] - pt[1]) < 1e-9]
         if len(hits) != 1:
             raise SystemExit('CB3 boundary: vertex %r is there %d times, not once - '
@@ -606,6 +615,10 @@ def boundary_run(boundary, start, end):
     while i != j:
         i = (i + 1) % len(boundary)
         run.append(i)
+    if len(run) > len(boundary) // 2:
+        raise SystemExit('CB3 boundary: the run from %r to %r goes %d vertices of %d '
+                         'round the ring - is the ring stored the other way round?'
+                         % (start, end, len(run), len(boundary)))
     return run
 
 
@@ -1536,6 +1549,9 @@ def main():
     divs = grid['dividers']
 
     frame = Frame(boundary)
+    if frame.e14_rms > 2.0:
+        raise SystemExit('CB3 boundary: the E 14th St run is %.1f m from straight - '
+                         'not the run the frame was built on' % frame.e14_rms)
     print('Grid frame from CB3\'s own E 14th St run: bearing %.4f deg, '
           'straight to %.2f m RMS over %d boundary vertices'
           % (frame.bearing, frame.e14_rms, len(boundary_run(boundary, *E14_RUN))))
@@ -1581,7 +1597,8 @@ def main():
         is not the same thing, because two of them cross: the Grand St and East
         Broadway lines meet at lng -73.98245, and east of there East Broadway
         runs NORTH of Grand. A cascade files everything in that wedge under Two
-        Bridges. No tree falls in it today - the two tests agree on all 5,308 -
+        Bridges. No tree fell in it when this was written - the two tests
+        agreed on all 5,308 trees of the August 2026 census -
         but the sub-zone polygons are clipped with these half-planes, so the
         tree that decides which zone it is in should be tested with them too."""
         for rid, bounds in REGION_BOUNDS.items():
@@ -1686,12 +1703,21 @@ def main():
     BIG = 4000.0
     features, csv_rows, edge_records, segments = [], [], [], []
 
-    # The IDs the last build handed out, by sub-zone and label - see seg_order.
-    previous = {}
-    if os.path.exists(OUT_SEGMENTS):
-        for f in json.load(open(OUT_SEGMENTS))['features']:
-            p = f['properties']
-            previous[(p['subzone_id'], p['label'])] = p['segment_id']
+    # Every segment ID ever issued - see seg_order. Before the ledger existed
+    # the IDs lived only in the published segments file, so the first build to
+    # write it takes all of that file's IDs, by label, including those of
+    # segments this build does not find.
+    if os.path.exists(SEGMENT_IDS):
+        ledger = json.load(open(SEGMENT_IDS))
+    else:
+        ledger = {'ids': {}, 'labels': {}, 'high': {}}
+        if os.path.exists(OUT_SEGMENTS):
+            for f in json.load(open(OUT_SEGMENTS))['features']:
+                p = f['properties']
+                ledger['labels']['%s|%s' % (p['subzone_id'], p['label'])] = p['segment_id']
+                n = int(p['segment_id'].split('-')[1])
+                ledger['high'][p['subzone_id']] = max(ledger['high'].get(p['subzone_id'], 0), n)
+    taken = set()
     tree_segment = {}
 
     # ---- one offset per shared stretch of each boundary street -------------
@@ -1921,29 +1947,34 @@ def main():
         # avenues west to east, numbered within the sub-zone. Ordering is by
         # RANK - which street comes before which - not by any fitted value.
         #
-        # Rank alone does not keep an ID on its block from one census to the
-        # next, though: two segments that share a street and an end can swap
-        # places when a tree is planted or lost, and on the first rebuild the
-        # two E 5th St blocks 1G-06 and 1G-07 did exactly that. So a segment
-        # that was in the last build - same sub-zone, same street, same two
-        # ends - keeps the ID it had, and only a segment the last build did
-        # not have gets a new number, after the highest the sub-zone has used.
-        # A number is never handed to a different block.
+        # Rank alone does not keep an ID on its block from one build to the
+        # next, though. rank holds the position of whichever of a segment's
+        # trees came last in census order, and the census comes back
+        # reshuffled: on the first rebuild the north and south sidewalks of
+        # E 5th St east of Cooper Square, 1G-07 and 1G-06, swapped numbers.
+        # So every ID issued is kept in data/segment-ids.json against its
+        # sub-zone, street and two cross streets - by the build's own names,
+        # and by the printed label as well, so a rename of either alone does
+        # not lose it - and a segment found there keeps its ID even if it was
+        # missing from the builds in between. A segment never seen before gets
+        # the sub-zone's next number, after the highest it has ever issued, so
+        # a number is never handed to a different block.
         def seg_order(key):
             name, axis = key[0], key[1]
             return (0 if axis == 'ew' else 1, walk[name]['offset'], rank[key])
 
-        mine = {n for (sid, _), n in previous.items() if sid == spec['id']}
-        fresh = max([int(n.split('-')[1]) for n in mine] + [0])
-        used = set()
         for key in sorted(segs, key=seg_order):
             name, axis, lo, hi = key
             members = segs[key]
-            seg_id = previous.get((spec['id'], segment_label(name, lo, hi)))
-            if seg_id is None or seg_id in used:
-                fresh += 1
-                seg_id = '%s-%02d' % (spec['id'], fresh)
-            used.add(seg_id)
+            ident = '|'.join((spec['id'], name, lo or '', hi or ''))
+            label = '%s|%s' % (spec['id'], segment_label(name, lo, hi))
+            seg_id = ledger['ids'].get(ident) or ledger['labels'].get(label)
+            if seg_id is None or seg_id in taken:
+                ledger['high'][spec['id']] = ledger['high'].get(spec['id'], 0) + 1
+                seg_id = '%s-%02d' % (spec['id'], ledger['high'][spec['id']])
+            taken.add(seg_id)
+            ledger['ids'][ident] = seg_id
+            ledger['labels'][label] = seg_id
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
             segments.append(segment_feature(members, walk, name, axis,
@@ -2031,6 +2062,9 @@ def main():
         json.dump({'type': 'FeatureCollection', 'features': features}, fh)
     with open(OUT_SEGMENTS, 'w') as fh:
         json.dump({'type': 'FeatureCollection', 'features': segments}, fh)
+    with open(SEGMENT_IDS, 'w') as fh:
+        json.dump(ledger, fh, indent=1, sort_keys=True)
+        fh.write('\n')
     with open(OUT_CSV, 'w', newline='') as fh:
         w = csv.writer(fh)
         w.writerow(['treeId', 'subzoneId', 'segmentId', 'zone',
