@@ -55,7 +55,8 @@ Output:
   data/cb3-street-lines.json — fitted centrelines, for inspection
   data/subzones.geojson      — one Polygon per sub-zone, clipped to CB3
   data/subzones.csv          — treeId,subzoneId,segmentId,zone,lat,lng,species
-  data/subzone-segments.geojson — one MultiPoint per block segment: its trees
+  data/subzone-segments.geojson — one MultiPoint per block segment: its trees,
+                               and the bearing of the street they stand on
 """
 
 import collections
@@ -1416,7 +1417,26 @@ def brackets(walk, u, n, cross):
     return (lo[1] if lo else None, hi[1] if hi else None, lo[0] if lo else -1e9)
 
 
-def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id):
+def street_bearing(frame, g):
+    """Compass bearing of a fitted line: degrees clockwise from north, 0-180.
+
+    The map lays a segment's bands along this rather than reading a direction
+    off the trees. The trees cannot be trusted for it: a short block holds two
+    rows not much further apart than the block is long - Catherine St from
+    Water St to South St is 42 m of street with its rows 36 m apart - and an
+    uneven planting tips the trees' own axis off the street. Of the 420
+    segments with three or more trees, 99 came out more than 10 degrees off
+    and 14 more than 60, pointing nearly across the street."""
+    s, c = g['slope'], g['offset']
+    if g['axis'] == 'ew':
+        a, b = frame.to_lnglat(0.0, c), frame.to_lnglat(100.0, s * 100.0 + c)
+    else:
+        a, b = frame.to_lnglat(c, 0.0), frame.to_lnglat(s * 100.0 + c, 100.0)
+    return math.degrees(math.atan2((b[0] - a[0]) * M_PER_DEG_LNG,
+                                   (b[1] - a[1]) * M_PER_DEG_LAT)) % 180.0
+
+
+def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
     ends = [pretty(lo) if lo else 'the district edge',
             pretty(hi) if hi else 'the district edge']
     return {
@@ -1430,6 +1450,7 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id):
             'to': ends[1],
             'label': '%s, %s to %s' % (pretty(name), ends[0], ends[1]),
             'tree_count': len(members),
+            'bearing': round(street_bearing(frame, walk[name]), 1),
         },
         'geometry': {
             'type': 'MultiPoint',
@@ -1863,7 +1884,7 @@ def main():
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
             segments.append(segment_feature(members, walk, name, axis,
-                                            lo, hi, spec, seg_id))
+                                            lo, hi, spec, seg_id, frame))
 
         def in_order(names, axis):
             return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
