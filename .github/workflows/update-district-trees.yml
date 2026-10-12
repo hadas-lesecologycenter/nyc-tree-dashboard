@@ -1,0 +1,52 @@
+name: Update Other District Trees
+
+# Builds data/districts/cdNNN.json, the per-district tree files behind the
+# map's "Other Districts" toggle. Kept apart from update-census.yml so a slow
+# or failed district run never holds up the CB3 data the rest of the
+# dashboard depends on.
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Mondays 7am UTC, an hour after the CB3 update
+  workflow_dispatch:
+    inputs:
+      districts:
+        description: 'Districts to rebuild, space-separated BoroCD codes (e.g. "101 102"). Leave blank for every Manhattan district except CB3.'
+        required: false
+        default: ''
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build district tree files
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+          DISTRICTS: ${{ github.event.inputs.districts }}
+        run: python3 scripts/fetch_district_trees.py $DISTRICTS
+
+      # Runs even when a district failed: that district keeps its previous
+      # file, the ones that built still get committed, and the run stays red.
+      - name: Commit if data changed
+        if: ${{ !cancelled() }}
+        run: |
+          [ -d data/districts ] || { echo "No district files built."; exit 0; }
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/districts
+          if git diff --staged --quiet; then
+            echo "No changes to district tree data."
+          else
+            git commit -m "Update district tree data $(date +%Y-%m-%d)"
+            git pull --rebase && git push
+          fi
