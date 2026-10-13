@@ -283,7 +283,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': CB3_EDGE,           # 4th Ave / Bowery, CB3's own western edge
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 14th St to E 10th St',
     },
     {
         'id': '1B', 'zone': 1, 'region': 'EV',
@@ -291,7 +290,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': '1 AVE',            # shared with 1A's eastern edge
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 14th St to E 10th St',
     },
     {
         'id': '1C', 'zone': 1, 'region': 'EV',
@@ -299,7 +297,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': 'AVE B',            # shared with 1B's eastern edge
         'east': CB3_EDGE,           # the East River, CB3's own eastern edge
-        'bounds': 'Ave C to the East River, E 14th St to E 10th St',
     },
 
     # The 10th-to-7th band. 'E 10 ST' again, now as the northern edge: it is
@@ -312,7 +309,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': CB3_EDGE,           # the Bowery / Cooper Sq below Astor Pl
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 10th St to E 7th St',
     },
     {
         'id': '1E', 'zone': 1, 'region': 'EV',
@@ -320,7 +316,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 10th St to E 7th St',
     },
     {
         'id': '1F', 'zone': 1, 'region': 'EV',
@@ -328,7 +323,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 10th St to E 7th St',
     },
 
     # The 7th-to-4th band. 'E 7 ST' over the same three columns as above, so
@@ -340,7 +334,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': CB3_EDGE,
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 7th St to E 4th St',
     },
     {
         'id': '1H', 'zone': 1, 'region': 'EV',
@@ -348,7 +341,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 7th St to E 4th St',
     },
     {
         'id': '1I', 'zone': 1, 'region': 'EV',
@@ -356,7 +348,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 7th St to E 4th St',
     },
 
     # The 4th-to-Houston band, and the bottom of zone 1. Its southern edge is
@@ -368,7 +359,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': CB3_EDGE,
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 4th St to E Houston St',
     },
     {
         'id': '1K', 'zone': 1, 'region': 'EV',
@@ -376,7 +366,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 4th St to E Houston St',
     },
     {
         'id': '1L', 'zone': 1, 'region': 'EV',
@@ -384,7 +373,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 4th St to E Houston St',
     },
 
     # ---- zone 2, the Lower East Side: Houston St down to Grand St ----------
@@ -399,9 +387,8 @@ SUBZONES = [
         'id': '2A', 'zone': 2, 'region': 'LES',
         'north': DIVIDER + 'houston',
         'south': 'DELANCEY ST',
-        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
+        'west': CB3_EDGE,           # CB3's own western edge
         'east': 'ELDRIDGE ST',
-        'bounds': 'Chrystie St to Eldridge St, E Houston St to Delancey St',
     },
     {
         'id': '2B', 'zone': 2, 'region': 'LES',
@@ -409,7 +396,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'ELDRIDGE ST',
         'east': 'ESSEX ST',
-        'bounds': 'Allen St to Essex St, E Houston St to Delancey St',
     },
     {
         'id': '2C', 'zone': 2, 'region': 'LES',
@@ -417,7 +403,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'ESSEX ST',
         'east': 'CLINTON ST',
-        'bounds': 'Norfolk St to Clinton St, E Houston St to Delancey St',
     },
     {
         'id': '2D', 'zone': 2, 'region': 'LES',
@@ -425,7 +410,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'CLINTON ST',
         'east': CB3_EDGE,
-        'bounds': 'Attorney St to the East River, E Houston St to Delancey St',
     },
     {
         'id': '2E', 'zone': 2, 'region': 'LES',
@@ -433,7 +417,6 @@ SUBZONES = [
         'south': DIVIDER + 'grand',
         'west': CB3_EDGE,
         'east': 'ESSEX ST',
-        'bounds': 'Chrystie St to Essex St, Delancey St to Grand St',
     },
     {
         'id': '2F', 'zone': 2, 'region': 'LES',
@@ -441,27 +424,25 @@ SUBZONES = [
         'south': DIVIDER + 'grand',
         'west': 'ESSEX ST',
         'east': CB3_EDGE,
-        'bounds': 'Norfolk St to the East River, Delancey St to Grand St',
     },
 
     # ---- zone 3, Grand St south, across two grids --------------------------
-    # Zone 3 is two street patterns, not one. Grand St to Division St is the
+    # Zone 3 is two street patterns, not one. Grand St to East Broadway is the
     # tail of the Lower East Side grid; south of East Broadway, Two Bridges
     # turns about 35 degrees and runs on its own. They are fitted separately
     # and divided separately, which is why the sub-zones do not line up across
     # East Broadway - the streets do not either.
     #
-    # The Chinatown strip holds 441 trees and is thin, so it splits east-west
-    # only, on Eldridge St. Two Bridges holds 1,007 and takes five: three
+    # The Chinatown strip holds 454 trees and is thin, so it splits east-west
+    # only, on Eldridge St. Two Bridges holds 1,012 and takes five: three
     # between East Broadway and Monroe St, two below it, with Pike St shared by
     # both bands.
     {
         'id': '3A', 'zone': 3, 'region': 'CH',
         'north': DIVIDER + 'grand',
         'south': DIVIDER + 'eastBroadway',
-        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
+        'west': CB3_EDGE,           # CB3's own western edge
         'east': 'ELDRIDGE ST',
-        'bounds': 'Bowery to Essex St, Grand St to Division St',
     },
     {
         'id': '3B', 'zone': 3, 'region': 'CH',
@@ -469,7 +450,6 @@ SUBZONES = [
         'south': DIVIDER + 'eastBroadway',
         'west': 'ELDRIDGE ST',
         'east': CB3_EDGE,
-        'bounds': 'Norfolk St to the East River, Grand St to Division St',
     },
     {
         'id': '3C', 'zone': 3, 'region': 'TB',
@@ -477,7 +457,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': CB3_EDGE,
         'east': 'PIKE ST',
-        'bounds': 'Catherine St to Pike St, East Broadway to Monroe St',
     },
     {
         'id': '3D', 'zone': 3, 'region': 'TB',
@@ -485,7 +464,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': 'PIKE ST',
         'east': 'MONTGOMERY ST',
-        'bounds': 'Rutgers St to Montgomery St, East Broadway to Monroe St',
     },
     {
         'id': '3E', 'zone': 3, 'region': 'TB',
@@ -493,7 +471,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': 'MONTGOMERY ST',
         'east': CB3_EDGE,
-        'bounds': 'Gouverneur St to the East River, East Broadway to Monroe St',
     },
     {
         'id': '3F', 'zone': 3, 'region': 'TB',
@@ -501,7 +478,6 @@ SUBZONES = [
         'south': CB3_EDGE,          # the East River waterfront
         'west': CB3_EDGE,
         'east': 'PIKE ST',
-        'bounds': 'Catherine St to Pike St, Monroe St to the waterfront',
     },
     {
         'id': '3G', 'zone': 3, 'region': 'TB',
@@ -509,7 +485,6 @@ SUBZONES = [
         'south': CB3_EDGE,
         'west': 'PIKE ST',
         'east': CB3_EDGE,
-        'bounds': 'Rutgers St to the East River, Monroe St to the waterfront',
     },
 ]
 
@@ -1572,8 +1547,12 @@ def segment_label(name, lo, hi):
     return '%s, %s to %s' % ((pretty(name),) + tuple(segment_ends(lo, hi)))
 
 
-def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
-    ends = segment_ends(lo, hi)
+def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame, ends=None):
+    ends = ends or segment_ends(lo, hi)
+    if ends[0] == ends[1]:
+        label = '%s at %s' % (pretty(name), ends[0])
+    else:
+        label = '%s, %s to %s' % (pretty(name), ends[0], ends[1])
     return {
         'type': 'Feature',
         'properties': {
@@ -1583,7 +1562,7 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
             'street': pretty(name),
             'from': ends[0],
             'to': ends[1],
-            'label': segment_label(name, lo, hi),
+            'label': label,
             'tree_count': len(members),
             'bearing': round(street_bearing(frame, walk[name]), 1),
         },
@@ -1862,6 +1841,125 @@ def step_edge(frame, walk, boundary, owner_b, other_b, key, members):
         owner_b['segs'][key].extend(members)
         return True
     return False
+
+
+# ------------------------------------------------------------ block names --
+
+def open_ends(frame, walk, name, lo, hi, members, ring, zone_lines, bounds, boundary):
+    """segment_ends, with an open end named after the zone line it stops at.
+
+    A block with no cross street beyond it in its region was printed as
+    running to "the district edge", and 37 of those ends were not: Ludlow St
+    south of Broome St stops at Grand St, where zone 3 starts. So the street's
+    own line is followed out from its last tree until it leaves the sub-zone.
+    If it is still in CB3 there, the zone line it has crossed names the end.
+    A block that is only the corner at a zone line - Forsyth St's trees on the
+    north side of E Houston St - comes out with both ends the same, and is
+    printed as "Forsyth St at E Houston St"."""
+    ends = segment_ends(lo, hi)
+    g = walk[name]
+    for k, cross in ((0, lo), (1, hi)):
+        if cross:
+            continue
+        sign = -1.0 if k == 0 else 1.0
+        along = [t['u'] if g['axis'] == 'ew' else t['n'] for t in members]
+        start = min(along) if k == 0 else max(along)
+        for step in range(1, 1500):
+            a = start + sign * 2.0 * step
+            u, n = ((a, g['slope'] * a + g['offset']) if g['axis'] == 'ew'
+                    else (g['slope'] * a + g['offset'], a))
+            lng, lat = frame.to_lnglat(u, n)
+            if point_in_poly(lng, lat, ring):
+                continue
+            if point_in_poly(lng, lat, boundary):
+                crossed = [(abs(n - (zone_lines[key]['slope'] * u + zone_lines[key]['offset'])), key)
+                           for key, keep_south in bounds
+                           if (n < zone_lines[key]['slope'] * u + zone_lines[key]['offset']) == keep_south]
+                if crossed:
+                    ends[k] = pretty(DIVIDER_OWNER[min(crossed)[1]][1])
+            break
+    return ends
+
+
+ACROSS_M = 22.0   # from a tree to past the far kerb of the widest boundary street
+
+
+def one_sided(frame, g, members, boundary):
+    """Is CB3 only one side of this street here? True when, for most of its
+    trees, the point ACROSS_M square to the street on one side or the other
+    is outside the district: E 14th St, whose north side is in CB6, and the
+    Bowery and 4th Ave, whose west side is in CB2. It goes by the street's
+    bearing only, not its fitted position, which for E 14th St is the old
+    grid's rough line."""
+    h = math.hypot(1.0, g['slope'])
+    nu, nn = ((-g['slope'] / h, 1.0 / h) if g['axis'] == 'ew'
+              else (1.0 / h, -g['slope'] / h))
+    out = 0
+    for t in members:
+        sides = [point_in_poly(*frame.to_lnglat(t['u'] + k * ACROSS_M * nu,
+                                                t['n'] + k * ACROSS_M * nn), boundary)
+                 for k in (-1.0, 1.0)]
+        if sides.count(False) == 1:
+            out += 1
+    return out * 2 > len(members)
+
+
+# Colours a map needs so that no two sub-zones sharing a street look alike.
+# Sharing means at least this much edge; two that only touch at a corner may
+# take the same colour.
+SHARED_EDGE_M = 5.0
+
+
+def shared_edge_lengths(frame, rings):
+    """Metres of edge each pair of sub-zones has in common, by matching
+    collinear stretches of their rings."""
+    segs = {sid: [(frame.to_un(*r[i]), frame.to_un(*r[i + 1])) for i in range(len(r) - 1)]
+            for sid, r in rings.items()}
+    out = collections.Counter()
+    ids = sorted(segs)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            for p, q in segs[a]:
+                L = math.hypot(q[0] - p[0], q[1] - p[1])
+                if L < 0.01:
+                    continue
+                ux, uy = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+                for r, w in segs[b]:
+                    if max(abs((x[0] - p[0]) * uy - (x[1] - p[1]) * ux) for x in (r, w)) > 0.5:
+                        continue
+                    t1 = (r[0] - p[0]) * ux + (r[1] - p[1]) * uy
+                    t2 = (w[0] - p[0]) * ux + (w[1] - p[1]) * uy
+                    over = min(L, max(t1, t2)) - max(0.0, min(t1, t2))
+                    if over > 0:
+                        out[(a, b)] += over
+    return out
+
+
+def four_colour(ids, edges):
+    """A colour 0-3 per sub-zone, no two neighbours alike: most-constrained
+    first, with backtracking, so it cannot settle for a fifth colour."""
+    nb = {i: set() for i in ids}
+    for a, b in edges:
+        nb[a].add(b)
+        nb[b].add(a)
+    order = sorted(ids, key=lambda i: (-len(nb[i]), i))
+    got = {}
+
+    def place(k):
+        if k == len(order):
+            return True
+        i = order[k]
+        for colour in range(4):
+            if all(got.get(j) != colour for j in nb[i]):
+                got[i] = colour
+                if place(k + 1):
+                    return True
+                del got[i]
+        return False
+
+    if not place(0):
+        raise SystemExit('sub-zones need more than four colours')
+    return got
 
 
 # ------------------------------------------------------------------ naming --
@@ -2461,22 +2559,51 @@ def main():
             ledger['labels'][label] = seg_id
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
+            # The ledger above keys on segment_label, which prints an open end
+            # as "the district edge" whatever it meets; only the label shown
+            # names the zone line.
+            ends = open_ends(frame, walk, name, lo, hi, members, ring, divider_lines,
+                             REGION_BOUNDS[rid], boundary)
             segments.append(segment_feature(members, walk, name, axis,
-                                            lo, hi, spec, seg_id, frame))
+                                            lo, hi, spec, seg_id, frame, ends))
+
+        # West to east and north to south where this sub-zone's trees stand,
+        # not by intercept: the Bowery, 3rd Ave and 4th Ave are three bearings
+        # that meet at Cooper Square, and their intercepts at E 14th St say
+        # nothing about their order further south.
+        mid_u = sum(t['u'] for t in inside) / max(1, len(inside))
+        mid_n = sum(t['n'] for t in inside) / max(1, len(inside))
 
         def in_order(names, axis):
-            return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
-                    if g['axis'] == axis and n in names]
+            return sorted((n for n in names if walk[n]['axis'] == axis),
+                          key=lambda n: walk[n]['slope'] * (mid_u if axis == 'ew' else mid_n)
+                          + walk[n]['offset'])
 
+        # A sub-zone is named by the streets it holds, avenues first - "Ave A
+        # to Ave B, E 14th St to E 11th St" - and every street named is worked
+        # both sides. The names used to be written by hand from the edges, and
+        # an edge street belongs to one side of it only: 1A was "E 14th St to
+        # E 10th St" while E 10th St was all in 1D, 3B and 3E ran "to the East
+        # River" without reaching it, and in all 25 the name disagreed with
+        # the streets listed under it. E 14th St and the Bowery are the
+        # exception to "both sides", since CB3 stops at their centreline; they
+        # are listed in one_side.
         streets_txt = name_span(in_order(held_ew, 'ew'))
         avenues_txt = name_span(in_order(held_ns, 'ns'))
+        label = ', '.join(x for x in (avenues_txt, streets_txt) if x)
+        by_street = collections.defaultdict(list)
+        for (name, axis, lo, hi), members in segs.items():
+            by_street[name].extend(members)
+        one_side = [pretty(n) for n in in_order(held_ew, 'ew') + in_order(held_ns, 'ns')
+                    if one_sided(frame, walk[n], by_street[n], boundary)]
         props = {
             'subzone_id': spec['id'],
             'zone': spec['zone'],
             'region': rid,
             'region_label': regions[rid]['label'],
-            'label': spec['bounds'],
-            'bounds': spec['bounds'],
+            'label': label,
+            'bounds': label,
+            'one_side': ' and '.join(one_side),
             'streets': streets_txt,
             'avenues': avenues_txt,
             'contains': ', '.join(x for x in (streets_txt, avenues_txt) if x),
@@ -2492,10 +2619,9 @@ def main():
             csv_rows.append((t['tree_id'], spec['id'], tree_segment.get(t['tree_id'], ''),
                              spec['zone'], t['lat'], t['lng'], t['species']))
 
-        print('  %-4s %2d blocks %4d trees (%d off any segment)   bounds: %s'
-              % (spec['id'], len(segs), len(inside), props['off_segment'],
-                 spec['bounds']))
-        print('       contains: %s' % props['contains'])
+        print('  %-4s %2d blocks %4d trees (%d off any segment)   %s%s'
+              % (spec['id'], len(segs), len(inside), props['off_segment'], label,
+                 '  (one side only: %s)' % props['one_side'] if one_side else ''))
         for side in ('north', 'south', 'west', 'east'):
             if side in used:
                 name, f, half, clear, floor = used[side]
@@ -2507,6 +2633,19 @@ def main():
                       % (side, pretty(name), half, clear, note))
             else:
                 print('       %-5s edge %s' % (side, 'CB3 district boundary'))
+
+    # Four colours, no two sub-zones that share a street alike. The map
+    # colours by this; the old fills shaded each zone's sub-zones from one hue
+    # and 31 of 36 neighbouring pairs came out nearly the same.
+    shared = shared_edge_lengths(frame, {f['properties']['subzone_id']: f['geometry']['coordinates'][0]
+                                         for f in features})
+    colours = four_colour([f['properties']['subzone_id'] for f in features],
+                          [k for k, v in shared.items() if v >= SHARED_EDGE_M])
+    for f in features:
+        f['properties']['color_index'] = colours[f['properties']['subzone_id']]
+    print('\n%d pairs of sub-zones share a street; colours: %s'
+          % (sum(1 for v in shared.values() if v >= SHARED_EDGE_M),
+             ' '.join('%s=%d' % kv for kv in sorted(colours.items()))))
 
     # ---- validation --------------------------------------------------------
     print('\n=== validation')

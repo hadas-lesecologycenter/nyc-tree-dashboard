@@ -623,17 +623,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
   height: 8px;
   border-radius: 2px;
 }
-.leaflet-tooltip.subzone-tag {
-	background: transparent;
-	border: none;
-	box-shadow: none;
-	font-family: 'Lora', serif;
-	font-size: 14px;
-	font-weight: 700;
-	color: #2c2a24;
-	text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
-	}
-.leaflet-tooltip.subzone-tag:before { display: none; }
+/* A sub-zone's ID, on the sub-zone itself. It sits on a white box edged in
+   the sub-zone line colour: a bare ID with a white glow behind it was hard to
+   pick out of a dense run of tree dots, and the square box in a serif face
+   keeps it from being read as a block's ID, which is a rounder, smaller pill. */
+.subzone-tag {
+  font-family: 'Lora', serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  color: #2c2a24;
+  background: rgba(255,255,255,0.9);
+  border: 1.5px solid #3d3a35;
+  border-radius: 3px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
 .leaflet-tooltip-top:before,
 .leaflet-tooltip-bottom:before,
 .leaflet-tooltip-left:before,
@@ -2883,6 +2889,8 @@ let subzonesLayer = null;
 let subzonesVisible = false;
 let subzonesLoading = false;
 let subzonesData = null;
+let subzoneLabels = null;
+let subzonePopup = null;
 let segmentsLayer = null;
 let segmentsVisible = false;
 let segmentsLoading = false;
@@ -4867,6 +4875,8 @@ function openMapTreeDetail(tree) {
     ['Type', isForestryTree ? '🌳 Forestry Live Tree' : '📋 2015 Census Tree'],
     plantedLabel               ? ['Planted',         plantedLabel]                              : null,
     tree.address               ? ['Address',         tree.address]                              : null,
+    inCB3                      ? ['Sub-Zone',        '<span id="mtp-subzone">' +
+                                   (subzonesData ? treeSubzoneHtml(tree) : '…') + '</span>']  : null,
     tree.health                ? ['Health',          tree.health]                               : null,
     tree.tree_dbh              ? ['Trunk DBH',       tree.tree_dbh + '"']                       : null,
     tree.status                ? ['Status',          tree.status]                               : null,
@@ -4881,6 +4891,19 @@ function openMapTreeDetail(tree) {
       '<span style="font-size:11px;color:var(--text3);flex-shrink:0">' + r[0] + '</span>' +
       '<span style="font-size:11px;color:var(--text);text-align:right">' + r[1] + '</span></div>';
   }).join('');
+  // The sub-zones file is fetched the first time a tree is opened if the
+  // Sub-Zones layer has not brought it in already; the layer itself is left
+  // as it is. The row is filled in when it arrives, unless another tree has
+  // been opened since.
+  if (inCB3 && !subzonesData) {
+    const fill = html => {
+      const el = document.getElementById('mtp-subzone');
+      if (el && window._currentMapDetailTree === tree) el.innerHTML = html;
+    };
+    loadSubzonesData()
+      .then(() => fill(treeSubzoneHtml(tree)))
+      .catch(err => { console.error('Sub-zones load failed:', err); fill('Not available'); });
+  }
 
   // Care history — search all areas (scraped + manual) for this tree
   const tid = String(tree.tree_id || '');
@@ -5163,52 +5186,299 @@ function toggleFireHydrantsFromPanel() {
 // the edge of the district the edge IS CB3's official boundary, which is why
 // the western side of the work area follows 4th Ave and the Bowery exactly.
 
-// Sub-zones inherit their zone's colour and separate from each other by
-// lightness, so the three zones stay readable as zones at a glance while
-// individual sub-zones remain distinguishable when you zoom in.
-function subzoneShade(zoneId, index, total) {
-  const base = { 1: 217, 2: 162, 3: 6 }[zoneId] || 217;
-  const light = 34 + 30 * (total > 1 ? index / (total - 1) : 0.5);
-  return `hsl(${base} 58% ${light}%)`;
+// Each sub-zone is filled with one of four pale colours, picked in the build
+// (properties.color_index) so that no two sub-zones sharing a street get the
+// same one. Colour says only "this is not the sub-zone next door"; which zone
+// a sub-zone belongs to is said by its ID and by the heavier line drawn along
+// the zone boundaries. So the fills keep clear of every colour that already
+// means something here - the reds, oranges and greens of the tree tiers, the
+// cyan of a cared-for tree, the blues of the block bands - and are yellow,
+// violet, pink and aqua instead. At SUBZONE_FILL_OPACITY over the light
+// basemap any two of them are at least dE2000 10 apart and each is at least
+// 11 from the bare basemap. Shading one hue per zone, as this once did, left
+// most neighbours within dE2000 2 of each other: the same colour to the eye.
+const SUBZONE_FILLS = ['#f5d464', '#8a7cc2', '#f17fab', '#62cec4'];
+const SUBZONE_FILL_OPACITY = 0.3;
+// Every outline is the same warm near-black, which no tree marker and no band
+// uses. A red outline running along a row of red tier-3 dots, or a green one
+// along tier-1 dots, read as more trees.
+const SUBZONE_LINE = '#3d3a35';
+const SUBZONE_LINE_WEIGHT = 1;
+const SUBZONE_SEAM_WEIGHT = 4;
+// The IDs are left off the map below this zoom. Further out the sub-zones are
+// only a few dozen pixels across and their IDs pile on top of each other - 16
+// pairs of them overlap at zoom 13 and 83 at zoom 12. From 14 in none do.
+const SUBZONE_LABEL_ZOOM = 14;
+// How far apart, in metres, two sub-zones' edges may lie and still count as
+// the same street line. The build cuts neighbours from the same street lines,
+// so in practice they coincide; this only absorbs rounding.
+const SUBZONE_EDGE_TOL_M = 1.5;
+// Two sub-zones that meet for less than this - a corner, or the sliver where
+// two street lines cross just short of each other - are not neighbours when
+// colours are worked out here.
+const SUBZONE_NEIGHBOUR_MIN_M = 5;
+
+async function loadSubzonesData() {
+  if (subzonesData) return subzonesData;
+  const resp = await fetchData(SUBZONES_URL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const data = await resp.json();
+  if (!subzonesData) subzonesData = data;
+  return subzonesData;
 }
 
-async function initSubzonesLayer() {
-  if (!subzonesData) {
-    const resp = await fetchData(SUBZONES_URL);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    subzonesData = await resp.json();
+// A sub-zone's polygons, each as GeoJSON rings - [outer, ...holes] of [lng,
+// lat] points. Every sub-zone is a single Polygon today; a MultiPolygon is read
+// too, so a sub-zone the build splits in two does not break the map.
+function subzonePolygons(f) {
+  const g = f.geometry || {};
+  if (g.type === 'Polygon') return [g.coordinates];
+  if (g.type === 'MultiPolygon') return g.coordinates;
+  return [];
+}
+
+function subzoneContains(f, lat, lng) {
+  return subzonePolygons(f).some(rings =>
+    _pipTest(lat, lng, rings[0]) && !rings.slice(1).some(hole => _pipTest(lat, lng, hole)));
+}
+
+// The sub-zone feature a point falls in, or null outside them all.
+function subzoneAt(lat, lng) {
+  if (!subzonesData || !isFinite(lat) || !isFinite(lng)) return null;
+  return subzonesData.features.find(f => subzoneContains(f, lat, lng)) || null;
+}
+
+// Every stretch of edge two sub-zones share, as { i, j, length, pieces }: the
+// two features' indexes, how many metres they share, and the shared stretches
+// as [[lat, lng], [lat, lng]] lines. Found by laying each edge of one sub-zone
+// against each edge of the other in a flat metre grid: where the two run
+// along the same line, the overlap of their spans is shared. Neighbours need
+// not be cut at the same corners - one may run on past a cross street the
+// other turns at - which is why edges are matched by line and not by vertex.
+function subzoneSharedEdges(features) {
+  const first = features.length && subzonePolygons(features[0])[0];
+  const lat0 = first ? first[0][0][1] : 40.72;
+  const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110540;
+  const tol = SUBZONE_EDGE_TOL_M;
+  const edges = features.map(f => {
+    const out = [];
+    subzonePolygons(f).forEach(rings => rings.forEach(ring => {
+      for (let n = 0; n + 1 < ring.length; n++) {
+        const ax = ring[n][0] * kx, ay = ring[n][1] * ky;
+        const bx = ring[n + 1][0] * kx, by = ring[n + 1][1] * ky;
+        const len = Math.hypot(bx - ax, by - ay);
+        if (len < 1e-6) continue;
+        out.push({ ax, ay, bx, by, len, ux: (bx - ax) / len, uy: (by - ay) / len,
+                   minx: Math.min(ax, bx), maxx: Math.max(ax, bx),
+                   miny: Math.min(ay, by), maxy: Math.max(ay, by) });
+      }
+    }));
+    return out;
+  });
+  const toLatLng = (x, y) => [y / ky, x / kx];
+  const shared = [];
+  for (let i = 0; i < features.length; i++) {
+    for (let j = i + 1; j < features.length; j++) {
+      const pieces = [];
+      let length = 0;
+      edges[i].forEach(e => edges[j].forEach(o => {
+        if (o.maxx < e.minx - tol || o.minx > e.maxx + tol ||
+            o.maxy < e.miny - tol || o.miny > e.maxy + tol) return;
+        // Both ends of the other edge have to lie on this edge's line...
+        const off = (x, y) => Math.abs((x - e.ax) * e.uy - (y - e.ay) * e.ux);
+        if (off(o.ax, o.ay) > tol || off(o.bx, o.by) > tol) return;
+        // ...and the two spans along it have to overlap.
+        const t1 = (o.ax - e.ax) * e.ux + (o.ay - e.ay) * e.uy;
+        const t2 = (o.bx - e.ax) * e.ux + (o.by - e.ay) * e.uy;
+        const lo = Math.max(0, Math.min(t1, t2)), hi = Math.min(e.len, Math.max(t1, t2));
+        if (hi - lo <= tol) return;
+        length += hi - lo;
+        pieces.push([toLatLng(e.ax + e.ux * lo, e.ay + e.uy * lo),
+                     toLatLng(e.ax + e.ux * hi, e.ay + e.uy * hi)]);
+      }));
+      if (pieces.length) shared.push({ i, j, length, pieces });
+    }
   }
-  const perZone = {};
-  subzonesData.features.forEach(f => {
-    const z = f.properties.zone;
-    perZone[z] = (perZone[z] || 0) + 1;
-  });
-  const seen = {};
-  subzonesLayer = L.layerGroup();
-  subzonesData.features.forEach(f => {
-    const p = f.properties;
-    seen[p.zone] = (seen[p.zone] || 0);
-    const color = subzoneShade(p.zone, seen[p.zone]++, perZone[p.zone]);
-    L.geoJSON(f, { style: { color, weight: 2, fillColor: color, fillOpacity: 0.18 } })
-      .bindPopup(() => subzonePopupHtml(p), { maxWidth: 320 })
-      .on('popupopen', e => {
-        // The block list needs the segments file; fetch it the first time a
-        // sub-zone is opened, then fill the popup in place.
-        if (segmentsData) return;
-        loadSegmentsData()
-          .then(() => e.popup.setContent(subzonePopupHtml(p)))
-          .catch(err => console.error('Block list load failed:', err));
-      })
-      .bindTooltip(p.subzone_id, { permanent: true, direction: 'center', className: 'subzone-tag' })
-      .addTo(subzonesLayer);
-  });
-  console.log(`Sub-zones: ${subzonesLayer.getLayers().length} loaded`);
+  return shared;
 }
 
-// What a sub-zone holds, for its popup: the counts, then every block in it
-// with its trees, busiest first. A block's ID zooms the map to it with the
-// Block Segments layer on, so a crew lead can go from "you have 2D" to the
-// block face itself.
+// Each feature's colour, 0-3. The build's color_index when every sub-zone has
+// one; otherwise - a data file from before the build wrote it - worked out
+// here, greedily: the sub-zones with the most neighbours first, each taking
+// the lowest colour none of its neighbours has. Four colours are always
+// enough on this grid, but should a fifth be called for it wraps round onto
+// the first rather than leaving a sub-zone unfilled.
+function subzoneColorIndexes(features, shared) {
+  const given = features.map(f => f.properties.color_index);
+  if (given.every(c => Number.isInteger(c) && c >= 0)) return given;
+  const nb = features.map(() => new Set());
+  shared.forEach(s => {
+    if (s.length < SUBZONE_NEIGHBOUR_MIN_M) return;
+    nb[s.i].add(s.j); nb[s.j].add(s.i);
+  });
+  const out = features.map(() => -1);
+  features.map((_, k) => k)
+    .sort((a, b) => nb[b].size - nb[a].size || a - b)
+    .forEach(k => {
+      const taken = new Set([...nb[k]].map(n => out[n]));
+      let c = 0;
+      while (taken.has(c)) c++;
+      out[k] = c;
+    });
+  return out;
+}
+
+// Where a sub-zone's ID goes: the centre of its area, or - when the shape is
+// bent enough for that to fall outside it, an L, say - the middle of the
+// widest stretch of the sub-zone on the centre's latitude.
+function subzoneLabelPoint(f) {
+  let best = null;
+  subzonePolygons(f).forEach(rings => {
+    const r = rings[0];
+    let a = 0, x = 0, y = 0;
+    for (let n = 0; n + 1 < r.length; n++) {
+      const c = r[n][0] * r[n + 1][1] - r[n + 1][0] * r[n][1];
+      a += c; x += (r[n][0] + r[n + 1][0]) * c; y += (r[n][1] + r[n + 1][1]) * c;
+    }
+    if (a && (!best || Math.abs(a) > Math.abs(best.a))) best = { a, ring: r, lng: x / (3 * a), lat: y / (3 * a) };
+  });
+  if (!best) return null;
+  if (subzoneContains(f, best.lat, best.lng)) return L.latLng(best.lat, best.lng);
+  const xs = [];
+  const r = best.ring;
+  for (let n = 0; n + 1 < r.length; n++) {
+    const [x1, y1] = r[n], [x2, y2] = r[n + 1];
+    if ((y1 > best.lat) !== (y2 > best.lat)) xs.push(x1 + (best.lat - y1) * (x2 - x1) / (y2 - y1));
+  }
+  xs.sort((a, b) => a - b);
+  let mid = best.lng, width = -1;
+  for (let n = 0; n + 1 < xs.length; n += 2) {
+    if (xs[n + 1] - xs[n] > width) { width = xs[n + 1] - xs[n]; mid = (xs[n] + xs[n + 1]) / 2; }
+  }
+  return L.latLng(best.lat, mid);
+}
+
+// The sub-zones are drawn to be looked through, not touched. The areas,
+// their outlines and the zone boundaries are all non-interactive and lie in a
+// pane of their own under the trees and the block bands, so a tap on a tree
+// opens the tree and a tap on a band opens the block, exactly as with the
+// layer off. When they sat on top as clickable shapes they took every click
+// on the map, trees and bands included, and opened the sub-zone instead.
+//
+// A click that reaches the map - one that missed every tree, see
+// segmentAt - opens the sub-zone it fell in (subzonePointerClick).
+//
+// The boundary between two zones is drawn again on top of the sub-zone
+// outlines, SUBZONE_SEAM_WEIGHT wide, so E Houston St and Grand St stand out
+// from the streets that only divide sub-zones. It is found from the data
+// rather than drawn from CB3_ZONES: every stretch of edge shared by two
+// sub-zones of different zones.
+async function initSubzonesLayer() {
+  await loadSubzonesData();
+  ensureSubzonePane();
+  const features = subzonesData.features;
+  const shared = subzoneSharedEdges(features);
+  const colorIndex = subzoneColorIndexes(features, shared);
+
+  subzonesLayer = L.layerGroup();
+  subzoneLabels = L.layerGroup();
+  features.forEach((f, k) => {
+    const p = f.properties;
+    const latlngs = subzonePolygons(f).map(rings => rings.map(ring => ring.map(c => [c[1], c[0]])));
+    L.polygon(latlngs, {
+      pane: 'subzoneAreas', interactive: false,
+      color: SUBZONE_LINE, weight: SUBZONE_LINE_WEIGHT, opacity: 1,
+      fillColor: SUBZONE_FILLS[colorIndex[k] % SUBZONE_FILLS.length],
+      fillOpacity: SUBZONE_FILL_OPACITY,
+    }).addTo(subzonesLayer);
+    const at = subzoneLabelPoint(f);
+    if (at) L.marker(at, {
+      interactive: false, keyboard: false,
+      icon: L.divIcon({ className: 'subzone-tag', html: p.subzone_id,
+                        iconSize: [28, 18], iconAnchor: [14, 9] }),
+    }).addTo(subzoneLabels);
+  });
+
+  const seams = shared
+    .filter(s => features[s.i].properties.zone !== features[s.j].properties.zone)
+    .flatMap(s => s.pieces);
+  if (seams.length) {
+    L.polyline(seams, {
+      pane: 'subzoneAreas', interactive: false,
+      color: SUBZONE_LINE, weight: SUBZONE_SEAM_WEIGHT, opacity: 1,
+      lineCap: 'round', lineJoin: 'round',
+    }).addTo(subzonesLayer);
+  }
+  console.log(`Sub-zones: ${features.length} loaded, ${shared.length} shared edges, ` +
+    `${seams.length} zone-boundary pieces`);
+}
+
+// The pane the sub-zones are drawn in: above the basemap, below the block
+// bands (350) and below the tree canvas in the overlay pane (400). Like the
+// band pane it has to be a sibling of the tile pane, or the rotate plugin
+// leaves it outside its rotate pane and the basemap covers it - see
+// ensureSegmentBandPane - and it is re-homed on every call for the same
+// reason.
+function ensureSubzonePane() {
+  if (!mapInstance) return null;
+  const tiles = mapInstance.getPane('tilePane');
+  const host = (tiles && tiles.parentElement) || mapInstance.getPane('mapPane');
+  let pane = mapInstance.getPane('subzoneAreas');
+  if (!pane) pane = mapInstance.createPane('subzoneAreas', host);
+  else if (host && pane.parentElement !== host) host.appendChild(pane);
+  pane.style.zIndex = 340;
+  pane.style.pointerEvents = 'none';
+  return pane;
+}
+
+function syncSubzoneLabels() {
+  if (!subzonesVisible || !subzoneLabels) return;
+  const show = mapInstance.getZoom() >= SUBZONE_LABEL_ZOOM;
+  if (show && !mapInstance.hasLayer(subzoneLabels)) subzoneLabels.addTo(mapInstance);
+  if (!show && mapInstance.hasLayer(subzoneLabels)) subzoneLabels.remove();
+}
+
+// A click on the map that no tree took. A block band gets it first when the
+// Block Segments layer is on and the click is on one - segmentPointerClick
+// opens the block, and this leaves it be. Anywhere else inside a sub-zone
+// opens that sub-zone's popup where the click was. The block list needs the
+// segments file, which is fetched the first time it is wanted and put into
+// the popup when it arrives.
+function subzonePointerClick(e) {
+  if (!subzonesVisible || !subzonesData) return;
+  if (segmentAt(e.latlng)) return;
+  const f = subzoneAt(e.latlng.lat, e.latlng.lng);
+  if (!f) return;
+  const p = f.properties;
+  const popup = L.popup({ maxWidth: 320 })
+    .setLatLng(e.latlng)
+    .setContent(subzonePopupHtml(p))
+    .openOn(mapInstance);
+  subzonePopup = popup;
+  if (segmentsData) return;
+  loadSegmentsData()
+    .then(() => { if (popup.isOpen()) popup.setContent(subzonePopupHtml(p)); })
+    .catch(err => console.error('Block list load failed:', err));
+}
+
+// The sub-zone a tree is in, for the tree's own panel. At street zoom the
+// sub-zone's ID is usually off screen, so a crew standing at a tree would
+// otherwise have to zoom out to find whose it is. Found by point-in-polygon
+// against data/subzones.geojson.
+function treeSubzoneHtml(tree) {
+  const f = subzoneAt(parseFloat(tree.latitude || tree.lat),
+                      parseFloat(tree.longitude || tree.lng || tree.lon));
+  if (!f) return 'Outside the sub-zones';
+  return `<b>${f.properties.subzone_id}</b> · Zone ${f.properties.zone}`;
+}
+
+// What a sub-zone holds, for its popup: the streets it runs between, the
+// counts, then every block in it with its trees, busiest first. p.label names
+// the first and last street it holds each way - "Ave A to Ave B, E 14th St to
+// E 11th St" - and a sub-zone works both sidewalks of every one of them, which
+// one line under the label says once for all. A block's ID zooms the map to
+// it with the Block Segments layer on, so a crew lead can go from "you have
+// 2D" to the block face itself.
 function subzonePopupHtml(p) {
   const onBlocks = p.tree_count - (p.off_segment || 0);
   const pct = p.tree_count ? Math.round(100 * onBlocks / p.tree_count) : 0;
@@ -5227,9 +5497,8 @@ function subzonePopupHtml(p) {
   }
   return `<div style="font-family:'Nunito',sans-serif;min-width:220px">
     <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
-    <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.bounds || p.label}</div>
-    ${p.contains ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
-      Works both sides of ${p.contains}</div>` : ''}
+    <div style="font-size:12px;font-weight:700;color:#2c2a24;margin-top:3px">${p.label}</div>
+    <div style="font-size:11px;color:#6b6456;margin-top:2px">Both sides of every street named${p.one_side ? `, except ${p.one_side}: CB3 side only` : ''}.</div>
     <div style="font-size:11px;color:#6b6456;margin-top:4px">
       Zone ${p.zone} · ${p.region_label}<br>
       <b style="color:#2c2a24">${p.tree_count} trees</b> · ${p.blocks} blocks · ${pct}% of trees on a block
@@ -5268,13 +5537,27 @@ function toggleSubzonesFromPanel() {
   subzonesVisible = shouldShow;
   if (!subzonesVisible) {
     if (subzonesLayer) subzonesLayer.remove();
+    if (subzoneLabels) subzoneLabels.remove();
+    if (subzonePopup) { mapInstance.closePopup(subzonePopup); subzonePopup = null; }
     return;
   }
-  if (subzonesLayer) { subzonesLayer.addTo(mapInstance); return; }
+  if (subzonesLayer) {
+    ensureSubzonePane();
+    subzonesLayer.addTo(mapInstance); syncSubzoneLabels(); return;
+  }
   if (subzonesLoading) return;
   subzonesLoading = true;
   initSubzonesLayer()
-    .then(() => { if (subzonesVisible) subzonesLayer.addTo(mapInstance); })
+    .then(() => {
+      // Listened for even if the layer was switched off while loading: this
+      // is the only place they are added, and both handlers check
+      // subzonesVisible themselves.
+      mapInstance.on('zoomend', syncSubzoneLabels);
+      mapInstance.on('click', subzonePointerClick);
+      if (!subzonesVisible) return;
+      subzonesLayer.addTo(mapInstance);
+      syncSubzoneLabels();
+    })
     .catch(err => {
       console.error('Sub-zones load failed:', err);
       if (cb) cb.checked = false;

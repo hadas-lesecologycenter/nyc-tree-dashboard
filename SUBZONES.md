@@ -23,14 +23,27 @@ Houston they are named streets both ways, but the rule is the same.
 
 So a sub-zone owns its northern street and its eastern avenue and neither of
 the other two, which tiles the district without ever splitting a street down
-the middle. "4th Ave to 1st Ave, E 14th St to E 10th St" means E 14th down to
-E 11th, both sides, and 3rd, 2nd and 1st Ave, both sides.
+the middle.
 
-A sub-zone is named for the avenues it holds, so consecutive sub-zones read as
-a continuous run — 4th to 1st, then A to B, then C to the river. In the build
-script each side names the *line* that closes it instead, which is what makes
-neighbours abut exactly: 1A's eastern edge and 1B's western edge are both
-`1 AVE`, one line, so they can neither gap nor overlap.
+**A sub-zone is named for the streets it holds**, avenues first, and the map
+says "both sides of every street named". "4th Ave to 1st Ave, E 14th St to
+E 11th St" is 4th, 3rd, 2nd and 1st Ave and E 14th down to E 11th St. E 10th
+St, which closes 1A, is not in the name, because it belongs to 1D below. The
+build writes each name from the blocks the sub-zone actually has. Until
+October 2026 the names were written by hand from the edges, and since an edge
+street belongs to one side of it only, the name disagreed with the streets
+under it in all 25 sub-zones: 1J was "4th Ave to 1st Ave" with the Bowery as
+its western street, and 3B and 3E ran "to the East River" without reaching it.
+
+The exception to "both sides" is a street CB3's own boundary runs down: E 14th
+St, whose north side is in CB6, and the Bowery and 4th Ave, whose west side is
+not CB3. The build finds them, as the streets where for most of their trees
+the point 22 m across the street is outside the district, and lists them in
+`one_side`; the popup says "CB3 side only" for them.
+
+In the build script each side names the *line* that closes it instead, which
+is what makes neighbours abut exactly: 1A's eastern edge and 1B's western edge
+are both `1 AVE`, one line, so they can neither gap nor overlap.
 
 ## The sub-zones
 
@@ -41,33 +54,33 @@ belongs to 1D–1F. How many columns a band takes depends on the zone — zone 1
 uses three throughout, zone 2 four then two, zone 3 two and then three and two
 — because the three zones are not the same size or shape.
 
-| ID | Zone | Named | Works both sides of | Segments | Trees |
-|---|---|---|---|---|---|
-| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 10th St | E 14th St to E 11th St · 4th Ave to 1st Ave | 25 | 256 |
-| **1B** | 1 | Ave A to Ave B, E 14th St to E 10th St | E 14th St to E 11th St · Ave A to Ave B | 16 | 250 |
-| **1C** | 1 | Ave C to the East River, E 14th St to E 10th St | E 14th St to E 11th St · Ave C to FDR Dr | 16 | 175 |
-| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · 4th Ave to 1st Ave | 19 | 234 |
-| **1E** | 1 | Ave A to Ave B, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave A to Ave B | 11 | 124 |
-| **1F** | 1 | Ave C to the East River, E 10th St to E 7th St | E 10th St to E 8th St / St Marks Pl · Ave C to FDR Dr | 14 | 263 |
-| **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 4th St | E 7th St to E 5th St · 4th Ave to 1st Ave | 17 | 175 |
-| **1H** | 1 | Ave A to Ave B, E 7th St to E 4th St | E 7th St to E 5th St · Ave A to Ave B | 11 | 154 |
-| **1I** | 1 | Ave C to the East River, E 7th St to E 4th St | E 7th St to E 5th St · Ave C to FDR Dr | 15 | 246 |
-| **1J** | 1 | 4th Ave to 1st Ave, E 4th St to E Houston St | E 4th St to E 1st St · Bowery to 1st Ave | 17 | 216 |
-| **1K** | 1 | Ave A to Ave B, E 4th St to E Houston St | E 4th St to E 1st St · Ave A to Ave B | 13 | 174 |
-| **1L** | 1 | Ave C to the East River, E 4th St to E Houston St | E 4th St to E 2nd St · Ave C to FDR Dr | 10 | 197 |
-| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Delancey St | E Houston St to Rivington St · Chrystie St to Eldridge St | 20 | 222 |
-| **2B** | 2 | Allen St to Essex St, E Houston St to Delancey St | E Houston St to Rivington St · Allen St to Essex St | 25 | 205 |
-| **2C** | 2 | Norfolk St to Clinton St, E Houston St to Delancey St | E Houston St to Rivington St · Norfolk St to Clinton St | 18 | 206 |
-| **2D** | 2 | Attorney St to the East River, E Houston St to Delancey St | E Houston St to Rivington St · Attorney St to Mangin St | 33 | 305 |
-| **2E** | 2 | Chrystie St to Essex St, Delancey St to Grand St | Delancey St to Broome St · Bowery to Essex St | 30 | 188 |
-| **2F** | 2 | Norfolk St to the East River, Delancey St to Grand St | Delancey St to Broome St · Norfolk St to Mangin St | 35 | 246 |
-| **3A** | 3 | Bowery to Essex St, Grand St to Division St | Grand St to Canal St · Chrystie St to Essex St | 20 | 252 |
-| **3B** | 3 | Norfolk St to the East River, Grand St to Division St | Grand St to Canal St · Norfolk St to FDR Dr | 29 | 202 |
-| **3C** | 3 | Catherine St to Pike St, East Broadway to Monroe St | E Broadway to Monroe St · Market St to Pike St | 14 | 163 |
-| **3D** | 3 | Rutgers St to Montgomery St, East Broadway to Monroe St | E Broadway to Madison St · Pike St to Montgomery St | 28 | 230 |
-| **3E** | 3 | Gouverneur St to the East River, East Broadway to Monroe St | E Broadway to Madison St · Montgomery St to Jackson St | 16 | 162 |
-| **3F** | 3 | Catherine St to Pike St, Monroe St to the waterfront | Monroe St to South St · Catherine St to Pike St | 24 | 271 |
-| **3G** | 3 | Rutgers St to the East River, Monroe St to the waterfront | Monroe St to South St · Pike St to Jackson St | 36 | 190 |
+| ID | Zone | Name: both sides of every street named | CB3 side only | Blocks | Trees | On no block |
+|---|---|---|---|---|---|---|
+| **1A** | 1 | 4th Ave to 1st Ave, E 14th St to E 11th St | E 14th St and 4th Ave | 25 | 257 | 3 |
+| **1B** | 1 | Ave A to Ave B, E 14th St to E 11th St | E 14th St | 16 | 250 | 0 |
+| **1C** | 1 | Ave C to FDR Dr, E 14th St to E 11th St | E 14th St | 16 | 158 | 8 |
+| **1D** | 1 | 4th Ave to 1st Ave, E 10th St to E 8th St / St Marks Pl | 4th Ave | 19 | 233 | 2 |
+| **1E** | 1 | Ave A to Ave B, E 10th St to E 8th St / St Marks Pl | – | 11 | 125 | 0 |
+| **1F** | 1 | Ave C to FDR Dr, E 10th St to E 8th St / St Marks Pl | – | 14 | 280 | 0 |
+| **1G** | 1 | 4th Ave to 1st Ave, E 7th St to E 5th St | 4th Ave and Bowery | 17 | 175 | 0 |
+| **1H** | 1 | Ave A to Ave B, E 7th St to E 5th St | – | 11 | 155 | 0 |
+| **1I** | 1 | Ave C to FDR Dr, E 7th St to E 5th St | – | 15 | 247 | 5 |
+| **1J** | 1 | Bowery to 1st Ave, E 4th St to E 1st St | Bowery | 17 | 215 | 2 |
+| **1K** | 1 | Ave A to Ave B, E 4th St to E 1st St | – | 13 | 175 | 0 |
+| **1L** | 1 | Ave C to FDR Dr, E 4th St to E 2nd St | – | 10 | 196 | 2 |
+| **2A** | 2 | Chrystie St to Eldridge St, E Houston St to Rivington St | – | 19 | 222 | 2 |
+| **2B** | 2 | Allen St to Essex St, E Houston St to Rivington St | – | 25 | 206 | 0 |
+| **2C** | 2 | Norfolk St to Clinton St, E Houston St to Rivington St | – | 18 | 204 | 0 |
+| **2D** | 2 | Attorney St to Mangin St, E Houston St to Rivington St | – | 33 | 303 | 10 |
+| **2E** | 2 | Bowery to Essex St, Delancey St to Broome St | Bowery | 28 | 187 | 9 |
+| **2F** | 2 | Norfolk St to Mangin St, Delancey St to Broome St | – | 33 | 246 | 33 |
+| **3A** | 3 | Mulberry St to Eldridge St, Grand St to Canal St | – | 19 | 251 | 24 |
+| **3B** | 3 | Allen St to Clinton St, Grand St to Canal St | – | 28 | 203 | 9 |
+| **3C** | 3 | Catherine St to Pike St, E Broadway to Madison St | – | 14 | 156 | 19 |
+| **3D** | 3 | Rutgers St to Montgomery St, E Broadway to Madison St | – | 23 | 231 | 1 |
+| **3E** | 3 | Gouverneur St to Jackson St, E Broadway to Madison St | – | 14 | 158 | 6 |
+| **3F** | 3 | Catherine St to Pike St, Monroe St to South St | – | 23 | 281 | 9 |
+| **3G** | 3 | Rutgers St to Jackson St, Monroe St to South St | – | 34 | 186 | 5 |
 
 1E is the small one because Tompkins Square Park fills most of Ave A to Ave B
 between E 7th and E 10th, and park trees are not street trees.
@@ -78,21 +91,34 @@ Delancey St is the one street here anybody navigates by and it splits the zone
 forcing zone 1's three columns onto both would have produced one sub-zone of
 about 100 and another of 400. The column lines are Eldridge, Essex and Clinton,
 the wide named streets a crew would recognise, and Essex is shared by both
-bands so it runs unbroken through the zone. All six land between 188 and 305
-trees, against zone 1's 124 to 263.
+bands so it runs unbroken through the zone. All six land between 187 and 303
+trees, against zone 1's 125 to 280.
 
 **Zone 3 is two street patterns, not one**, so it is divided as two. Grand St
-to Division St is the tail of the Lower East Side grid; south of East Broadway,
+to East Broadway is the tail of the Lower East Side grid; south of East Broadway,
 Two Bridges turns about 35 degrees and runs on its own. They are fitted
 separately and cut separately, which is why the sub-zones do not line up across
 East Broadway — the streets do not either. The Chinatown strip is thin and
-holds 454 trees, so it splits east-west only, on Essex St; Two Bridges holds
-1,016 and takes five, three above Monroe St and two below, with Pike St shared
+holds 454 trees, so it splits east-west only, on Eldridge St; Two Bridges holds
+1,012 and takes five, three above Monroe St and two below, with Pike St shared
 by both bands.
+
+**Until October 2026 the Chinatown strip's north-south streets carried the
+names of streets four blocks east.** Its lines were seeded from the old grid,
+whose names there were shifted: the line called Essex St met Grand St 1.0 m from
+where zone 2's Eldridge St does, and six trees addressed 7–29 Ludlow St were
+filed on "Clinton St". The positions were right, so only the names changed,
+and every block kept its ID. Eight of the names are checked. Chrystie,
+Forsyth, Eldridge, Allen, Orchard, Ludlow, Essex and Clinton St each run on
+within 0–4.4 m of the same street in zone 2 (Chrystie 17 m), and the addresses
+agree (7–29 Ludlow, 42–48 Hester, 25 Essex, 411 Grand St). Jefferson St meets
+East Broadway where Two Bridges' Jefferson St does. The four west of Chrystie
+St, **Mulberry, Mott and Elizabeth St and Bowery / Chatham Sq, are named from
+the order of the streets alone** and should be checked against a street map.
 
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
-each: 2F is 35 segments averaging 5 trees, where 1A is 25 averaging 10. That is
+each: 2F is 33 segments averaging 6 or 7 trees, where 1A is 25 averaging 10. That is
 the street pattern, not the division.
 
 ## The zone lines
@@ -207,7 +233,7 @@ one road. 1A, 1D and 1G now read "4th Ave to 1st Ave" and 1J reads "Bowery to
 A sub-zone's size is quoted in **block segments**: one street, one block long,
 both sides — "E 12th St, 2nd Ave to 1st Ave". That is the unit a crew is
 actually handed, so it is drawn as well as counted. The **Block Segments**
-layer in the map's Program Layers panel shows all 512 of them.
+layer in the map's Program Layers panel shows all 495 of them.
 
 Every segment carries a **stable identifier** — `1A-03` — so a block can be
 assigned, radioed and reported by name. Within a sub-zone they were first
@@ -245,21 +271,21 @@ rather than fit the wrong run if either end vertex goes missing, if a run goes
 more than half way round the ring (a ring stored the other way round), or if
 the frame comes out at any bearing but the one it has always had.
 
-A street with no two-row fit of its own — Chrystie, Forsyth, Eldridge, Orchard,
-Ludlow, Clinton, Jackson and the FDR in Chinatown; Catherine, Rutgers,
+A street with no two-row fit of its own — Mulberry, Mott, Elizabeth, Chrystie,
+Forsyth, Ludlow, Jefferson and Clinton St in Chinatown; Catherine, Rutgers,
 Jefferson and Clinton in Two Bridges; Columbia St; E 14th St and the FDR in the
 East Village — is seeded from the old grid. It used to take the fitted slope of
 its family through the old grid's offset, and an offset is where the line
 crosses E 14th St, nearly 2 km north of Chinatown, so the 2026-10-12 census,
-which tipped the Chinatown avenues by 0.0048, slid Ludlow and Orchard St 9 m
+which tipped the Chinatown avenues by 0.0048, slid Forsyth and Chrystie St 9 m
 across their blocks and would have emptied 3A-07 and 3B-24. **Those lines are
 now pinned in `data/pinned-street-lines.json`**: the first build to place a
 seeded line records it there, and every later build draws it exactly there,
 whatever the census does. The pins were taken from the 2026-09-28 build, which
 the pinned build reproduces byte for byte. To move one on purpose, delete its
 entry and rebuild. Against that build, the 2026-10-12 census moves 4 corner
-trees (at Canal and Essex, and Canal and Norfolk) and retires 3A-07, whose only
-tree now counts on Essex St; its number stays reserved.
+trees (at Canal and Eldridge, and Canal and Allen St) and retires 3A-07, whose
+only tree now counts on Eldridge St; its number stays reserved.
 
 Two things make the segmentation legible rather than merely present:
 
@@ -326,11 +352,57 @@ to trim and no boundary to clip against, so no segment can come out undrawable.
 All of them are drawn by construction, as bands and dots, and every tree that
 carries a `segmentId` lies inside one.
 
+### One block face, one sub-zone
+
+A tree is put on a street when it stands within that street's reach (see
+below), and a sub-zone edge is drawn just past the street's own planting, so
+the two did not always agree. A corner tree can be nearer the cross street, and
+set-back planting stands past the edge. Each of those came out as a second,
+smaller copy of a block in the next sub-zone: 19 block faces were split, so two
+crews could be sent to the same one. E 10th St from Ave D to the FDR had 18
+trees in 1C, the Riis Houses frontage 12–30 m north of the street, and 22 in
+1F, under the same name.
+
+So **each block face belongs to the sub-zone holding most of its trees**.
+
+* A tree of it in another sub-zone goes on the nearest street whose block is
+  that sub-zone's own: the cross street, for a corner tree. Failing that, it
+  goes on the nearest block of the same street the sub-zone owns, if one of
+  that block's trees is within 20 m (the tree just round the corner). That
+  moved 16 trees.
+* Where five or more have nowhere to go, as with a set-back row, the edge
+  between the two sub-zones **steps out round them** instead. It goes out along
+  the cross street past the first tree, along the street past the furthest, and
+  back. Where that would leave a sliver against the district boundary, it runs
+  out to the boundary. The whole row then joins its block in the other
+  sub-zone. Both sub-zones' outlines get the same points, so they still meet
+  without a gap or an overlap. This happens twice: E 10th St, Ave D to FDR Dr
+  (18 trees, 1C to 1F), and Monroe St west of Catherine St (6 trees, 3C to 3F).
+* One tree, on Pike St between Madison and Monroe St in 3D, is left on no
+  block.
+
+No block face is split now. The 19 IDs that went out of use stay reserved in
+the ledger.
+
+### Where a block ends
+
+A block runs between two cross streets. A block at the end of its region has
+no cross street beyond it, and was printed as running "to the district edge".
+37 of those were wrong, because the block stops at a zone line: Ludlow St south
+of Broome St stops at Grand St. The build now follows the street's line out
+from its last tree until it leaves the sub-zone. If it is still inside CB3
+there, the end is named after the zone line it crossed: "Ludlow St, Broome St
+to Grand St". Where both ends come out the same, as with Forsyth St's corner
+trees on the north side of E Houston St, the block is printed "Forsyth St at
+E Houston St". The 20 that still say "to the district edge" do reach it. Only
+the printed label changed: the ID ledger still keys on the old form, so every
+ID stays on its block.
+
 ## Trees on no segment
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 156 of the 5,300 (2.9%)
+claim — it says which street the tree stands on — and 149 of the 5,300 (2.8%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
@@ -339,7 +411,7 @@ The sub-zone popup also gives the share of its trees that are on a block and
 lists its blocks, busiest first, each with its tree count. Clicking a block's ID
 turns on the Block Segments layer and zooms to that block.
 
-By zone: 2,439 of 2,466 on a segment in zone 1 (99%), 1,312 of 1,368 in zone 2
+By zone: 2,444 of 2,466 on a segment in zone 1 (99%), 1,314 of 1,368 in zone 2
 (96%), 1,393 of 1,466 in zone 3 (95%). What gradient is left is the housing, not
 the method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
@@ -361,7 +433,10 @@ segments. Beyond 30 m a tree is in a courtyard or a superblock interior and
 stays on no block. On the 2026-10-12 census this put 265 trees on a block
 (3A 78 to 25 loose, 2F 58 to 33, 3F 34 to 9, 3C 33 to 19), moved none that had
 one, and started one segment, 1C-17 (E 10th St, Ave D to FDR Dr, 18 trees),
-for 513 in all. Of the 14 addressed trees it placed, 12 land on the street
+for 513 in all. (1C-17 has since joined 1F-03; see One block face, one
+sub-zone.) A set-back tree too few to start its own street's block goes on the
+next street within 30 m whose block the sub-zone already has, which at a corner
+is the cross street. That put 7 more trees on a block in October 2026. Of the 14 addressed trees it placed, 12 land on the street
 their address names; the other two, at 24 Columbia St and 25 Bialystoker Pl,
 land on the neighbouring street.
 
@@ -411,7 +486,12 @@ one comes back with an RMS residual of 0.34 m in the East Village, rising to
 separately and averaging the pair gives a centreline good to well under a
 metre. The edge
 is that centreline pushed out by half a right of way (30 ft for the numbered
-side streets, 50 ft for the avenues) so it lands on the property line.
+side streets, 50 ft for the avenues) so it lands on the property line. That
+distance is measured square to the street. On a street that runs at an angle to
+the frame, moving the line that far moves its intercept further, by the
+hypotenuse of its slope; until October 2026 the build moved the intercept by
+the distance itself, so Two Bridges edges sat 18% closer to their streets than
+intended and split blocks there. Fixing it moved 9 trees between sub-zones.
 
 Half a right of way is where a boundary wants to sit, but not always where it
 can, because a right of way is a constant and a street's planting is not. As
@@ -567,10 +647,10 @@ standing along it. Fifteen streets have no two-row fit and cannot be used as
 boundaries. In the East Village that is E 14th St, for the reason above, and
 FDR Drive; in zone 2 only Columbia St, where Baruch Houses covers most of what
 would be its frontage. Zone 3 loses the most: 8 of 17 in the Chinatown strip —
-Chrystie, Forsyth, Eldridge, Orchard, Ludlow, Clinton, Jackson and FDR Drive —
+Mulberry, Mott, Elizabeth, Chrystie, Forsyth, Ludlow, Jefferson and Clinton St —
 and 4 of 17 in Two Bridges: Catherine, Rutgers, Jefferson and Clinton. Those
 streets can still be named and walked; they simply cannot be used as sub-zone
-edges, which is why zone 3's divisions fall on Essex, Monroe, Pike and
+edges, which is why zone 3's divisions fall on Eldridge, Monroe, Pike and
 Montgomery. Housing superblocks (Tompkins Square,
 Baruch, Vladeck, Rutgers, Smith, LaGuardia) have no interior streets to
 detect. If real centerline data ever lands in the repo, the fitting
