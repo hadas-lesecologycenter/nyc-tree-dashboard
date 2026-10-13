@@ -1759,6 +1759,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label class="cp-chk"><input type="checkbox" data-district="110" onchange="toggleDistrict(this)">CB10 · Central Harlem<span class="district-status" data-cd="110"></span></label>
           <label class="cp-chk"><input type="checkbox" data-district="111" onchange="toggleDistrict(this)">CB11 · East Harlem<span class="district-status" data-cd="111"></span></label>
           <label class="cp-chk"><input type="checkbox" data-district="112" onchange="toggleDistrict(this)">CB12 · Washington Heights, Inwood<span class="district-status" data-cd="112"></span></label>
+          <label class="cp-chk" style="margin-top:10px;font-weight:600"><input type="checkbox" id="f-count-districts" onchange="applyFilters()">➕ Include ticked districts in tree counts</label>
         </div>
 
         <div class="cp-section">
@@ -3165,7 +3166,7 @@ function applyFilters(reload = false) {
   filteredTrees = base;
 
   const countEl = document.getElementById('tree-count');
-  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees` + districtCountNote();
+  if (countEl) countEl.textContent = treeCountText();
   updateMap();
   updateStats();
 }
@@ -3290,9 +3291,23 @@ function mapTrees() {
   return districtShown.size ? allTrees.concat(shownDistrictTrees()) : allTrees;
 }
 
-function districtCountNote() {
+// Counts are CB3's unless "Include in counts" is ticked: the districts are
+// there to look at, and CB3 is the number the program tracks.
+function countDistrictsToo() {
+  return !!document.getElementById('f-count-districts')?.checked;
+}
+
+// The trees on the map that the tree count and tier counts tally.
+function countedTrees() {
+  return countDistrictsToo() ? filteredTrees : filteredTrees.filter(t => !t._district);
+}
+
+function treeCountText() {
   const n = shownDistricts().length;
-  return n ? ` · CB3 + ${n} other district${n > 1 ? 's' : ''}` : '';
+  const note = !n ? '' : countDistrictsToo()
+    ? ` · CB3 + ${n} other district${n > 1 ? 's' : ''}`
+    : ' in CB3';
+  return countedTrees().length.toLocaleString() + ' trees' + note;
 }
 
 // Each box exists twice — the hidden #priority-sidebar original and the copy
@@ -3827,7 +3842,7 @@ function updateMap() {
 }
 
 function updatePriorityTierCounts() {
-  const trees = (typeof filteredTrees !== 'undefined' ? filteredTrees : (typeof allTrees !== 'undefined' ? allTrees : []));
+  const trees = countedTrees();
   const counts = {1:0,2:0,3:0};
   trees.forEach(t => {
     const tier = t._priority || 0;
@@ -8668,7 +8683,7 @@ window.addEventListener('load', async () => {
   if (countEl) {
     countEl.textContent = censusError
       ? '⚠️ Tree data failed to load — check your connection and reload'
-      : allTrees.length.toLocaleString() + ' trees';
+      : treeCountText();
     countEl.style.color = censusError ? '#c0392b' : '';
   }
 
