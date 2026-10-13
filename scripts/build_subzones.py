@@ -1359,6 +1359,14 @@ SEGMENT_REACH_M = 12.0        # frontage always reaches at least this far
 # 12-32 m out (200 Madison St among it), under a row of 41 on its kerb that
 # the measurement takes as the only one. Widening these two claims 86 trees
 # that had no segment and moves none that had one.
+# A tree past every street's measured frontage is still put on the nearest
+# street's block if it stands within LOOSE_TREE_M of that street - set-back
+# rows in front of housing, a mall's inner rows on Allen St - so long as the
+# block has trees of its own or LOOSE_BLOCK_MIN such trees start it together.
+# Beyond 30 m a tree is in a courtyard or a superblock interior, and stays on
+# no block. This took the trees on no block from 421 to 156.
+LOOSE_TREE_M = 30.0
+LOOSE_BLOCK_MIN = 5
 REACH_OVERRIDE_M = {
     'TB|SOUTH ST': (60.0, 60.0),
     'TB|MADISON ST': (24.0, 32.0),
@@ -1439,7 +1447,7 @@ def measure_reach(walk, trees_un):
                     break
 
 
-def nearest_line(walk, u, n):
+def nearest_line(walk, u, n, fallback_m=0.0):
     """Name of the street a tree stands on, and which family it belongs to.
 
     None for a tree that is not on any street: several hundred trees in the
@@ -1455,6 +1463,7 @@ def nearest_line(walk, u, n):
     # side of the Delancey boundary from the other twenty.
     best = None
     covered = None
+    near = None
     for name, g in walk.items():
         if not in_span(g, u, n):
             continue
@@ -1472,7 +1481,9 @@ def nearest_line(walk, u, n):
             best = (d, name, g['axis'])
         if d <= g['half_row_m'] and (covered is None or d < covered[0]):
             covered = (d, name, g['axis'])
-    hit = covered or best
+        if d <= fallback_m and (near is None or d < near[0]):
+            near = (d, name, g['axis'])
+    hit = covered or best or near
     return (hit[1], hit[2]) if hit else (None, None)
 
 
@@ -2024,9 +2035,11 @@ def main():
         held_ew, held_ns = set(), set()
         segs = collections.defaultdict(list)
         rank = {}
+        loose = []
         for t in inside:
             name, axis = nearest_line(walk, t['u'], t['n'])
             if name is None:
+                loose.append(t)
                 continue
             (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
@@ -2035,6 +2048,25 @@ def main():
             # not decide which of two new segments is numbered first.
             rank[(name, axis, lo, hi)] = min(at, rank.get((name, axis, lo, hi), at))
             segs[(name, axis, lo, hi)].append(t)
+        # A tree past every street's measured frontage but within LOOSE_TREE_M
+        # of one joins that street's block, if the block already has trees of
+        # its own or LOOSE_BLOCK_MIN set-back trees start it together. One or
+        # two set-back trees are not a block face a crew can be sent to.
+        late = collections.defaultdict(list)
+        for t in loose:
+            name, axis = nearest_line(walk, t['u'], t['n'], LOOSE_TREE_M)
+            if name is None:
+                continue
+            cross = 'ns' if axis == 'ew' else 'ew'
+            lo, hi, at = brackets(walk, t['u'], t['n'], cross)
+            late[(name, axis, lo, hi)].append((t, at))
+        for key, members in late.items():
+            if key not in segs and len(members) < LOOSE_BLOCK_MIN:
+                continue
+            (held_ew if key[1] == 'ew' else held_ns).add(key[0])
+            for t, at in members:
+                rank[key] = min(at, rank.get(key, at))
+                segs[key].append(t)
 
         # A stable identifier per segment: streets first, north to south, then
         # avenues west to east, numbered within the sub-zone. Ordering is by
