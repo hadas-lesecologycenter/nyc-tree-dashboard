@@ -127,6 +127,10 @@ PLANTING_SPACES_MAP = {
     'pssite':             'tree_type',              # 'Street' or 'Park' indicator
     'parkname':           'park_name',
     'parkzone':           'park_zone',
+    # TreeGuard on the planting space: 'Helpful', 'Harmful' or 'None' (no
+    # guard), blank when never recorded. Parks calls it a new, sparsely
+    # populated field, so a blank means unknown, not "no guard".
+    'treeguard':          'guards',
 }
 
 # Condition/health value normalisation (Forestry uses different strings)
@@ -411,6 +415,9 @@ def join_tree_type_data(trees, planting_spaces):
         if ps_id and ps_id in spaces_by_id:
             matched += 1
             space = spaces_by_id[ps_id]
+            guard = (space.get('guards') or '').strip()
+            if guard:
+                tree['guards'] = guard
             tree_type = (space.get('tree_type') or '').strip()
             # pssite values: 'Street' or 'Park'
             if tree_type.lower() == 'street':

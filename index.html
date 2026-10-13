@@ -3241,7 +3241,7 @@ function applyFilters(reload = false) {
   }
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
-    base = base.filter(t => guardedIds.has(String(t.tree_id)));
+    base = base.filter(t => guardedIds.has(String(t.tree_id)) || cityGuardPresent(t));
   }
   if (guardNominatedOnly) {
     const nominatedIds = getNominatedTreeIds();
@@ -4972,7 +4972,7 @@ function openMapTreeDetail(tree) {
     tree.status                ? ['Status',          tree.status]                               : null,
     tree.nta_name              ? ['Neighborhood',    tree.nta_name]                             : null,
     tree.sidewalk              ? ['Sidewalk',        tree.sidewalk]                             : null,
-    tree.guards                ? ['Guards',          tree.guards]                               : null,
+    tree.guards                ? ['Tree guard',      cityGuardLabel(tree.guards)]               : null,
     tree.tree_id               ? ['Tree ID',         tree.tree_id]                              : null,
     tree.spc_latin             ? ['Scientific name', '<em>' + tree.spc_latin + '</em>']         : null,
   ].filter(Boolean);
@@ -7400,6 +7400,20 @@ async function nominationsFlush() {
 }
 window.addEventListener('online', nominationsFlush);
 
+// The city's TreeGuard field from Forestry Planting Spaces (via census.json).
+// 'Helpful' and 'Harmful' both mean a guard is there; 'None' means none was
+// recorded; blank means the city never recorded it.
+function cityGuardPresent(tree) {
+  return /^(helpful|harmful)$/i.test(String((tree && tree.guards) || '').trim());
+}
+function cityGuardLabel(v) {
+  const s = String(v || '').trim().toLowerCase();
+  if (s === 'helpful') return 'Present (helpful)';
+  if (s === 'harmful') return 'Present (harmful)';
+  if (s === 'none') return 'None';
+  return escHtml(v);
+}
+
 function updateNominateButton(tree) {
   const btn = document.getElementById('mtp-nominate-btn');
   if (!btn || !tree) return;
@@ -7417,6 +7431,7 @@ function updateNominateButton(tree) {
   };
   if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
   else if (nom) set('🛡 Nominated ✓ (tap for details)', '#3d6b9e', '#fff', '#3d6b9e', false);
+  else if (cityGuardPresent(tree)) set('🛡 City lists a guard here', '#fff8e1', '#8a5a00', '#e0b23b', false);
   else set('🛡 Nominate for Tree Guard', '#fff', '#3d6b9e', '#3d6b9e', false);
 }
 
@@ -7434,7 +7449,8 @@ function openNominationModal(tree) {
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
   document.getElementById('nominate-info').innerHTML =
     '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' + escHtml(species) + '</div>' +
-    '<div style="font-size:11px;color:var(--text2)">' + escHtml(tree.address || 'Address not listed') + (tree.tree_id ? ' · Tree ID ' + escHtml(tree.tree_id) : '') + '</div>';
+    '<div style="font-size:11px;color:var(--text2)">' + escHtml(tree.address || 'Address not listed') + (tree.tree_id ? ' · Tree ID ' + escHtml(tree.tree_id) : '') + '</div>' +
+    (cityGuardPresent(tree) ? '<div style="font-size:11px;color:#8a5a00;margin-top:6px">NYC Parks lists a guard on this tree (' + escHtml(tree.guards) + '). Nominate only if there is none on the sidewalk.</div>' : '');
   const nom = nominationsReadLocal().find(n => String(n.treeId) === id);
   const form = document.getElementById('nominate-form');
   const existing = document.getElementById('nominate-existing');
