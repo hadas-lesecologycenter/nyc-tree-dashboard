@@ -283,7 +283,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': CB3_EDGE,           # 4th Ave / Bowery, CB3's own western edge
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 14th St to E 10th St',
     },
     {
         'id': '1B', 'zone': 1, 'region': 'EV',
@@ -291,7 +290,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': '1 AVE',            # shared with 1A's eastern edge
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 14th St to E 10th St',
     },
     {
         'id': '1C', 'zone': 1, 'region': 'EV',
@@ -299,7 +297,6 @@ SUBZONES = [
         'south': 'E 10 ST',
         'west': 'AVE B',            # shared with 1B's eastern edge
         'east': CB3_EDGE,           # the East River, CB3's own eastern edge
-        'bounds': 'Ave C to the East River, E 14th St to E 10th St',
     },
 
     # The 10th-to-7th band. 'E 10 ST' again, now as the northern edge: it is
@@ -312,7 +309,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': CB3_EDGE,           # the Bowery / Cooper Sq below Astor Pl
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 10th St to E 7th St',
     },
     {
         'id': '1E', 'zone': 1, 'region': 'EV',
@@ -320,7 +316,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 10th St to E 7th St',
     },
     {
         'id': '1F', 'zone': 1, 'region': 'EV',
@@ -328,7 +323,6 @@ SUBZONES = [
         'south': 'E 7 ST',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 10th St to E 7th St',
     },
 
     # The 7th-to-4th band. 'E 7 ST' over the same three columns as above, so
@@ -340,7 +334,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': CB3_EDGE,
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 7th St to E 4th St',
     },
     {
         'id': '1H', 'zone': 1, 'region': 'EV',
@@ -348,7 +341,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 7th St to E 4th St',
     },
     {
         'id': '1I', 'zone': 1, 'region': 'EV',
@@ -356,7 +348,6 @@ SUBZONES = [
         'south': 'E 4 ST',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 7th St to E 4th St',
     },
 
     # The 4th-to-Houston band, and the bottom of zone 1. Its southern edge is
@@ -368,7 +359,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': CB3_EDGE,
         'east': '1 AVE',
-        'bounds': '4th Ave to 1st Ave, E 4th St to E Houston St',
     },
     {
         'id': '1K', 'zone': 1, 'region': 'EV',
@@ -376,7 +366,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': '1 AVE',
         'east': 'AVE B',
-        'bounds': 'Ave A to Ave B, E 4th St to E Houston St',
     },
     {
         'id': '1L', 'zone': 1, 'region': 'EV',
@@ -384,7 +373,6 @@ SUBZONES = [
         'south': DIVIDER + 'houston',
         'west': 'AVE B',
         'east': CB3_EDGE,
-        'bounds': 'Ave C to the East River, E 4th St to E Houston St',
     },
 
     # ---- zone 2, the Lower East Side: Houston St down to Grand St ----------
@@ -399,9 +387,8 @@ SUBZONES = [
         'id': '2A', 'zone': 2, 'region': 'LES',
         'north': DIVIDER + 'houston',
         'south': 'DELANCEY ST',
-        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
+        'west': CB3_EDGE,           # CB3's own western edge
         'east': 'ELDRIDGE ST',
-        'bounds': 'Chrystie St to Eldridge St, E Houston St to Delancey St',
     },
     {
         'id': '2B', 'zone': 2, 'region': 'LES',
@@ -409,7 +396,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'ELDRIDGE ST',
         'east': 'ESSEX ST',
-        'bounds': 'Allen St to Essex St, E Houston St to Delancey St',
     },
     {
         'id': '2C', 'zone': 2, 'region': 'LES',
@@ -417,7 +403,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'ESSEX ST',
         'east': 'CLINTON ST',
-        'bounds': 'Norfolk St to Clinton St, E Houston St to Delancey St',
     },
     {
         'id': '2D', 'zone': 2, 'region': 'LES',
@@ -425,7 +410,6 @@ SUBZONES = [
         'south': 'DELANCEY ST',
         'west': 'CLINTON ST',
         'east': CB3_EDGE,
-        'bounds': 'Attorney St to the East River, E Houston St to Delancey St',
     },
     {
         'id': '2E', 'zone': 2, 'region': 'LES',
@@ -433,7 +417,6 @@ SUBZONES = [
         'south': DIVIDER + 'grand',
         'west': CB3_EDGE,
         'east': 'ESSEX ST',
-        'bounds': 'Chrystie St to Essex St, Delancey St to Grand St',
     },
     {
         'id': '2F', 'zone': 2, 'region': 'LES',
@@ -441,35 +424,32 @@ SUBZONES = [
         'south': DIVIDER + 'grand',
         'west': 'ESSEX ST',
         'east': CB3_EDGE,
-        'bounds': 'Norfolk St to the East River, Delancey St to Grand St',
     },
 
     # ---- zone 3, Grand St south, across two grids --------------------------
-    # Zone 3 is two street patterns, not one. Grand St to Division St is the
+    # Zone 3 is two street patterns, not one. Grand St to East Broadway is the
     # tail of the Lower East Side grid; south of East Broadway, Two Bridges
     # turns about 35 degrees and runs on its own. They are fitted separately
     # and divided separately, which is why the sub-zones do not line up across
     # East Broadway - the streets do not either.
     #
-    # The Chinatown strip holds 441 trees and is thin, so it splits east-west
-    # only, on Essex St. Two Bridges holds 1,007 and takes five: three between
-    # East Broadway and Monroe St, two below it, with Pike St shared by both
-    # bands.
+    # The Chinatown strip holds 454 trees and is thin, so it splits east-west
+    # only, on Eldridge St. Two Bridges holds 1,012 and takes five: three
+    # between East Broadway and Monroe St, two below it, with Pike St shared by
+    # both bands.
     {
         'id': '3A', 'zone': 3, 'region': 'CH',
         'north': DIVIDER + 'grand',
         'south': DIVIDER + 'eastBroadway',
-        'west': CB3_EDGE,           # the Bowery, CB3's own western edge
-        'east': 'ESSEX ST',
-        'bounds': 'Bowery to Essex St, Grand St to Division St',
+        'west': CB3_EDGE,           # CB3's own western edge
+        'east': 'ELDRIDGE ST',
     },
     {
         'id': '3B', 'zone': 3, 'region': 'CH',
         'north': DIVIDER + 'grand',
         'south': DIVIDER + 'eastBroadway',
-        'west': 'ESSEX ST',
+        'west': 'ELDRIDGE ST',
         'east': CB3_EDGE,
-        'bounds': 'Norfolk St to the East River, Grand St to Division St',
     },
     {
         'id': '3C', 'zone': 3, 'region': 'TB',
@@ -477,7 +457,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': CB3_EDGE,
         'east': 'PIKE ST',
-        'bounds': 'Catherine St to Pike St, East Broadway to Monroe St',
     },
     {
         'id': '3D', 'zone': 3, 'region': 'TB',
@@ -485,7 +464,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': 'PIKE ST',
         'east': 'MONTGOMERY ST',
-        'bounds': 'Rutgers St to Montgomery St, East Broadway to Monroe St',
     },
     {
         'id': '3E', 'zone': 3, 'region': 'TB',
@@ -493,7 +471,6 @@ SUBZONES = [
         'south': 'MONROE ST',
         'west': 'MONTGOMERY ST',
         'east': CB3_EDGE,
-        'bounds': 'Gouverneur St to the East River, East Broadway to Monroe St',
     },
     {
         'id': '3F', 'zone': 3, 'region': 'TB',
@@ -501,7 +478,6 @@ SUBZONES = [
         'south': CB3_EDGE,          # the East River waterfront
         'west': CB3_EDGE,
         'east': 'PIKE ST',
-        'bounds': 'Catherine St to Pike St, Monroe St to the waterfront',
     },
     {
         'id': '3G', 'zone': 3, 'region': 'TB',
@@ -509,7 +485,6 @@ SUBZONES = [
         'south': CB3_EDGE,
         'west': 'PIKE ST',
         'east': CB3_EDGE,
-        'bounds': 'Rutgers St to the East River, Monroe St to the waterfront',
     },
 ]
 
@@ -827,6 +802,14 @@ def fit_corridor(pts, seed_slope, seed_offset):
         rows.append({'slope': slope, 'offset': centre, 'trees': len(members),
                      'rms_m': round(rms, 3)})
     a, b = rows[0]['offset'], rows[-1]['offset']
+    # half_row_m here is half the gap between the rows' intercepts, which is
+    # metres square to the street only on a street the frame is aligned to.
+    # East Broadway runs at -0.70, so its half-road reads 10.28 m against
+    # 8.42 m square to it, and its zone line stands 13.76 m out where the
+    # corrected figure would put it at 12.41 m. It is left as it is on purpose:
+    # the corrected line runs 1.35 m south, through three trees on East
+    # Broadway's north side, and puts them in Chinatown sub-zones, two of them
+    # on no block. (Houston and Grand St, at -0.125, do not move either way.)
     return {'slope': slope, 'offset': (a + b) / 2.0, 'half_row_m': (b - a) / 2.0,
             'rows': rows, 'corridor': True}
 
@@ -990,10 +973,16 @@ def fit_street(pts, seed, slope, free_slope, half_window=HALF_WINDOW_M):
         rows.append((m, c, kept, rms))
     rows.sort(key=lambda r: r[1])
     fa, fb = rows
+    # The rows are found by their intercepts, which are not distances: two
+    # parallel lines whose intercepts differ by d stand d / hypot(1, slope)
+    # apart. In the East Village the slope is 0.003 and that is nothing; in Two
+    # Bridges it is 0.7, and taking the intercept gap for the width made every
+    # street there 22% wider than it is.
+    slope = (fa[0] + fb[0]) / 2.0
     return {
-        'slope': (fa[0] + fb[0]) / 2.0,
+        'slope': slope,
         'offset': (fa[1] + fb[1]) / 2.0,
-        'half_row_m': (fb[1] - fa[1]) / 2.0,
+        'half_row_m': (fb[1] - fa[1]) / 2.0 / math.hypot(1.0, slope),
         'rows': [{'slope': f[0], 'offset': f[1], 'trees': f[2], 'rms_m': round(f[3], 3)}
                  for f in (fa, fb)],
     }
@@ -1244,7 +1233,7 @@ def fit_region_lines(frame, trees_un, grid_region, log, pins=None):
     # family's fitted slope through the old grid's offset - and an offset is
     # where the line crosses the frame's origin axis, E 14th St, nearly 2 km
     # north of Chinatown. The 2026-10-12 census tipped the Chinatown avenues by
-    # 0.0048, and that slid Ludlow and Orchard St 9 m across their blocks and
+    # 0.0048, and that slid Forsyth and Chrystie St 9 m across their blocks and
     # emptied 3A-07 and 3B-24. So the first build to place a seeded line pins
     # it in data/pinned-street-lines.json, and every later build draws it
     # exactly there. To move one on purpose, delete its entry and rebuild.
@@ -1447,23 +1436,19 @@ def measure_reach(walk, trees_un):
                     break
 
 
-def nearest_line(walk, u, n, fallback_m=0.0):
-    """Name of the street a tree stands on, and which family it belongs to.
+def street_candidates(walk, u, n, fallback_m=0.0):
+    """Every street a tree could be said to stand on, best first, as
+    (tier, distance, name, axis).
 
-    None for a tree that is not on any street: several hundred trees in the
-    census stand in courtyards, on housing-estate paths and inside the
-    superblocks, and the nearest street can be 30 m away. Left unfiltered they
-    put E 10th St in the contents of a sub-zone that stops a block short of
-    it."""
-    # Two tiers. A tree standing inside a street's own road width is ON that
-    # street even if some side street's centreline happens to be nearer: the
-    # corner trees at Delancey St and Forsyth St sit 4 m from Forsyth and 5 m
-    # from Delancey, inside Delancey's 9.7 m half-road, and calling them
-    # Forsyth's put one tree of the Rivington-to-Delancey block face on the far
-    # side of the Delancey boundary from the other twenty.
-    best = None
-    covered = None
-    near = None
+    Three tiers. A tree standing inside a street's own road width - between
+    its two rows - is ON that street even if some side street's centreline
+    happens to be nearer: the corner trees at Delancey St and Forsyth St sit
+    4 m from Forsyth and 5 m from Delancey, inside Delancey's 9.7 m half-road,
+    and calling them Forsyth's put one tree of the Rivington-to-Delancey block
+    face on the far side of the Delancey boundary from the other twenty. Next
+    come the streets whose measured frontage reaches the tree, and last, only
+    when fallback_m is given, the streets within that distance at all."""
+    out = []
     for name, g in walk.items():
         if not in_span(g, u, n):
             continue
@@ -1477,14 +1462,26 @@ def nearest_line(walk, u, n, fallback_m=0.0):
         side = g.get('reach', (SEGMENT_REACH_M, SEGMENT_REACH_M))[0 if d < 0 else 1]
         reach = max(row_half(name, g), side)
         d = abs(d)
-        if d <= reach and (best is None or d < best[0]):
-            best = (d, name, g['axis'])
-        if d <= g['half_row_m'] and (covered is None or d < covered[0]):
-            covered = (d, name, g['axis'])
-        if d <= fallback_m and (near is None or d < near[0]):
-            near = (d, name, g['axis'])
-    hit = covered or best or near
-    return (hit[1], hit[2]) if hit else (None, None)
+        if d <= g['half_row_m']:
+            out.append((0, d, name, g['axis']))
+        elif d <= reach:
+            out.append((1, d, name, g['axis']))
+        elif d <= fallback_m:
+            out.append((2, d, name, g['axis']))
+    out.sort()
+    return out
+
+
+def nearest_line(walk, u, n, fallback_m=0.0):
+    """Name of the street a tree stands on, and which family it belongs to.
+
+    None for a tree that is not on any street: several hundred trees in the
+    census stand in courtyards, on housing-estate paths and inside the
+    superblocks, and the nearest street can be 30 m away. Left unfiltered they
+    put E 10th St in the contents of a sub-zone that stops a block short of
+    it."""
+    got = street_candidates(walk, u, n, fallback_m)
+    return (got[0][2], got[0][3]) if got else (None, None)
 
 
 # ---------------------------------------------------------------- segments --
@@ -1558,8 +1555,12 @@ def segment_label(name, lo, hi):
     return '%s, %s to %s' % ((pretty(name),) + tuple(segment_ends(lo, hi)))
 
 
-def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
-    ends = segment_ends(lo, hi)
+def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame, ends=None):
+    ends = ends or segment_ends(lo, hi)
+    if ends[0] == ends[1]:
+        label = '%s at %s' % (pretty(name), ends[0])
+    else:
+        label = '%s, %s to %s' % (pretty(name), ends[0], ends[1])
     return {
         'type': 'Feature',
         'properties': {
@@ -1569,7 +1570,7 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
             'street': pretty(name),
             'from': ends[0],
             'to': ends[1],
-            'label': segment_label(name, lo, hi),
+            'label': label,
             'tree_count': len(members),
             'bearing': round(street_bearing(frame, walk[name]), 1),
         },
@@ -1578,6 +1579,497 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
             'coordinates': [[round(t['lng'], 6), round(t['lat'], 6)] for t in members],
         },
     }
+
+
+# ------------------------------------------------- one block face, one zone --
+def seg_sort_key(key):
+    """A block face's (street, axis, low cross street, high) key, sortable
+    although an end at the district edge is None."""
+    return (key[0], key[1], key[2] or '', key[3] or '')
+
+
+# How far a corner tree may be from the nearest tree of a block on the same
+# street, round the corner, and still be put on it.
+CORNER_M = 20.0
+
+
+def own_block(walk, segs, owned, t, skip):
+    """The block of this sub-zone a tree filed elsewhere should go on, or None.
+
+    The streets it could stand on are tried best first. Its own block on each
+    is taken if the sub-zone owns it; failing that, the nearest block the
+    sub-zone owns on the same street, if one of its trees is within CORNER_M.
+    That second case is the corner tree standing just past a cross street's
+    centreline, whose own block on that side of the corner has no other
+    trees."""
+    for _, _, name, axis in street_candidates(walk, t['u'], t['n'], LOOSE_TREE_M):
+        lo, hi, _ = brackets(walk, t['u'], t['n'], 'ns' if axis == 'ew' else 'ew')
+        key = (name, axis, lo, hi)
+        if key != skip and key in segs and owned(key):
+            return key
+        near = [(min(math.hypot(m['u'] - t['u'], m['n'] - t['n']) for m in v), k)
+                for k, v in segs.items()
+                if k[0] == name and k[1] == axis and k != skip and owned(k)]
+        if near:
+            d, k = min(near, key=lambda x: x[0])
+            if d <= CORNER_M:
+                return k
+    return None
+
+
+def shared_edge(owner_b, other_b, name):
+    """The line two sub-zones share along street `name`, as (slope, intercept,
+    axis) in (along, across) terms - across = slope * along + intercept - or
+    None if they do not meet along it."""
+    found = []
+    for b in (owner_b, other_b):
+        hits = [(side, rec) for side, rec in b['used'].items() if rec[0] == name]
+        if len(hits) != 1:
+            return None
+        found.append(hits[0])
+    (side_a, rec_a), (side_b, rec_b) = found
+    if {side_a, side_b} not in ({'north', 'south'}, {'west', 'east'}):
+        return None
+    f, half = rec_a[1], rec_a[2]
+    if rec_b[1] is not f or abs(rec_b[2] - half) > 1e-9:
+        return None
+    hyp = math.hypot(1.0, f['slope'])
+    if f['axis'] == 'ew':
+        return f['slope'], f['offset'] - half * hyp, 'ew'
+    return f['slope'], f['offset'] + half * hyp, 'ns'
+
+
+# A step that would end this close to where the shared edge meets the
+# district boundary runs out to the boundary instead, rather than leave a
+# sliver of the other sub-zone between the two.
+SNAP_M = 15.0
+
+
+def ring_area(pts):
+    return sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1]
+               for i in range(len(pts))) / 2.0
+
+
+def segment_hit(p1, p2, q1, q2):
+    """Where segment p1-p2 properly crosses q1-q2, as (t along p1-p2, point),
+    or None."""
+    rx, ry = p2[0] - p1[0], p2[1] - p1[1]
+    sx, sy = q2[0] - q1[0], q2[1] - q1[1]
+    den = rx * sy - ry * sx
+    if abs(den) < 1e-12:
+        return None
+    t = ((q1[0] - p1[0]) * sy - (q1[1] - p1[1]) * sx) / den
+    w = ((q1[0] - p1[0]) * ry - (q1[1] - p1[1]) * rx) / den
+    if 1e-9 < t < 1 - 1e-9 and 1e-9 < w < 1 - 1e-9:
+        return t, (p1[0] + t * rx, p1[1] + t * ry)
+    return None
+
+
+def near_polyline(pt, line, tol):
+    for i in range(len(line) - 1):
+        (ax, ay), (bx, by) = line[i], line[i + 1]
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        f = 0.0 if L2 == 0 else max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / L2))
+        if math.hypot(ax + f * dx - pt[0], ay + f * dy - pt[1]) <= tol:
+            return True
+    return False
+
+
+def step_edge(frame, walk, boundary, owner_b, other_b, key, members):
+    """Move a set-back block face into the sub-zone that owns its street.
+
+    The edge the two sub-zones share is stepped out round the block's trees:
+    out along the cross-street bearing past the first tree, along the street
+    past the furthest one, and back - or, near the district boundary, out to
+    it. The other sub-zone is cut along the step and the piece is joined to
+    the owner, so the two rings still meet without a gap or an overlap.
+    Nothing is changed, and False returned, if the step would take in any
+    other tree or cross another edge."""
+    edge = shared_edge(owner_b, other_b, key[0])
+    cross = [walk[c]['slope'] for c in key[2:] if c in walk]
+    if edge is None or not cross:
+        return False
+    s, c, axis = edge
+    s2 = cross[0]
+    if 1.0 - s * s2 <= 0.1:
+        return False
+
+    # Everything below is in (along, across) metres: across = s * along + c on
+    # the shared line, and a cross street is along = s2 * across + c2.
+    def to_aa(u, n):
+        return (u, n) if axis == 'ew' else (n, u)
+
+    def vert(al, ac):
+        return (al, ac, frame.to_lnglat(*((al, ac) if axis == 'ew' else (ac, al))))
+
+    def ring_verts(ring):
+        return [to_aa(*frame.to_un(*p)) + (list(p),) for p in ring[:-1]]
+
+    def on_line(v):
+        return abs(v[1] - (s * v[0] + c)) <= 0.01
+
+    hyp, hyp2 = math.hypot(1.0, s), math.hypot(1.0, s2)
+    pts = [to_aa(t['u'], t['n']) for t in members]
+    dist = [(ac - (s * al + c)) / hyp for al, ac in pts]
+    if not (all(d > 0 for d in dist) or all(d < 0 for d in dist)):
+        return False
+    sign = 1.0 if dist[0] > 0 else -1.0
+    depth = max(abs(d) for d in dist) + EDGE_CLEAR_M
+    top = c + sign * depth * hyp
+    c2s = [al - s2 * ac for al, ac in pts]
+    base_sides = [min(c2s) - EDGE_CLEAR_M * hyp2, max(c2s) + EDGE_CLEAR_M * hyp2]
+
+    def meet(c2, k):
+        ac = (s * c2 + k) / (1.0 - s * s2)
+        return (s2 * ac + c2, ac)
+
+    other = ring_verts(other_b['ring'])
+    owner = ring_verts(owner_b['ring'])
+    n_other = len(other)
+    # The ring's edge along the shared line that the block stands beside: an
+    # earlier step on the same line leaves it in two pieces.
+    lo_al, hi_al = min(al for al, _ in pts), max(al for al, _ in pts)
+
+    def overlap(i):
+        a, b = sorted((other[i][0], other[(i + 1) % n_other][0]))
+        return min(b, hi_al) - max(a, lo_al)
+
+    on_l = sorted((i for i in range(n_other) if on_line(other[i])
+                   and on_line(other[(i + 1) % n_other]) and overlap(i) > 0),
+                  key=lambda i: -overlap(i))
+    if not on_l:
+        return False
+    li = on_l[0]
+    l_lo, l_hi = sorted((other[li][0], other[(li + 1) % n_other][0]))
+    bound_un = [to_aa(*frame.to_un(*p)) for p in boundary]
+    on_boundary = {end: near_polyline(v[:2], bound_un, 0.05)
+                   for end, v in ((l_lo, min(other[li], other[(li + 1) % n_other])),
+                                  (l_hi, max(other[li], other[(li + 1) % n_other])))}
+
+    def quad_of(sides):
+        return [meet(sides[0], c), meet(sides[0], top), meet(sides[1], top), meet(sides[1], c)]
+
+    def attempt(sides):
+        quad = quad_of(sides)
+        if quad[0][0] > quad[-1][0]:
+            quad.reverse()
+        inside = [l_lo + 0.5 < q[0] < l_hi - 0.5 for q in (quad[0], quad[-1])]
+        if not any(inside):
+            return None
+        path = quad if inside[0] else quad[::-1]
+        # Walk the step from a base that is on the shared edge until it meets
+        # the ring again: at the other base, or on the district boundary.
+        cut = [vert(*path[0])]
+        end_edge = None
+        for k in range(len(path) - 1):
+            a, b = path[k], path[k + 1]
+            hits = []
+            for j in range(n_other):
+                hit = segment_hit(a, b, other[j][:2], other[(j + 1) % n_other][:2])
+                if hit and not (j == li and k == 0):
+                    hits.append((hit[0], j, hit[1]))
+            if hits:
+                _, end_edge, x = min(hits)
+                if end_edge == li or not near_polyline(
+                        ((other[end_edge][0] + other[(end_edge + 1) % n_other][0]) / 2,
+                         (other[end_edge][1] + other[(end_edge + 1) % n_other][1]) / 2),
+                        bound_un, 0.05):
+                    return None
+                cut.append(vert(*x))
+                break
+            cut.append(vert(*b))
+        else:
+            if not all(inside):
+                return None
+            end_edge = li
+        # Cut the other sub-zone along the step into two rings.
+        if end_edge == li:
+            first = cut if (abs(cut[0][0] - other[li][0]) < abs(cut[-1][0] - other[li][0])) else cut[::-1]
+            rest = other[:li + 1] + first + other[li + 1:]
+            piece = cut
+        else:
+            fwd = lambda i, j: [other[x % n_other] for x in range(i, j + (n_other if j < i else 0) + 1)]
+            ring1 = cut + fwd(end_edge + 1, li)
+            ring2 = cut[::-1] + fwd(li + 1, end_edge)
+            piece, rest = ((ring1, ring2) if point_in_poly(pts[0][0], pts[0][1], [v[:2] for v in ring1])
+                           else (ring2, ring1))
+        # Join the piece to the owner along the stretch of shared line it has.
+        k_p = len(piece)
+        shared = [i for i in range(k_p) if on_line(piece[i]) and on_line(piece[(i + 1) % k_p])]
+        if len(shared) != 1:
+            return None
+        pa, pb = piece[shared[0]], piece[(shared[0] + 1) % k_p]
+        n_own = len(owner)
+        own_l = [i for i in range(n_own) if on_line(owner[i]) and on_line(owner[(i + 1) % n_own])
+                 and min(owner[i][0], owner[(i + 1) % n_own][0]) - 0.01 <= min(pa[0], pb[0])
+                 and max(pa[0], pb[0]) <= max(owner[i][0], owner[(i + 1) % n_own][0]) + 0.01]
+        if len(own_l) != 1:
+            return None
+        oi = own_l[0]
+        if (ring_area([v[:2] for v in owner]) > 0) != (ring_area([v[:2] for v in piece]) > 0):
+            piece = piece[::-1]
+            k_p = len(piece)
+            shared = [i for i in range(k_p) if on_line(piece[i]) and on_line(piece[(i + 1) % k_p])]
+            pa, pb = piece[shared[0]], piece[(shared[0] + 1) % k_p]
+        # The owner runs the shared stretch the other way, pb to pa.
+        o0, o1 = owner[oi], owner[(oi + 1) % n_own]
+        ins = [v for v in (pb, pa) if min(math.hypot(v[0] - o[0], v[1] - o[1]) for o in (o0, o1)) > 0.01]
+        ins.sort(key=lambda v: math.hypot(v[0] - o0[0], v[1] - o0[1]))
+        own = owner[:oi + 1] + ins + owner[oi + 1:]
+        same = lambda v, w: math.hypot(v[0] - w[0], v[1] - w[1]) <= 0.01
+        ia = next(i for i, v in enumerate(own) if same(v, pa))
+        ib = next(i for i, v in enumerate(own) if same(v, pb))
+        n2 = len(own)
+        around_owner = [own[x % n2] for x in range(ia, ib + (n2 if ib < ia else 0) + 1)]
+        jb = (shared[0] + 1) % k_p
+        around_piece = [piece[x % k_p] for x in range(jb, shared[0] + (k_p if shared[0] < jb else 0) + 1)]
+        joined = around_owner[:-1] + around_piece[:-1]
+        area_ok = abs(ring_area([v[:2] for v in joined]) - ring_area([v[:2] for v in owner])
+                      - ring_area([v[:2] for v in piece])) < 1.0
+        if not area_ok:
+            return None
+        return joined, rest, abs(ring_area([v[:2] for v in piece]))
+
+    # Where the step nearly reaches the district boundary, first try running
+    # it on until it meets the boundary - a side pushed well past it, so the
+    # step's top runs out to the boundary - so long as that takes in little
+    # more than the plain step would. Then the plain step.
+    plain = abs(ring_area(quad_of(base_sides)))
+    tries = []
+    snapped = list(base_sides)
+    for k, end in ((0, l_lo), (1, l_hi)):
+        at = meet(base_sides[k], c)[0]
+        if on_boundary[end] and abs(at - end) <= SNAP_M:
+            snapped[k] = base_sides[k] + (end + (1.0 if k else -1.0) * 1000.0 - at) * (1.0 - s * s2)
+    if snapped != base_sides:
+        tries.append(snapped)
+    tries.append(base_sides)
+    ids = {t['tree_id'] for t in members}
+    for sides in tries:
+        got = attempt(sides)
+        if not got or got[2] > plain + 2.0 * SNAP_M * depth:
+            continue
+        joined, rest, _ = got
+        new_owner = [list(v[2]) for v in joined] + [list(joined[0][2])]
+        new_other = [list(v[2]) for v in rest] + [list(rest[0][2])]
+        leaving = [t for t in other_b['inside']
+                   if not point_in_poly(t['lng'], t['lat'], new_other)]
+        if ({t['tree_id'] for t in leaving} != ids
+                or not all(point_in_poly(t['lng'], t['lat'], new_owner)
+                           for t in owner_b['inside'] + members)):
+            continue
+        owner_b['ring'], other_b['ring'] = new_owner, new_other
+        owner_b['inside'] = owner_b['inside'] + members
+        other_b['inside'] = [t for t in other_b['inside'] if t['tree_id'] not in ids]
+        owner_b['segs'][key].extend(members)
+        return True
+    return False
+
+
+# ------------------------------------------------------------ corner slivers --
+
+def convex_overlap(a, b):
+    """The part of convex polygon `a` inside convex polygon `b`, both (u, n)."""
+    sign = 1.0 if ring_area(b) > 0 else -1.0
+    out = [list(p) for p in a]
+    for i in range(len(b)):
+        p, q = b[i], b[(i + 1) % len(b)]
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        out = clip_halfplane(out, (sign * dy, -sign * dx, -sign * (dy * p[0] - dx * p[1])))
+        if len(out) < 3:
+            return None
+    return out
+
+
+def cut_corner(frame, ring, piece, sid, other):
+    """`ring` (lng/lat, closed) without the convex `piece` (u, n) at one of its
+    corners: the run of its vertices inside the piece is replaced by the way
+    round the piece's other side. Stops the build if the piece is not a
+    corner, or has a tree in it."""
+    tol = 0.01
+    pts = [frame.to_un(*p) for p in ring[:-1]]
+    n = len(pts)
+    area_sign = 1.0 if ring_area(piece) > 0 else -1.0
+
+    def in_piece(x):
+        for i in range(len(piece)):
+            p, q = piece[i], piece[(i + 1) % len(piece)]
+            L = math.hypot(q[0] - p[0], q[1] - p[1]) or 1.0
+            if area_sign * ((q[0] - p[0]) * (x[1] - p[1]) - (q[1] - p[1]) * (x[0] - p[0])) / L < -tol:
+                return False
+        return True
+
+    def seg_dist(x, p, q):
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        L2 = dx * dx + dy * dy
+        f = 0.0 if L2 == 0 else max(0.0, min(1.0, ((x[0] - p[0]) * dx + (x[1] - p[1]) * dy) / L2))
+        return math.hypot(p[0] + f * dx - x[0], p[1] + f * dy - x[1])
+
+    hit = [in_piece(v) for v in pts]
+    if not any(hit):
+        cx = sum(p[0] for p in piece) / len(piece)
+        cy = sum(p[1] for p in piece) / len(piece)
+        if not point_in_poly(cx, cy, pts):
+            return ring      # the district boundary already cut this corner off
+        raise SystemExit('sub-zones %s and %s overlap away from a corner' % (sid, other))
+    if all(hit):
+        raise SystemExit('sub-zone %s lies inside %s' % (sid, other))
+    k = next(i for i in range(n) if hit[i] and not hit[i - 1])
+    order = [(k - 1 + j) % n for j in range(n)]          # previous vertex first
+    run = 1
+    while hit[order[run]]:
+        run += 1
+    if any(hit[i] for i in order[run:]):
+        raise SystemExit('sub-zones %s and %s overlap in two places' % (sid, other))
+    prev, first, last, nxt = pts[order[0]], pts[order[1]], pts[order[run - 1]], pts[order[run]]
+    xs = [i for i, v in enumerate(piece) if seg_dist(v, prev, first) <= tol
+          and math.hypot(v[0] - first[0], v[1] - first[1]) > tol]
+    ys = [i for i, v in enumerate(piece) if seg_dist(v, last, nxt) <= tol
+          and math.hypot(v[0] - last[0], v[1] - last[1]) > tol]
+    if len(xs) != 1 or len(ys) != 1:
+        raise SystemExit('sub-zones %s and %s overlap other than at a corner' % (sid, other))
+    ix, iy, m = xs[0], ys[0], len(piece)
+    arcs = [[piece[(ix + j) % m] for j in range(1, (iy - ix) % m)],
+            [piece[(ix - j) % m] for j in range(1, (ix - iy) % m)]]
+    edges = [(pts[i], pts[(i + 1) % n]) for i in range(n)]
+    way = [a for a in arcs if a and all(min(seg_dist(v, p, q) for p, q in edges) > tol
+                                       and point_in_poly(v[0], v[1], pts) for v in a)]
+    if len(way) != 1:
+        raise SystemExit('sub-zones %s and %s: no clean way round their overlap' % (sid, other))
+    new = ([list(ring[order[0]])]
+           + [frame.to_lnglat(*v) for v in [piece[ix]] + way[0] + [piece[iy]]]
+           + [list(ring[i]) for i in order[run:]])
+    before = abs(ring_area(pts))
+    after = abs(ring_area([frame.to_un(*p) for p in new]))
+    if abs(before - abs(ring_area(piece)) - after) > 0.05:
+        raise SystemExit('sub-zones %s and %s: cutting their overlap went wrong' % (sid, other))
+    print('  %s gives up %.2f m2 it overlapped with %s at a corner' % (sid, abs(ring_area(piece)), other))
+    return new + [new[0]]
+
+
+# ------------------------------------------------------------ block names --
+
+def open_ends(frame, walk, name, lo, hi, members, ring, zone_lines, bounds, boundary):
+    """segment_ends, with an open end named after the zone line it stops at.
+
+    A block with no cross street beyond it in its region was printed as
+    running to "the district edge", and 37 of those ends were not: Ludlow St
+    south of Broome St stops at Grand St, where zone 3 starts. So the street's
+    row is followed out from its last tree until it leaves the sub-zone.
+    If it is still in CB3 there, the zone line it has crossed names the end.
+    A block that is only the corner at a zone line - Forsyth St's trees on the
+    north side of E Houston St - comes out with both ends the same, and is
+    printed as "Forsyth St at E Houston St"."""
+    ends = segment_ends(lo, hi)
+    g = walk[name]
+    for k, cross in ((0, lo), (1, hi)):
+        if cross:
+            continue
+        sign = -1.0 if k == 0 else 1.0
+        along = [t['u'] if g['axis'] == 'ew' else t['n'] for t in members]
+        start = min(along) if k == 0 else max(along)
+        # Along the trees' own row rather than the centreline: the Bowery's
+        # line is CB3's boundary itself, and a walk down it is outside the
+        # district from the first step.
+        row = sum((t['n'] - (g['slope'] * t['u'] + g['offset'])) if g['axis'] == 'ew'
+                  else (t['u'] - (g['slope'] * t['n'] + g['offset'])) for t in members) / len(members)
+        for step in range(1, 1500):
+            a = start + sign * 2.0 * step
+            u, n = ((a, g['slope'] * a + g['offset'] + row) if g['axis'] == 'ew'
+                    else (g['slope'] * a + g['offset'] + row, a))
+            lng, lat = frame.to_lnglat(u, n)
+            if point_in_poly(lng, lat, ring):
+                continue
+            if point_in_poly(lng, lat, boundary):
+                crossed = [(abs(n - (zone_lines[key]['slope'] * u + zone_lines[key]['offset'])), key)
+                           for key, keep_south in bounds
+                           if (n < zone_lines[key]['slope'] * u + zone_lines[key]['offset']) == keep_south]
+                if crossed:
+                    ends[k] = pretty(DIVIDER_OWNER[min(crossed)[1]][1])
+            break
+    return ends
+
+
+ACROSS_M = 22.0   # from a tree to past the far kerb of the widest boundary street
+
+
+def one_sided(frame, g, members, boundary):
+    """Is CB3 only one side of this street here? True when, for most of its
+    trees, the point ACROSS_M square to the street on one side or the other
+    is outside the district: E 14th St, whose north side is in CB6, and the
+    Bowery and 4th Ave, whose west side is in CB2. It goes by the street's
+    bearing only, not its fitted position, which for E 14th St is the old
+    grid's rough line."""
+    h = math.hypot(1.0, g['slope'])
+    nu, nn = ((-g['slope'] / h, 1.0 / h) if g['axis'] == 'ew'
+              else (1.0 / h, -g['slope'] / h))
+    out = 0
+    for t in members:
+        sides = [point_in_poly(*frame.to_lnglat(t['u'] + k * ACROSS_M * nu,
+                                                t['n'] + k * ACROSS_M * nn), boundary)
+                 for k in (-1.0, 1.0)]
+        if sides.count(False) == 1:
+            out += 1
+    return out * 2 > len(members)
+
+
+# Colours a map needs so that no two sub-zones sharing a street look alike.
+# Sharing means at least this much edge; two that only touch at a corner may
+# take the same colour.
+SHARED_EDGE_M = 5.0
+
+
+def shared_edge_lengths(frame, rings):
+    """Metres of edge each pair of sub-zones has in common, by matching
+    collinear stretches of their rings."""
+    segs = {sid: [(frame.to_un(*r[i]), frame.to_un(*r[i + 1])) for i in range(len(r) - 1)]
+            for sid, r in rings.items()}
+    out = collections.Counter()
+    ids = sorted(segs)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            for p, q in segs[a]:
+                L = math.hypot(q[0] - p[0], q[1] - p[1])
+                if L < 0.01:
+                    continue
+                ux, uy = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+                for r, w in segs[b]:
+                    if max(abs((x[0] - p[0]) * uy - (x[1] - p[1]) * ux) for x in (r, w)) > 0.5:
+                        continue
+                    t1 = (r[0] - p[0]) * ux + (r[1] - p[1]) * uy
+                    t2 = (w[0] - p[0]) * ux + (w[1] - p[1]) * uy
+                    over = min(L, max(t1, t2)) - max(0.0, min(t1, t2))
+                    if over > 0:
+                        out[(a, b)] += over
+    return out
+
+
+def four_colour(ids, edges):
+    """A colour 0-3 per sub-zone, no two neighbours alike: most-constrained
+    first, with backtracking, so it cannot settle for a fifth colour."""
+    nb = {i: set() for i in ids}
+    for a, b in edges:
+        nb[a].add(b)
+        nb[b].add(a)
+    order = sorted(ids, key=lambda i: (-len(nb[i]), i))
+    got = {}
+
+    def place(k):
+        if k == len(order):
+            return True
+        i = order[k]
+        for colour in range(4):
+            if all(got.get(j) != colour for j in nb[i]):
+                got[i] = colour
+                if place(k + 1):
+                    return True
+                del got[i]
+        return False
+
+    if not place(0):
+        raise SystemExit('sub-zones need more than four colours')
+    return got
 
 
 # ------------------------------------------------------------------ naming --
@@ -1839,7 +2331,17 @@ def main():
     # out over the union of them. Columns that merely touch - 1A's and 1B's on
     # E 10th St, which meet on 1st Ave - do not, which is what keeps the Riis
     # nudge local to the sub-zones that need it.
-    def spec_column(spec, sides):
+    def spec_column(spec, sides, edge_f):
+        """How far a sub-zone runs along one of its edges: where the two
+        perpendicular sides cross that edge's street, as a coordinate along it.
+
+        It has to be read where the lines actually cross. An offset is an
+        intercept on the frame's origin axis, E 14th St, and two streets that
+        are not square to the frame drift apart from their intercepts by their
+        slope times the distance: in Two Bridges, 2 km south and at a slope of
+        0.7, comparing intercepts put the 3C stretch of Monroe St somewhere none
+        of 3C's trees stand, and its edge was placed by trees two sub-zones
+        away."""
         sign = -1.0 if sides[0] == 'north' else 1.0
         bounds = []
         for side in sides:
@@ -1847,10 +2349,17 @@ def main():
             if name == CB3_EDGE:
                 bounds.append(None)
                 continue
-            f = (divider_lines[name[len(DIVIDER):]] if name.startswith(DIVIDER)
-                 else lines[spec['region']][name])
-            half = 0.0 if name.startswith(DIVIDER) else row_half(name, f)
-            bounds.append(f['offset'] + sign * half)
+            if name.startswith(DIVIDER):
+                f = divider_lines[name[len(DIVIDER):]]
+            else:
+                f = lines[spec['region']].get(name)
+                if f is None:
+                    raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
+                half = row_half(name, f) * math.hypot(1.0, f['slope'])
+                f = {'slope': f['slope'], 'offset': f['offset'] + sign * half}
+            a, b = edge_f['slope'], edge_f['offset']
+            c, d = f['slope'], f['offset']
+            bounds.append((c * b + d) / (1.0 - a * c))
         lo = bounds[0] if bounds[0] is not None else -BIG
         hi = bounds[1] if bounds[1] is not None else BIG
         return (lo, hi) if lo <= hi else (hi, lo)
@@ -1860,11 +2369,13 @@ def main():
     for spec in SUBZONES:
         for sides, perp in ((('north', 'south'), ('west', 'east')),
                             (('west', 'east'), ('north', 'south'))):
-            col = spec_column(spec, perp)
             for side in sides:
                 name = spec[side]
                 if name == CB3_EDGE or name.startswith(DIVIDER):
                     continue
+                if name not in lines[spec['region']]:
+                    raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
+                col = spec_column(spec, perp, lines[spec['region']][name])
                 edge_cols[(spec['region'], name)].append(col)
 
     stretches = {}
@@ -1895,18 +2406,20 @@ def main():
     for (rid, name), groups in stretches.items():
         f = lines[rid][name]
         floor = row_half(name, f)
+        hyp = math.hypot(1.0, f['slope'])     # distances square to the street
         for lo, hi in groups:
             if f['axis'] == 'ew':
-                dist = [(f['offset'] + f['slope'] * t['u'] - t['n'], t['street'])
+                dist = [((f['offset'] + f['slope'] * t['u'] - t['n']) / hyp, t['street'])
                         for t in trees if t['region'] == rid and lo <= t['u'] <= hi]
             else:
-                dist = [(t['u'] - (f['offset'] + f['slope'] * t['n']), t['street'])
+                dist = [((t['u'] - (f['offset'] + f['slope'] * t['n'])) / hyp, t['street'])
                         for t in trees if t['region'] == rid and lo <= t['n'] <= hi]
             own = [d for d, s in dist if s == name]
             others = [d for d, s in dist if s is not None and s != name]
             stretch_offset[(rid, name, lo, hi)] = edge_offset(f, floor, own, others)
 
     print('\n=== sub-zones')
+    built = []
     for spec in SUBZONES:
         rid = spec['region']
         region_lines = lines[rid]
@@ -1925,28 +2438,6 @@ def main():
             if f is None:
                 raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
             return f, row_half(name, f)
-
-        def column(sides):
-            """Extent of this sub-zone along the axis an edge runs in.
-
-            An edge's offset is chosen from the trees it actually crosses, so
-            it needs to know how far the sub-zone reaches sideways. The two
-            perpendicular edges give that - close enough to say which trees are
-            in the column, which is all it is for. Two sub-zones bounded by the
-            same street over the same column therefore get the same offset,
-            which is what keeps 1C and 1F, or 1A and 1D, sharing one line.
-
-            The two axes take opposite signs: an avenue's line is EAST of its
-            centreline and a street's is NORTH of it, and north is where n gets
-            smaller."""
-            sign = -1.0 if sides[0] == 'north' else 1.0
-            bounds = []
-            for side in sides:
-                f, half = named_line(spec[side])
-                bounds.append(None if f is None else f['offset'] + sign * half)
-            lo = bounds[0] if bounds[0] is not None else -BIG
-            hi = bounds[1] if bounds[1] is not None else BIG
-            return (lo, hi) if lo <= hi else (hi, lo)
 
         def edge(side):
             """Half-plane for one named edge, or None for a CB3 edge.
@@ -1970,7 +2461,8 @@ def main():
                 used[side] = (label, f, fit['edge_offset_m'], fit['edge_clear_m'],
                               row_half(fit['name'], fit))
                 return f, 0.0
-            col = column(('west', 'east') if f['axis'] == 'ew' else ('north', 'south'))
+            col = spec_column(spec, ('west', 'east') if f['axis'] == 'ew'
+                              else ('north', 'south'), f)
             for (lo, hi) in stretches[(rid, name)]:
                 if lo - 1.0 <= col[0] and col[1] <= hi + 1.0:
                     half, clear = stretch_offset[(rid, name, lo, hi)]
@@ -1984,23 +2476,29 @@ def main():
         # right-of-way, so the street sits south of its own boundary.
         # west / east: u = slope*n + offset, offset EAST, so the avenue sits
         # west of its own boundary.
+        # `half` is metres square to the street, and moving a line that far
+        # moves its intercept by half * hypot(1, slope).
         south = edge('south')
         if south:
             f, half = south
+            half *= math.hypot(1.0, f['slope'])
             # keep n <= slope*u + offset - half   ->   n - slope*u - (offset-half) <= 0
             window = clip_halfplane(window, (-f['slope'], 1.0, -(f['offset'] - half)))
         north = edge('north')
         if north:
             f, half = north
+            half *= math.hypot(1.0, f['slope'])
             window = clip_halfplane(window, (f['slope'], -1.0, (f['offset'] - half)))
         east = edge('east')
         if east:
             f, half = east
+            half *= math.hypot(1.0, f['slope'])
             # keep u <= slope*n + offset + half
             window = clip_halfplane(window, (1.0, -f['slope'], -(f['offset'] + half)))
         west = edge('west')
         if west:
             f, half = west
+            half *= math.hypot(1.0, f['slope'])
             window = clip_halfplane(window, (-1.0, f['slope'], (f['offset'] + half)))
 
         for div_key, keep_south in REGION_BOUNDS[rid]:
@@ -2019,6 +2517,16 @@ def main():
             raise SystemExit('sub-zone %s: window misses CB3' % spec['id'])
         ring = ring + [ring[0]]
 
+        # Where two streets' edges both step at the corner they cross - Monroe
+        # St sits 1.5 m further south east of Pike St than west of it, and Pike
+        # St 5.7 m further east south of Monroe than north of it - the four
+        # sub-zones round the corner do not tile: 3D and 3F both took the
+        # sliver between the steps. The later sub-zone gives it up.
+        for other in built:
+            piece = convex_overlap(window, other['window'])
+            if piece and abs(ring_area(piece)) > 0.01:
+                ring = cut_corner(frame, ring, piece, spec['id'], other['spec']['id'])
+
         inside = [t for t in trees if point_in_poly(t['lng'], t['lat'], ring)]
 
         # Which streets the sub-zone contains, read off the trees rather than
@@ -2032,7 +2540,6 @@ def main():
         walk = walk_lines[rid]
         ordered = {ax: [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
                         if g['axis'] == ax] for ax in ('ew', 'ns')}
-        held_ew, held_ns = set(), set()
         segs = collections.defaultdict(list)
         rank = {}
         loose = []
@@ -2041,7 +2548,6 @@ def main():
             if name is None:
                 loose.append(t)
                 continue
-            (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
             lo, hi, at = brackets(walk, t['u'], t['n'], cross)
             # The least, not whichever tree came last: census row order must
@@ -2052,21 +2558,116 @@ def main():
         # of one joins that street's block, if the block already has trees of
         # its own or LOOSE_BLOCK_MIN set-back trees start it together. One or
         # two set-back trees are not a block face a crew can be sent to.
+        # A set-back tree too few to start its nearest street's block goes on
+        # the next street within reach whose block the sub-zone does have:
+        # one 20 m out at a corner joins the cross street's block.
         late = collections.defaultdict(list)
         for t in loose:
-            name, axis = nearest_line(walk, t['u'], t['n'], LOOSE_TREE_M)
-            if name is None:
-                continue
-            cross = 'ns' if axis == 'ew' else 'ew'
-            lo, hi, at = brackets(walk, t['u'], t['n'], cross)
-            late[(name, axis, lo, hi)].append((t, at))
+            cands = []
+            for _, _, name, axis in street_candidates(walk, t['u'], t['n'], LOOSE_TREE_M):
+                lo, hi, at = brackets(walk, t['u'], t['n'], 'ns' if axis == 'ew' else 'ew')
+                cands.append(((name, axis, lo, hi), at))
+            if cands:
+                late[cands[0][0]].append((t, cands))
+        # Blocks first, then the trees too few to start one, so which blocks
+        # those can see does not depend on the census's row order.
+        few = []
         for key, members in late.items():
             if key not in segs and len(members) < LOOSE_BLOCK_MIN:
+                few.extend(members)
                 continue
-            (held_ew if key[1] == 'ew' else held_ns).add(key[0])
-            for t, at in members:
+            for t, cands in members:
+                at = cands[0][1]
                 rank[key] = min(at, rank.get(key, at))
                 segs[key].append(t)
+        for t, cands in few:
+            for alt, at in cands[1:]:
+                if alt in segs:
+                    segs[alt].append(t)
+                    break
+        built.append({'spec': spec, 'ring': ring, 'inside': inside,
+                      'segs': segs, 'rank': rank, 'used': used, 'window': window})
+
+    # ---- one block face, one sub-zone --------------------------------------
+    # A tree is filed under a street when it stands within that street's reach,
+    # and a sub-zone edge is drawn just past the street's own planting, so the
+    # two do not always agree. Set-back frontage - the Riis Houses on E 10th
+    # St, 12-30 m out - stands past the edge, and a corner tree can be nearer
+    # the cross street than the street it is on. Each of those came out as a
+    # second, smaller copy of a block in the next sub-zone: 19 block faces were
+    # split, two crews could be sent to the same one, and E 10th St from Ave D
+    # to the FDR had 18 trees in 1C and 22 in 1F under the same name.
+    #
+    # So each block face belongs to one sub-zone, the one its street runs through.
+    # A tree of it in any other sub-zone goes on the nearest street whose
+    # block is that sub-zone's own - the cross street, for a corner tree.
+    # Where LOOSE_BLOCK_MIN or more of them have no such street - a set-back
+    # row - the edge between the two sub-zones steps out round them instead,
+    # and the whole piece joins its block (see step_edge). Anything left is on
+    # no block. No block is created here.
+    tally = collections.defaultdict(collections.Counter)
+    for b in built:
+        for key, members in b['segs'].items():
+            tally[(b['spec']['region'], key)][b['spec']['id']] += len(members)
+    # The owner is the sub-zone the street itself runs through there - every
+    # edge stands just past its street, so the centreline is inside the one
+    # sub-zone that holds the street - and not simply the larger share: four
+    # dead kerb trees on E 10th St would otherwise hand the block, kerb and
+    # all, to the Riis Houses' 18 set-back trees in 1C. A centreline that is
+    # the district boundary (E 14th St, the Bowery) or is in no sub-zone with
+    # trees on the block falls back to the larger share.
+    by_id = {b['spec']['id']: b for b in built}
+    owner = {}
+    for (rid, key), c in sorted(tally.items(), key=lambda kv: (kv[0][0], seg_sort_key(kv[0][1]))):
+        name, axis = key[0], key[1]
+        g = walk_lines[rid][name]
+        trees_on = [t for sid in c for t in by_id[sid]['segs'][key]]
+        if axis == 'ew':
+            u = sum(t['u'] for t in trees_on) / len(trees_on)
+            n = g['slope'] * u + g['offset']
+        else:
+            n = sum(t['n'] for t in trees_on) / len(trees_on)
+            u = g['slope'] * n + g['offset']
+        lng, lat = frame.to_lnglat(u, n)
+        on = [sid for sid in sorted(c) if point_in_poly(lng, lat, by_id[sid]['ring'])]
+        owner[(rid, key)] = on[0] if on else max(sorted(c), key=lambda sid: c[sid])
+    rehomed = dropped = stepped = 0
+    for b in built:
+        sid, rid = b['spec']['id'], b['spec']['region']
+        walk, segs = walk_lines[rid], b['segs']
+        pieces = [(k, segs.pop(k)) for k in sorted(segs, key=seg_sort_key)
+                  if owner[(rid, k)] != sid]
+        frozen = {k: list(v) for k, v in segs.items()}
+        for key, members in pieces:
+            homes = [own_block(walk, frozen, lambda k: owner[(rid, k)] == sid, t, key)
+                     for t in members]
+            if homes.count(None) >= LOOSE_BLOCK_MIN:
+                home_b = by_id[owner[(rid, key)]]
+                if (home_b['spec']['zone'] == b['spec']['zone']
+                        and step_edge(frame, walk, boundary, home_b, b, key, members)):
+                    stepped += len(members)
+                    print('  %s, %s: %d set-back trees moved from %s to %s, '
+                          'with the edge stepped round them'
+                          % (pretty(key[0]), ' to '.join(segment_ends(key[2], key[3])),
+                             len(members), sid, home_b['spec']['id']))
+                    continue
+            for t, home in zip(members, homes):
+                if home is None:
+                    dropped += 1
+                else:
+                    segs[home].append(t)
+                    rehomed += 1
+    print('  block faces in two sub-zones: %d trees moved to a block of their own '
+          'sub-zone, %d moved sub-zone with their block, %d left on none'
+          % (rehomed, stepped, dropped))
+
+    for b in built:
+        spec, ring, inside = b['spec'], b['ring'], b['inside']
+        segs, rank, used = b['segs'], b['rank'], b['used']
+        rid = spec['region']
+        walk = walk_lines[rid]
+        held_ew = {k[0] for k in segs if k[1] == 'ew'}
+        held_ns = {k[0] for k in segs if k[1] == 'ns'}
 
         # A stable identifier per segment: streets first, north to south, then
         # avenues west to east, numbered within the sub-zone. Ordering is by
@@ -2108,22 +2709,51 @@ def main():
             ledger['labels'][label] = seg_id
             for t in members:
                 tree_segment[t['tree_id']] = seg_id
+            # The ledger above keys on segment_label, which prints an open end
+            # as "the district edge" whatever it meets; only the label shown
+            # names the zone line.
+            ends = open_ends(frame, walk, name, lo, hi, members, ring, divider_lines,
+                             REGION_BOUNDS[rid], boundary)
             segments.append(segment_feature(members, walk, name, axis,
-                                            lo, hi, spec, seg_id, frame))
+                                            lo, hi, spec, seg_id, frame, ends))
+
+        # West to east and north to south where this sub-zone's trees stand,
+        # not by intercept: the Bowery, 3rd Ave and 4th Ave are three bearings
+        # that meet at Cooper Square, and their intercepts at E 14th St say
+        # nothing about their order further south.
+        mid_u = sum(t['u'] for t in inside) / max(1, len(inside))
+        mid_n = sum(t['n'] for t in inside) / max(1, len(inside))
 
         def in_order(names, axis):
-            return [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
-                    if g['axis'] == axis and n in names]
+            return sorted((n for n in names if walk[n]['axis'] == axis),
+                          key=lambda n: walk[n]['slope'] * (mid_u if axis == 'ew' else mid_n)
+                          + walk[n]['offset'])
 
+        # A sub-zone is named by the streets it holds, avenues first - "Ave A
+        # to Ave B, E 14th St to E 11th St" - and every street named is worked
+        # both sides. The names used to be written by hand from the edges, and
+        # an edge street belongs to one side of it only: 1A was "E 14th St to
+        # E 10th St" while E 10th St was all in 1D, 3B and 3E ran "to the East
+        # River" without reaching it, and in all 25 the name disagreed with
+        # the streets listed under it. E 14th St and the Bowery are the
+        # exception to "both sides", since CB3 stops at their centreline; they
+        # are listed in one_side.
         streets_txt = name_span(in_order(held_ew, 'ew'))
         avenues_txt = name_span(in_order(held_ns, 'ns'))
+        label = ', '.join(x for x in (avenues_txt, streets_txt) if x)
+        by_street = collections.defaultdict(list)
+        for (name, axis, lo, hi), members in segs.items():
+            by_street[name].extend(members)
+        one_side = [pretty(n) for n in in_order(held_ew, 'ew') + in_order(held_ns, 'ns')
+                    if one_sided(frame, walk[n], by_street[n], boundary)]
         props = {
             'subzone_id': spec['id'],
             'zone': spec['zone'],
             'region': rid,
             'region_label': regions[rid]['label'],
-            'label': spec['bounds'],
-            'bounds': spec['bounds'],
+            'label': label,
+            'bounds': label,
+            'one_side': ' and '.join(one_side),
             'streets': streets_txt,
             'avenues': avenues_txt,
             'contains': ', '.join(x for x in (streets_txt, avenues_txt) if x),
@@ -2139,10 +2769,9 @@ def main():
             csv_rows.append((t['tree_id'], spec['id'], tree_segment.get(t['tree_id'], ''),
                              spec['zone'], t['lat'], t['lng'], t['species']))
 
-        print('  %-4s %2d blocks %4d trees (%d off any segment)   bounds: %s'
-              % (spec['id'], len(segs), len(inside), props['off_segment'],
-                 spec['bounds']))
-        print('       contains: %s' % props['contains'])
+        print('  %-4s %2d blocks %4d trees (%d off any segment)   %s%s'
+              % (spec['id'], len(segs), len(inside), props['off_segment'], label,
+                 '  (one side only: %s)' % props['one_side'] if one_side else ''))
         for side in ('north', 'south', 'west', 'east'):
             if side in used:
                 name, f, half, clear, floor = used[side]
@@ -2154,6 +2783,19 @@ def main():
                       % (side, pretty(name), half, clear, note))
             else:
                 print('       %-5s edge %s' % (side, 'CB3 district boundary'))
+
+    # Four colours, no two sub-zones that share a street alike. The map
+    # colours by this; the old fills shaded each zone's sub-zones from one hue
+    # and 31 of 36 neighbouring pairs came out nearly the same.
+    shared = shared_edge_lengths(frame, {f['properties']['subzone_id']: f['geometry']['coordinates'][0]
+                                         for f in features})
+    colours = four_colour([f['properties']['subzone_id'] for f in features],
+                          [k for k, v in shared.items() if v >= SHARED_EDGE_M])
+    for f in features:
+        f['properties']['color_index'] = colours[f['properties']['subzone_id']]
+    print('\n%d pairs of sub-zones share a street; colours: %s'
+          % (sum(1 for v in shared.values() if v >= SHARED_EDGE_M),
+             ' '.join('%s=%d' % kv for kv in sorted(colours.items()))))
 
     # ---- validation --------------------------------------------------------
     print('\n=== validation')
@@ -2187,6 +2829,15 @@ def main():
         for sid, side, name, half, clear, floor in nudged:
             print('  %-4s %-5s %-22s %.2f m (from %.2f), %.2f m clear'
                   % (sid, side, pretty(name), half, floor, clear))
+    # Trees only show an overlap or a gap where a tree stands in it; areas show
+    # every one. On 2026-10-12 there was an 18.6 m2 gap at Pike and Monroe St,
+    # and after the square-to-the-street fix an 8.7 m2 overlap there instead.
+    covered = sum(poly_area_m2(f['geometry']['coordinates'][0][:-1]) for f in features)
+    district = poly_area_m2(boundary[:-1] if boundary[0] == boundary[-1] else boundary)
+    print('sub-zones cover %.1f m2 of CB3\'s %.1f m2' % (covered, district))
+    if abs(covered - district) > 1.0:
+        raise SystemExit('sub-zones overlap or leave a gap: %.1f m2 - nothing written'
+                         % (covered - district))
     print('%s' % ('no overlaps' if problems == 0 else '%d problem(s)' % problems))
 
     ids = [f['properties']['segment_id'] for f in segments]
