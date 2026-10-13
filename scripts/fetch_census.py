@@ -487,7 +487,15 @@ def check_not_degraded(trees, out_path):
         return []
     if not old:
         return []
+    return degradation_reasons(old, trees)
 
+
+def degradation_reasons(old, trees):
+    """The checks behind check_not_degraded(), on already-loaded tree lists.
+
+    Shared with fetch_district_trees.py, whose files hold the same trees in a
+    more compact layout and so need their own loader.
+    """
     reasons = []
 
     floor = int(len(old) * MIN_TREE_COUNT_RATIO)

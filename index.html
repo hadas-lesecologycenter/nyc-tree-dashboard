@@ -843,6 +843,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     line-height: 1.3; }
   .cp-chk input, .cp-radio input { cursor: pointer; margin: 0; flex-shrink: 0; }
   .cp-hint { font-size: 11px; color: var(--text2); line-height: 1.4; margin: 0 0 8px; }
+  .district-status { margin-left: auto; padding-left: 6px; font-size: 10px; color: var(--text3); white-space: nowrap; }
+  .district-status.error { color: #c0392b; }
   .cp-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; }
   .cp-count {
     margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border);
@@ -1741,6 +1743,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
               <span>1</span><span>10</span><span>20</span><span>30+</span>
             </div>
           </div>
+        </div>
+
+        <div class="cp-section">
+          <div class="cp-label">Other Districts</div>
+          <p class="cp-hint">The map opens with CB3 only. Tick a Manhattan district to add its trees; each one downloads only when ticked. View only: Stats and Tree Care stay CB3.</p>
+          <label class="cp-chk"><input type="checkbox" data-district="101" onchange="toggleDistrict(this)">CB1 · Financial District, Tribeca<span class="district-status" data-cd="101"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="102" onchange="toggleDistrict(this)">CB2 · Greenwich Village, SoHo<span class="district-status" data-cd="102"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="104" onchange="toggleDistrict(this)">CB4 · Chelsea, Hell's Kitchen<span class="district-status" data-cd="104"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="105" onchange="toggleDistrict(this)">CB5 · Midtown, Flatiron<span class="district-status" data-cd="105"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="106" onchange="toggleDistrict(this)">CB6 · Murray Hill, Turtle Bay<span class="district-status" data-cd="106"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="107" onchange="toggleDistrict(this)">CB7 · Upper West Side<span class="district-status" data-cd="107"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="108" onchange="toggleDistrict(this)">CB8 · Upper East Side<span class="district-status" data-cd="108"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="109" onchange="toggleDistrict(this)">CB9 · Morningside Heights<span class="district-status" data-cd="109"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="110" onchange="toggleDistrict(this)">CB10 · Central Harlem<span class="district-status" data-cd="110"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="111" onchange="toggleDistrict(this)">CB11 · East Harlem<span class="district-status" data-cd="111"></span></label>
+          <label class="cp-chk"><input type="checkbox" data-district="112" onchange="toggleDistrict(this)">CB12 · Washington Heights, Inwood<span class="district-status" data-cd="112"></span></label>
         </div>
 
         <div class="cp-section">
@@ -2838,6 +2856,8 @@ let _viewModeNone = false;
 let emptyBedsVisible = false;
 let emptyBedsLayer = null;
 let emptyBeds = [];
+// Tree records at these statuses are empty planting beds, not live trees.
+const EMPTY_BED_STATUSES = new Set(['Retired', 'Stump', 'Stump - Uprooted']);
 let healthChart = null, boroughChart = null, speciesChart = null;
 let userLocationMarker = null;
 let userAccuracyCircle = null;
@@ -3012,7 +3032,7 @@ function populatePlantingYearFilter() {
 
   const thisYear = new Date().getFullYear();
   const years = new Set();
-  allTrees.forEach(t => {
+  mapTrees().forEach(t => {
     const yr = parseInt(t.tree_cen_date || t.planteddate || 0);
     if (yr > 1900) years.add(yr);
   });
@@ -3053,7 +3073,7 @@ function populateSpeciesFilter() {
   filterLabels.species.clear();
 
   const seen = new Set();
-  allTrees.forEach(t => { if (t.spc_common) seen.add(t.spc_common); });
+  mapTrees().forEach(t => { if (t.spc_common) seen.add(t.spc_common); });
   const sortedSpecies = [...seen].sort((a, b) => a.localeCompare(b));
 
   if (list) {
@@ -3102,7 +3122,7 @@ function applyFilters(reload = false) {
   const stewardedOnly = document.getElementById('f-stewarded')?.checked || false;
   const missingOnly = document.getElementById('f-missing')?.checked || false;
 
-  let base = [...allTrees];
+  let base = mapTrees().slice();
   if (plantedOnly) base = base.concat(getPlantedExtraTrees());
   if (streetTreesOnly) base = base.filter(isStreetTree);
   if (health) base = base.filter(t => (t.health||'').toLowerCase() === health.toLowerCase());
@@ -3145,7 +3165,7 @@ function applyFilters(reload = false) {
   filteredTrees = base;
 
   const countEl = document.getElementById('tree-count');
-  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees`;
+  if (countEl) countEl.textContent = `${filteredTrees.length.toLocaleString()} trees` + districtCountNote();
   updateMap();
   updateStats();
 }
@@ -3227,6 +3247,161 @@ function initMap() {
   initMapControlsSidebar();
   // Force Leaflet to recalculate container size after initialization
   setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 100);
+}
+
+// ========== OTHER DISTRICTS ==========
+// The map can show Manhattan's other community districts beside CB3. Each is
+// its own file, data/districts/cdNNN.json, written weekly by
+// scripts/fetch_district_trees.py and downloaded only when its box is ticked,
+// so the first load still pulls CB3 alone. Their trees join the map and its
+// filters but never allTrees, which keeps Stats, Tree Care, the Health
+// Assessment and the zones CB3-only.
+const DISTRICT_NAMES = {
+  101: 'Manhattan CB1', 102: 'Manhattan CB2', 104: 'Manhattan CB4',
+  105: 'Manhattan CB5', 106: 'Manhattan CB6', 107: 'Manhattan CB7',
+  108: 'Manhattan CB8', 109: 'Manhattan CB9', 110: 'Manhattan CB10',
+  111: 'Manhattan CB11', 112: 'Manhattan CB12',
+};
+const MAP_TREE_ACTION_BTNS = ['mtp-assess-btn', 'mtp-care-btn', 'mtp-reserve-btn',
+  'mtp-needs-care-btn', 'mtp-stewarded-btn', 'mtp-guard-btn', 'mtp-missing-btn'];
+const districtData = new Map();   // cd → { trees, emptyBeds, boundary }, once downloaded
+const districtShown = new Set();  // cds whose box is ticked
+const districtLoading = new Set(); // cds downloading right now
+let districtOutlineLayer = null;
+let _shownDistrictTrees = null;   // cached concatenation, reset on every toggle
+
+function districtName(cd) { return DISTRICT_NAMES[cd] || 'District ' + cd; }
+
+function shownDistricts() {
+  return [...districtShown].filter(cd => districtData.has(cd)).map(cd => districtData.get(cd));
+}
+
+function shownDistrictTrees() {
+  if (!_shownDistrictTrees) _shownDistrictTrees = shownDistricts().flatMap(d => d.trees);
+  return _shownDistrictTrees;
+}
+
+function shownDistrictEmptyBeds() {
+  return shownDistricts().flatMap(d => d.emptyBeds);
+}
+
+// Every tree the map can show: CB3 plus each district switched on.
+function mapTrees() {
+  return districtShown.size ? allTrees.concat(shownDistrictTrees()) : allTrees;
+}
+
+function districtCountNote() {
+  const n = shownDistricts().length;
+  return n ? ` · CB3 + ${n} other district${n > 1 ? 's' : ''}` : '';
+}
+
+// Each box exists twice — the hidden #priority-sidebar original and the copy
+// shown in #map-controls-content — so status updates go to both.
+function setDistrictStatus(cd, text, isError) {
+  document.querySelectorAll(`.district-status[data-cd="${cd}"]`).forEach(el => {
+    el.textContent = text;
+    el.classList.toggle('error', !!isError);
+  });
+}
+
+function setDistrictChecked(cd, checked) {
+  document.querySelectorAll(`input[data-district="${cd}"]`).forEach(el => { el.checked = checked; });
+}
+
+async function loadDistrict(cd) {
+  const res = await fetchData('data/districts/cd' + cd + '.json');
+  const data = await res.json();
+  const fields = data.fields || [];
+  // A tree near the CB3 line can sit in both CB3's census.json and a
+  // neighbour's file; CB3's copy wins so it is drawn once, with its CB3 actions.
+  const cb3Ids = new Set(allTrees.map(t => String(t.tree_id)));
+  const cb3BedIds = new Set(emptyBeds.map(t => String(t.tree_id)));
+  const trees = [], beds = [];
+  (data.trees || []).forEach(row => {
+    const t = {};
+    fields.forEach((key, i) => { if (row[i] != null) t[key] = row[i]; });
+    const id = String(t.tree_id);
+    if (EMPTY_BED_STATUSES.has(t.status)) {
+      if (!cb3BedIds.has(id)) beds.push(t);
+      return;
+    }
+    if (cb3Ids.has(id)) return;
+    t._district = cd;
+    t._priority = calcPriority(t);
+    trees.push(t);
+  });
+  return { trees, emptyBeds: beds, boundary: data.boundary || [] };
+}
+
+async function toggleDistrict(input) {
+  const cd = Number(input.dataset.district);
+  setDistrictChecked(cd, input.checked);
+  if (!input.checked) {
+    districtShown.delete(cd);
+    districtsChanged();
+    return;
+  }
+  districtShown.add(cd);
+  if (!districtData.has(cd)) {
+    // Ticked again while still downloading: the first tick finishes the job.
+    if (districtLoading.has(cd)) return;
+    setDistrictStatus(cd, 'loading…');
+    setLoadingBar(0.3);
+    districtLoading.add(cd);
+    try {
+      districtData.set(cd, await loadDistrict(cd));
+    } catch (e) {
+      console.warn('Could not load district ' + cd + ':', e);
+      districtShown.delete(cd);
+      setDistrictChecked(cd, false);
+      // A 404 means the weekly build has not produced this district yet.
+      setDistrictStatus(cd, /HTTP 404/.test(e && e.message) ? 'not built yet' : 'failed — retry', true);
+      return;
+    } finally {
+      districtLoading.delete(cd);
+      setLoadingBar(1);
+    }
+    setDistrictStatus(cd, districtData.get(cd).trees.length.toLocaleString() + ' trees');
+    // Unticked while it downloaded: keep the data for next time, draw nothing.
+    if (!districtShown.has(cd)) return;
+  }
+  districtsChanged();
+  panToDistrict(cd);
+}
+
+function districtsChanged() {
+  _shownDistrictTrees = null;
+  drawDistrictOutlines();
+  populateSpeciesFilter();
+  populatePlantingYearFilter();
+  applyFilters();
+}
+
+// Dashed outlines for the districts switched on, plus CB3's own edge so it is
+// clear where the program area stops.
+function drawDistrictOutlines() {
+  if (!mapInstance) return;
+  if (!districtOutlineLayer) districtOutlineLayer = L.layerGroup().addTo(mapInstance);
+  districtOutlineLayer.clearLayers();
+  const outlines = shownDistricts().filter(d => d.boundary.length);
+  if (!outlines.length) return;
+  const toLatLng = ring => ring.map(p => [p[1], p[0]]);
+  outlines.forEach(d => {
+    L.polyline(d.boundary.map(toLatLng), {
+      color: '#4b5563', weight: 1.5, opacity: 0.6, dashArray: '6,5', interactive: false
+    }).addTo(districtOutlineLayer);
+  });
+  L.polyline(toLatLng(_cb3OfficialPolygon || CB3_POLYGON_FALLBACK), {
+    color: '#4a7c59', weight: 2, opacity: 0.7, interactive: false
+  }).addTo(districtOutlineLayer);
+}
+
+// Bring a newly ticked district into view, unless part of it already is.
+function panToDistrict(cd) {
+  const d = districtData.get(cd);
+  if (!mapInstance || !d || !d.boundary.length) return;
+  const bounds = L.latLngBounds(d.boundary.flat().map(p => [p[1], p[0]]));
+  if (!mapInstance.getBounds().intersects(bounds)) mapInstance.fitBounds(bounds, { padding: [20, 20] });
 }
 
 // ========== GEOLOCATION ==========
@@ -3631,8 +3806,9 @@ function updateMap() {
   });
 
   // Render empty planting beds (Retired/Stump positions) when toggled on
-  if (emptyBedsVisible && emptyBeds.length) {
-    emptyBeds.forEach(bed => {
+  const beds = districtShown.size ? emptyBeds.concat(shownDistrictEmptyBeds()) : emptyBeds;
+  if (emptyBedsVisible && beds.length) {
+    beds.forEach(bed => {
       const lat = parseFloat(bed.latitude || 0);
       const lng = parseFloat(bed.longitude || 0);
       if (!lat || !lng) return;
@@ -4648,13 +4824,22 @@ function openMapTreeDetail(tree) {
     }
   }
   if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 150);
-  updateReserveButton(tree);
-  updateNeedsCareButton(tree);
-  updateStewardedButton(tree);
-  updateTreeGuardButton(tree);
-  updateMissingButton(tree);
-  updateCareButton(tree);
-  updateMapAssessBtn(tree);
+  // Trees from the other districts are there to look at: every button below
+  // the details records CB3 program work, so none of them apply.
+  const inCB3 = !tree._district;
+  MAP_TREE_ACTION_BTNS.forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.style.display = inCB3 ? '' : 'none';
+  });
+  if (inCB3) {
+    updateReserveButton(tree);
+    updateNeedsCareButton(tree);
+    updateStewardedButton(tree);
+    updateTreeGuardButton(tree);
+    updateMissingButton(tree);
+    updateCareButton(tree);
+    updateMapAssessBtn(tree);
+  }
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -4678,6 +4863,7 @@ function openMapTreeDetail(tree) {
   const plantedRaw = tree.tree_cen_date || tree.planteddate;
   const plantedLabel = plantedRaw ? (parseInt(plantedRaw) || plantedRaw) : null;
   const rows = [
+    inCB3 ? null : ['District', districtName(tree._district) + ' (view only)'],
     ['Type', isForestryTree ? '🌳 Forestry Live Tree' : '📋 2015 Census Tree'],
     plantedLabel               ? ['Planted',         plantedLabel]                              : null,
     tree.address               ? ['Address',         tree.address]                              : null,
@@ -8472,9 +8658,8 @@ window.addEventListener('load', async () => {
   }
 
   // Split into active trees and empty planting beds
-  const emptyStatuses = new Set(['Retired', 'Stump', 'Stump - Uprooted']);
-  emptyBeds = CENSUS_DATA.filter(t => emptyStatuses.has(t.status));
-  allTrees = CENSUS_DATA.filter(t => !emptyStatuses.has(t.status) &&
+  emptyBeds = CENSUS_DATA.filter(t => EMPTY_BED_STATUSES.has(t.status));
+  allTrees = CENSUS_DATA.filter(t => !EMPTY_BED_STATUSES.has(t.status) &&
                                      cb3Contains(parseFloat(t.latitude), parseFloat(t.longitude)))
                         .map(t => ({ ...t, _priority: calcPriority(t) }));
   populateSpeciesFilter();
