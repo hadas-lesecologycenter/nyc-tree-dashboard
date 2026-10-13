@@ -802,6 +802,14 @@ def fit_corridor(pts, seed_slope, seed_offset):
         rows.append({'slope': slope, 'offset': centre, 'trees': len(members),
                      'rms_m': round(rms, 3)})
     a, b = rows[0]['offset'], rows[-1]['offset']
+    # half_row_m here is half the gap between the rows' intercepts, which is
+    # metres square to the street only on a street the frame is aligned to.
+    # East Broadway runs at -0.70, so its half-road reads 10.28 m against
+    # 8.42 m square to it, and its zone line stands 13.76 m out where the
+    # corrected figure would put it at 12.41 m. It is left as it is on purpose:
+    # the corrected line runs 1.35 m south, through three trees on East
+    # Broadway's north side, and puts them in Chinatown sub-zones, two of them
+    # on no block. (Houston and Grand St, at -0.125, do not move either way.)
     return {'slope': slope, 'offset': (a + b) / 2.0, 'half_row_m': (b - a) / 2.0,
             'rows': rows, 'corridor': True}
 
@@ -1574,6 +1582,12 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame, ends
 
 
 # ------------------------------------------------- one block face, one zone --
+def seg_sort_key(key):
+    """A block face's (street, axis, low cross street, high) key, sortable
+    although an end at the district edge is None."""
+    return (key[0], key[1], key[2] or '', key[3] or '')
+
+
 # How far a corner tree may be from the nearest tree of a block on the same
 # street, round the corner, and still be put on it.
 CORNER_M = 20.0
@@ -1713,8 +1727,18 @@ def step_edge(frame, walk, boundary, owner_b, other_b, key, members):
     other = ring_verts(other_b['ring'])
     owner = ring_verts(owner_b['ring'])
     n_other = len(other)
-    on_l = [i for i in range(n_other) if on_line(other[i]) and on_line(other[(i + 1) % n_other])]
-    if len(on_l) != 1:
+    # The ring's edge along the shared line that the block stands beside: an
+    # earlier step on the same line leaves it in two pieces.
+    lo_al, hi_al = min(al for al, _ in pts), max(al for al, _ in pts)
+
+    def overlap(i):
+        a, b = sorted((other[i][0], other[(i + 1) % n_other][0]))
+        return min(b, hi_al) - max(a, lo_al)
+
+    on_l = sorted((i for i in range(n_other) if on_line(other[i])
+                   and on_line(other[(i + 1) % n_other]) and overlap(i) > 0),
+                  key=lambda i: -overlap(i))
+    if not on_l:
         return False
     li = on_l[0]
     l_lo, l_hi = sorted((other[li][0], other[(li + 1) % n_other][0]))
@@ -1843,6 +1867,87 @@ def step_edge(frame, walk, boundary, owner_b, other_b, key, members):
     return False
 
 
+# ------------------------------------------------------------ corner slivers --
+
+def convex_overlap(a, b):
+    """The part of convex polygon `a` inside convex polygon `b`, both (u, n)."""
+    sign = 1.0 if ring_area(b) > 0 else -1.0
+    out = [list(p) for p in a]
+    for i in range(len(b)):
+        p, q = b[i], b[(i + 1) % len(b)]
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        out = clip_halfplane(out, (sign * dy, -sign * dx, -sign * (dy * p[0] - dx * p[1])))
+        if len(out) < 3:
+            return None
+    return out
+
+
+def cut_corner(frame, ring, piece, sid, other):
+    """`ring` (lng/lat, closed) without the convex `piece` (u, n) at one of its
+    corners: the run of its vertices inside the piece is replaced by the way
+    round the piece's other side. Stops the build if the piece is not a
+    corner, or has a tree in it."""
+    tol = 0.01
+    pts = [frame.to_un(*p) for p in ring[:-1]]
+    n = len(pts)
+    area_sign = 1.0 if ring_area(piece) > 0 else -1.0
+
+    def in_piece(x):
+        for i in range(len(piece)):
+            p, q = piece[i], piece[(i + 1) % len(piece)]
+            L = math.hypot(q[0] - p[0], q[1] - p[1]) or 1.0
+            if area_sign * ((q[0] - p[0]) * (x[1] - p[1]) - (q[1] - p[1]) * (x[0] - p[0])) / L < -tol:
+                return False
+        return True
+
+    def seg_dist(x, p, q):
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        L2 = dx * dx + dy * dy
+        f = 0.0 if L2 == 0 else max(0.0, min(1.0, ((x[0] - p[0]) * dx + (x[1] - p[1]) * dy) / L2))
+        return math.hypot(p[0] + f * dx - x[0], p[1] + f * dy - x[1])
+
+    hit = [in_piece(v) for v in pts]
+    if not any(hit):
+        cx = sum(p[0] for p in piece) / len(piece)
+        cy = sum(p[1] for p in piece) / len(piece)
+        if not point_in_poly(cx, cy, pts):
+            return ring      # the district boundary already cut this corner off
+        raise SystemExit('sub-zones %s and %s overlap away from a corner' % (sid, other))
+    if all(hit):
+        raise SystemExit('sub-zone %s lies inside %s' % (sid, other))
+    k = next(i for i in range(n) if hit[i] and not hit[i - 1])
+    order = [(k - 1 + j) % n for j in range(n)]          # previous vertex first
+    run = 1
+    while hit[order[run]]:
+        run += 1
+    if any(hit[i] for i in order[run:]):
+        raise SystemExit('sub-zones %s and %s overlap in two places' % (sid, other))
+    prev, first, last, nxt = pts[order[0]], pts[order[1]], pts[order[run - 1]], pts[order[run]]
+    xs = [i for i, v in enumerate(piece) if seg_dist(v, prev, first) <= tol
+          and math.hypot(v[0] - first[0], v[1] - first[1]) > tol]
+    ys = [i for i, v in enumerate(piece) if seg_dist(v, last, nxt) <= tol
+          and math.hypot(v[0] - last[0], v[1] - last[1]) > tol]
+    if len(xs) != 1 or len(ys) != 1:
+        raise SystemExit('sub-zones %s and %s overlap other than at a corner' % (sid, other))
+    ix, iy, m = xs[0], ys[0], len(piece)
+    arcs = [[piece[(ix + j) % m] for j in range(1, (iy - ix) % m)],
+            [piece[(ix - j) % m] for j in range(1, (ix - iy) % m)]]
+    edges = [(pts[i], pts[(i + 1) % n]) for i in range(n)]
+    way = [a for a in arcs if a and all(min(seg_dist(v, p, q) for p, q in edges) > tol
+                                       and point_in_poly(v[0], v[1], pts) for v in a)]
+    if len(way) != 1:
+        raise SystemExit('sub-zones %s and %s: no clean way round their overlap' % (sid, other))
+    new = ([list(ring[order[0]])]
+           + [frame.to_lnglat(*v) for v in [piece[ix]] + way[0] + [piece[iy]]]
+           + [list(ring[i]) for i in order[run:]])
+    before = abs(ring_area(pts))
+    after = abs(ring_area([frame.to_un(*p) for p in new]))
+    if abs(before - abs(ring_area(piece)) - after) > 0.05:
+        raise SystemExit('sub-zones %s and %s: cutting their overlap went wrong' % (sid, other))
+    print('  %s gives up %.2f m2 it overlapped with %s at a corner' % (sid, abs(ring_area(piece)), other))
+    return new + [new[0]]
+
+
 # ------------------------------------------------------------ block names --
 
 def open_ends(frame, walk, name, lo, hi, members, ring, zone_lines, bounds, boundary):
@@ -1851,7 +1956,7 @@ def open_ends(frame, walk, name, lo, hi, members, ring, zone_lines, bounds, boun
     A block with no cross street beyond it in its region was printed as
     running to "the district edge", and 37 of those ends were not: Ludlow St
     south of Broome St stops at Grand St, where zone 3 starts. So the street's
-    own line is followed out from its last tree until it leaves the sub-zone.
+    row is followed out from its last tree until it leaves the sub-zone.
     If it is still in CB3 there, the zone line it has crossed names the end.
     A block that is only the corner at a zone line - Forsyth St's trees on the
     north side of E Houston St - comes out with both ends the same, and is
@@ -1864,10 +1969,15 @@ def open_ends(frame, walk, name, lo, hi, members, ring, zone_lines, bounds, boun
         sign = -1.0 if k == 0 else 1.0
         along = [t['u'] if g['axis'] == 'ew' else t['n'] for t in members]
         start = min(along) if k == 0 else max(along)
+        # Along the trees' own row rather than the centreline: the Bowery's
+        # line is CB3's boundary itself, and a walk down it is outside the
+        # district from the first step.
+        row = sum((t['n'] - (g['slope'] * t['u'] + g['offset'])) if g['axis'] == 'ew'
+                  else (t['u'] - (g['slope'] * t['n'] + g['offset'])) for t in members) / len(members)
         for step in range(1, 1500):
             a = start + sign * 2.0 * step
-            u, n = ((a, g['slope'] * a + g['offset']) if g['axis'] == 'ew'
-                    else (g['slope'] * a + g['offset'], a))
+            u, n = ((a, g['slope'] * a + g['offset'] + row) if g['axis'] == 'ew'
+                    else (g['slope'] * a + g['offset'] + row, a))
             lng, lat = frame.to_lnglat(u, n)
             if point_in_poly(lng, lat, ring):
                 continue
@@ -2242,7 +2352,9 @@ def main():
             if name.startswith(DIVIDER):
                 f = divider_lines[name[len(DIVIDER):]]
             else:
-                f = lines[spec['region']][name]
+                f = lines[spec['region']].get(name)
+                if f is None:
+                    raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
                 half = row_half(name, f) * math.hypot(1.0, f['slope'])
                 f = {'slope': f['slope'], 'offset': f['offset'] + sign * half}
             a, b = edge_f['slope'], edge_f['offset']
@@ -2261,6 +2373,8 @@ def main():
                 name = spec[side]
                 if name == CB3_EDGE or name.startswith(DIVIDER):
                     continue
+                if name not in lines[spec['region']]:
+                    raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
                 col = spec_column(spec, perp, lines[spec['region']][name])
                 edge_cols[(spec['region'], name)].append(col)
 
@@ -2403,6 +2517,16 @@ def main():
             raise SystemExit('sub-zone %s: window misses CB3' % spec['id'])
         ring = ring + [ring[0]]
 
+        # Where two streets' edges both step at the corner they cross - Monroe
+        # St sits 1.5 m further south east of Pike St than west of it, and Pike
+        # St 5.7 m further east south of Monroe than north of it - the four
+        # sub-zones round the corner do not tile: 3D and 3F both took the
+        # sliver between the steps. The later sub-zone gives it up.
+        for other in built:
+            piece = convex_overlap(window, other['window'])
+            if piece and abs(ring_area(piece)) > 0.01:
+                ring = cut_corner(frame, ring, piece, spec['id'], other['spec']['id'])
+
         inside = [t for t in trees if point_in_poly(t['lng'], t['lat'], ring)]
 
         # Which streets the sub-zone contains, read off the trees rather than
@@ -2445,20 +2569,24 @@ def main():
                 cands.append(((name, axis, lo, hi), at))
             if cands:
                 late[cands[0][0]].append((t, cands))
+        # Blocks first, then the trees too few to start one, so which blocks
+        # those can see does not depend on the census's row order.
+        few = []
         for key, members in late.items():
             if key not in segs and len(members) < LOOSE_BLOCK_MIN:
-                for t, cands in members:
-                    for alt, at in cands[1:]:
-                        if alt in segs:
-                            segs[alt].append(t)
-                            break
+                few.extend(members)
                 continue
             for t, cands in members:
                 at = cands[0][1]
                 rank[key] = min(at, rank.get(key, at))
                 segs[key].append(t)
+        for t, cands in few:
+            for alt, at in cands[1:]:
+                if alt in segs:
+                    segs[alt].append(t)
+                    break
         built.append({'spec': spec, 'ring': ring, 'inside': inside,
-                      'segs': segs, 'rank': rank, 'used': used})
+                      'segs': segs, 'rank': rank, 'used': used, 'window': window})
 
     # ---- one block face, one sub-zone --------------------------------------
     # A tree is filed under a street when it stands within that street's reach,
@@ -2470,7 +2598,7 @@ def main():
     # split, two crews could be sent to the same one, and E 10th St from Ave D
     # to the FDR had 18 trees in 1C and 22 in 1F under the same name.
     #
-    # So each block face belongs to the sub-zone holding most of its trees.
+    # So each block face belongs to one sub-zone, the one its street runs through.
     # A tree of it in any other sub-zone goes on the nearest street whose
     # block is that sub-zone's own - the cross street, for a corner tree.
     # Where LOOSE_BLOCK_MIN or more of them have no such street - a set-back
@@ -2481,15 +2609,37 @@ def main():
     for b in built:
         for key, members in b['segs'].items():
             tally[(b['spec']['region'], key)][b['spec']['id']] += len(members)
-    owner = {k: max(sorted(c), key=lambda sid: c[sid]) for k, c in tally.items()}
+    # The owner is the sub-zone the street itself runs through there - every
+    # edge stands just past its street, so the centreline is inside the one
+    # sub-zone that holds the street - and not simply the larger share: four
+    # dead kerb trees on E 10th St would otherwise hand the block, kerb and
+    # all, to the Riis Houses' 18 set-back trees in 1C. A centreline that is
+    # the district boundary (E 14th St, the Bowery) or is in no sub-zone with
+    # trees on the block falls back to the larger share.
     by_id = {b['spec']['id']: b for b in built}
+    owner = {}
+    for (rid, key), c in sorted(tally.items(), key=lambda kv: (kv[0][0], seg_sort_key(kv[0][1]))):
+        name, axis = key[0], key[1]
+        g = walk_lines[rid][name]
+        trees_on = [t for sid in c for t in by_id[sid]['segs'][key]]
+        if axis == 'ew':
+            u = sum(t['u'] for t in trees_on) / len(trees_on)
+            n = g['slope'] * u + g['offset']
+        else:
+            n = sum(t['n'] for t in trees_on) / len(trees_on)
+            u = g['slope'] * n + g['offset']
+        lng, lat = frame.to_lnglat(u, n)
+        on = [sid for sid in sorted(c) if point_in_poly(lng, lat, by_id[sid]['ring'])]
+        owner[(rid, key)] = on[0] if on else max(sorted(c), key=lambda sid: c[sid])
     rehomed = dropped = stepped = 0
     for b in built:
         sid, rid = b['spec']['id'], b['spec']['region']
         walk, segs = walk_lines[rid], b['segs']
-        for key in [k for k in segs if owner[(rid, k)] != sid]:
-            members = segs.pop(key)
-            homes = [own_block(walk, segs, lambda k: owner[(rid, k)] == sid, t, key)
+        pieces = [(k, segs.pop(k)) for k in sorted(segs, key=seg_sort_key)
+                  if owner[(rid, k)] != sid]
+        frozen = {k: list(v) for k, v in segs.items()}
+        for key, members in pieces:
+            homes = [own_block(walk, frozen, lambda k: owner[(rid, k)] == sid, t, key)
                      for t in members]
             if homes.count(None) >= LOOSE_BLOCK_MIN:
                 home_b = by_id[owner[(rid, key)]]
@@ -2679,6 +2829,15 @@ def main():
         for sid, side, name, half, clear, floor in nudged:
             print('  %-4s %-5s %-22s %.2f m (from %.2f), %.2f m clear'
                   % (sid, side, pretty(name), half, floor, clear))
+    # Trees only show an overlap or a gap where a tree stands in it; areas show
+    # every one. On 2026-10-12 there was an 18.6 m2 gap at Pike and Monroe St,
+    # and after the square-to-the-street fix an 8.7 m2 overlap there instead.
+    covered = sum(poly_area_m2(f['geometry']['coordinates'][0][:-1]) for f in features)
+    district = poly_area_m2(boundary[:-1] if boundary[0] == boundary[-1] else boundary)
+    print('sub-zones cover %.1f m2 of CB3\'s %.1f m2' % (covered, district))
+    if abs(covered - district) > 1.0:
+        raise SystemExit('sub-zones overlap or leave a gap: %.1f m2 - nothing written'
+                         % (covered - district))
     print('%s' % ('no overlaps' if problems == 0 else '%d problem(s)' % problems))
 
     ids = [f['properties']['segment_id'] for f in segments]

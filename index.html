@@ -5479,6 +5479,12 @@ function treeSubzoneHtml(tree) {
 // one line under the label says once for all. A block's ID zooms the map to
 // it with the Block Segments layer on, so a crew lead can go from "you have
 // 2D" to the block face itself.
+// Text from the data files, made safe to put inside HTML.
+function escHtml(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
 function subzonePopupHtml(p) {
   const onBlocks = p.tree_count - (p.off_segment || 0);
   const pct = p.tree_count ? Math.round(100 * onBlocks / p.tree_count) : 0;
@@ -5491,16 +5497,16 @@ function subzonePopupHtml(p) {
       ${mine.map(q => `<div style="display:flex;gap:6px;align-items:baseline;font-size:11px;padding:2px 0">
         <a href="#" onclick="zoomToSegment('${q.segment_id}');return false"
            style="font-weight:700;color:#2f6f4f;text-decoration:none;min-width:40px">${q.segment_id}</a>
-        <span style="color:#2c2a24;flex:1">${q.label}</span>
+        <span style="color:#2c2a24;flex:1">${escHtml(q.label)}</span>
         <span style="color:#6b6456;white-space:nowrap">${q.tree_count}</span></div>`).join('')}
     </div>`;
   }
   return `<div style="font-family:'Nunito',sans-serif;min-width:220px">
     <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
-    <div style="font-size:12px;font-weight:700;color:#2c2a24;margin-top:3px">${p.label}</div>
-    <div style="font-size:11px;color:#6b6456;margin-top:2px">Both sides of every street named${p.one_side ? `, except ${p.one_side}: CB3 side only` : ''}.</div>
+    <div style="font-size:12px;font-weight:700;color:#2c2a24;margin-top:3px">${escHtml(p.label)}</div>
+    <div style="font-size:11px;color:#6b6456;margin-top:2px">Both sides of every street named${p.one_side ? `, except ${escHtml(p.one_side)}: CB3 side only` : ''}.</div>
     <div style="font-size:11px;color:#6b6456;margin-top:4px">
-      Zone ${p.zone} · ${p.region_label}<br>
+      Zone ${p.zone} · ${escHtml(p.region_label)}<br>
       <b style="color:#2c2a24">${p.tree_count} trees</b> · ${p.blocks} blocks · ${pct}% of trees on a block
     </div>
     ${p.off_segment ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">

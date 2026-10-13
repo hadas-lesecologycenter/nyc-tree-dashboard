@@ -111,10 +111,12 @@ filed on "Clinton St". The positions were right, so only the names changed,
 and every block kept its ID. Eight of the names are checked. Chrystie,
 Forsyth, Eldridge, Allen, Orchard, Ludlow, Essex and Clinton St each run on
 within 0–4.4 m of the same street in zone 2 (Chrystie 17 m), and the addresses
-agree (7–29 Ludlow, 42–48 Hester, 25 Essex, 411 Grand St). Jefferson St meets
-East Broadway where Two Bridges' Jefferson St does. The four west of Chrystie
-St, **Mulberry, Mott and Elizabeth St and Bowery / Chatham Sq, are named from
-the order of the streets alone** and should be checked against a street map.
+agree (7–29 Ludlow, 42–48 Hester, 25 Essex, 411 Grand St). Five are not
+checked. The four west of Chrystie St, **Mulberry, Mott and Elizabeth St and
+Bowery / Chatham Sq, are named from the order of the streets alone**, and the
+line now called Jefferson St (it was Jackson St) has no trees in the strip and
+reaches East Broadway 21 m from Two Bridges' Jefferson St. They should be
+checked against a street map.
 
 Zone 2's blocks are shorter — its avenues are 70–80 m apart against the East
 Village's 215–230 m — so a sub-zone there holds more segments of fewer trees
@@ -363,7 +365,14 @@ crews could be sent to the same one. E 10th St from Ave D to the FDR had 18
 trees in 1C, the Riis Houses frontage 12–30 m north of the street, and 22 in
 1F, under the same name.
 
-So **each block face belongs to the sub-zone holding most of its trees**.
+So **each block face belongs to one sub-zone: the one its street runs
+through there**. Every edge stands just past its street, so the street's
+centreline at the middle of the block is inside exactly that sub-zone. (Where
+the centreline is the district boundary itself, as on E 14th St and the
+Bowery, the sub-zone holding most of the block's trees has it.) Going by the
+street rather than by a count matters on E 10th St: the kerb rows hold 22
+trees and the Riis set-back 18, and a few dead kerb trees would otherwise have
+handed the whole block to 1C.
 
 * A tree of it in another sub-zone goes on the nearest street whose block is
   that sub-zone's own: the cross street, for a corner tree. Failing that, it
@@ -388,13 +397,15 @@ the ledger.
 
 A block runs between two cross streets. A block at the end of its region has
 no cross street beyond it, and was printed as running "to the district edge".
-37 of those were wrong, because the block stops at a zone line: Ludlow St south
-of Broome St stops at Grand St. The build now follows the street's line out
-from its last tree until it leaves the sub-zone. If it is still inside CB3
+38 of those were wrong, because the block stops at a zone line: Ludlow St south
+of Broome St stops at Grand St. The build now follows the block's row of trees
+out from its last tree until it leaves the sub-zone. (The row, not the
+centreline: the Bowery's line is CB3's boundary, and a walk down it is outside
+the district from the first step.) If it is still inside CB3
 there, the end is named after the zone line it crossed: "Ludlow St, Broome St
 to Grand St". Where both ends come out the same, as with Forsyth St's corner
 trees on the north side of E Houston St, the block is printed "Forsyth St at
-E Houston St". The 20 that still say "to the district edge" do reach it. Only
+E Houston St". The 19 that still say "to the district edge" do reach it. Only
 the printed label changed: the ID ledger still keys on the old form, so every
 ID stays on its block.
 
@@ -492,6 +503,20 @@ the frame, moving the line that far moves its intercept further, by the
 hypotenuse of its slope; until October 2026 the build moved the intercept by
 the distance itself, so Two Bridges edges sat 18% closer to their streets than
 intended and split blocks there. Fixing it moved 9 trees between sub-zones.
+
+It also made two streets' edges step at the corner where they cross: Monroe St
+stands 1.5 m further south east of Pike St than west of it, and Pike St 5.7 m
+further east south of Monroe than north of it, so 3D and 3F both took the
+8.7 m² between the steps. (Before the fix the same corner was an 18.6 m² gap.)
+Where two sub-zones' windows overlap like that, the later one in `SUBZONES`
+gives up the overlap at its corner, and the build now stops if the sub-zones'
+areas do not add up to CB3's.
+
+The East Broadway zone line is the one exception, on purpose. Its half-road is
+still read off the slant (10.28 m, against 8.42 m square to the street), which
+puts the line 13.76 m north of its centreline. Correcting it would move the line
+1.35 m south, through three trees on East Broadway's north side, and put them
+in Chinatown sub-zones, two of them on no block.
 
 Half a right of way is where a boundary wants to sit, but not always where it
 can, because a right of way is a constant and a street's planting is not. As
