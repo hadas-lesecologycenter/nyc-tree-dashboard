@@ -1555,6 +1555,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="border-top:1px solid #ddd;margin:2px 0"></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #1a1a1a;box-sizing:border-box"></div><span style="flex:1">Spring 2026 install</span><b id="tg-ninst" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1a1a1a;border:1px solid #fff"></div><span style="flex:1">Install, no tree ID</span><b id="tg-norphan" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px dashed #3d6b9e;box-sizing:border-box"></div><span style="flex:1">Nominated</span><b id="tg-nnom" style="font-variant-numeric:tabular-nums">0</b></div>
           </div>
           <div id="tg-total" style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;font-size:10px;color:#6b6456;line-height:1.35"></div>
         </div>
@@ -5174,12 +5175,15 @@ const GUARD_INSTALL_MATCH_M = 6;
 const GUARD_UNPLACED = { 1: 1, 2: 2, 3: 0 };
 let guardInstalledCount = 0;
 let guardInstallOnlyCount = 0;
+let guardNominationCount = 0;
+let guardNominationLayer = null;
 
 function updateTreeGuardsLegend() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   [1, 2, 3].forEach(r => set('tg-n' + r, SUBMISSION_ROUNDS_TREES.filter(t => t.r === r).length));
   set('tg-ninst', guardInstalledCount);
   set('tg-norphan', guardInstallOnlyCount);
+  set('tg-nnom', guardNominationCount);
   const unplaced = GUARD_UNPLACED[1] + GUARD_UNPLACED[2] + GUARD_UNPLACED[3];
   set('tg-total', SUBMISSION_ROUNDS_TREES.length + ' trees on the map' +
     (unplaced ? ' · ' + unplaced + ' more not placed (no tree ID or not in dashboard data)' : ''));
@@ -5219,8 +5223,37 @@ function openGuardTreeDetail(t, installed) {
   return true;
 }
 
+// Nominated trees that are not already in a round. Dashed blue ring; a tap
+// opens the same detail panel as the main map.
+function renderGuardNominations() {
+  if (!guardNominationLayer) return;
+  guardNominationLayer.clearLayers();
+  const inRounds = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
+  let n = 0;
+  nominationsReadLocal().forEach(nom => {
+    const lat = parseFloat(nom.lat), lng = parseFloat(nom.lng);
+    if (isNaN(lat) || isNaN(lng) || inRounds.has(String(nom.treeId))) return;
+    n++;
+    const m = L.circleMarker([lat, lng], {
+      radius: 7, fillColor: '#ffffff', color: '#3d6b9e', weight: 3, dashArray: '3 3', fillOpacity: 0.95
+    });
+    m.bindTooltip('<b>' + escHtml(nom.address || 'Nominated tree') + '</b><br>Nominated' +
+      (nom.reason ? ': ' + escHtml(nom.reason) : '') + (nom.species ? '<br>' + escHtml(nom.species) : ''));
+    m.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      const tree = guardTreeRecord(nom.treeId);
+      if (tree) openMapTreeDetail(tree);
+    });
+    m.addTo(guardNominationLayer);
+  });
+  guardNominationCount = n;
+  if (typeof updateTreeGuardsLegend === 'function') updateTreeGuardsLegend();
+}
+
 function initTreeGuardsLayer() {
   treeGuardsLayer = L.layerGroup();
+  guardNominationLayer = L.layerGroup().addTo(treeGuardsLayer);
+  renderGuardNominations();
   const installs = LESEC_TREE_GUARDS.features.map(f => ({
     lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], used: false
   }));
@@ -7329,6 +7362,7 @@ async function nominationsLoad() {
   const merged = server.filter(r => r.treeId).map(r => Object.assign({}, r, { _synced: true }))
     .concat(local.filter(n => !n._synced && !onServer.has(String(n.treeId))));
   nominationsWriteLocal(merged);
+  renderGuardNominations();
   if (merged.some(n => !n._synced)) nominationsFlush();
   return merged;
 }
@@ -7477,6 +7511,7 @@ async function submitNomination() {
   await nominationsFlush();
   updateNominateButton(tree);
   if (document.getElementById('f-guard-nominated')?.checked) applyFilters();
+  renderGuardNominations();
 }
 
 async function withdrawNomination() {
@@ -7500,6 +7535,7 @@ async function withdrawNomination() {
     closeNominationModal();
     updateNominateButton(tree);
     if (document.getElementById('f-guard-nominated')?.checked) applyFilters();
+    renderGuardNominations();
     tcShowSyncStatus('Nomination withdrawn');
   } catch (e) {
     err.textContent = e.message || 'Could not withdraw. Try again.'; err.style.display = 'block';
