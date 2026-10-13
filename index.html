@@ -849,6 +849,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     line-height: 1.3; }
   .cp-chk input, .cp-radio input { cursor: pointer; margin: 0; flex-shrink: 0; }
   .cp-hint { font-size: 11px; color: var(--text2); line-height: 1.4; margin: 0 0 8px; }
+  .wp-panel { margin: 2px 0 8px 22px; font-size: 11px; color: var(--text2); }
+  .wp-nav { display: flex; gap: 4px; align-items: center; }
+  .wp-nav select { flex: 1; min-width: 0; font-size: 11px; padding: 4px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg); color: var(--text); }
+  .wp-step { border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 5px; padding: 3px 7px; cursor: pointer; font-size: 12px; }
+  .wp-step:disabled { opacity: .4; cursor: default; }
+  .wp-summary { margin: 6px 0 4px; line-height: 1.4; }
+  .wp-summary b { color: var(--text); }
+  .wp-stops { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .wp-stops li { display: grid; grid-template-columns: 18px 1fr auto; gap: 6px; align-items: start; cursor: pointer; padding: 3px 2px; border-radius: 4px; }
+  .wp-stops li:hover { background: var(--bg); }
+  .wp-num, .wp-pin { width: 18px; height: 18px; border-radius: 50%; background: #2c2a24; color: #fff; font-size: 10px; font-weight: 700; line-height: 18px; text-align: center; }
+  .wp-pin { width: 22px; height: 22px; line-height: 22px; font-size: 11px; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+  .wp-whole { color: #2e8b57; font-weight: 700; }
+  .wp-gmap { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; text-decoration: none; }
   .district-status { margin-left: auto; padding-left: 6px; font-size: 10px; color: var(--text3); white-space: nowrap; }
   .district-status.error { color: #c0392b; }
   .cp-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; }
@@ -1748,6 +1762,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:2px">
               <span>1</span><span>10</span><span>20</span><span>30+</span>
             </div>
+          </div>
+          <label class="cp-chk">
+            <input type="checkbox" id="layer-workplan" onchange="toggleWorkPlanFromPanel()">
+            📅 2027 Work Plan
+          </label>
+          <div id="workplan-panel" class="wp-panel" style="display:none">
+            <div class="wp-nav">
+              <button type="button" class="wp-step" onclick="stepWorkPlanDay(-1)" aria-label="Previous work day">&larr;</button>
+              <select id="wp-day" onchange="showWorkPlanDay(+this.value)" aria-label="Work day"></select>
+              <button type="button" class="wp-step" onclick="stepWorkPlanDay(1)" aria-label="Next work day">&rarr;</button>
+            </div>
+            <div id="wp-summary" class="wp-summary"></div>
+            <ol id="wp-stops" class="wp-stops"></ol>
+            <a id="wp-gmap" class="wp-gmap" href="#" target="_blank" rel="noopener">Walking route in Google Maps ↗</a>
           </div>
         </div>
 
@@ -6057,6 +6085,158 @@ function toggleSegmentsFromPanel() {
       segmentsVisible = false;
     })
     .finally(() => { segmentsLoading = false; });
+}
+
+// ========== 2027 WORK PLAN ==========
+// One field day at a time from data/work-plan-2027.json: the day's trees in
+// their tier colours, a numbered pin on each block segment in walking order,
+// and the stop list in the Map Controls panel. Each day is made of whole block
+// segments; "whole block" marks a segment where every tree on it is in the plan.
+const WORKPLAN_URL = 'data/work-plan-2027.json';
+let workplanData = null;
+let workplanLayer = null;
+let workplanVisible = false;
+let workplanLoading = false;
+let workplanDay = 0;
+
+function workplanPane() {
+  if (!mapInstance) return null;
+  let pane = mapInstance.getPane('workplan');
+  if (!pane) pane = mapInstance.createPane('workplan');
+  pane.style.zIndex = 620;
+  return pane;
+}
+
+function workplanFmt(iso, opts) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', opts);
+}
+
+function workplanStopCenter(stop) {
+  let la = 0, lo = 0;
+  stop.trees.forEach(t => { la += t[1]; lo += t[2]; });
+  return [la / stop.trees.length, lo / stop.trees.length];
+}
+
+function toggleWorkPlanFromPanel() {
+  const cb = document.getElementById('layer-workplan');
+  const panel = document.getElementById('workplan-panel');
+  const shouldShow = !!(cb && cb.checked);
+  if (panel) panel.style.display = shouldShow ? 'block' : 'none';
+  if (shouldShow === workplanVisible) return;
+  workplanVisible = shouldShow;
+  if (!workplanVisible) {
+    if (workplanLayer) workplanLayer.remove();
+    return;
+  }
+  if (workplanData) { showWorkPlanDay(workplanDay); return; }
+  if (workplanLoading) return;
+  workplanLoading = true;
+  fetchData(WORKPLAN_URL)
+    .then(r => r.json())
+    .then(data => {
+      workplanData = data;
+      const sel = document.getElementById('wp-day');
+      if (sel) {
+        sel.innerHTML = data.days.map((d, i) =>
+          `<option value="${i}">${workplanFmt(d.date, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.n} trees</option>`).join('');
+      }
+      // Open on the next work day from today, or the first one.
+      const today = new Date().toISOString().slice(0, 10);
+      const next = data.days.findIndex(d => d.date >= today);
+      workplanDay = next >= 0 ? next : 0;
+      if (workplanVisible) showWorkPlanDay(workplanDay);
+    })
+    .catch(err => {
+      console.error('Work plan load failed:', err);
+      if (cb) cb.checked = false;
+      if (panel) panel.style.display = 'none';
+      workplanVisible = false;
+    })
+    .finally(() => { workplanLoading = false; });
+}
+
+function stepWorkPlanDay(delta) {
+  if (!workplanData) return;
+  const i = Math.max(0, Math.min(workplanData.days.length - 1, workplanDay + delta));
+  if (i !== workplanDay) showWorkPlanDay(i);
+}
+
+function showWorkPlanDay(i, fit = true) {
+  if (!workplanData || !mapInstance) return;
+  workplanDay = i;
+  const day = workplanData.days[i];
+  workplanPane();
+  if (!workplanLayer) workplanLayer = L.layerGroup();
+  workplanLayer.clearLayers();
+  if (!mapInstance.hasLayer(workplanLayer)) workplanLayer.addTo(mapInstance);
+
+  const sel = document.getElementById('wp-day');
+  if (sel) sel.value = String(i);
+  document.querySelectorAll('.wp-step').forEach((b, k) => {
+    b.disabled = k === 0 ? i === 0 : i === workplanData.days.length - 1;
+  });
+
+  const renderer = L.svg({ pane: 'workplan' });
+  const centers = day.stops.map(workplanStopCenter);
+  if (centers.length > 1) {
+    L.polyline(centers, { renderer, pane: 'workplan', color: '#2c2a24', weight: 2, opacity: 0.5,
+      dashArray: '5 5', interactive: false }).addTo(workplanLayer);
+  }
+  const radius = getMarkerSize() / 2 + 2;
+  const points = [];
+  day.stops.forEach((stop, k) => {
+    stop.trees.forEach(([id, lat, lng, tier]) => {
+      points.push([lat, lng]);
+      const m = L.circleMarker([lat, lng], {
+        renderer, pane: 'workplan', radius, fillColor: getPriorityMeta(tier).color,
+        color: '#fff', weight: 2, fillOpacity: 1
+      });
+      m.bindTooltip(`<b>${escHtml(id)}</b> · Tier ${tier}<br>${escHtml(stop.seg)}`);
+      m.on('click', e => {
+        L.DomEvent.stopPropagation(e);
+        const tree = allTrees.find(t => String(t.tree_id) === String(id));
+        if (tree) openMapTreeDetail(tree);
+      });
+      m.addTo(workplanLayer);
+    });
+    L.marker(centers[k], {
+      pane: 'workplan', keyboard: false,
+      icon: L.divIcon({ className: '', html: `<div class="wp-pin">${k + 1}</div>`, iconSize: [22, 22], iconAnchor: [11, 28] })
+    }).bindTooltip(escHtml(stop.label)).addTo(workplanLayer);
+  });
+
+  const summary = document.getElementById('wp-summary');
+  if (summary) {
+    summary.innerHTML = `<b>${workplanFmt(day.date, { weekday: 'long', month: 'long', day: 'numeric' })}</b><br>` +
+      `${day.n} trees · ${day.stops.length} ${day.stops.length === 1 ? 'block' : 'blocks'} · ` +
+      `${day.tiers['3']} Tier 3 · ${day.tiers['2']} Tier 2 · ${day.tiers['1']} Tier 1`;
+  }
+  const list = document.getElementById('wp-stops');
+  if (list) {
+    list.innerHTML = day.stops.map((s, k) =>
+      `<li onclick="zoomToWorkPlanStop(${k})"><span class="wp-num">${k + 1}</span>` +
+      `<span>${escHtml(s.label)}${s.whole ? ' <span class="wp-whole">· whole block</span>' : ''}</span>` +
+      `<span>${s.trees.length}</span></li>`).join('');
+  }
+  const gmap = document.getElementById('wp-gmap');
+  if (gmap) {
+    const c = centers.map(p => p[0].toFixed(5) + ',' + p[1].toFixed(5));
+    let url;
+    if (c.length === 1) url = 'https://www.google.com/maps/search/?api=1&query=' + c[0];
+    else {
+      url = 'https://www.google.com/maps/dir/?api=1&travelmode=walking&origin=' + c[0] + '&destination=' + c[c.length - 1];
+      if (c.length > 2) url += '&waypoints=' + c.slice(1, -1).join('%7C');
+    }
+    gmap.href = url;
+  }
+  if (fit && points.length) mapInstance.fitBounds(L.latLngBounds(points).pad(0.3), { maxZoom: 18 });
+}
+
+function zoomToWorkPlanStop(k) {
+  if (!workplanData || !mapInstance) return;
+  const stop = workplanData.days[workplanDay].stops[k];
+  mapInstance.fitBounds(L.latLngBounds(stop.trees.map(t => [t[1], t[2]])).pad(0.6), { maxZoom: 19 });
 }
 
 // ========== EMPTY BEDS LAYER ==========
