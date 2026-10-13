@@ -990,10 +990,16 @@ def fit_street(pts, seed, slope, free_slope, half_window=HALF_WINDOW_M):
         rows.append((m, c, kept, rms))
     rows.sort(key=lambda r: r[1])
     fa, fb = rows
+    # The rows are found by their intercepts, which are not distances: two
+    # parallel lines whose intercepts differ by d stand d / hypot(1, slope)
+    # apart. In the East Village the slope is 0.003 and that is nothing; in Two
+    # Bridges it is 0.7, and taking the intercept gap for the width made every
+    # street there 22% wider than it is.
+    slope = (fa[0] + fb[0]) / 2.0
     return {
-        'slope': (fa[0] + fb[0]) / 2.0,
+        'slope': slope,
         'offset': (fa[1] + fb[1]) / 2.0,
-        'half_row_m': (fb[1] - fa[1]) / 2.0,
+        'half_row_m': (fb[1] - fa[1]) / 2.0 / math.hypot(1.0, slope),
         'rows': [{'slope': f[0], 'offset': f[1], 'trees': f[2], 'rms_m': round(f[3], 3)}
                  for f in (fa, fb)],
     }
@@ -1447,23 +1453,19 @@ def measure_reach(walk, trees_un):
                     break
 
 
-def nearest_line(walk, u, n, fallback_m=0.0):
-    """Name of the street a tree stands on, and which family it belongs to.
+def street_candidates(walk, u, n, fallback_m=0.0):
+    """Every street a tree could be said to stand on, best first, as
+    (tier, distance, name, axis).
 
-    None for a tree that is not on any street: several hundred trees in the
-    census stand in courtyards, on housing-estate paths and inside the
-    superblocks, and the nearest street can be 30 m away. Left unfiltered they
-    put E 10th St in the contents of a sub-zone that stops a block short of
-    it."""
-    # Two tiers. A tree standing inside a street's own road width is ON that
-    # street even if some side street's centreline happens to be nearer: the
-    # corner trees at Delancey St and Forsyth St sit 4 m from Forsyth and 5 m
-    # from Delancey, inside Delancey's 9.7 m half-road, and calling them
-    # Forsyth's put one tree of the Rivington-to-Delancey block face on the far
-    # side of the Delancey boundary from the other twenty.
-    best = None
-    covered = None
-    near = None
+    Three tiers. A tree standing inside a street's own road width - between
+    its two rows - is ON that street even if some side street's centreline
+    happens to be nearer: the corner trees at Delancey St and Forsyth St sit
+    4 m from Forsyth and 5 m from Delancey, inside Delancey's 9.7 m half-road,
+    and calling them Forsyth's put one tree of the Rivington-to-Delancey block
+    face on the far side of the Delancey boundary from the other twenty. Next
+    come the streets whose measured frontage reaches the tree, and last, only
+    when fallback_m is given, the streets within that distance at all."""
+    out = []
     for name, g in walk.items():
         if not in_span(g, u, n):
             continue
@@ -1477,14 +1479,26 @@ def nearest_line(walk, u, n, fallback_m=0.0):
         side = g.get('reach', (SEGMENT_REACH_M, SEGMENT_REACH_M))[0 if d < 0 else 1]
         reach = max(row_half(name, g), side)
         d = abs(d)
-        if d <= reach and (best is None or d < best[0]):
-            best = (d, name, g['axis'])
-        if d <= g['half_row_m'] and (covered is None or d < covered[0]):
-            covered = (d, name, g['axis'])
-        if d <= fallback_m and (near is None or d < near[0]):
-            near = (d, name, g['axis'])
-    hit = covered or best or near
-    return (hit[1], hit[2]) if hit else (None, None)
+        if d <= g['half_row_m']:
+            out.append((0, d, name, g['axis']))
+        elif d <= reach:
+            out.append((1, d, name, g['axis']))
+        elif d <= fallback_m:
+            out.append((2, d, name, g['axis']))
+    out.sort()
+    return out
+
+
+def nearest_line(walk, u, n, fallback_m=0.0):
+    """Name of the street a tree stands on, and which family it belongs to.
+
+    None for a tree that is not on any street: several hundred trees in the
+    census stand in courtyards, on housing-estate paths and inside the
+    superblocks, and the nearest street can be 30 m away. Left unfiltered they
+    put E 10th St in the contents of a sub-zone that stops a block short of
+    it."""
+    got = street_candidates(walk, u, n, fallback_m)
+    return (got[0][2], got[0][3]) if got else (None, None)
 
 
 # ---------------------------------------------------------------- segments --
@@ -1839,7 +1853,17 @@ def main():
     # out over the union of them. Columns that merely touch - 1A's and 1B's on
     # E 10th St, which meet on 1st Ave - do not, which is what keeps the Riis
     # nudge local to the sub-zones that need it.
-    def spec_column(spec, sides):
+    def spec_column(spec, sides, edge_f):
+        """How far a sub-zone runs along one of its edges: where the two
+        perpendicular sides cross that edge's street, as a coordinate along it.
+
+        It has to be read where the lines actually cross. An offset is an
+        intercept on the frame's origin axis, E 14th St, and two streets that
+        are not square to the frame drift apart from their intercepts by their
+        slope times the distance: in Two Bridges, 2 km south and at a slope of
+        0.7, comparing intercepts put the 3C stretch of Monroe St somewhere none
+        of 3C's trees stand, and its edge was placed by trees two sub-zones
+        away."""
         sign = -1.0 if sides[0] == 'north' else 1.0
         bounds = []
         for side in sides:
@@ -1847,10 +1871,15 @@ def main():
             if name == CB3_EDGE:
                 bounds.append(None)
                 continue
-            f = (divider_lines[name[len(DIVIDER):]] if name.startswith(DIVIDER)
-                 else lines[spec['region']][name])
-            half = 0.0 if name.startswith(DIVIDER) else row_half(name, f)
-            bounds.append(f['offset'] + sign * half)
+            if name.startswith(DIVIDER):
+                f = divider_lines[name[len(DIVIDER):]]
+            else:
+                f = lines[spec['region']][name]
+                half = row_half(name, f) * math.hypot(1.0, f['slope'])
+                f = {'slope': f['slope'], 'offset': f['offset'] + sign * half}
+            a, b = edge_f['slope'], edge_f['offset']
+            c, d = f['slope'], f['offset']
+            bounds.append((c * b + d) / (1.0 - a * c))
         lo = bounds[0] if bounds[0] is not None else -BIG
         hi = bounds[1] if bounds[1] is not None else BIG
         return (lo, hi) if lo <= hi else (hi, lo)
@@ -1860,11 +1889,11 @@ def main():
     for spec in SUBZONES:
         for sides, perp in ((('north', 'south'), ('west', 'east')),
                             (('west', 'east'), ('north', 'south'))):
-            col = spec_column(spec, perp)
             for side in sides:
                 name = spec[side]
                 if name == CB3_EDGE or name.startswith(DIVIDER):
                     continue
+                col = spec_column(spec, perp, lines[spec['region']][name])
                 edge_cols[(spec['region'], name)].append(col)
 
     stretches = {}
@@ -1895,12 +1924,13 @@ def main():
     for (rid, name), groups in stretches.items():
         f = lines[rid][name]
         floor = row_half(name, f)
+        hyp = math.hypot(1.0, f['slope'])     # distances square to the street
         for lo, hi in groups:
             if f['axis'] == 'ew':
-                dist = [(f['offset'] + f['slope'] * t['u'] - t['n'], t['street'])
+                dist = [((f['offset'] + f['slope'] * t['u'] - t['n']) / hyp, t['street'])
                         for t in trees if t['region'] == rid and lo <= t['u'] <= hi]
             else:
-                dist = [(t['u'] - (f['offset'] + f['slope'] * t['n']), t['street'])
+                dist = [((t['u'] - (f['offset'] + f['slope'] * t['n'])) / hyp, t['street'])
                         for t in trees if t['region'] == rid and lo <= t['n'] <= hi]
             own = [d for d, s in dist if s == name]
             others = [d for d, s in dist if s is not None and s != name]
@@ -1926,28 +1956,6 @@ def main():
                 raise SystemExit('sub-zone %s: no fitted line for %s' % (spec['id'], name))
             return f, row_half(name, f)
 
-        def column(sides):
-            """Extent of this sub-zone along the axis an edge runs in.
-
-            An edge's offset is chosen from the trees it actually crosses, so
-            it needs to know how far the sub-zone reaches sideways. The two
-            perpendicular edges give that - close enough to say which trees are
-            in the column, which is all it is for. Two sub-zones bounded by the
-            same street over the same column therefore get the same offset,
-            which is what keeps 1C and 1F, or 1A and 1D, sharing one line.
-
-            The two axes take opposite signs: an avenue's line is EAST of its
-            centreline and a street's is NORTH of it, and north is where n gets
-            smaller."""
-            sign = -1.0 if sides[0] == 'north' else 1.0
-            bounds = []
-            for side in sides:
-                f, half = named_line(spec[side])
-                bounds.append(None if f is None else f['offset'] + sign * half)
-            lo = bounds[0] if bounds[0] is not None else -BIG
-            hi = bounds[1] if bounds[1] is not None else BIG
-            return (lo, hi) if lo <= hi else (hi, lo)
-
         def edge(side):
             """Half-plane for one named edge, or None for a CB3 edge.
 
@@ -1970,7 +1978,8 @@ def main():
                 used[side] = (label, f, fit['edge_offset_m'], fit['edge_clear_m'],
                               row_half(fit['name'], fit))
                 return f, 0.0
-            col = column(('west', 'east') if f['axis'] == 'ew' else ('north', 'south'))
+            col = spec_column(spec, ('west', 'east') if f['axis'] == 'ew'
+                              else ('north', 'south'), f)
             for (lo, hi) in stretches[(rid, name)]:
                 if lo - 1.0 <= col[0] and col[1] <= hi + 1.0:
                     half, clear = stretch_offset[(rid, name, lo, hi)]
@@ -1984,23 +1993,29 @@ def main():
         # right-of-way, so the street sits south of its own boundary.
         # west / east: u = slope*n + offset, offset EAST, so the avenue sits
         # west of its own boundary.
+        # `half` is metres square to the street, and moving a line that far
+        # moves its intercept by half * hypot(1, slope).
         south = edge('south')
         if south:
             f, half = south
+            half *= math.hypot(1.0, f['slope'])
             # keep n <= slope*u + offset - half   ->   n - slope*u - (offset-half) <= 0
             window = clip_halfplane(window, (-f['slope'], 1.0, -(f['offset'] - half)))
         north = edge('north')
         if north:
             f, half = north
+            half *= math.hypot(1.0, f['slope'])
             window = clip_halfplane(window, (f['slope'], -1.0, (f['offset'] - half)))
         east = edge('east')
         if east:
             f, half = east
+            half *= math.hypot(1.0, f['slope'])
             # keep u <= slope*n + offset + half
             window = clip_halfplane(window, (1.0, -f['slope'], -(f['offset'] + half)))
         west = edge('west')
         if west:
             f, half = west
+            half *= math.hypot(1.0, f['slope'])
             window = clip_halfplane(window, (-1.0, f['slope'], (f['offset'] + half)))
 
         for div_key, keep_south in REGION_BOUNDS[rid]:
