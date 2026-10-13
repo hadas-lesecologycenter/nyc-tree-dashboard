@@ -1,6 +1,6 @@
 var TREE_CARE_SHEET_ID = '1pZTLIgHx1HlyuVbZDXg5QRjfqbgy83PDaAdX_XDWLwU';
 
-var SHEETS = ['Reservations', 'TreeGuards', 'CareNeeded', 'CommunityStewardship', 'MissingTrees'];
+var SHEETS = ['Reservations', 'TreeGuards', 'GuardNominations', 'CareNeeded', 'CommunityStewardship', 'MissingTrees'];
 
 function doGet(e) {
   try {
@@ -95,7 +95,8 @@ function setupSheets() {
     'TreeGuards': ['treeId','markedBy','guardType','markedAt','note'],
     'CareNeeded': ['treeId','careNeeds','markedAt','markedBy'],
     'CommunityStewardship': ['treeId','caretaker','activities','markedAt'],
-    'MissingTrees': ['treeId','type','note','markedAt']
+    'MissingTrees': ['treeId','type','note','markedAt'],
+    'GuardNominations': ['treeId','nominatedBy','reason','note','address','species','lat','lng','nominatedAt']
   };
   SHEETS.forEach(function(name) {
     var ws = ss.getSheetByName(name) || ss.insertSheet(name);

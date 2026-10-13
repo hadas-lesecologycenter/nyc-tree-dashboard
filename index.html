@@ -1587,6 +1587,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;padding:11px;background:#0f9e6e;background-color:#0f9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(15,158,110,0.35)">
           🌱 Community Stewarded
         </button>
+        <button type="button" id="mtp-nominate-btn" onclick="handleMapNominateBtn()"
+          style="margin-top:8px;width:100%;min-height:44px;padding:11px;background:#fff;background-color:#fff;color:#3d6b9e;border:2px solid #3d6b9e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
+          🛡 Nominate for Tree Guard
+        </button>
         <button type="button" id="mtp-guard-btn" onclick="handleMapTreeGuardBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
           🛡 Tree Guard?
@@ -1711,6 +1715,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label class="cp-chk">
             <input type="checkbox" id="f-tree-guards" onchange="applyFilters()">
             🛡 Tree Guard present
+          </label>
+          <label class="cp-chk">
+            <input type="checkbox" id="f-guard-nominated" onchange="applyFilters()">
+            🛡 Nominated for a guard
           </label>
           <div style="margin-bottom:8px">
             <label class="cp-chk">
@@ -2183,6 +2191,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeTreeGuardModal()" style="flex:1;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
         <button type="button" onclick="confirmTreeGuard()" style="flex:2;padding:10px;background:#3d6b9e;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">🛡 Mark Guard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOMINATE FOR TREE GUARD MODAL -->
+  <div id="nominate-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeNominationModal()">
+    <div style="background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,0.25);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="font-family:'Lora',serif;font-size:17px;font-weight:700;margin:0">🛡 Nominate for Tree Guard</h2>
+        <button type="button" onclick="closeNominationModal()" aria-label="Close" style="background:none;border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="nominate-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)"></div>
+
+      <div id="nominate-form">
+        <label for="nominate-name" style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Your name <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <input id="nominate-name" type="text" autocomplete="name" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Why does this tree need a guard?</div>
+        <div id="nominate-reasons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+        <label for="nominate-note" style="font-size:11px;font-weight:700;color:var(--text);display:block;margin-bottom:5px">Notes <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+        <textarea id="nominate-note" placeholder="e.g., hit by a delivery bike twice this month" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:64px;margin-bottom:14px"></textarea>
+        <div id="nominate-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="closeNominationModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+          <button type="button" id="nominate-submit" onclick="submitNomination()" style="flex:2;min-height:44px;padding:10px;background:#3d6b9e;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">🛡 Nominate</button>
+        </div>
+      </div>
+
+      <div id="nominate-existing" style="display:none">
+        <div id="nominate-existing-body" style="font-size:13px;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
+        <div id="nominate-withdraw-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="closeNominationModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
+          <button type="button" id="nominate-withdraw" onclick="withdrawNomination()" style="flex:1;min-height:44px;padding:10px;background:#fff;color:#b3261e;border:1px solid #b3261e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Withdraw</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3164,6 +3206,7 @@ function applyFilters(reload = false) {
   const careNeededOnly = document.getElementById('f-care-needed')?.checked || false;
   const caredForOnly = document.getElementById('f-cared-for')?.checked || false;
   const treeGuardsOnly = document.getElementById('f-tree-guards')?.checked || false;
+  const guardNominatedOnly = document.getElementById('f-guard-nominated')?.checked || false;
   const plantedOnly = document.getElementById('f-planted')?.checked || false;
   const reservedPersonOnly = document.getElementById('f-reserved-person')?.checked || false;
   const reservedEventOnly = document.getElementById('f-reserved-event')?.checked || false;
@@ -3198,6 +3241,10 @@ function applyFilters(reload = false) {
   if (treeGuardsOnly) {
     const guardedIds = getTreeGuardIds();
     base = base.filter(t => guardedIds.has(String(t.tree_id)));
+  }
+  if (guardNominatedOnly) {
+    const nominatedIds = getNominatedTreeIds();
+    base = base.filter(t => nominatedIds.has(String(t.tree_id)));
   }
   if (reservedPersonOnly || reservedEventOnly || reservedGeneralOnly) {
     const reservedIds = getReservationTreeIds(reservedPersonOnly, reservedEventOnly, reservedGeneralOnly);
@@ -3312,7 +3359,7 @@ const DISTRICT_NAMES = {
   111: 'Manhattan CB11', 112: 'Manhattan CB12',
 };
 const MAP_TREE_ACTION_BTNS = ['mtp-assess-btn', 'mtp-care-btn', 'mtp-reserve-btn',
-  'mtp-needs-care-btn', 'mtp-stewarded-btn', 'mtp-guard-btn', 'mtp-missing-btn'];
+  'mtp-needs-care-btn', 'mtp-stewarded-btn', 'mtp-nominate-btn', 'mtp-guard-btn', 'mtp-missing-btn'];
 const districtData = new Map();   // cd → { trees, emptyBeds, boundary }, once downloaded
 const districtShown = new Set();  // cds whose box is ticked
 const districtLoading = new Set(); // cds downloading right now
@@ -4885,6 +4932,7 @@ function openMapTreeDetail(tree) {
     updateNeedsCareButton(tree);
     updateStewardedButton(tree);
     updateTreeGuardButton(tree);
+    updateNominateButton(tree);
     updateMissingButton(tree);
     updateCareButton(tree);
     updateMapAssessBtn(tree);
@@ -7242,6 +7290,222 @@ function updateTreeGuardButton(tree) {
   btn.style.border = 'none';
   btn.style.webkitAppearance = 'none';
   btn.style.boxShadow = '0 2px 6px rgba(61,107,158,0.35)';
+  updateNominateButton(tree);
+}
+
+// ========== TREE GUARD NOMINATIONS ==========
+// Anyone can nominate a street tree for a guard from its detail panel (the
+// bottom sheet on a phone). Nominations go to the "GuardNominations" tab of the
+// tree care Google Sheet; the tab is created by the Apps Script on first save.
+// A save is queued on the phone first and pushed when there is signal, the way
+// risk assessments are, so a nomination made on the sidewalk is not lost.
+const NOMINATION_SHEET = 'GuardNominations';
+const NOMINATION_HEADERS = ['treeId','nominatedBy','reason','note','address','species','lat','lng','nominatedAt'];
+const NOMINATION_REASONS = ['Young tree, unprotected', 'Hit by bikes or cars', 'Dog or foot traffic', 'Bark or trunk damage', 'Other'];
+let _nominationFlushing = false;
+let _pendingNominationTree = null;
+let _nominationReason = '';
+
+function nominationTreeId(tree) {
+  return String(tree.tree_id || (parseFloat(tree.latitude) + '_' + parseFloat(tree.longitude)));
+}
+function nominationsReadLocal() {
+  try { return JSON.parse(localStorage.getItem('tc_guard_nominations') || '[]'); }
+  catch (e) { return []; }
+}
+function nominationsWriteLocal(list) {
+  try { localStorage.setItem('tc_guard_nominations', JSON.stringify(list)); } catch (e) {}
+}
+function getNominatedTreeIds() {
+  return new Set(nominationsReadLocal().map(n => String(n.treeId)));
+}
+
+// What the Sheet holds, plus anything made on this phone that has not reached it.
+async function nominationsLoad() {
+  const server = await sheetsRead(NOMINATION_SHEET);
+  const local = nominationsReadLocal();
+  if (server === null) return local;
+  const onServer = new Set(server.map(r => String(r.treeId)));
+  const merged = server.filter(r => r.treeId).map(r => Object.assign({}, r, { _synced: true }))
+    .concat(local.filter(n => !n._synced && !onServer.has(String(n.treeId))));
+  nominationsWriteLocal(merged);
+  if (merged.some(n => !n._synced)) nominationsFlush();
+  return merged;
+}
+
+// Read, merge, write, read back. A write replaces the whole tab, so it is only
+// done on top of a table that was just read; if the read fails nothing is sent.
+async function nominationsFlush() {
+  if (_nominationFlushing) return true;
+  const mine = nominationsReadLocal().filter(n => !n._synced);
+  if (!mine.length) return true;
+  _nominationFlushing = true;
+  try {
+    const server = await sheetsRead(NOMINATION_SHEET);
+    if (server === null) throw new Error('could not read the Sheet before saving');
+    const byId = new Map(server.filter(r => r.treeId).map(r => [String(r.treeId), r]));
+    mine.forEach(n => { if (!byId.has(String(n.treeId))) byId.set(String(n.treeId), n); });
+    const merged = Array.from(byId.values());
+    await sheetsWriteOrThrow(NOMINATION_SHEET, NOMINATION_HEADERS, merged, r => NOMINATION_HEADERS.map(h => r[h] || ''));
+    const check = await sheetsRead(NOMINATION_SHEET);
+    if (!check) throw new Error('could not read the Sheet back to confirm the save');
+    const confirmed = new Set(check.map(r => String(r.treeId)));
+    const list = merged.map(r => Object.assign({}, r, { _synced: confirmed.has(String(r.treeId)) }));
+    nominationsWriteLocal(list);
+    const left = list.filter(n => !n._synced).length;
+    if (left) { tcShowSyncStatus('⚠ Nomination kept on this phone, not in the Sheet yet', true); return false; }
+    tcShowSyncStatus('✓ Nomination saved to Google Sheets');
+    return true;
+  } catch (e) {
+    console.error('Nomination sync failed:', e);
+    tcShowSyncStatus('⚠ Nomination saved on this phone, will sync when you have signal', true);
+    return false;
+  } finally {
+    _nominationFlushing = false;
+  }
+}
+window.addEventListener('online', nominationsFlush);
+
+function updateNominateButton(tree) {
+  const btn = document.getElementById('mtp-nominate-btn');
+  if (!btn || !tree) return;
+  const id = nominationTreeId(tree);
+  if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  const submitted = SUBMISSION_ROUNDS_TREES.find(t => t.id === id);
+  const nom = nominationsReadLocal().find(n => String(n.treeId) === id);
+  const set = (text, bg, fg, border, disabled) => {
+    btn.textContent = text;
+    btn.style.background = bg; btn.style.backgroundColor = bg;
+    btn.style.color = fg; btn.style.border = '2px solid ' + border;
+    btn.disabled = !!disabled;
+    btn.style.cursor = disabled ? 'default' : 'pointer';
+  };
+  if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
+  else if (nom) set('🛡 Nominated ✓ (tap for details)', '#3d6b9e', '#fff', '#3d6b9e', false);
+  else set('🛡 Nominate for Tree Guard', '#fff', '#3d6b9e', '#3d6b9e', false);
+}
+
+function handleMapNominateBtn() {
+  const tree = window._currentMapDetailTree;
+  if (tree) openNominationModal(tree);
+}
+
+function openNominationModal(tree) {
+  const modal = document.getElementById('nominate-modal');
+  if (!modal) return;
+  _pendingNominationTree = tree;
+  _nominationReason = '';
+  const id = nominationTreeId(tree);
+  const species = tree.spc_common || tree.spc_latin || 'Unknown species';
+  document.getElementById('nominate-info').innerHTML =
+    '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' + escHtml(species) + '</div>' +
+    '<div style="font-size:11px;color:var(--text2)">' + escHtml(tree.address || 'Address not listed') + (tree.tree_id ? ' · Tree ID ' + escHtml(tree.tree_id) : '') + '</div>';
+  const nom = nominationsReadLocal().find(n => String(n.treeId) === id);
+  const form = document.getElementById('nominate-form');
+  const existing = document.getElementById('nominate-existing');
+  if (nom) {
+    const when = nom.nominatedAt ? new Date(nom.nominatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    document.getElementById('nominate-existing-body').innerHTML =
+      '<div><b>Nominated</b>' + (when ? ' on ' + escHtml(when) : '') + (nom.nominatedBy ? ' by ' + escHtml(nom.nominatedBy) : '') + '</div>' +
+      (nom.reason ? '<div>Reason: ' + escHtml(nom.reason) + '</div>' : '') +
+      (nom.note ? '<div style="color:var(--text2)">' + escHtml(nom.note) + '</div>' : '') +
+      (nom._synced ? '' : '<div style="color:#8a5a00;font-size:12px;margin-top:4px">Saved on this phone, not in the Sheet yet.</div>');
+    document.getElementById('nominate-withdraw-error').style.display = 'none';
+    form.style.display = 'none'; existing.style.display = 'block';
+  } else {
+    let saved = '';
+    try { saved = localStorage.getItem('tc_nominator_name') || ''; } catch (e) {}
+    document.getElementById('nominate-name').value = saved;
+    document.getElementById('nominate-note').value = '';
+    document.getElementById('nominate-error').style.display = 'none';
+    document.getElementById('nominate-reasons').innerHTML = NOMINATION_REASONS.map((r, i) =>
+      '<button type="button" data-i="' + i + '" aria-pressed="false" onclick="pickNominationReason(this)" ' +
+      'style="min-height:40px;padding:8px 12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">' + escHtml(r) + '</button>').join('');
+    const sub = document.getElementById('nominate-submit'); sub.disabled = false; sub.textContent = '🛡 Nominate';
+    form.style.display = 'block'; existing.style.display = 'none';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeNominationModal() {
+  const modal = document.getElementById('nominate-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingNominationTree = null;
+}
+
+function pickNominationReason(btn) {
+  _nominationReason = NOMINATION_REASONS[+btn.dataset.i];
+  document.querySelectorAll('#nominate-reasons button').forEach(b => {
+    const on = b === btn;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.style.background = on ? '#3d6b9e' : 'var(--bg2)';
+    b.style.color = on ? '#fff' : 'var(--text)';
+    b.style.borderColor = on ? '#3d6b9e' : 'var(--border)';
+  });
+  document.getElementById('nominate-error').style.display = 'none';
+}
+
+async function submitNomination() {
+  const tree = _pendingNominationTree;
+  if (!tree) return;
+  const err = document.getElementById('nominate-error');
+  if (!_nominationReason) {
+    err.textContent = 'Pick the reason that fits best.'; err.style.display = 'block';
+    return;
+  }
+  const name = (document.getElementById('nominate-name').value || '').trim();
+  try { localStorage.setItem('tc_nominator_name', name); } catch (e) {}
+  const lat = parseFloat(tree.latitude || tree.lat), lng = parseFloat(tree.longitude || tree.lng || tree.lon);
+  const list = nominationsReadLocal();
+  const id = nominationTreeId(tree);
+  if (!list.some(n => String(n.treeId) === id)) {
+    list.push({
+      treeId: id, nominatedBy: name, reason: _nominationReason,
+      note: (document.getElementById('nominate-note').value || '').trim(),
+      address: tree.address || '', species: tree.spc_common || tree.spc_latin || '',
+      lat: isNaN(lat) ? '' : lat, lng: isNaN(lng) ? '' : lng,
+      nominatedAt: new Date().toISOString(), _synced: false
+    });
+    nominationsWriteLocal(list);
+  }
+  const sub = document.getElementById('nominate-submit');
+  sub.disabled = true; sub.textContent = 'Saving…';
+  closeNominationModal();
+  updateNominateButton(tree);
+  tcShowSyncStatus('⟳ Saving nomination…');
+  await nominationsFlush();
+  updateNominateButton(tree);
+  if (document.getElementById('f-guard-nominated')?.checked) applyFilters();
+}
+
+async function withdrawNomination() {
+  const tree = _pendingNominationTree;
+  if (!tree) return;
+  const id = nominationTreeId(tree);
+  const btn = document.getElementById('nominate-withdraw');
+  const err = document.getElementById('nominate-withdraw-error');
+  btn.disabled = true; btn.textContent = 'Withdrawing…'; err.style.display = 'none';
+  try {
+    const local = nominationsReadLocal();
+    const mine = local.find(n => String(n.treeId) === id);
+    // A nomination that never reached the Sheet only needs removing here.
+    if (mine && mine._synced !== false) {
+      const server = await sheetsRead(NOMINATION_SHEET);
+      if (server === null) throw new Error('Could not reach the Sheet. Check your signal and try again.');
+      const kept = server.filter(r => r.treeId && String(r.treeId) !== id);
+      await sheetsWriteOrThrow(NOMINATION_SHEET, NOMINATION_HEADERS, kept, r => NOMINATION_HEADERS.map(h => r[h] || ''));
+    }
+    nominationsWriteLocal(local.filter(n => String(n.treeId) !== id));
+    closeNominationModal();
+    updateNominateButton(tree);
+    if (document.getElementById('f-guard-nominated')?.checked) applyFilters();
+    tcShowSyncStatus('Nomination withdrawn');
+  } catch (e) {
+    err.textContent = e.message || 'Could not withdraw. Try again.'; err.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Withdraw';
+  }
 }
 
 // ========== NEEDS CARE (separate from reservations) ==========
@@ -9189,7 +9453,7 @@ function switchViewById(view) {
 window.addEventListener('load', async () => {
   // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
   console.log('Loading data from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
+  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
