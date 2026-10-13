@@ -330,14 +330,18 @@ carries a `segmentId` lies inside one.
 
 Every tree in CB3 is in exactly one sub-zone, because a sub-zone is a polygon
 and the test is whether the tree is inside it. A **segment** is a stricter
-claim — it says which street the tree stands on — and 421 of the 5,300 (7.9%)
+claim — it says which street the tree stands on — and 156 of the 5,300 (2.9%)
 cannot be given one. They are counted in their sub-zone's total, listed in
 `subzones.csv` with an empty `segmentId`, and named in the sub-zone's popup, so
 a crew planning a day is told how many trees it will find off the block faces.
 
-By zone: 2,380 of 2,466 on a segment in zone 1 (97%), 1,241 of 1,368 in zone 2
-(91%), 1,258 of 1,466 in zone 3 (86%). The gradient is the housing, not the
-method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
+The sub-zone popup also gives the share of its trees that are on a block and
+lists its blocks, busiest first, each with its tree count. Clicking a block's ID
+turns on the Block Segments layer and zooms to that block.
+
+By zone: 2,439 of 2,466 on a segment in zone 1 (99%), 1,312 of 1,368 in zone 2
+(96%), 1,393 of 1,466 in zone 3 (95%). What gradient is left is the housing, not
+the method — Baruch, Seward Park, Masaryk, Hillman, Vladeck, Rutgers, Smith and
 LaGuardia all plant their frontage on housing-authority ground well inside the
 block, and the census still calls those street trees.
 
@@ -347,6 +351,19 @@ set-back rows of the Smith Houses and Lands End, spread too evenly to read as
 one row), and Madison St, 32 m on its south side (the set-back planting at 200
 Madison St and along the Rutgers and LaGuardia frontage). That put 86 trees on
 a segment that had none and moved none that had one.
+
+Past every street's measured reach, a tree is still put on the **nearest
+street's block if it stands within 30 m of that street** (`LOOSE_TREE_M`):
+set-back rows in front of housing, the inner rows of the Allen St mall. It
+only joins a block that already has trees of its own, or one that at least five
+such trees start together (`LOOSE_BLOCK_MIN`), so the rule adds no one-tree
+segments. Beyond 30 m a tree is in a courtyard or a superblock interior and
+stays on no block. On the 2026-10-12 census this put 265 trees on a block
+(3A 78 to 25 loose, 2F 58 to 33, 3F 34 to 9, 3C 33 to 19), moved none that had
+one, and started one segment, 1C-17 (E 10th St, Ave D to FDR Dr, 18 trees),
+for 513 in all. Of the 14 addressed trees it placed, 12 land on the street
+their address names; the other two, at 24 Columbia St and 25 Bialystoker Pl,
+land on the neighbouring street.
 
 A tree is on a street when it stands within that street's **reach** of its
 centreline, and the reach is measured rather than assumed: a row of trees is a

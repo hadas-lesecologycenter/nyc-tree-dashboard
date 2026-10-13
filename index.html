@@ -5004,23 +5004,75 @@ async function initSubzonesLayer() {
     seen[p.zone] = (seen[p.zone] || 0);
     const color = subzoneShade(p.zone, seen[p.zone]++, perZone[p.zone]);
     L.geoJSON(f, { style: { color, weight: 2, fillColor: color, fillOpacity: 0.18 } })
-      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:200px">
-        <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
-        <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.bounds || p.label}</div>
-        ${p.contains ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
-          Works both sides of ${p.contains}</div>` : ''}
-        <div style="font-size:11px;color:#6b6456;margin-top:4px">
-          Zone ${p.zone} · ${p.region_label}<br>${p.blocks} blocks · ${p.tree_count} trees
-        </div>
-        ${p.off_segment ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
-          ${p.off_segment} of them stand off the street grid — courtyards, housing-estate
-          paths and superblock interiors — and are counted here but not drawn on any
-          block segment.</div>` : ''}
-      </div>`)
+      .bindPopup(() => subzonePopupHtml(p), { maxWidth: 320 })
+      .on('popupopen', e => {
+        // The block list needs the segments file; fetch it the first time a
+        // sub-zone is opened, then fill the popup in place.
+        if (segmentsData) return;
+        loadSegmentsData()
+          .then(() => e.popup.setContent(subzonePopupHtml(p)))
+          .catch(err => console.error('Block list load failed:', err));
+      })
       .bindTooltip(p.subzone_id, { permanent: true, direction: 'center', className: 'subzone-tag' })
       .addTo(subzonesLayer);
   });
   console.log(`Sub-zones: ${subzonesLayer.getLayers().length} loaded`);
+}
+
+// What a sub-zone holds, for its popup: the counts, then every block in it
+// with its trees, busiest first. A block's ID zooms the map to it with the
+// Block Segments layer on, so a crew lead can go from "you have 2D" to the
+// block face itself.
+function subzonePopupHtml(p) {
+  const onBlocks = p.tree_count - (p.off_segment || 0);
+  const pct = p.tree_count ? Math.round(100 * onBlocks / p.tree_count) : 0;
+  let blocks = '<div style="font-size:11px;color:#6b6456;margin-top:6px">Loading blocks…</div>';
+  if (segmentsData) {
+    const mine = segmentsData.features.map(f => f.properties)
+      .filter(q => q.subzone_id === p.subzone_id)
+      .sort((a, b) => b.tree_count - a.tree_count || a.segment_id.localeCompare(b.segment_id));
+    blocks = `<div style="max-height:180px;overflow-y:auto;margin-top:6px;border-top:1px solid #e4dfd3">
+      ${mine.map(q => `<div style="display:flex;gap:6px;align-items:baseline;font-size:11px;padding:2px 0">
+        <a href="#" onclick="zoomToSegment('${q.segment_id}');return false"
+           style="font-weight:700;color:#2f6f4f;text-decoration:none;min-width:40px">${q.segment_id}</a>
+        <span style="color:#2c2a24;flex:1">${q.label}</span>
+        <span style="color:#6b6456;white-space:nowrap">${q.tree_count}</span></div>`).join('')}
+    </div>`;
+  }
+  return `<div style="font-family:'Nunito',sans-serif;min-width:220px">
+    <div style="font-family:'Lora',serif;font-size:14px;font-weight:700;color:#2c2a24">🧭 Sub-Zone ${p.subzone_id}</div>
+    <div style="font-size:12px;color:#2c2a24;margin-top:3px">${p.bounds || p.label}</div>
+    ${p.contains ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
+      Works both sides of ${p.contains}</div>` : ''}
+    <div style="font-size:11px;color:#6b6456;margin-top:4px">
+      Zone ${p.zone} · ${p.region_label}<br>
+      <b style="color:#2c2a24">${p.tree_count} trees</b> · ${p.blocks} blocks · ${pct}% of trees on a block
+    </div>
+    ${p.off_segment ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
+      ${p.off_segment} stand away from any block face — courtyards, housing-estate
+      paths, superblock interiors — and are on no block.</div>` : ''}
+    ${blocks}
+  </div>`;
+}
+
+async function loadSegmentsData() {
+  if (segmentsData) return segmentsData;
+  const resp = await fetchData(SEGMENTS_URL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  segmentsData = await resp.json();
+  return segmentsData;
+}
+
+// Fly to one block and show the Block Segments layer.
+function zoomToSegment(id) {
+  if (!segmentsData) return;
+  const f = segmentsData.features.find(x => x.properties.segment_id === id);
+  if (!f) return;
+  const pts = f.geometry.coordinates.map(c => [c[1], c[0]]);
+  mapInstance.closePopup();
+  const cb = document.getElementById('layer-segments');
+  if (cb && !cb.checked) { cb.checked = true; toggleSegmentsFromPanel(); }
+  mapInstance.fitBounds(L.latLngBounds(pts).pad(0.6), { maxZoom: 18 });
 }
 
 function toggleSubzonesFromPanel() {
@@ -5075,11 +5127,7 @@ function segmentColor(n) {
 }
 
 async function initSegmentsLayer() {
-  if (!segmentsData) {
-    const resp = await fetchData(SEGMENTS_URL);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    segmentsData = await resp.json();
-  }
+  await loadSegmentsData();
   ensureSegmentBandPane();
 
   segmentsLayer = L.layerGroup();
