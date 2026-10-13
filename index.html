@@ -1545,13 +1545,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
             </div>
           </div>
         </div>
-        <!-- Submission Rounds Legend -->
-        <div id="rounds-legend" style="position:absolute;bottom:120px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:160px">
-          <div style="font-weight:700;margin-bottom:8px;font-size:12px;color:#333">📋 Submission Rounds</div>
+        <!-- DEC Grant Tree Guards Legend -->
+        <div id="tree-guards-legend" style="position:absolute;bottom:120px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:170px">
+          <div style="font-weight:700;margin-bottom:8px;font-size:12px;color:#333">🛡 DEC Grant Tree Guards</div>
           <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#333">
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1f6fb0;border:1px solid #164f80"></div><span>Round 1</span></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#cc6f14;border:1px solid #9a520d"></div><span>Round 2 (6/16/26)</span></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#a8327a;border:1px solid #7c2459"></div><span>Round 3</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #1a1a1a;box-sizing:border-box"></div><span>Spring 2026 install</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1a1a1a;border:1px solid #fff"></div><span>Install, no tree ID</span></div>
           </div>
         </div>
         <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
@@ -1750,10 +1752,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <label class="cp-chk">
             <input type="checkbox" id="layer-coolest-blocks" onchange="toggleCoolestBlocksFromPanel()">
             🏆 Coolest Block 2025
-          </label>
-          <label class="cp-chk">
-            <input type="checkbox" id="layer-rounds" onchange="toggleSubmissionRoundsFromPanel()">
-            📋 Submission Rounds
           </label>
           <label class="cp-chk">
             <input type="checkbox" id="layer-subzones" onchange="toggleSubzonesFromPanel()">
@@ -2923,8 +2921,6 @@ let treeGuardsLayer = null;
 let treeGuardsVisible = false;
 let coolestBlocksLayer = null;
 let coolestBlocksVisible = false;
-let submissionRoundsLayer = null;
-let submissionRoundsVisible = false;
 let hydrantLayer = null;
 let hydrantVisible = false;
 let hydrantLoading = false;
@@ -5059,23 +5055,6 @@ function initToolStorageLayer() {
   });
 }
 
-function initTreeGuardsLayer() {
-  treeGuardsLayer = L.layerGroup();
-  LESEC_TREE_GUARDS.features.forEach(f => {
-    const [lng, lat] = f.geometry.coordinates;
-    L.circleMarker([lat, lng], {
-      radius: 7,
-      fillColor: '#1a1a1a',
-      color: '#fff',
-      weight: 1.5,
-      fillOpacity: 0.9
-    }).bindPopup(`<div style="font-family:'Nunito',sans-serif">
-      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 DEC Grant Tree Guard</div>
-      <div style="font-size:11px;color:#6b6456;margin-top:2px">Spring 2026 install</div>
-    </div>`).addTo(treeGuardsLayer);
-  });
-}
-
 function initCoolestBlocksLayer() {
   coolestBlocksLayer = L.layerGroup();
   LESEC_COOLEST_RESIDENTS.features.forEach(f => {
@@ -5103,25 +5082,6 @@ function initCoolestBlocksLayer() {
   });
 }
 
-function toggleTreeGuards() {
-  if (!treeGuardsLayer) initTreeGuardsLayer();
-  treeGuardsVisible = !treeGuardsVisible;
-  if (treeGuardsVisible) treeGuardsLayer.addTo(mapInstance);
-  else treeGuardsLayer.remove();
-  const cb = document.getElementById('layer-tree-guards');
-  if (cb) cb.checked = treeGuardsVisible;
-}
-
-function toggleTreeGuardsFromPanel() {
-  const cb = document.getElementById('layer-tree-guards');
-  const shouldShow = !!(cb && cb.checked);
-  if (shouldShow === treeGuardsVisible) return;
-  if (!treeGuardsLayer) initTreeGuardsLayer();
-  treeGuardsVisible = shouldShow;
-  if (treeGuardsVisible) treeGuardsLayer.addTo(mapInstance);
-  else treeGuardsLayer.remove();
-}
-
 function toggleCoolestBlocks() {
   if (!coolestBlocksLayer) initCoolestBlocksLayer();
   coolestBlocksVisible = !coolestBlocksVisible;
@@ -5145,47 +5105,111 @@ function toggleCoolestBlocksFromPanel() {
   if (legend) legend.style.display = coolestBlocksVisible ? 'block' : 'none';
 }
 
-// ========== SUBMISSION ROUNDS LAYER ==========
-// Trees submitted in Rounds 1-3. Positions come from data/census-coords.json.
+// ========== DEC GRANT TREE GUARDS LAYER ==========
+// One layer for the DEC grant tree guards. It holds every tree submitted for a
+// guard in Rounds 1-3 (positions from data/census-coords.json) and the Spring
+// 2026 install points. An install point within a few metres of a submitted
+// tree is that tree's install and shows as a black ring; an install point with
+// no submitted tree near it is drawn on its own. Clicking a tree opens the same
+// detail panel as the main map.
 const SUBMISSION_ROUNDS_TREES = [{"r":1,"id":"12158994","a":"265 Henry Street","lat":40.713893,"lng":-73.984703,"sp":"bur oak","note":"Dashboard lists this tree at 263 Henry Street. Check which address is correct."},{"r":1,"id":"4604009","a":"347 East 10th Street","lat":40.726847,"lng":-73.979725,"sp":"London planetree"},{"r":1,"id":"12400955","a":"391 East 10th Street","lat":40.726102,"lng":-73.977979,"sp":"'Espresso' Kentucky coffee tree"},{"r":1,"id":"10163629","a":"331 East 10th Street","lat":40.727163,"lng":-73.980496,"sp":"'Millstone' Japanese pagodatree"},{"r":1,"id":"10164543","a":"329 East 10th Street","lat":40.727215,"lng":-73.980606,"sp":"'Streetkeeper' Thornless honeylocust"},{"r":1,"id":"2121964","a":"383 East 10th Street","lat":40.726219,"lng":-73.978258,"sp":"Callery pear"},{"r":1,"id":"10408117","a":"168 Orchard Street","lat":40.721389,"lng":-73.988419,"sp":"maple"},{"r":1,"id":"2114670","a":"425 East 9th Street","lat":40.727754,"lng":-73.983702,"sp":"Japanese pagoda tree"},{"r":1,"id":"2123392","a":"192 2nd Avenue","lat":40.730966,"lng":-73.98567,"sp":"London planetree"},{"r":1,"id":"1182508","a":"529 East 13th Street","lat":40.729206,"lng":-73.979504,"sp":"Green ash"},{"r":2,"id":"10162567","a":"184 Avenue C","lat":40.726709,"lng":-73.976779,"sp":"'Chicagoland' Hackberry"},{"r":2,"id":"2121983","a":"411 East 10th","lat":40.725665,"lng":-73.976034,"sp":"Thornless honeylocust"},{"r":2,"id":"12158996","a":"35 Montgomery Street","lat":40.713012,"lng":-73.984806,"sp":"chinkapin oak"},{"r":2,"id":"10183650","a":"35 Montgomery Street","lat":40.712791,"lng":-73.984894,"sp":"dawn redwood"},{"r":2,"id":"14095819","a":"35 Montgomery Street","lat":40.712713,"lng":-73.984875,"sp":"maidenhair tree"},{"r":2,"id":"2114681","a":"192 Avenue B","lat":40.728162,"lng":-73.97928,"sp":"Thornless honeylocust"},{"r":2,"id":"15763356","a":"435 E 12 Street","lat":40.729365,"lng":-73.981874,"sp":"bur oak"},{"r":2,"id":"14177845","a":"149 Avenue C","lat":40.725471,"lng":-73.977736,"sp":"'Espresso' Kentucky coffee tree"},{"r":2,"id":"2114748","a":"129 St Marks Place","lat":40.726779,"lng":-73.983246,"sp":"Thornless honeylocust"},{"r":2,"id":"11139377","a":"10 Montgomery Street","lat":40.713914,"lng":-73.985312,"sp":"Amur maackia"},{"r":2,"id":"2121638","a":"737 East 6th Street","lat":40.723011,"lng":-73.977921,"sp":"London planetree"},{"r":3,"id":"10576007","a":"146 Stanton Street","lat":40.720625,"lng":-73.985642,"sp":"London planetree"},{"r":3,"id":"2111001","a":"76 Essex St","lat":40.717976,"lng":-73.988381,"sp":"Thornless honeylocust"},{"r":3,"id":"2116320","a":"25 Montgomery Street","lat":40.713489,"lng":-73.984968,"sp":"maidenhair tree"},{"r":3,"id":"2116319","a":"25 Montgomery Street","lat":40.713382,"lng":-73.984968,"sp":"American basswood"},{"r":3,"id":"2116318","a":"25 Montgomery Street","lat":40.713258,"lng":-73.984955,"sp":"American basswood"},{"r":3,"id":"10202012","a":"25 Montgomery Street","lat":40.713736,"lng":-73.984834,"sp":"common hackberry"},{"r":3,"id":"13622972","a":"244 Broome Street","lat":40.717792,"lng":-73.988988,"sp":"Japanese zelkova"},{"r":3,"id":"10183640","a":"179 Henry Street","lat":40.713604,"lng":-73.988126,"sp":"Kentucky coffeetree"},{"r":3,"id":"11139378","a":"179 Henry Street","lat":40.713737,"lng":-73.988554,"sp":"Amur maackia"},{"r":3,"id":"15197124","a":"500 Grand Street","lat":40.71493,"lng":-73.982997,"sp":"Freeman maple"},{"r":3,"id":"11139376","a":"64 Rutgers Street","lat":40.711372,"lng":-73.989889,"sp":"'Morris Debonair' Bald cypress"},{"r":3,"id":"12158981","a":"85 Pike Slip","lat":40.710675,"lng":-73.991839,"sp":"swamp white oak"},{"r":3,"id":"2110960","a":"99 Hester Street","lat":40.716465,"lng":-73.992658,"sp":"sawtooth oak"},{"r":3,"id":"15331647","a":"195 Canal Street","lat":40.717083,"lng":-73.998194,"sp":"'Northern Acclaim' Thornless honeylocust"}];
 const SUBMISSION_ROUND_STYLE = {
-  1: { fill: '#1f6fb0', stroke: '#164f80', label: 'Round 1' },
-  2: { fill: '#cc6f14', stroke: '#9a520d', label: 'Round 2 (submitted 6/16/26)' },
-  3: { fill: '#a8327a', stroke: '#7c2459', label: 'Round 3' }
+  1: { fill: '#1f6fb0', stroke: '#164f80', label: 'Round 1', note: '' },
+  2: { fill: '#cc6f14', stroke: '#9a520d', label: 'Round 2', note: 'submitted 6/16/26' },
+  3: { fill: '#a8327a', stroke: '#7c2459', label: 'Round 3', note: '' }
 };
+const GUARD_INSTALL_MATCH_M = 6;
 
-function initSubmissionRoundsLayer() {
-  submissionRoundsLayer = L.layerGroup();
+function guardMetersApart(lat1, lng1, lat2, lng2) {
+  return Math.hypot((lat1 - lat2) * 110540, (lng1 - lng2) * 84400);
+}
+
+// The tree's record from the main map. Stumps and trees just outside CB3 are
+// not in allTrees, so those come from the full census.
+function guardTreeRecord(id) {
+  const sid = String(id);
+  const tree = allTrees.find(t => String(t.tree_id) === sid);
+  if (tree) return tree;
+  const raw = CENSUS_DATA.find(t => String(t.tree_id) === sid);
+  return raw ? { ...raw, _priority: calcPriority(raw) } : null;
+}
+
+function openGuardTreeDetail(t, installed) {
+  const tree = guardTreeRecord(t.id);
+  if (!tree) return false;
+  openMapTreeDetail(tree);
+  const st = SUBMISSION_ROUND_STYLE[t.r];
+  const status = st.label + (st.note ? ' · ' + st.note : '') + (installed ? ' · Spring 2026 install' : '');
+  const box = document.getElementById('mtp-fields');
+  if (box) {
+    box.insertAdjacentHTML('afterbegin',
+      '<div style="padding:5px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;justify-content:space-between;gap:8px">' +
+          '<span style="font-size:11px;color:var(--text3);flex-shrink:0">🛡 DEC guard</span>' +
+          '<span style="font-size:11px;color:var(--text);text-align:right">' + escHtml(status) + '</span>' +
+        '</div>' +
+        (t.note ? '<div style="font-size:10px;color:#8a5a00;margin-top:3px">' + escHtml(t.note) + '</div>' : '') +
+      '</div>');
+  }
+  return true;
+}
+
+function initTreeGuardsLayer() {
+  treeGuardsLayer = L.layerGroup();
+  const installs = LESEC_TREE_GUARDS.features.map(f => ({
+    lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], used: false
+  }));
   SUBMISSION_ROUNDS_TREES.forEach(t => {
     const st = SUBMISSION_ROUND_STYLE[t.r];
-    const note = t.note ? `<div style="font-size:11px;color:#8a5a00;margin-top:6px">${t.note}</div>` : '';
-    L.circleMarker([t.lat, t.lng], { radius: 7, fillColor: st.fill, color: st.stroke, weight: 2, opacity: 0.95, fillOpacity: 0.9 })
-      .bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:180px">
-        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">${t.a}</div>
-        <div style="font-size:11px;color:${st.fill};font-weight:700;margin:3px 0">${st.label}</div>
-        <div style="font-size:11px;color:#6b6456">Tree ID ${t.id}</div>
-        <div style="font-size:11px;color:#6b6456">${t.sp || 'Unknown species'}</div>${note}
-      </div>`).addTo(submissionRoundsLayer);
+    const inst = installs.find(p => guardMetersApart(p.lat, p.lng, t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
+    if (inst) inst.used = true;
+    const m = L.circleMarker([t.lat, t.lng], {
+      radius: 7, fillColor: st.fill, color: inst ? '#1a1a1a' : '#fff',
+      weight: inst ? 3 : 1.5, fillOpacity: 0.95
+    });
+    m.bindTooltip('<b>' + escHtml(t.a) + '</b><br>' + escHtml(st.label) + (inst ? ' · installed' : '') +
+      '<br>' + escHtml(t.sp || ''));
+    m.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      if (openGuardTreeDetail(t, !!inst)) return;
+      m.unbindTooltip();
+      m.bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:170px">
+        <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">${escHtml(t.a)}</div>
+        <div style="font-size:11px;color:${st.fill};font-weight:700;margin:3px 0">${escHtml(st.label)}</div>
+        <div style="font-size:11px;color:#6b6456">Tree ID ${escHtml(t.id)} · ${escHtml(t.sp || 'Unknown species')}</div>
+        <div style="font-size:11px;color:#6b6456;margin-top:4px">Tree details load with the main tree data.</div>
+      </div>`).openPopup();
+    });
+    m.addTo(treeGuardsLayer);
+  });
+  installs.filter(p => !p.used).forEach(p => {
+    L.circleMarker([p.lat, p.lng], {
+      radius: 7, fillColor: '#1a1a1a', color: '#fff', weight: 1.5, fillOpacity: 0.9
+    }).bindPopup(`<div style="font-family:'Nunito',sans-serif">
+      <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 DEC Grant Tree Guard</div>
+      <div style="font-size:11px;color:#6b6456;margin-top:2px">Spring 2026 install</div>
+      <div style="font-size:11px;color:#6b6456;margin-top:2px">No tree ID on file for this point.</div>
+    </div>`).addTo(treeGuardsLayer);
   });
 }
 
-function setSubmissionRoundsVisible(show) {
-  if (show === submissionRoundsVisible) return;
-  if (!submissionRoundsLayer) initSubmissionRoundsLayer();
-  submissionRoundsVisible = show;
-  if (show) submissionRoundsLayer.addTo(mapInstance);
-  else submissionRoundsLayer.remove();
-  const cb = document.getElementById('layer-rounds');
+function setTreeGuardsVisible(show) {
+  if (show === treeGuardsVisible) return;
+  if (!treeGuardsLayer) initTreeGuardsLayer();
+  treeGuardsVisible = show;
+  if (show) treeGuardsLayer.addTo(mapInstance);
+  else treeGuardsLayer.remove();
+  const cb = document.getElementById('layer-tree-guards');
   if (cb) cb.checked = show;
-  const legend = document.getElementById('rounds-legend');
+  const legend = document.getElementById('tree-guards-legend');
   if (legend) legend.style.display = show ? 'block' : 'none';
 }
 
-function toggleSubmissionRounds() { setSubmissionRoundsVisible(!submissionRoundsVisible); }
+function toggleTreeGuards() { setTreeGuardsVisible(!treeGuardsVisible); }
 
-function toggleSubmissionRoundsFromPanel() {
-  const cb = document.getElementById('layer-rounds');
-  setSubmissionRoundsVisible(!!(cb && cb.checked));
+function toggleTreeGuardsFromPanel() {
+  const cb = document.getElementById('layer-tree-guards');
+  setTreeGuardsVisible(!!(cb && cb.checked));
 }
 
 // ========== FIRE HYDRANTS LAYER ==========
