@@ -1594,6 +1594,276 @@ def segment_feature(members, walk, name, axis, lo, hi, spec, seg_id, frame):
     }
 
 
+# ------------------------------------------------- one block face, one zone --
+# How far a corner tree may be from the nearest tree of a block on the same
+# street, round the corner, and still be put on it.
+CORNER_M = 20.0
+
+
+def own_block(walk, segs, owned, t, skip):
+    """The block of this sub-zone a tree filed elsewhere should go on, or None.
+
+    The streets it could stand on are tried best first. Its own block on each
+    is taken if the sub-zone owns it; failing that, the nearest block the
+    sub-zone owns on the same street, if one of its trees is within CORNER_M.
+    That second case is the corner tree standing just past a cross street's
+    centreline, whose own block on that side of the corner has no other
+    trees."""
+    for _, _, name, axis in street_candidates(walk, t['u'], t['n'], LOOSE_TREE_M):
+        lo, hi, _ = brackets(walk, t['u'], t['n'], 'ns' if axis == 'ew' else 'ew')
+        key = (name, axis, lo, hi)
+        if key != skip and key in segs and owned(key):
+            return key
+        near = [(min(math.hypot(m['u'] - t['u'], m['n'] - t['n']) for m in v), k)
+                for k, v in segs.items()
+                if k[0] == name and k[1] == axis and k != skip and owned(k)]
+        if near:
+            d, k = min(near, key=lambda x: x[0])
+            if d <= CORNER_M:
+                return k
+    return None
+
+
+def shared_edge(owner_b, other_b, name):
+    """The line two sub-zones share along street `name`, as (slope, intercept,
+    axis) in (along, across) terms - across = slope * along + intercept - or
+    None if they do not meet along it."""
+    found = []
+    for b in (owner_b, other_b):
+        hits = [(side, rec) for side, rec in b['used'].items() if rec[0] == name]
+        if len(hits) != 1:
+            return None
+        found.append(hits[0])
+    (side_a, rec_a), (side_b, rec_b) = found
+    if {side_a, side_b} not in ({'north', 'south'}, {'west', 'east'}):
+        return None
+    f, half = rec_a[1], rec_a[2]
+    if rec_b[1] is not f or abs(rec_b[2] - half) > 1e-9:
+        return None
+    hyp = math.hypot(1.0, f['slope'])
+    if f['axis'] == 'ew':
+        return f['slope'], f['offset'] - half * hyp, 'ew'
+    return f['slope'], f['offset'] + half * hyp, 'ns'
+
+
+# A step that would end this close to where the shared edge meets the
+# district boundary runs out to the boundary instead, rather than leave a
+# sliver of the other sub-zone between the two.
+SNAP_M = 15.0
+
+
+def ring_area(pts):
+    return sum(pts[i][0] * pts[(i + 1) % len(pts)][1] - pts[(i + 1) % len(pts)][0] * pts[i][1]
+               for i in range(len(pts))) / 2.0
+
+
+def segment_hit(p1, p2, q1, q2):
+    """Where segment p1-p2 properly crosses q1-q2, as (t along p1-p2, point),
+    or None."""
+    rx, ry = p2[0] - p1[0], p2[1] - p1[1]
+    sx, sy = q2[0] - q1[0], q2[1] - q1[1]
+    den = rx * sy - ry * sx
+    if abs(den) < 1e-12:
+        return None
+    t = ((q1[0] - p1[0]) * sy - (q1[1] - p1[1]) * sx) / den
+    w = ((q1[0] - p1[0]) * ry - (q1[1] - p1[1]) * rx) / den
+    if 1e-9 < t < 1 - 1e-9 and 1e-9 < w < 1 - 1e-9:
+        return t, (p1[0] + t * rx, p1[1] + t * ry)
+    return None
+
+
+def near_polyline(pt, line, tol):
+    for i in range(len(line) - 1):
+        (ax, ay), (bx, by) = line[i], line[i + 1]
+        dx, dy = bx - ax, by - ay
+        L2 = dx * dx + dy * dy
+        f = 0.0 if L2 == 0 else max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / L2))
+        if math.hypot(ax + f * dx - pt[0], ay + f * dy - pt[1]) <= tol:
+            return True
+    return False
+
+
+def step_edge(frame, walk, boundary, owner_b, other_b, key, members):
+    """Move a set-back block face into the sub-zone that owns its street.
+
+    The edge the two sub-zones share is stepped out round the block's trees:
+    out along the cross-street bearing past the first tree, along the street
+    past the furthest one, and back - or, near the district boundary, out to
+    it. The other sub-zone is cut along the step and the piece is joined to
+    the owner, so the two rings still meet without a gap or an overlap.
+    Nothing is changed, and False returned, if the step would take in any
+    other tree or cross another edge."""
+    edge = shared_edge(owner_b, other_b, key[0])
+    cross = [walk[c]['slope'] for c in key[2:] if c in walk]
+    if edge is None or not cross:
+        return False
+    s, c, axis = edge
+    s2 = cross[0]
+    if 1.0 - s * s2 <= 0.1:
+        return False
+
+    # Everything below is in (along, across) metres: across = s * along + c on
+    # the shared line, and a cross street is along = s2 * across + c2.
+    def to_aa(u, n):
+        return (u, n) if axis == 'ew' else (n, u)
+
+    def vert(al, ac):
+        return (al, ac, frame.to_lnglat(*((al, ac) if axis == 'ew' else (ac, al))))
+
+    def ring_verts(ring):
+        return [to_aa(*frame.to_un(*p)) + (list(p),) for p in ring[:-1]]
+
+    def on_line(v):
+        return abs(v[1] - (s * v[0] + c)) <= 0.01
+
+    hyp, hyp2 = math.hypot(1.0, s), math.hypot(1.0, s2)
+    pts = [to_aa(t['u'], t['n']) for t in members]
+    dist = [(ac - (s * al + c)) / hyp for al, ac in pts]
+    if not (all(d > 0 for d in dist) or all(d < 0 for d in dist)):
+        return False
+    sign = 1.0 if dist[0] > 0 else -1.0
+    depth = max(abs(d) for d in dist) + EDGE_CLEAR_M
+    top = c + sign * depth * hyp
+    c2s = [al - s2 * ac for al, ac in pts]
+    base_sides = [min(c2s) - EDGE_CLEAR_M * hyp2, max(c2s) + EDGE_CLEAR_M * hyp2]
+
+    def meet(c2, k):
+        ac = (s * c2 + k) / (1.0 - s * s2)
+        return (s2 * ac + c2, ac)
+
+    other = ring_verts(other_b['ring'])
+    owner = ring_verts(owner_b['ring'])
+    n_other = len(other)
+    on_l = [i for i in range(n_other) if on_line(other[i]) and on_line(other[(i + 1) % n_other])]
+    if len(on_l) != 1:
+        return False
+    li = on_l[0]
+    l_lo, l_hi = sorted((other[li][0], other[(li + 1) % n_other][0]))
+    bound_un = [to_aa(*frame.to_un(*p)) for p in boundary]
+    on_boundary = {end: near_polyline(v[:2], bound_un, 0.05)
+                   for end, v in ((l_lo, min(other[li], other[(li + 1) % n_other])),
+                                  (l_hi, max(other[li], other[(li + 1) % n_other])))}
+
+    def quad_of(sides):
+        return [meet(sides[0], c), meet(sides[0], top), meet(sides[1], top), meet(sides[1], c)]
+
+    def attempt(sides):
+        quad = quad_of(sides)
+        if quad[0][0] > quad[-1][0]:
+            quad.reverse()
+        inside = [l_lo + 0.5 < q[0] < l_hi - 0.5 for q in (quad[0], quad[-1])]
+        if not any(inside):
+            return None
+        path = quad if inside[0] else quad[::-1]
+        # Walk the step from a base that is on the shared edge until it meets
+        # the ring again: at the other base, or on the district boundary.
+        cut = [vert(*path[0])]
+        end_edge = None
+        for k in range(len(path) - 1):
+            a, b = path[k], path[k + 1]
+            hits = []
+            for j in range(n_other):
+                hit = segment_hit(a, b, other[j][:2], other[(j + 1) % n_other][:2])
+                if hit and not (j == li and k == 0):
+                    hits.append((hit[0], j, hit[1]))
+            if hits:
+                _, end_edge, x = min(hits)
+                if end_edge == li or not near_polyline(
+                        ((other[end_edge][0] + other[(end_edge + 1) % n_other][0]) / 2,
+                         (other[end_edge][1] + other[(end_edge + 1) % n_other][1]) / 2),
+                        bound_un, 0.05):
+                    return None
+                cut.append(vert(*x))
+                break
+            cut.append(vert(*b))
+        else:
+            if not all(inside):
+                return None
+            end_edge = li
+        # Cut the other sub-zone along the step into two rings.
+        if end_edge == li:
+            first = cut if (abs(cut[0][0] - other[li][0]) < abs(cut[-1][0] - other[li][0])) else cut[::-1]
+            rest = other[:li + 1] + first + other[li + 1:]
+            piece = cut
+        else:
+            fwd = lambda i, j: [other[x % n_other] for x in range(i, j + (n_other if j < i else 0) + 1)]
+            ring1 = cut + fwd(end_edge + 1, li)
+            ring2 = cut[::-1] + fwd(li + 1, end_edge)
+            piece, rest = ((ring1, ring2) if point_in_poly(pts[0][0], pts[0][1], [v[:2] for v in ring1])
+                           else (ring2, ring1))
+        # Join the piece to the owner along the stretch of shared line it has.
+        k_p = len(piece)
+        shared = [i for i in range(k_p) if on_line(piece[i]) and on_line(piece[(i + 1) % k_p])]
+        if len(shared) != 1:
+            return None
+        pa, pb = piece[shared[0]], piece[(shared[0] + 1) % k_p]
+        n_own = len(owner)
+        own_l = [i for i in range(n_own) if on_line(owner[i]) and on_line(owner[(i + 1) % n_own])
+                 and min(owner[i][0], owner[(i + 1) % n_own][0]) - 0.01 <= min(pa[0], pb[0])
+                 and max(pa[0], pb[0]) <= max(owner[i][0], owner[(i + 1) % n_own][0]) + 0.01]
+        if len(own_l) != 1:
+            return None
+        oi = own_l[0]
+        if (ring_area([v[:2] for v in owner]) > 0) != (ring_area([v[:2] for v in piece]) > 0):
+            piece = piece[::-1]
+            k_p = len(piece)
+            shared = [i for i in range(k_p) if on_line(piece[i]) and on_line(piece[(i + 1) % k_p])]
+            pa, pb = piece[shared[0]], piece[(shared[0] + 1) % k_p]
+        # The owner runs the shared stretch the other way, pb to pa.
+        o0, o1 = owner[oi], owner[(oi + 1) % n_own]
+        ins = [v for v in (pb, pa) if min(math.hypot(v[0] - o[0], v[1] - o[1]) for o in (o0, o1)) > 0.01]
+        ins.sort(key=lambda v: math.hypot(v[0] - o0[0], v[1] - o0[1]))
+        own = owner[:oi + 1] + ins + owner[oi + 1:]
+        same = lambda v, w: math.hypot(v[0] - w[0], v[1] - w[1]) <= 0.01
+        ia = next(i for i, v in enumerate(own) if same(v, pa))
+        ib = next(i for i, v in enumerate(own) if same(v, pb))
+        n2 = len(own)
+        around_owner = [own[x % n2] for x in range(ia, ib + (n2 if ib < ia else 0) + 1)]
+        jb = (shared[0] + 1) % k_p
+        around_piece = [piece[x % k_p] for x in range(jb, shared[0] + (k_p if shared[0] < jb else 0) + 1)]
+        joined = around_owner[:-1] + around_piece[:-1]
+        area_ok = abs(ring_area([v[:2] for v in joined]) - ring_area([v[:2] for v in owner])
+                      - ring_area([v[:2] for v in piece])) < 1.0
+        if not area_ok:
+            return None
+        return joined, rest, abs(ring_area([v[:2] for v in piece]))
+
+    # Where the step nearly reaches the district boundary, first try running
+    # it on until it meets the boundary - a side pushed well past it, so the
+    # step's top runs out to the boundary - so long as that takes in little
+    # more than the plain step would. Then the plain step.
+    plain = abs(ring_area(quad_of(base_sides)))
+    tries = []
+    snapped = list(base_sides)
+    for k, end in ((0, l_lo), (1, l_hi)):
+        at = meet(base_sides[k], c)[0]
+        if on_boundary[end] and abs(at - end) <= SNAP_M:
+            snapped[k] = base_sides[k] + (end + (1.0 if k else -1.0) * 1000.0 - at) * (1.0 - s * s2)
+    if snapped != base_sides:
+        tries.append(snapped)
+    tries.append(base_sides)
+    ids = {t['tree_id'] for t in members}
+    for sides in tries:
+        got = attempt(sides)
+        if not got or got[2] > plain + 2.0 * SNAP_M * depth:
+            continue
+        joined, rest, _ = got
+        new_owner = [list(v[2]) for v in joined] + [list(joined[0][2])]
+        new_other = [list(v[2]) for v in rest] + [list(rest[0][2])]
+        leaving = [t for t in other_b['inside']
+                   if not point_in_poly(t['lng'], t['lat'], new_other)]
+        if ({t['tree_id'] for t in leaving} != ids
+                or not all(point_in_poly(t['lng'], t['lat'], new_owner)
+                           for t in owner_b['inside'] + members)):
+            continue
+        owner_b['ring'], other_b['ring'] = new_owner, new_other
+        owner_b['inside'] = owner_b['inside'] + members
+        other_b['inside'] = [t for t in other_b['inside'] if t['tree_id'] not in ids]
+        owner_b['segs'][key].extend(members)
+        return True
+    return False
+
+
 # ------------------------------------------------------------------ naming --
 
 ORDINAL = {'1': 'st', '2': 'nd', '3': 'rd'}
@@ -1937,6 +2207,7 @@ def main():
             stretch_offset[(rid, name, lo, hi)] = edge_offset(f, floor, own, others)
 
     print('\n=== sub-zones')
+    built = []
     for spec in SUBZONES:
         rid = spec['region']
         region_lines = lines[rid]
@@ -2047,7 +2318,6 @@ def main():
         walk = walk_lines[rid]
         ordered = {ax: [n for n, g in sorted(walk.items(), key=lambda kv: kv[1]['offset'])
                         if g['axis'] == ax] for ax in ('ew', 'ns')}
-        held_ew, held_ns = set(), set()
         segs = collections.defaultdict(list)
         rank = {}
         loose = []
@@ -2056,7 +2326,6 @@ def main():
             if name is None:
                 loose.append(t)
                 continue
-            (held_ew if axis == 'ew' else held_ns).add(name)
             cross = 'ns' if axis == 'ew' else 'ew'
             lo, hi, at = brackets(walk, t['u'], t['n'], cross)
             # The least, not whichever tree came last: census row order must
@@ -2067,21 +2336,90 @@ def main():
         # of one joins that street's block, if the block already has trees of
         # its own or LOOSE_BLOCK_MIN set-back trees start it together. One or
         # two set-back trees are not a block face a crew can be sent to.
+        # A set-back tree too few to start its nearest street's block goes on
+        # the next street within reach whose block the sub-zone does have:
+        # one 20 m out at a corner joins the cross street's block.
         late = collections.defaultdict(list)
         for t in loose:
-            name, axis = nearest_line(walk, t['u'], t['n'], LOOSE_TREE_M)
-            if name is None:
-                continue
-            cross = 'ns' if axis == 'ew' else 'ew'
-            lo, hi, at = brackets(walk, t['u'], t['n'], cross)
-            late[(name, axis, lo, hi)].append((t, at))
+            cands = []
+            for _, _, name, axis in street_candidates(walk, t['u'], t['n'], LOOSE_TREE_M):
+                lo, hi, at = brackets(walk, t['u'], t['n'], 'ns' if axis == 'ew' else 'ew')
+                cands.append(((name, axis, lo, hi), at))
+            if cands:
+                late[cands[0][0]].append((t, cands))
         for key, members in late.items():
             if key not in segs and len(members) < LOOSE_BLOCK_MIN:
+                for t, cands in members:
+                    for alt, at in cands[1:]:
+                        if alt in segs:
+                            segs[alt].append(t)
+                            break
                 continue
-            (held_ew if key[1] == 'ew' else held_ns).add(key[0])
-            for t, at in members:
+            for t, cands in members:
+                at = cands[0][1]
                 rank[key] = min(at, rank.get(key, at))
                 segs[key].append(t)
+        built.append({'spec': spec, 'ring': ring, 'inside': inside,
+                      'segs': segs, 'rank': rank, 'used': used})
+
+    # ---- one block face, one sub-zone --------------------------------------
+    # A tree is filed under a street when it stands within that street's reach,
+    # and a sub-zone edge is drawn just past the street's own planting, so the
+    # two do not always agree. Set-back frontage - the Riis Houses on E 10th
+    # St, 12-30 m out - stands past the edge, and a corner tree can be nearer
+    # the cross street than the street it is on. Each of those came out as a
+    # second, smaller copy of a block in the next sub-zone: 19 block faces were
+    # split, two crews could be sent to the same one, and E 10th St from Ave D
+    # to the FDR had 18 trees in 1C and 22 in 1F under the same name.
+    #
+    # So each block face belongs to the sub-zone holding most of its trees.
+    # A tree of it in any other sub-zone goes on the nearest street whose
+    # block is that sub-zone's own - the cross street, for a corner tree.
+    # Where LOOSE_BLOCK_MIN or more of them have no such street - a set-back
+    # row - the edge between the two sub-zones steps out round them instead,
+    # and the whole piece joins its block (see step_edge). Anything left is on
+    # no block. No block is created here.
+    tally = collections.defaultdict(collections.Counter)
+    for b in built:
+        for key, members in b['segs'].items():
+            tally[(b['spec']['region'], key)][b['spec']['id']] += len(members)
+    owner = {k: max(sorted(c), key=lambda sid: c[sid]) for k, c in tally.items()}
+    by_id = {b['spec']['id']: b for b in built}
+    rehomed = dropped = stepped = 0
+    for b in built:
+        sid, rid = b['spec']['id'], b['spec']['region']
+        walk, segs = walk_lines[rid], b['segs']
+        for key in [k for k in segs if owner[(rid, k)] != sid]:
+            members = segs.pop(key)
+            homes = [own_block(walk, segs, lambda k: owner[(rid, k)] == sid, t, key)
+                     for t in members]
+            if homes.count(None) >= LOOSE_BLOCK_MIN:
+                home_b = by_id[owner[(rid, key)]]
+                if (home_b['spec']['zone'] == b['spec']['zone']
+                        and step_edge(frame, walk, boundary, home_b, b, key, members)):
+                    stepped += len(members)
+                    print('  %s, %s: %d set-back trees moved from %s to %s, '
+                          'with the edge stepped round them'
+                          % (pretty(key[0]), ' to '.join(segment_ends(key[2], key[3])),
+                             len(members), sid, home_b['spec']['id']))
+                    continue
+            for t, home in zip(members, homes):
+                if home is None:
+                    dropped += 1
+                else:
+                    segs[home].append(t)
+                    rehomed += 1
+    print('  block faces in two sub-zones: %d trees moved to a block of their own '
+          'sub-zone, %d moved sub-zone with their block, %d left on none'
+          % (rehomed, stepped, dropped))
+
+    for b in built:
+        spec, ring, inside = b['spec'], b['ring'], b['inside']
+        segs, rank, used = b['segs'], b['rank'], b['used']
+        rid = spec['region']
+        walk = walk_lines[rid]
+        held_ew = {k[0] for k in segs if k[1] == 'ew'}
+        held_ns = {k[0] for k in segs if k[1] == 'ns'}
 
         # A stable identifier per segment: streets first, north to south, then
         # avenues west to east, numbered within the sub-zone. Ordering is by
