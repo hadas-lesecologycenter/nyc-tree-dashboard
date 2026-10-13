@@ -452,22 +452,22 @@ SUBZONES = [
     # East Broadway - the streets do not either.
     #
     # The Chinatown strip holds 441 trees and is thin, so it splits east-west
-    # only, on Essex St. Two Bridges holds 1,007 and takes five: three between
-    # East Broadway and Monroe St, two below it, with Pike St shared by both
-    # bands.
+    # only, on Eldridge St. Two Bridges holds 1,007 and takes five: three
+    # between East Broadway and Monroe St, two below it, with Pike St shared by
+    # both bands.
     {
         'id': '3A', 'zone': 3, 'region': 'CH',
         'north': DIVIDER + 'grand',
         'south': DIVIDER + 'eastBroadway',
         'west': CB3_EDGE,           # the Bowery, CB3's own western edge
-        'east': 'ESSEX ST',
+        'east': 'ELDRIDGE ST',
         'bounds': 'Bowery to Essex St, Grand St to Division St',
     },
     {
         'id': '3B', 'zone': 3, 'region': 'CH',
         'north': DIVIDER + 'grand',
         'south': DIVIDER + 'eastBroadway',
-        'west': 'ESSEX ST',
+        'west': 'ELDRIDGE ST',
         'east': CB3_EDGE,
         'bounds': 'Norfolk St to the East River, Grand St to Division St',
     },
@@ -1244,7 +1244,7 @@ def fit_region_lines(frame, trees_un, grid_region, log, pins=None):
     # family's fitted slope through the old grid's offset - and an offset is
     # where the line crosses the frame's origin axis, E 14th St, nearly 2 km
     # north of Chinatown. The 2026-10-12 census tipped the Chinatown avenues by
-    # 0.0048, and that slid Ludlow and Orchard St 9 m across their blocks and
+    # 0.0048, and that slid Forsyth and Chrystie St 9 m across their blocks and
     # emptied 3A-07 and 3B-24. So the first build to place a seeded line pins
     # it in data/pinned-street-lines.json, and every later build draws it
     # exactly there. To move one on purpose, delete its entry and rebuild.

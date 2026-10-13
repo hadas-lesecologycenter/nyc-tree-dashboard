@@ -1,42 +1,42 @@
 {
  "CH|CHRYSTIE ST": {
   "axis": "ns",
-  "offset": -1120.0935136545695,
+  "offset": -799.264874960401,
   "slope": 0.1305465822276979
  },
  "CH|CLINTON ST": {
   "axis": "ns",
-  "offset": -425.31589400696845,
+  "offset": -130.33286368424507,
   "slope": 0.1305465822276979
  },
- "CH|ELDRIDGE ST": {
+ "CH|ELIZABETH ST": {
   "axis": "ns",
   "offset": -960.8503438976704,
   "slope": 0.1305465822276979
  },
- "CH|FDR DR": {
-  "axis": "ns",
-  "offset": -130.33286368424507,
-  "slope": 0.1305465822276979
- },
  "CH|FORSYTH ST": {
   "axis": "ns",
-  "offset": -1040.4719287766832,
+  "offset": -717.300990901018,
   "slope": 0.1305465822276979
  },
- "CH|JACKSON ST": {
+ "CH|JEFFERSON ST": {
   "axis": "ns",
   "offset": -242.07441556853962,
   "slope": 0.1305465822276979
  },
  "CH|LUDLOW ST": {
   "axis": "ns",
-  "offset": -717.300990901018,
+  "offset": -425.31589400696845,
   "slope": 0.1305465822276979
  },
- "CH|ORCHARD ST": {
+ "CH|MOTT ST": {
   "axis": "ns",
-  "offset": -799.264874960401,
+  "offset": -1040.4719287766832,
+  "slope": 0.1305465822276979
+ },
+ "CH|MULBERRY ST": {
+  "axis": "ns",
+  "offset": -1120.0935136545695,
   "slope": 0.1305465822276979
  },
  "EV|E 14 ST": {

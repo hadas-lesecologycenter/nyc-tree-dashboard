@@ -59,7 +59,7 @@
      22.0
     ]
    },
-   "ALLEN ST": {
+   "BOWERY / CHATHAM SQ": {
     "slope": 0.1256870041293182,
     "offset": -871.4405397301912,
     "half_row_m": 6.171520284871292,
@@ -77,14 +77,14 @@
       "rms_m": 0.918
      }
     ],
-    "name": "ALLEN ST",
+    "name": "BOWERY / CHATHAM SQ",
     "axis": "ns",
     "reach": [
      12.0,
      12.0
     ]
    },
-   "ESSEX ST": {
+   "ELDRIDGE ST": {
     "slope": 0.1256870041293182,
     "offset": -625.3844353963533,
     "half_row_m": 4.693783342403663,
@@ -102,14 +102,14 @@
       "rms_m": 0.753
      }
     ],
-    "name": "ESSEX ST",
+    "name": "ELDRIDGE ST",
     "axis": "ns",
     "reach": [
      12.0,
      12.0
     ]
    },
-   "NORFOLK ST": {
+   "ALLEN ST": {
     "slope": 0.1256870041293182,
     "offset": -534.7093996069932,
     "half_row_m": 9.921125345817188,
@@ -127,14 +127,14 @@
       "rms_m": 0.256
      }
     ],
-    "name": "NORFOLK ST",
+    "name": "ALLEN ST",
     "axis": "ns",
     "reach": [
      12.0,
      12.0
     ]
    },
-   "SUFFOLK ST": {
+   "ORCHARD ST": {
     "slope": 0.1256870041293182,
     "offset": -486.8510156164209,
     "half_row_m": 4.495550667786802,
@@ -152,14 +152,14 @@
       "rms_m": 0.177
      }
     ],
-    "name": "SUFFOLK ST",
+    "name": "ORCHARD ST",
     "axis": "ns",
     "reach": [
      12.0,
      12.0
     ]
    },
-   "MONTGOMERY ST": {
+   "ESSEX ST": {
     "slope": 0.1256870041293182,
     "offset": -344.075191498844,
     "half_row_m": 8.956519671253574,
@@ -177,7 +177,7 @@
       "rms_m": 0.476
      }
     ],
-    "name": "MONTGOMERY ST",
+    "name": "ESSEX ST",
     "axis": "ns",
     "reach": [
      12.0,
@@ -202,11 +202,50 @@
      12.0
     ]
    },
+   "MULBERRY ST": {
+    "name": "MULBERRY ST",
+    "axis": "ns",
+    "slope": 0.1305465822276979,
+    "offset": -1120.0935136545695,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "reach": [
+     12.0,
+     12.0
+    ]
+   },
+   "MOTT ST": {
+    "name": "MOTT ST",
+    "axis": "ns",
+    "slope": 0.1305465822276979,
+    "offset": -1040.4719287766832,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "reach": [
+     12.0,
+     12.0
+    ]
+   },
+   "ELIZABETH ST": {
+    "name": "ELIZABETH ST",
+    "axis": "ns",
+    "slope": 0.1305465822276979,
+    "offset": -960.8503438976704,
+    "half_row_m": 0.0,
+    "rows": [],
+    "seeded": true,
+    "reach": [
+     12.0,
+     12.0
+    ]
+   },
    "CHRYSTIE ST": {
     "name": "CHRYSTIE ST",
     "axis": "ns",
     "slope": 0.1305465822276979,
-    "offset": -1120.0935136545695,
+    "offset": -799.264874960401,
     "half_row_m": 0.0,
     "rows": [],
     "seeded": true,
@@ -219,33 +258,7 @@
     "name": "FORSYTH ST",
     "axis": "ns",
     "slope": 0.1305465822276979,
-    "offset": -1040.4719287766832,
-    "half_row_m": 0.0,
-    "rows": [],
-    "seeded": true,
-    "reach": [
-     12.0,
-     12.0
-    ]
-   },
-   "ELDRIDGE ST": {
-    "name": "ELDRIDGE ST",
-    "axis": "ns",
-    "slope": 0.1305465822276979,
-    "offset": -960.8503438976704,
-    "half_row_m": 0.0,
-    "rows": [],
-    "seeded": true,
-    "reach": [
-     12.0,
-     12.0
-    ]
-   },
-   "ORCHARD ST": {
-    "name": "ORCHARD ST",
-    "axis": "ns",
-    "slope": 0.1305465822276979,
-    "offset": -799.264874960401,
+    "offset": -717.300990901018,
     "half_row_m": 0.0,
     "rows": [],
     "seeded": true,
@@ -258,19 +271,6 @@
     "name": "LUDLOW ST",
     "axis": "ns",
     "slope": 0.1305465822276979,
-    "offset": -717.300990901018,
-    "half_row_m": 0.0,
-    "rows": [],
-    "seeded": true,
-    "reach": [
-     12.0,
-     12.0
-    ]
-   },
-   "CLINTON ST": {
-    "name": "CLINTON ST",
-    "axis": "ns",
-    "slope": 0.1305465822276979,
     "offset": -425.31589400696845,
     "half_row_m": 0.0,
     "rows": [],
@@ -280,8 +280,8 @@
      12.0
     ]
    },
-   "JACKSON ST": {
-    "name": "JACKSON ST",
+   "JEFFERSON ST": {
+    "name": "JEFFERSON ST",
     "axis": "ns",
     "slope": 0.1305465822276979,
     "offset": -242.07441556853962,
@@ -293,8 +293,8 @@
      12.0
     ]
    },
-   "FDR DR": {
-    "name": "FDR DR",
+   "CLINTON ST": {
+    "name": "CLINTON ST",
     "axis": "ns",
     "slope": 0.1305465822276979,
     "offset": -130.33286368424507,
@@ -339,8 +339,8 @@
     "corridor": true,
     "name": "GRAND ST",
     "axis": "ew",
-    "edge_offset_m": 16.37272315895813,
-    "edge_clear_m": 1.6751052003816866,
+    "edge_offset_m": 16.3480496496875,
+    "edge_clear_m": 1.6504316911110575,
     "old_line": [
      -0.16502630055188988,
      1671.0867498712103

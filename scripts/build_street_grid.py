@@ -183,16 +183,27 @@ REGIONS = [
         # East of Clinton this strip is the Seward Park / Hillman / East River
         # co-op superblocks, so the LES cross streets (Attorney, Ridge, Pitt,
         # Columbia) have no counterpart here and are deliberately absent.
+        #
+        # The north-south list used to be the Lower East Side's own, Bowery to
+        # Clinton, plus Montgomery, Jackson and FDR Dr. But CB3 runs on west of
+        # the Bowery below Canal St, so the rows there took the first names on
+        # the list and every street east of them came out four streets too far
+        # east: the line called Essex St ran down Eldridge St, and the six trees
+        # addressed 7-29 Ludlow St were filed under Clinton St. This is the
+        # list in the order the rows actually stand. The first entry is the
+        # district's western edge, which build_subzones.py replaces with the
+        # boundary itself; the four after it are named from the street order
+        # alone, as no tree there carries an address.
         'ew': [
             ('GRAND ST', []), ('HESTER ST', []), ('CANAL ST', []),
             ('DIVISION ST', []),
         ],
         'ns': [
-            ('BOWERY', ['BOWERY ST']), ('CHRYSTIE ST', []), ('FORSYTH ST', []),
-            ('ELDRIDGE ST', []), ('ALLEN ST', []), ('ORCHARD ST', []),
-            ('LUDLOW ST', []), ('ESSEX ST', []), ('NORFOLK ST', []),
-            ('SUFFOLK ST', []), ('CLINTON ST', []), ('MONTGOMERY ST', []),
-            ('JACKSON ST', []), ('FDR DR', ['F D R DRIVE']),
+            ('BOWERY', ['BOWERY ST']), ('MULBERRY ST', []), ('MOTT ST', []),
+            ('ELIZABETH ST', []), ('BOWERY / CHATHAM SQ', []),
+            ('CHRYSTIE ST', []), ('FORSYTH ST', []), ('ELDRIDGE ST', []),
+            ('ALLEN ST', []), ('ORCHARD ST', []), ('LUDLOW ST', []),
+            ('ESSEX ST', []), ('JEFFERSON ST', []), ('CLINTON ST', []),
         ],
     },
     {
