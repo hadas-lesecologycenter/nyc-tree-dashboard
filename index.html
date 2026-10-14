@@ -1593,6 +1593,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;min-height:44px;padding:11px;background:#fff;background-color:#fff;color:#3d6b9e;border:2px solid #3d6b9e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
           🛡 Nominate for Tree Guard
         </button>
+        <button type="button" id="mtp-dismiss-btn" onclick="handleMapDismissBtn()"
+          style="display:none;margin-top:8px;width:100%;min-height:44px;padding:10px;background:#fff;background-color:#fff;color:#2e7d32;border:1px solid #2e7d32;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
+          ✕ Remove from suggestions
+        </button>
         <button type="button" id="mtp-guard-btn" onclick="handleMapTreeGuardBtn()"
           style="margin-top:8px;width:100%;padding:11px;background:#3d6b9e;background-color:#3d6b9e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none;box-shadow:0 2px 6px rgba(61,107,158,0.35)">
           🛡 Tree Guard?
@@ -2225,8 +2229,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div id="nominate-withdraw-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
         <div style="display:flex;gap:8px">
           <button type="button" onclick="closeNominationModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Close</button>
-          <button type="button" id="nominate-withdraw" onclick="withdrawNomination()" style="flex:1;min-height:44px;padding:10px;background:#fff;color:#b3261e;border:1px solid #b3261e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Withdraw</button>
+          <button type="button" id="nominate-withdraw" onclick="withdrawNomination()" style="flex:1;min-height:44px;padding:10px;background:#fff;color:#b3261e;border:1px solid #b3261e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove nomination</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOVE SUGGESTION MODAL -->
+  <div id="dismiss-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeDismissModal()">
+    <div style="background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,0.25);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 id="dismiss-title" style="font-family:'Lora',serif;font-size:17px;font-weight:700;margin:0">Remove from suggestions</h2>
+        <button type="button" onclick="closeDismissModal()" aria-label="Close" style="background:none;border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="dismiss-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)"></div>
+      <div id="dismiss-form">
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Why remove it? <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
+        <div id="dismiss-reasons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+      </div>
+      <div id="dismiss-existing" style="display:none;font-size:13px;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
+      <div id="dismiss-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeDismissModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" id="dismiss-confirm" onclick="confirmDismiss()" style="flex:2;min-height:44px;padding:10px;background:#2e7d32;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove</button>
       </div>
     </div>
   </div>
@@ -3361,7 +3386,7 @@ const DISTRICT_NAMES = {
   111: 'Manhattan CB11', 112: 'Manhattan CB12',
 };
 const MAP_TREE_ACTION_BTNS = ['mtp-assess-btn', 'mtp-care-btn', 'mtp-reserve-btn',
-  'mtp-needs-care-btn', 'mtp-stewarded-btn', 'mtp-nominate-btn', 'mtp-guard-btn', 'mtp-missing-btn'];
+  'mtp-needs-care-btn', 'mtp-stewarded-btn', 'mtp-nominate-btn', 'mtp-dismiss-btn', 'mtp-guard-btn', 'mtp-missing-btn'];
 const districtData = new Map();   // cd → { trees, emptyBeds, boundary }, once downloaded
 const districtShown = new Set();  // cds whose box is ticked
 const districtLoading = new Set(); // cds downloading right now
@@ -5241,6 +5266,7 @@ function renderGuardCandidates() {
   const taken = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
   nominationsReadLocal().forEach(n => taken.add(String(n.treeId)));
   treeGuardsLoadSync().forEach(g => taken.add(String(g.treeId)));
+  getDismissedIds().forEach(id => taken.add(id));
   let n = 0;
   GUARD_CANDIDATES.forEach(c => {
     if (taken.has(c.id)) return;
@@ -7460,6 +7486,7 @@ function cityGuardLabel(v) {
 function updateNominateButton(tree) {
   const btn = document.getElementById('mtp-nominate-btn');
   if (!btn || !tree) return;
+  updateDismissButton(tree);
   const id = nominationTreeId(tree);
   if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) { btn.style.display = 'none'; return; }
   btn.style.display = '';
@@ -7473,7 +7500,7 @@ function updateNominateButton(tree) {
     btn.style.cursor = disabled ? 'default' : 'pointer';
   };
   if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
-  else if (nom) set('🛡 Nominated ✓ (tap for details)', '#3d6b9e', '#fff', '#3d6b9e', false);
+  else if (nom) set('🛡 Nominated ✓ · tap to view or remove', '#3d6b9e', '#fff', '#3d6b9e', false);
   else if (cityGuardPresent(tree)) set('🛡 City lists a guard here', '#fff8e1', '#8a5a00', '#e0b23b', false);
   else set('🛡 Nominate for Tree Guard', '#fff', '#3d6b9e', '#3d6b9e', false);
 }
@@ -7579,7 +7606,7 @@ async function withdrawNomination() {
   const id = nominationTreeId(tree);
   const btn = document.getElementById('nominate-withdraw');
   const err = document.getElementById('nominate-withdraw-error');
-  btn.disabled = true; btn.textContent = 'Withdrawing…'; err.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'Removing…'; err.style.display = 'none';
   try {
     const local = nominationsReadLocal();
     const mine = local.find(n => String(n.treeId) === id);
@@ -7595,11 +7622,192 @@ async function withdrawNomination() {
     updateNominateButton(tree);
     if (document.getElementById('f-guard-nominated')?.checked) applyFilters();
     renderGuardNominations();
-    tcShowSyncStatus('Nomination withdrawn');
+    tcShowSyncStatus('Nomination removed');
   } catch (e) {
     err.textContent = e.message || 'Could not withdraw. Try again.'; err.style.display = 'block';
   } finally {
-    btn.disabled = false; btn.textContent = 'Withdraw';
+    btn.disabled = false; btn.textContent = 'Remove nomination';
+  }
+}
+
+// ========== REMOVED SUGGESTIONS ==========
+// A suggested tree someone has ruled out. Shared through the "DismissedSuggestions"
+// tab of the tree care Google Sheet (created on first save), so it disappears
+// for the whole team. Saved on the phone first and pushed when there is signal,
+// the same way nominations are. Restoring one needs a connection.
+const DISMISS_SHEET = 'DismissedSuggestions';
+const DISMISS_HEADERS = ['treeId','reason','dismissedBy','dismissedAt'];
+const DISMISS_REASONS = ['Already has a guard', 'Tree in poor shape', 'Not a good spot', 'Other'];
+let _dismissFlushing = false;
+let _pendingDismissTree = null;
+let _dismissReason = '';
+
+function dismissalsReadLocal() {
+  try { return JSON.parse(localStorage.getItem('tc_dismissed_suggestions') || '[]'); }
+  catch (e) { return []; }
+}
+function dismissalsWriteLocal(list) {
+  try { localStorage.setItem('tc_dismissed_suggestions', JSON.stringify(list)); } catch (e) {}
+}
+function getDismissedIds() {
+  return new Set(dismissalsReadLocal().map(d => String(d.treeId)));
+}
+
+async function dismissalsLoad() {
+  const server = await sheetsRead(DISMISS_SHEET);
+  const local = dismissalsReadLocal();
+  if (server === null) return local;
+  const onServer = new Set(server.map(r => String(r.treeId)));
+  const merged = server.filter(r => r.treeId).map(r => Object.assign({}, r, { _synced: true }))
+    .concat(local.filter(d => !d._synced && !onServer.has(String(d.treeId))));
+  dismissalsWriteLocal(merged);
+  renderGuardNominations();
+  if (merged.some(d => !d._synced)) dismissalsFlush();
+  return merged;
+}
+
+async function dismissalsFlush() {
+  if (_dismissFlushing) return true;
+  const mine = dismissalsReadLocal().filter(d => !d._synced);
+  if (!mine.length) return true;
+  _dismissFlushing = true;
+  try {
+    const server = await sheetsRead(DISMISS_SHEET);
+    if (server === null) throw new Error('could not read the Sheet before saving');
+    const byId = new Map(server.filter(r => r.treeId).map(r => [String(r.treeId), r]));
+    mine.forEach(d => { if (!byId.has(String(d.treeId))) byId.set(String(d.treeId), d); });
+    const merged = Array.from(byId.values());
+    await sheetsWriteOrThrow(DISMISS_SHEET, DISMISS_HEADERS, merged, r => DISMISS_HEADERS.map(h => r[h] || ''));
+    const check = await sheetsRead(DISMISS_SHEET);
+    if (!check) throw new Error('could not read the Sheet back to confirm the save');
+    const confirmed = new Set(check.map(r => String(r.treeId)));
+    dismissalsWriteLocal(merged.map(r => Object.assign({}, r, { _synced: confirmed.has(String(r.treeId)) })));
+    tcShowSyncStatus('✓ Suggestion removed for everyone');
+    return true;
+  } catch (e) {
+    console.error('Suggestion removal sync failed:', e);
+    tcShowSyncStatus('⚠ Removed on this phone, will sync when you have signal', true);
+    return false;
+  } finally {
+    _dismissFlushing = false;
+  }
+}
+window.addEventListener('online', dismissalsFlush);
+
+function activeCandidate(id) {
+  const c = GUARD_CANDIDATES.find(x => x.id === id);
+  if (!c) return null;
+  if (SUBMISSION_ROUNDS_TREES.some(t => t.id === id)) return null;
+  if (nominationsReadLocal().some(n => String(n.treeId) === id)) return null;
+  if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) return null;
+  return c;
+}
+
+function updateDismissButton(tree) {
+  const btn = document.getElementById('mtp-dismiss-btn');
+  if (!btn || !tree) return;
+  const id = nominationTreeId(tree);
+  if (!activeCandidate(id)) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  btn.textContent = getDismissedIds().has(id) ? '↺ Put back in suggestions' : '✕ Remove from suggestions';
+}
+
+function handleMapDismissBtn() {
+  const tree = window._currentMapDetailTree;
+  if (tree) openDismissModal(tree);
+}
+
+function openDismissModal(tree) {
+  const modal = document.getElementById('dismiss-modal');
+  if (!modal) return;
+  _pendingDismissTree = tree;
+  _dismissReason = '';
+  const id = nominationTreeId(tree);
+  const c = GUARD_CANDIDATES.find(x => x.id === id) || {};
+  const species = tree.spc_common || tree.spc_latin || c.sp || 'Unknown species';
+  document.getElementById('dismiss-info').innerHTML =
+    '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' + escHtml(species) + '</div>' +
+    '<div style="font-size:11px;color:var(--text2)">Suggested for sub-zone ' + escHtml(c.z || '') + (c.block ? ' · ' + escHtml(c.block) : '') + ' · Tree ID ' + escHtml(id) + '</div>';
+  const done = dismissalsReadLocal().find(d => String(d.treeId) === id);
+  const form = document.getElementById('dismiss-form');
+  const existing = document.getElementById('dismiss-existing');
+  const btn = document.getElementById('dismiss-confirm');
+  document.getElementById('dismiss-error').style.display = 'none';
+  btn.disabled = false;
+  if (done) {
+    const when = done.dismissedAt ? new Date(done.dismissedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    document.getElementById('dismiss-title').textContent = 'Put back in suggestions';
+    existing.innerHTML = '<div><b>Removed</b>' + (when ? ' on ' + escHtml(when) : '') + (done.dismissedBy ? ' by ' + escHtml(done.dismissedBy) : '') + '</div>' +
+      (done.reason ? '<div>Reason: ' + escHtml(done.reason) + '</div>' : '');
+    form.style.display = 'none'; existing.style.display = 'block';
+    btn.textContent = 'Put back';
+  } else {
+    document.getElementById('dismiss-title').textContent = 'Remove from suggestions';
+    document.getElementById('dismiss-reasons').innerHTML = DISMISS_REASONS.map((r, i) =>
+      '<button type="button" data-i="' + i + '" aria-pressed="false" onclick="pickDismissReason(this)" ' +
+      'style="min-height:40px;padding:8px 12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">' + escHtml(r) + '</button>').join('');
+    form.style.display = 'block'; existing.style.display = 'none';
+    btn.textContent = 'Remove';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeDismissModal() {
+  const modal = document.getElementById('dismiss-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingDismissTree = null;
+}
+
+function pickDismissReason(btn) {
+  const r = DISMISS_REASONS[+btn.dataset.i];
+  _dismissReason = _dismissReason === r ? '' : r;
+  document.querySelectorAll('#dismiss-reasons button').forEach(b => {
+    const on = DISMISS_REASONS[+b.dataset.i] === _dismissReason;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.style.background = on ? '#2e7d32' : 'var(--bg2)';
+    b.style.color = on ? '#fff' : 'var(--text)';
+    b.style.borderColor = on ? '#2e7d32' : 'var(--border)';
+  });
+}
+
+async function confirmDismiss() {
+  const tree = _pendingDismissTree;
+  if (!tree) return;
+  const id = nominationTreeId(tree);
+  const btn = document.getElementById('dismiss-confirm');
+  const err = document.getElementById('dismiss-error');
+  const local = dismissalsReadLocal();
+  const done = local.find(d => String(d.treeId) === id);
+  btn.disabled = true;
+  if (!done) {
+    let name = '';
+    try { name = localStorage.getItem('tc_nominator_name') || ''; } catch (e) {}
+    local.push({ treeId: id, reason: _dismissReason, dismissedBy: name, dismissedAt: new Date().toISOString(), _synced: false });
+    dismissalsWriteLocal(local);
+    closeDismissModal();
+    renderGuardNominations();
+    updateNominateButton(tree);
+    tcShowSyncStatus('⟳ Removing suggestion…');
+    await dismissalsFlush();
+    return;
+  }
+  // Putting it back: take the row off the Sheet if it ever got there.
+  btn.textContent = 'Putting back…'; err.style.display = 'none';
+  try {
+    if (done._synced !== false) {
+      const server = await sheetsRead(DISMISS_SHEET);
+      if (server === null) throw new Error('Could not reach the Sheet. Check your signal and try again.');
+      const kept = server.filter(r => r.treeId && String(r.treeId) !== id);
+      await sheetsWriteOrThrow(DISMISS_SHEET, DISMISS_HEADERS, kept, r => DISMISS_HEADERS.map(h => r[h] || ''));
+    }
+    dismissalsWriteLocal(local.filter(d => String(d.treeId) !== id));
+    closeDismissModal();
+    renderGuardNominations();
+    updateNominateButton(tree);
+    tcShowSyncStatus('Suggestion put back');
+  } catch (e) {
+    err.textContent = e.message || 'Could not put it back. Try again.'; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Put back';
   }
 }
 
@@ -9548,7 +9756,7 @@ function switchViewById(view) {
 window.addEventListener('load', async () => {
   // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
   console.log('Loading data from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
+  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), dismissalsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
