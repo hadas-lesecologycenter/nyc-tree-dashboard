@@ -1,15 +1,11 @@
 name: Fetch Street Centerlines
 
-# Downloads street centrelines around CB3 (NYC CSCL and OpenStreetMap) for the
-# 2027 Work Plan routes. The cloud sandbox can't reach either source, so this
-# runs here and commits the files back to the branch it ran on.
+# Downloads the streets around CB3 from OpenStreetMap for the 2027 Work Plan
+# routes. The cloud sandbox can't reach it, so this runs here, by hand, and
+# commits data/streets/cb3-streets.json back to the branch it ran on. Then run
+# scripts/build_workplan_routes.py.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/project-thread-pi347m]
-    paths:
-      - scripts/fetch_street_centerlines.py
-      - .github/workflows/fetch-street-centerlines.yml
 
 jobs:
   fetch:
@@ -21,13 +17,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Fetch centrelines
-        env:
-          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+      - name: Fetch streets
         run: python3 scripts/fetch_street_centerlines.py
       - name: Commit if changed
         run: |
           git config user.name "Tree Census Bot"
           git config user.email "bot@lesecologycenter.org"
           git add data/streets
-          git diff --staged --quiet || (git commit -m "Street centrelines around CB3 $(date +'%Y-%m-%d')" && git push)
+          git diff --staged --quiet || (git commit -m "Streets around CB3 $(date +'%Y-%m-%d')" && git push)
