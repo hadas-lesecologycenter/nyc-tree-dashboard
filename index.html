@@ -1556,6 +1556,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #1a1a1a;box-sizing:border-box"></div><span style="flex:1">Spring 2026 install</span><b id="tg-ninst" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1a1a1a;border:1px solid #fff"></div><span style="flex:1">Install, no tree ID</span><b id="tg-norphan" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px dashed #3d6b9e;box-sizing:border-box"></div><span style="flex:1">Nominated</span><b id="tg-nnom" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #2e7d32;box-sizing:border-box"></div><span style="flex:1">Suggested</span><b id="tg-ncand" style="font-variant-numeric:tabular-nums">0</b></div>
           </div>
           <div id="tg-total" style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;font-size:10px;color:#6b6456;line-height:1.35"></div>
         </div>
@@ -5177,6 +5178,8 @@ let guardInstalledCount = 0;
 let guardInstallOnlyCount = 0;
 let guardNominationCount = 0;
 let guardNominationLayer = null;
+let guardCandidateLayer = null;
+let guardCandidateCount = 0;
 
 function updateTreeGuardsLegend() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -5184,6 +5187,7 @@ function updateTreeGuardsLegend() {
   set('tg-ninst', guardInstalledCount);
   set('tg-norphan', guardInstallOnlyCount);
   set('tg-nnom', guardNominationCount);
+  set('tg-ncand', guardCandidateCount);
   const unplaced = GUARD_UNPLACED[1] + GUARD_UNPLACED[2] + GUARD_UNPLACED[3];
   set('tg-total', SUBMISSION_ROUNDS_TREES.length + ' trees on the map' +
     (unplaced ? ' · ' + unplaced + ' more not placed (no tree ID or not in dashboard data)' : ''));
@@ -5223,6 +5227,42 @@ function openGuardTreeDetail(t, installed) {
   return true;
 }
 
+// Suggested trees to nominate, one to three per sub-zone that had no DEC tree
+// on Oct 13, 2026: Tier 2 street trees on a mapped block, Good health, no
+// guard in the city's records or ours. rank 1 is the top pick for the
+// sub-zone. g is the city's TreeGuard value ('None' = city says no guard).
+const GUARD_CANDIDATES = [{"z":"1D","rank":1,"id":"15384788","lat":40.72708,"lng":-73.98577,"sp":"Japanese zelkova","block":"1st Ave, E 8th St / St Marks Pl to E 7th St","g":"None"},{"z":"1D","rank":2,"id":"11537352","lat":40.730536,"lng":-73.988757,"sp":"'Millstone' Japanese pagodatree","block":"E 10th St, 3rd Ave to 2nd Ave","g":""},{"z":"1D","rank":3,"id":"10666780","lat":40.728347,"lng":-73.986969,"sp":"'Skyline' Thornless honeylocust","block":"E 8th St / St Marks Pl, 2nd Ave to 1st Ave","g":""},{"z":"1G","rank":1,"id":"10666779","lat":40.728311,"lng":-73.988765,"sp":"'Green Vase' Zelkova","block":"E 7th St, 3rd Ave to 2nd Ave","g":""},{"z":"1G","rank":2,"id":"11177415","lat":40.726632,"lng":-73.986592,"sp":"swamp white oak","block":"E 6th St, 2nd Ave to 1st Ave","g":""},{"z":"1G","rank":3,"id":"12230448","lat":40.727365,"lng":-73.986532,"sp":"hophornbeam","block":"E 7th St, 2nd Ave to 1st Ave","g":""},{"z":"1H","rank":1,"id":"2122345","lat":40.724231,"lng":-73.983069,"sp":"Kentucky yellowwood","block":"E 5th St, Ave A to Ave B","g":"None"},{"z":"1H","rank":2,"id":"6544544","lat":40.723767,"lng":-73.982248,"sp":"swamp white oak","block":"Ave B, E 5th St to E 4th St","g":"None"},{"z":"1H","rank":3,"id":"11142888","lat":40.726309,"lng":-73.984301,"sp":"pin oak","block":"E 7th St, 1st Ave to Ave A","g":""},{"z":"1J","rank":1,"id":"11142873","lat":40.724725,"lng":-73.987983,"sp":"'Espresso' Kentucky coffee tree","block":"E 3rd St, 2nd Ave to 1st Ave","g":"None"},{"z":"1J","rank":2,"id":"12216775","lat":40.725807,"lng":-73.990578,"sp":"'Espresso' Kentucky coffee tree","block":"E 3rd St, Bowery to 2nd Ave","g":""},{"z":"1J","rank":3,"id":"11142885","lat":40.724361,"lng":-73.991186,"sp":"'Green Vase' Zelkova","block":"E 1st St, Bowery to 2nd Ave","g":""},{"z":"1K","rank":1,"id":"10665974","lat":40.72349,"lng":-73.982916,"sp":"'Skyline' Thornless honeylocust","block":"E 4th St, Ave A to Ave B","g":"None"},{"z":"1K","rank":2,"id":"16498118","lat":40.724432,"lng":-73.98702,"sp":"Kentucky coffeetree","block":"E 3rd St, 1st Ave to Ave A","g":"None"},{"z":"1K","rank":3,"id":"16501136","lat":40.723184,"lng":-73.984066,"sp":"silver maple","block":"E 3rd St, Ave A to Ave B","g":"None"},{"z":"1L","rank":1,"id":"11536470","lat":40.721041,"lng":-73.981294,"sp":"red maple","block":"E 2nd St, Ave B to Ave C","g":""},{"z":"1L","rank":2,"id":"12382242","lat":40.721381,"lng":-73.979791,"sp":"goldenrain tree","block":"E 3rd St, Ave C to Ave D","g":""},{"z":"1L","rank":3,"id":"12382675","lat":40.721237,"lng":-73.980842,"sp":"'Skyline' Thornless honeylocust","block":"Ave C, E 3rd St to E 2nd St","g":""},{"z":"2A","rank":1,"id":"6529733","lat":40.720327,"lng":-73.99257,"sp":"eastern redbud","block":"Chrystie St, Rivington St to Delancey St","g":"None"},{"z":"2A","rank":2,"id":"11139392","lat":40.720856,"lng":-73.99081,"sp":"'Redmond' American linden","block":"Rivington St, Forsyth St to Eldridge St","g":""},{"z":"2A","rank":3,"id":"15641986","lat":40.72316,"lng":-73.989918,"sp":"maidenhair tree","block":"E Houston St, Forsyth St to Eldridge St","g":""},{"z":"2D","rank":1,"id":"2118870","lat":40.719865,"lng":-73.983436,"sp":"pin oak","block":"Stanton St, Attorney St to Ridge St","g":""},{"z":"2D","rank":2,"id":"2124469","lat":40.720551,"lng":-73.980766,"sp":"'Green leaf' Japanese flowering cherry","block":"E Houston St, Pitt St to Willett St / Bialystoker Pl","g":""},{"z":"2D","rank":3,"id":"2124477","lat":40.720245,"lng":-73.979738,"sp":"Hardy Rubber Tree","block":"E Houston St, Willett St / Bialystoker Pl to Columbia St","g":""},{"z":"2F","rank":1,"id":"11139389","lat":40.71538,"lng":-73.98135,"sp":"'Fort Mcnair' Ruby red horsechestnut","block":"Broome St, Columbia St to Mangin St","g":""},{"z":"2F","rank":2,"id":"13436531","lat":40.71714,"lng":-73.987962,"sp":"Kentucky coffeetree","block":"Norfolk St, Broome St to Grand St","g":""},{"z":"2F","rank":3,"id":"13640804","lat":40.717657,"lng":-73.987691,"sp":"Japanese zelkova","block":"Norfolk St, Delancey St to Broome St","g":""},{"z":"3A","rank":1,"id":"10666768","lat":40.717374,"lng":-73.994352,"sp":"'Millstone' Japanese pagodatree","block":"Chrystie St, Grand St to Hester St","g":""},{"z":"3A","rank":2,"id":"14495877","lat":40.71597,"lng":-73.99522,"sp":"'Mushashino' Zelkova","block":"Chrystie St, Canal St to E Broadway","g":""},{"z":"3A","rank":3,"id":"2124298","lat":40.715074,"lng":-73.996568,"sp":"'Green leaf' Japanese flowering cherry","block":"Bowery / Chatham Sq, Canal St to E Broadway","g":""},{"z":"3C","rank":1,"id":"11137693","lat":40.712456,"lng":-73.999127,"sp":"shingle oak","block":"Henry St, the district edge to Catherine St","g":""},{"z":"3C","rank":2,"id":"12231919","lat":40.711926,"lng":-73.997403,"sp":"'Sterling' Silver linden","block":"Madison St, the district edge to Catherine St","g":""},{"z":"3C","rank":3,"id":"13807460","lat":40.712881,"lng":-73.99675,"sp":"Hardy Rubber Tree","block":"Catherine St, E Broadway to Henry St","g":""},{"z":"3F","rank":1,"id":"10844894","lat":40.710495,"lng":-73.997622,"sp":"maidenhair tree","block":"Cherry St, the district edge to Catherine St","g":""},{"z":"3F","rank":2,"id":"11138956","lat":40.711079,"lng":-73.994089,"sp":"paperbark maple","block":"Market St, Monroe St to Cherry St","g":""},{"z":"3F","rank":3,"id":"11138957","lat":40.711281,"lng":-73.99246,"sp":"'Skyline' Thornless honeylocust","block":"Pike St, Monroe St to Cherry St","g":""}];
+
+// Candidates drop off the map once they are nominated, submitted in a round,
+// or marked as having a guard, so what is left is what still needs a decision.
+function renderGuardCandidates() {
+  if (!guardCandidateLayer) return;
+  guardCandidateLayer.clearLayers();
+  const taken = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
+  nominationsReadLocal().forEach(n => taken.add(String(n.treeId)));
+  treeGuardsLoadSync().forEach(g => taken.add(String(g.treeId)));
+  let n = 0;
+  GUARD_CANDIDATES.forEach(c => {
+    if (taken.has(c.id)) return;
+    n++;
+    const top = c.rank === 1;
+    const m = L.circleMarker([c.lat, c.lng], {
+      radius: top ? 7 : 5, fillColor: '#ffffff', color: '#2e7d32', weight: top ? 3 : 2, fillOpacity: 0.9
+    });
+    m.bindTooltip('<b>Suggested · ' + escHtml(c.z) + (top ? ' · top pick' : ' · alternate') + '</b><br>' +
+      escHtml(c.sp) + '<br>' + escHtml(c.block) +
+      '<br>City guard record: ' + (c.g === 'None' ? 'no guard' : 'not recorded'));
+    m.on('click', e => {
+      L.DomEvent.stopPropagation(e);
+      const tree = guardTreeRecord(c.id);
+      if (tree) openMapTreeDetail(tree);
+    });
+    m.addTo(guardCandidateLayer);
+  });
+  guardCandidateCount = n;
+  if (typeof updateTreeGuardsLegend === 'function') updateTreeGuardsLegend();
+}
+
 // Nominated trees that are not already in a round. Dashed blue ring; a tap
 // opens the same detail panel as the main map.
 function renderGuardNominations() {
@@ -5247,11 +5287,12 @@ function renderGuardNominations() {
     m.addTo(guardNominationLayer);
   });
   guardNominationCount = n;
-  if (typeof updateTreeGuardsLegend === 'function') updateTreeGuardsLegend();
+  renderGuardCandidates();
 }
 
 function initTreeGuardsLayer() {
   treeGuardsLayer = L.layerGroup();
+  guardCandidateLayer = L.layerGroup().addTo(treeGuardsLayer);
   guardNominationLayer = L.layerGroup().addTo(treeGuardsLayer);
   renderGuardNominations();
   const installs = LESEC_TREE_GUARDS.features.map(f => ({
@@ -7296,12 +7337,14 @@ function confirmTreeGuard() {
   closeTreeGuardModal();
   updateTreeGuardButton(tree);
   applyFilters();
+  renderGuardNominations();
   tcShowSyncStatus('🛡 Tree marked as guarded (' + guardType + ')');
 }
 
 function treeGuardsRemoveByTreeId(treeId) {
   treeGuardsSave(treeGuardsLoadSync().filter(g => String(g.treeId) !== String(treeId)));
   applyFilters();
+  renderGuardNominations();
   tcShowSyncStatus('🛡 Tree guard removed');
 }
 
