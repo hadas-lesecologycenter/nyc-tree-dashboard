@@ -861,6 +861,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .wp-stops li:hover { background: var(--bg); }
   .wp-num, .wp-pin { width: 18px; height: 18px; border-radius: 50%; background: #2c2a24; color: #fff; font-size: 10px; font-weight: 700; line-height: 18px; text-align: center; }
   .wp-pin { width: 22px; height: 22px; line-height: 22px; font-size: 11px; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+  .wp-on .leaflet-overlay-pane { opacity: .3; }
   .wp-whole { color: #2e8b57; font-weight: 700; }
   .wp-gmap { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; text-decoration: none; }
   .district-status { margin-left: auto; padding-left: 6px; font-size: 10px; color: var(--text3); white-space: nowrap; }
@@ -6368,6 +6369,49 @@ function workplanStopCenter(stop) {
   return [la / stop.trees.length, lo / stop.trees.length];
 }
 
+// Route geometry works in metres around the day's first tree.
+const WP_M_LAT = 110540, WP_M_LNG = 84400;
+
+// The line a stop's trees stand along: its two ends and its direction, or
+// just a point for housing grounds and stops whose trees sit close together.
+function workplanStopLine(stop, origin) {
+  const pts = stop.trees.map(t => [(t[2] - origin[1]) * WP_M_LNG, (t[1] - origin[0]) * WP_M_LAT]);
+  const n = pts.length;
+  const cx = pts.reduce((a, p) => a + p[0], 0) / n, cy = pts.reduce((a, p) => a + p[1], 0) / n;
+  let sxx = 0, syy = 0, sxy = 0;
+  pts.forEach(([x, y]) => { sxx += (x - cx) ** 2; syy += (y - cy) ** 2; sxy += (x - cx) * (y - cy); });
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+  const u = [Math.cos(ang), Math.sin(ang)];
+  const proj = pts.map(([x, y]) => (x - cx) * u[0] + (y - cy) * u[1]);
+  const lo = Math.min(...proj), hi = Math.max(...proj);
+  const c = [cx, cy];
+  if (stop.seg.includes('-off') || n < 2 || hi - lo < 12) return { a: c, b: c, u: null };
+  return { a: [cx + lo * u[0], cy + lo * u[1]], b: [cx + hi * u[0], cy + hi * u[1]], u };
+}
+
+// Walk the day block by block: each block is drawn along its trees and turned
+// so it starts at the end nearest the last block, and the walk to the next
+// block runs from where one block ends to where the next one starts.
+function workplanRoute(day) {
+  const origin = [day.stops[0].trees[0][1], day.stops[0].trees[0][2]];
+  const toLL = ([x, y]) => [origin[0] + y / WP_M_LAT, origin[1] + x / WP_M_LNG];
+  const d2 = (p, q) => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2;
+  const lines = day.stops.map(s => workplanStopLine(s, origin));
+  const flip = l => ({ a: l.b, b: l.a, u: l.u && [-l.u[0], -l.u[1]] });
+  if (lines.length > 1) {
+    const nx = lines[1];
+    if (Math.min(d2(lines[0].a, nx.a), d2(lines[0].a, nx.b)) < Math.min(d2(lines[0].b, nx.a), d2(lines[0].b, nx.b)))
+      lines[0] = flip(lines[0]);
+  }
+  for (let k = 1; k < lines.length; k++) {
+    if (d2(lines[k - 1].b, lines[k].b) < d2(lines[k - 1].b, lines[k].a)) lines[k] = flip(lines[k]);
+  }
+  const blocks = lines.map(l => [toLL(l.a), toLL(l.b)]);
+  const links = [];
+  for (let k = 1; k < lines.length; k++) links.push([toLL(lines[k - 1].b), toLL(lines[k].a)]);
+  return { blocks, links };
+}
+
 function toggleWorkPlanFromPanel() {
   const cb = document.getElementById('layer-workplan');
   const panel = document.getElementById('workplan-panel');
@@ -6375,6 +6419,8 @@ function toggleWorkPlanFromPanel() {
   if (panel) panel.style.display = shouldShow ? 'block' : 'none';
   if (shouldShow === workplanVisible) return;
   workplanVisible = shouldShow;
+  // Fade the rest of the census so the day's trees and route stand out.
+  if (mapInstance) mapInstance.getContainer().classList.toggle('wp-on', workplanVisible);
   if (!workplanVisible) {
     if (workplanLayer) workplanLayer.remove();
     return;
@@ -6429,10 +6475,16 @@ function showWorkPlanDay(i, fit = true) {
 
   const renderer = L.svg({ pane: 'workplan' });
   const centers = day.stops.map(workplanStopCenter);
-  if (centers.length > 1) {
-    L.polyline(centers, { renderer, pane: 'workplan', color: '#2c2a24', weight: 2, opacity: 0.5,
-      dashArray: '5 5', interactive: false }).addTo(workplanLayer);
-  }
+  const route = workplanRoute(day);
+  route.links.forEach(path => {
+    L.polyline(path, { renderer, pane: 'workplan', color: '#2c2a24', weight: 2.5, opacity: 0.75,
+      dashArray: '2 6', lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(workplanLayer);
+  });
+  route.blocks.forEach(([a, b]) => {
+    const pts = a[0] === b[0] && a[1] === b[1] ? [a, [a[0] + 1e-6, a[1]]] : [a, b];
+    L.polyline(pts, { renderer, pane: 'workplan', color: '#2c2a24', weight: 12, opacity: 0.22,
+      lineCap: 'round', interactive: false }).addTo(workplanLayer);
+  });
   const radius = getMarkerSize() / 2 + 2;
   const points = [];
   day.stops.forEach((stop, k) => {
@@ -6450,7 +6502,7 @@ function showWorkPlanDay(i, fit = true) {
       });
       m.addTo(workplanLayer);
     });
-    L.marker(centers[k], {
+    L.marker(route.blocks[k][0], {
       pane: 'workplan', keyboard: false,
       icon: L.divIcon({ className: '', html: `<div class="wp-pin">${k + 1}</div>`, iconSize: [22, 22], iconAnchor: [11, 28] })
     }).bindTooltip(escHtml(stop.label)).addTo(workplanLayer);
