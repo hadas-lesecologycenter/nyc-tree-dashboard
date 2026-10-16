@@ -861,6 +861,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .wp-stops li:hover { background: var(--bg); }
   .wp-num, .wp-pin { width: 18px; height: 18px; border-radius: 50%; background: #2c2a24; color: #fff; font-size: 10px; font-weight: 700; line-height: 18px; text-align: center; }
   .wp-pin { width: 22px; height: 22px; line-height: 22px; font-size: 11px; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+  .wp-on .leaflet-overlay-pane { opacity: .3; }
   .wp-whole { color: #2e8b57; font-weight: 700; }
   .wp-gmap { display: inline-block; margin-top: 6px; color: var(--accent); font-weight: 600; text-decoration: none; }
   .district-status { margin-left: auto; padding-left: 6px; font-size: 10px; color: var(--text3); white-space: nowrap; }
@@ -6343,7 +6344,10 @@ function toggleSegmentsFromPanel() {
 // and the stop list in the Map Controls panel. Each day is made of whole block
 // segments; "whole block" marks a segment where every tree on it is in the plan.
 const WORKPLAN_URL = 'data/work-plan-2027.json';
+// Each day's walk along real street centrelines (scripts/build_workplan_routes.py).
+const WORKPLAN_ROUTES_URL = 'data/work-plan-2027-routes.json';
 let workplanData = null;
+let workplanRoutes = {};
 let workplanLayer = null;
 let workplanVisible = false;
 let workplanLoading = false;
@@ -6375,6 +6379,8 @@ function toggleWorkPlanFromPanel() {
   if (panel) panel.style.display = shouldShow ? 'block' : 'none';
   if (shouldShow === workplanVisible) return;
   workplanVisible = shouldShow;
+  // Fade the rest of the census so the day's trees and route stand out.
+  if (mapInstance) mapInstance.getContainer().classList.toggle('wp-on', workplanVisible);
   if (!workplanVisible) {
     if (workplanLayer) workplanLayer.remove();
     return;
@@ -6382,9 +6388,12 @@ function toggleWorkPlanFromPanel() {
   if (workplanData) { showWorkPlanDay(workplanDay); return; }
   if (workplanLoading) return;
   workplanLoading = true;
-  fetchData(WORKPLAN_URL)
-    .then(r => r.json())
-    .then(data => {
+  // The routes are optional: without them the day shows its trees and pins only.
+  const routes = fetchData(WORKPLAN_ROUTES_URL).then(r => r.json())
+    .then(d => { d.days.forEach(day => { workplanRoutes[day.date] = day; }); })
+    .catch(err => console.warn('Work plan routes not loaded:', err));
+  Promise.all([fetchData(WORKPLAN_URL).then(r => r.json()), routes])
+    .then(([data]) => {
       workplanData = data;
       const sel = document.getElementById('wp-day');
       if (sel) {
@@ -6429,9 +6438,19 @@ function showWorkPlanDay(i, fit = true) {
 
   const renderer = L.svg({ pane: 'workplan' });
   const centers = day.stops.map(workplanStopCenter);
-  if (centers.length > 1) {
-    L.polyline(centers, { renderer, pane: 'workplan', color: '#2c2a24', weight: 2, opacity: 0.5,
-      dashArray: '5 5', interactive: false }).addTo(workplanLayer);
+  // Every line follows a street: a band along each block, corner to corner,
+  // and a thinner line for the walk between blocks.
+  const route = workplanRoutes[day.date];
+  if (route) {
+    route.links.forEach(path => {
+      L.polyline(path, { renderer, pane: 'workplan', color: '#2c2a24', weight: 3, opacity: 0.7,
+        lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(workplanLayer);
+    });
+    route.blocks.forEach(path => {
+      if (!path || path.length < 2) return;
+      L.polyline(path, { renderer, pane: 'workplan', color: '#2c2a24', weight: 12, opacity: 0.25,
+        lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(workplanLayer);
+    });
   }
   const radius = getMarkerSize() / 2 + 2;
   const points = [];
@@ -6450,7 +6469,7 @@ function showWorkPlanDay(i, fit = true) {
       });
       m.addTo(workplanLayer);
     });
-    L.marker(centers[k], {
+    L.marker((route && route.pins[k]) || centers[k], {
       pane: 'workplan', keyboard: false,
       icon: L.divIcon({ className: '', html: `<div class="wp-pin">${k + 1}</div>`, iconSize: [22, 22], iconAnchor: [11, 28] })
     }).bindTooltip(escHtml(stop.label)).addTo(workplanLayer);

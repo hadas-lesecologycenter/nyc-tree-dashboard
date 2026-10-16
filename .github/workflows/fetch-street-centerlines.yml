@@ -1,0 +1,27 @@
+name: Fetch Street Centerlines
+
+# Downloads the streets around CB3 from OpenStreetMap for the 2027 Work Plan
+# routes. The cloud sandbox can't reach it, so this runs here, by hand, and
+# commits data/streets/cb3-streets.json back to the branch it ran on. Then run
+# scripts/build_workplan_routes.py.
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fetch streets
+        run: python3 scripts/fetch_street_centerlines.py
+      - name: Commit if changed
+        run: |
+          git config user.name "Tree Census Bot"
+          git config user.email "bot@lesecologycenter.org"
+          git add data/streets
+          git diff --staged --quiet || (git commit -m "Streets around CB3 $(date +'%Y-%m-%d')" && git push)
