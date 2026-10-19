@@ -23,6 +23,8 @@ var CONFIG = {
   },
   // The Eventbrite private token lives in Script Properties, not here:
   // Project Settings -> Script Properties -> add EVENTBRITE_TOKEN.
+  // Organizer (profile) ID. The organization ID used in API URLs is a
+  // different number, looked up by ebOrgId_().
   EVENTBRITE_ORG_ID: '13297911311'
 };
 
@@ -254,6 +256,21 @@ function ebToken_() {
   return PropertiesService.getScriptProperties().getProperty('EVENTBRITE_TOKEN') || '';
 }
 
+// Asks Eventbrite which organization the token belongs to and remembers the
+// answer in Script Properties as EVENTBRITE_ORGANIZATION_ID (set it by hand
+// there to override).
+function ebOrgId_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('EVENTBRITE_ORGANIZATION_ID');
+  if (id) return id;
+  var resp = UrlFetchApp.fetch('https://www.eventbriteapi.com/v3/users/me/organizations/',
+    {headers: {'Authorization': 'Bearer ' + ebToken_()}, muteHttpExceptions: true});
+  var orgs = resp.getResponseCode() === 200 ? (JSON.parse(resp.getContentText()).organizations || []) : [];
+  if (!orgs.length) throw new Error('Could not look up the Eventbrite organization (HTTP ' + resp.getResponseCode() + '): ' + resp.getContentText());
+  props.setProperty('EVENTBRITE_ORGANIZATION_ID', orgs[0].id);
+  return orgs[0].id;
+}
+
 function createEventbriteEvent(ev) {
   try {
     if (!ebToken_()) {
@@ -274,7 +291,7 @@ function createEventbriteEvent(ev) {
         capacity: parseInt(ev.attendance) || 50
       }
     };
-    var resp = UrlFetchApp.fetch('https://www.eventbriteapi.com/v3/organizations/' + CONFIG.EVENTBRITE_ORG_ID + '/events/', {
+    var resp = UrlFetchApp.fetch('https://www.eventbriteapi.com/v3/organizations/' + ebOrgId_() + '/events/', {
       method: 'post',
       contentType: 'application/json',
       headers: {'Authorization': 'Bearer ' + ebToken_()},
@@ -306,5 +323,5 @@ function testConfig() {
   try { var ss=SpreadsheetApp.openById(CONFIG.TRACKER_SHEET_ID); Logger.log('Sheet OK: '+ss.getName()); } catch(e) { Logger.log('Sheet ERROR: '+e.message); }
   if (CONFIG.BRIEF_FOLDER_ID) { try { var f=DriveApp.getFolderById(CONFIG.BRIEF_FOLDER_ID); Logger.log('Folder OK: '+f.getName()); } catch(e) { Logger.log('Folder ERROR: '+e.message); } }
   Logger.log('Chat webhook: ' + (CONFIG.CHAT_WEBHOOK_URL ? 'configured' : 'NOT configured'));
-  Logger.log('Eventbrite: ' + (ebToken_() ? 'configured' : 'NOT configured') + ' (org: ' + CONFIG.EVENTBRITE_ORG_ID + ')');
+  Logger.log('Eventbrite: ' + (ebToken_() ? 'configured' : 'NOT configured') + ' (organizer: ' + CONFIG.EVENTBRITE_ORG_ID + ')');
 }
