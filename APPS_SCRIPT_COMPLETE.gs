@@ -21,7 +21,8 @@ var CONFIG = {
     'Hadas': '',
     'Gretel': ''
   },
-  EVENTBRITE_TOKEN: 'EOOY2OVT2KXVOXMOMQHL',
+  // The Eventbrite private token lives in Script Properties, not here:
+  // Project Settings -> Script Properties -> add EVENTBRITE_TOKEN.
   EVENTBRITE_ORG_ID: '13297911311'
 };
 
@@ -249,10 +250,14 @@ function formatDue_(dueStr) {
   return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
 }
 
+function ebToken_() {
+  return PropertiesService.getScriptProperties().getProperty('EVENTBRITE_TOKEN') || '';
+}
+
 function createEventbriteEvent(ev) {
   try {
-    if (!CONFIG.EVENTBRITE_TOKEN) {
-      return {success:false, error:'Set EVENTBRITE_TOKEN in Code.gs CONFIG. Get one at eventbrite.com/platform/api-keys'};
+    if (!ebToken_()) {
+      return {success:false, error:'Set EVENTBRITE_TOKEN in Script Properties. Get one at eventbrite.com/platform/api-keys'};
     }
     var startDate = new Date(ev.date + 'T' + (parseTime_(ev.time) || '12:00:00'));
     var endDate = new Date(startDate.getTime() + 2*60*60*1000);
@@ -272,7 +277,7 @@ function createEventbriteEvent(ev) {
     var resp = UrlFetchApp.fetch('https://www.eventbriteapi.com/v3/organizations/' + CONFIG.EVENTBRITE_ORG_ID + '/events/', {
       method: 'post',
       contentType: 'application/json',
-      headers: {'Authorization': 'Bearer ' + CONFIG.EVENTBRITE_TOKEN},
+      headers: {'Authorization': 'Bearer ' + ebToken_()},
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
@@ -301,5 +306,5 @@ function testConfig() {
   try { var ss=SpreadsheetApp.openById(CONFIG.TRACKER_SHEET_ID); Logger.log('Sheet OK: '+ss.getName()); } catch(e) { Logger.log('Sheet ERROR: '+e.message); }
   if (CONFIG.BRIEF_FOLDER_ID) { try { var f=DriveApp.getFolderById(CONFIG.BRIEF_FOLDER_ID); Logger.log('Folder OK: '+f.getName()); } catch(e) { Logger.log('Folder ERROR: '+e.message); } }
   Logger.log('Chat webhook: ' + (CONFIG.CHAT_WEBHOOK_URL ? 'configured' : 'NOT configured'));
-  Logger.log('Eventbrite: ' + (CONFIG.EVENTBRITE_TOKEN ? 'configured' : 'NOT configured') + ' (org: ' + CONFIG.EVENTBRITE_ORG_ID + ')');
+  Logger.log('Eventbrite: ' + (ebToken_() ? 'configured' : 'NOT configured') + ' (org: ' + CONFIG.EVENTBRITE_ORG_ID + ')');
 }

@@ -87,6 +87,13 @@ textarea{resize:vertical;min-height:60px}
 .status-item{background:white;padding:12px;border-radius:8px;flex:1;min-width:100px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .status-num{font-size:24px;font-weight:700;color:#2d6a4f}
 .status-label{font-size:10px;color:#52796f;font-weight:600}
+.att-bar{align-items:stretch}
+.att-bar .status-item{background:#f8faf8}
+.att-refresh{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;font-size:10px;color:#52796f}
+.att-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding:6px 8px;background:#f8faf8;border-radius:6px;font-size:11px;color:#344e41}
+.att-line b{color:#1b4332;font-size:13px}
+.att-line select{width:auto;max-width:260px;font-size:10px;padding:2px 4px}
+.att-warn{color:#bc4749;font-weight:600}
 .toast{position:fixed;bottom:20px;right:20px;background:#1b4332;color:white;padding:12px 24px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none}
 .toast.show{opacity:1}
 .google-result{margin-top:10px;padding:10px;background:#d4edda;border-radius:6px;font-size:12px}
@@ -133,6 +140,12 @@ details summary{cursor:pointer;font-weight:600;color:#2d6a4f;margin:8px 0;font-s
 <div class="status-item"><div class="status-num" id="stat-hold">0</div><div class="status-label">Hold</div></div>
 <div class="status-item"><div class="status-num" id="stat-confirmed">0</div><div class="status-label">Confirmed</div></div>
 <div class="status-item"><div class="status-num" id="stat-completed">0</div><div class="status-label">Done</div></div>
+</div>
+<div class="status-bar att-bar">
+<div class="status-item"><div class="status-num" id="stat-registered">&ndash;</div><div class="status-label">Registered (Eventbrite)</div></div>
+<div class="status-item"><div class="status-num" id="stat-attended">&ndash;</div><div class="status-label">Attended (Activity Report)</div></div>
+<div class="status-item"><div class="status-num" id="stat-showup">&ndash;</div><div class="status-label" id="stat-showup-label">Show-up rate</div></div>
+<div class="status-item att-refresh"><button class="btn btn-sm btn-copy" onclick="refreshAttendance()">Refresh attendance</button><span id="att-updated">Not loaded yet</span></div>
 </div>
 
 <div class="tabs">
@@ -409,7 +422,7 @@ function addOnDate(ds){switchTab('form',document.querySelectorAll('.tab-btn')[1]
 document.getElementById('eventForm').addEventListener('submit',function(e){
   e.preventDefault();
   const ev=collectForm(),eid=document.getElementById('f-edit-id').value;
-  if(eid){const i=events.findIndex(x=>x.id===parseInt(eid));if(i>=0){ev.id=parseInt(eid);ev.tracker=events[i].tracker||defT();ev.tasks=events[i].tasks||[];events[i]=ev;}}
+  if(eid){const i=events.findIndex(x=>x.id===parseInt(eid));if(i>=0){ev.id=parseInt(eid);ev.tracker=events[i].tracker||defT();ev.tasks=events[i].tasks||[];ev.att=events[i].att;ev.attKey=events[i].attKey;ev.attManual=events[i].attManual;events[i]=ev;}}
   else{ev.id=Date.now();ev.tracker=defT();ev.tasks=[];events.push(ev);}
   syncTasks(ev);
   save();lastEv=ev;genOutputs(ev);renderList();renderCal();renderTasks();stats();resetForm();
@@ -534,11 +547,65 @@ function renderList(){
     const t=ev.tracker||{};
     const flds=[['briefCreated','Brief'],['eventbriteCreated','EB'],['calendarCreated','Cal'],['commsSubmitted','Comms'],['compostOrdered','Compost'],['compostOps','Ops'],['reminderSent','Remind'],['activityReport','Report'],['treeMapDone','Map'],['thankYouSent','ThxYou']];
     const chk=flds.map(([k,l])=>'<label><input type="checkbox" '+(t[k]?'checked':'')+' onchange="event.stopPropagation();togT('+ev.id+',\''+k+'\')"> '+l+'</label>').join('');
-    return'<div class="event-card '+(ev.status||'confirmed')+'" onclick="showOutputs('+ev.id+')"><div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div><div><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div><div class="event-card-meta">'+fmtD(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+'</div><div class="tracker-checks">'+chk+'</div></div>';
+    return'<div class="event-card '+(ev.status||'confirmed')+'" onclick="showOutputs('+ev.id+')"><div class="event-card-top"><div><span class="event-card-name">'+ev.name+'</span> <span class="status-badge status-'+(ev.status||'confirmed')+'">'+(ev.status||'confirmed')+'</span></div><div><button class="btn btn-sm btn-copy" onclick="event.stopPropagation();editEvent('+ev.id+')">Edit</button> <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteEvent('+ev.id+')">Del</button></div></div><div class="event-card-meta">'+fmtD(ev.date)+' &middot; '+(ev.time||'TBD')+' &middot; '+(ev.location||'TBD')+' &middot; '+ev.owner+'</div><div class="tracker-checks">'+chk+'</div>'+attLine(ev)+'</div>';
   }).join('');
 }
 function setFilter(s,b){curFilter=s;document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderList();}
 function togT(id,k){const ev=events.find(e=>e.id===id);if(!ev)return;if(!ev.tracker)ev.tracker=defT();ev.tracker[k]=!ev.tracker[k];save();stats();}
+
+// === REGISTRATION VS. ATTENDANCE ===
+// ev.att holds the latest numbers from getAttendanceStats in Code.gs. A report
+// row picked by hand (ev.attKey, or 'none') or a typed headcount (ev.attManual)
+// overrides the automatic match.
+function hasManual(ev){return ev.attManual!=null&&ev.attManual!=='';}
+function attended(ev){
+  if(hasManual(ev))return Number(ev.attManual);
+  const a=ev.att;if(!a)return null;
+  const key=ev.attKey||a.autoKey;if(!key||key==='none')return null;
+  const c=(a.candidates||[]).find(x=>x.key===key);
+  return c?c.count:null;
+}
+function showUp(reg,att){return reg&&att!=null?Math.round(att/reg*100)+'%':'&ndash;';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function attLine(ev){
+  if(!ev.eventbrite)return'';
+  const a=ev.att;
+  if(!a)return'<div class="att-line">Registration &amp; attendance not loaded yet &mdash; click <b>Refresh attendance</b> at the top.</div>';
+  const reg=a.registered,att=attended(ev),cur=hasManual(ev)?'manual':(ev.attKey||a.autoKey||'none');
+  let note='';
+  if(a.ebError)note+=' <span class="att-warn">Eventbrite: '+esc(a.ebError)+'</span>';
+  if(att==null&&cur==='none')note+=(ev.date>new Date().toLocaleDateString('en-CA'))?' <span>Upcoming</span>':' <span class="att-warn">No activity report found</span>';
+  else if(a.ambiguous&&!ev.attKey&&!hasManual(ev))note+=' <span class="att-warn">Several reports that day &mdash; check the match</span>';
+  const opts=(a.candidates||[]).map(c=>'<option value="'+esc(c.key)+'"'+(cur===c.key?' selected':'')+'>'+esc(fmtD(c.date)+' · '+c.title+(c.place?' @ '+c.place:'')+' · '+(c.count==null?'?':c.count)+' ppl')+'</option>').join('');
+  const sel='<select onchange="setAttMatch('+ev.id+',this.value)">'+opts+
+    '<option value="none"'+(cur==='none'?' selected':'')+'>No report / not matched</option>'+
+    '<option value="manual"'+(cur==='manual'?' selected':'')+'>'+(cur==='manual'?'Entered by hand: '+esc(ev.attManual):'Enter headcount by hand…')+'</option></select>';
+  return'<div class="att-line" onclick="event.stopPropagation()">Registered <b>'+(reg==null?'&ndash;':reg)+'</b> &middot; Attended <b>'+(att==null?'&ndash;':att)+'</b> &middot; Show-up <b>'+showUp(reg,att)+'</b> &middot; Report: '+sel+note+'</div>';
+}
+function setAttMatch(id,val){
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  if(val==='manual'){
+    const n=prompt('How many people attended "'+ev.name+'"?',hasManual(ev)?ev.attManual:'');
+    if(n===null||n.trim()===''||isNaN(Number(n))){if(n!==null)toast('Please enter a number');renderList();return;}
+    ev.attManual=Number(n);ev.attKey='';
+  }else{
+    // Picking the automatic match again clears the override so it keeps following new data.
+    ev.attManual=null;ev.attKey=(ev.att&&val===ev.att.autoKey)?'':val;
+  }
+  save();renderList();stats();
+}
+function refreshAttendance(silent){
+  const list=events.filter(e=>e.eventbrite).map(e=>({id:e.id,date:e.date,name:e.name,extName:e.extName,location:e.location,collab:e.collab,eventbrite:e.eventbrite}));
+  const upd=document.getElementById('att-updated');
+  if(!list.length){upd.textContent='No events with an Eventbrite link';if(!silent)toast('No events have an Eventbrite link yet.');return;}
+  upd.textContent='Loading…';
+  google.script.run.withSuccessHandler(function(r){
+    if(!r||!r.success){upd.textContent='Error';toast('Attendance error: '+(r&&r.error||'unknown'));return;}
+    r.events.forEach(s=>{const ev=events.find(e=>e.id===s.id);if(ev)ev.att=s;});
+    localStorage.setItem('les_att_at',r.fetchedAt);
+    save();renderList();stats();if(!silent)toast('Attendance updated');
+  }).withFailureHandler(function(e){upd.textContent='Error';toast('Attendance error: '+e.message);}).getAttendanceStats(list);
+}
 
 // === UTILS ===
 function fmtD(d){if(!d)return'';return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'});}
@@ -549,6 +616,15 @@ function stats(){
   document.getElementById('stat-hold').textContent=events.filter(e=>e.status==='hold').length;
   document.getElementById('stat-confirmed').textContent=events.filter(e=>e.status==='confirmed').length;
   document.getElementById('stat-completed').textContent=events.filter(e=>e.status==='completed'||(e.tracker&&Object.values(e.tracker).every(v=>v))).length;
+  // Totals only count events that have both numbers, so the rate compares like with like.
+  let reg=0,att=0,n=0;
+  events.forEach(ev=>{const r=ev.eventbrite&&ev.att&&ev.att.registered,a=attended(ev);if(r&&a!=null){reg+=r;att+=a;n++;}});
+  document.getElementById('stat-registered').innerHTML=n?reg:'&ndash;';
+  document.getElementById('stat-attended').innerHTML=n?att:'&ndash;';
+  document.getElementById('stat-showup').innerHTML=showUp(reg,att);
+  document.getElementById('stat-showup-label').textContent='Show-up rate ('+n+' event'+(n===1?'':'s')+')';
+  const at=localStorage.getItem('les_att_at');
+  if(at)document.getElementById('att-updated').textContent='Updated '+new Date(at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function copyEl(id){
@@ -674,6 +750,8 @@ function pushTasksToChat(){
 // INIT
 events.forEach(ev=>{if(!ev.tasks||!ev.tasks.length)syncTasks(ev);});save();
 renderCal();renderList();renderTasks();stats();
+// Pull fresh registration/attendance numbers at most once an hour.
+if(!(Date.now()-new Date(localStorage.getItem('les_att_at')||0)<3600e3))refreshAttendance(true);
 </script>
 </body>
 </html>
