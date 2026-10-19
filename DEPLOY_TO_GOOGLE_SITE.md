@@ -98,7 +98,7 @@
 - Re-deploy Apps Script after updating
 
 **Eventbrite button doesn't work?**
-- Check that `EVENTBRITE_TOKEN` is set in Script Properties (see below)
+- Check that `EVENTBRITE_TOKEN` is set in Script Properties
 - Make sure event type includes "Public" or "Workshop" to show button
 
 ---
@@ -119,22 +119,6 @@
 ## Next Steps
 
 After deploying, fill in optional integrations:
-
-**Eventbrite token (required for Eventbrite features):**
-1. Create a private token at https://www.eventbrite.com/platform/api-keys
-2. In Apps Script: **Project Settings** (gear) → **Script Properties** → **Add script property**
-3. Property: `EVENTBRITE_TOKEN`, Value: your token → **Save**
-
-The token is kept out of `Code.gs` so it never ends up in this repository.
-
-**Registered vs. attended (All Events tab):**
-For every event with an Eventbrite link, the dashboard shows Registered,
-Attended and Show-up rate, plus totals at the top.
-- *Registered* = Eventbrite registrations still attending (cancelled and refunded orders left out). The link must contain the event's ID number, e.g. `.../e/spring-tree-care-tickets-123456789012`.
-- *Attended* = headcount from the LESEC Activity Reporting form ("Number of Participants" for workshops, "Number of tree care volunteers" for Tree Care volunteer events). Only rows whose staff name includes someone in `CONFIG.STC_STAFF` are used.
-- The report on the same day as the event is matched automatically; if there are several, the one sharing the most words with the event name/location wins and the card says "check the match". Use the **Report** dropdown on the card to pick a different report, mark "No report", or type a headcount by hand.
-- Numbers refresh automatically once an hour when the dashboard opens, or with **Refresh attendance**.
-- Run `testAttendance()` in the Apps Script editor to check both data sources.
 
 **Google Chat Space Tasks:**
 1. Open "Street Tree Care Crew" space in Google Chat
