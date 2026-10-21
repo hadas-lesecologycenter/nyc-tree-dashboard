@@ -1297,6 +1297,23 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
+  /* DEC Grant Tree Guards legend — the title collapses it to a small pill.
+     Starts collapsed on phones, where the full tally covers most of the map. */
+  #tg-legend-toggle {
+    display: flex; align-items: center; gap: 6px; width: 100%;
+    margin: 0 0 8px; padding: 0; border: none; background: none;
+    font-family: inherit; font-size: 12px; font-weight: 700; color: #333;
+    text-align: left; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  #tg-legend-toggle .tg-chev { margin-left: auto; font-size: 11px; color: #6b6456; transition: transform 0.15s; }
+  #tree-guards-legend.tg-collapsed { min-width: 0 !important; }
+  #tree-guards-legend.tg-collapsed #tg-legend-toggle { margin-bottom: 0; min-height: 28px; }
+  #tree-guards-legend.tg-collapsed #tg-legend-body { display: none; }
+  #tree-guards-legend.tg-collapsed .tg-chev { transform: rotate(-90deg); }
+  @media (max-width: 768px) {
+    #tree-guards-legend { max-height: calc(100% - 136px); overflow-y: auto; }
+  }
+
   /* Selected tree ring — always present so it works on both maps */
   .selected-tree-ring {
     width: 22px; height: 22px; border-radius: 50%;
@@ -1546,8 +1563,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
         </div>
         <!-- DEC Grant Tree Guards Legend -->
-        <div id="tree-guards-legend" style="position:absolute;bottom:120px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:190px">
-          <div style="font-weight:700;margin-bottom:8px;font-size:12px;color:#333">🛡 DEC Grant Tree Guards</div>
+        <div id="tree-guards-legend" style="position:absolute;bottom:120px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:190px;max-width:230px;box-sizing:border-box">
+          <button type="button" id="tg-legend-toggle" onclick="toggleTreeGuardsLegend()" aria-expanded="true" aria-controls="tg-legend-body">🛡 DEC Grant Tree Guards <span class="tg-chev" aria-hidden="true">▾</span></button>
+          <div id="tg-legend-body">
           <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#333">
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1f6fb0;border:1px solid #164f80"></div><span style="flex:1">Round 1</span><b id="tg-n1" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#cc6f14;border:1px solid #9a520d"></div><span style="flex:1">Round 2</span><b id="tg-n2" style="font-variant-numeric:tabular-nums">0</b></div>
@@ -1568,6 +1586,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tg-t-missing" style="font-size:10px;color:#6b6456;margin-top:4px;line-height:1.35"></div>
           </div>
           <div id="tg-total" style="margin-top:6px;font-size:10px;color:#6b6456;line-height:1.35"></div>
+          </div>
         </div>
         <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
       <div style="padding:16px">
@@ -2999,6 +3018,7 @@ const LESEC_COOLEST_YOUTH = {"type": "FeatureCollection", "features": [{"type": 
 let toolStorageLayer = null;
 let treeGuardsLayer = null;
 let treeGuardsVisible = false;
+let treeGuardsLegendSized = false;
 let coolestBlocksLayer = null;
 let coolestBlocksVisible = false;
 let hydrantLayer = null;
@@ -5401,6 +5421,10 @@ function setTreeGuardsVisible(show) {
   if (cb) cb.checked = show;
   const legend = document.getElementById('tree-guards-legend');
   if (legend) legend.style.display = show ? 'block' : 'none';
+  if (show && !treeGuardsLegendSized) {
+    treeGuardsLegendSized = true;
+    toggleTreeGuardsLegend(window.innerWidth <= 768);
+  }
   if (show) {
     updateTreeGuardsLegend();
     if (!subzonesData) {
@@ -5413,6 +5437,16 @@ function setTreeGuardsVisible(show) {
         });
     }
   }
+}
+
+// Collapse or expand the legend; no argument flips it.
+function toggleTreeGuardsLegend(collapse) {
+  const legend = document.getElementById('tree-guards-legend');
+  if (!legend) return;
+  const collapsed = typeof collapse === 'boolean' ? collapse : !legend.classList.contains('tg-collapsed');
+  legend.classList.toggle('tg-collapsed', collapsed);
+  const btn = document.getElementById('tg-legend-toggle');
+  if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
 
 function toggleTreeGuards() { setTreeGuardsVisible(!treeGuardsVisible); }
