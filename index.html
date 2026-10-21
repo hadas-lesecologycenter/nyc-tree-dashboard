@@ -5592,20 +5592,25 @@ function toggleFireHydrantsFromPanel() {
 // Each sub-zone is filled by its environmental justice score: New York
 // State's Disadvantaged Communities combined score, as a percentile among NYC
 // census tracts, averaged over the tracts the sub-zone covers by area
-// (data/subzone-ej.json, scripts/build_subzone_ej.py). Five steps of 20
-// points, light to dark in one hue, darkest = most burdened. Which zone a
-// sub-zone belongs to is said by its ID and by the heavier line drawn along
-// the zone boundaries. The hue is violet because every other colour already
-// means something here - the reds, oranges and greens of the tree tiers, the
-// cyan of a cared-for tree, the blues of the block bands. The steps are spaced
-// for how they look at SUBZONE_FILL_OPACITY over the light basemap: OKLab
-// lightness 92, 84, 78, 71, 64, at least 6 apart.
-const SUBZONE_EJ_FILLS = ['#dfd0f3', '#b698da', '#9165bf', '#6b359b', '#43096b'];
-const SUBZONE_EJ_STEP = 20;
-const SUBZONE_FILL_OPACITY = 0.5;
+// (data/subzone-ej.json, scripts/build_subzone_ej.py). Five steps, light to
+// dark in one hue, darkest = most burdened. Which zone a sub-zone belongs to
+// is said by its ID and by the heavier line drawn along the zone boundaries.
+// The hue is violet because every other colour already means something here -
+// the reds, oranges and greens of the tree tiers, the cyan of a cared-for
+// tree, the blues of the block bands. The steps are spaced for how they look
+// at SUBZONE_FILL_OPACITY over the light basemap: OKLab lightness 93, 81, 70,
+// 59, 48, each about 11 apart.
+const SUBZONE_EJ_FILLS = ['#ecddff', '#bd9ee1', '#9262c4', '#692e9b', '#3e0065'];
+// Where each step starts after the first, on the 0-100 score. Fitted to CB3,
+// where every sub-zone scores between about 33 and 97: even steps of 20 left
+// the lightest unused and nine sub-zones in the darkest, so neighbours looked
+// alike. These spread the 25 sub-zones over all five (5, 4, 5, 3, 8 in
+// October 2026). Check the legend's counts if data/subzone-ej.json is rebuilt.
+const SUBZONE_EJ_BREAKS = [50, 60, 75, 90];
+const SUBZONE_FILL_OPACITY = 0.7;
 
 function subzoneEjStep(pct) {
-  return Math.min(SUBZONE_EJ_FILLS.length - 1, Math.floor(pct / SUBZONE_EJ_STEP));
+  return SUBZONE_EJ_BREAKS.filter(b => pct >= b).length;
 }
 // Every outline is the same warm near-black, which no tree marker and no band
 // uses. A red outline running along a row of red tier-3 dots, or a green one
@@ -5916,20 +5921,23 @@ function renderSubzoneEjLegend() {
     return;
   }
   const counts = SUBZONE_EJ_FILLS.map(() => 0);
-  Object.values(subzoneEj.subzones).forEach(v => counts[subzoneEjStep(v.nyc_percentile)]++);
+  const scores = Object.values(subzoneEj.subzones).map(v => v.nyc_percentile);
+  scores.forEach(pct => counts[subzoneEjStep(pct)]++);
   const rows = SUBZONE_EJ_FILLS.map((fill, i) => {
-    const lo = i * SUBZONE_EJ_STEP, hi = lo + SUBZONE_EJ_STEP;
+    const lo = i ? SUBZONE_EJ_BREAKS[i - 1] : 0, hi = SUBZONE_EJ_BREAKS[i] ?? 100;
     const note = i === SUBZONE_EJ_FILLS.length - 1 ? ' most burdened' : i === 0 ? ' least burdened' : '';
+    const range = i ? `${lo}–${hi}` : `Under ${hi}`;
     return `<div style="display:flex;align-items:center;gap:6px">
       <span style="width:14px;height:12px;border-radius:2px;background:${fill};opacity:${SUBZONE_FILL_OPACITY};outline:1px solid ${SUBZONE_LINE};outline-offset:-1px;flex-shrink:0"></span>
-      <span style="flex:1">${lo}–${hi}<span style="color:#6b6456">${note}</span></span>
+      <span style="flex:1">${range}<span style="color:#6b6456">${note}</span></span>
       <b style="font-variant-numeric:tabular-nums">${counts[i]}</b></div>`;
   }).reverse().join('');
   const src = subzoneEj.source;
   body.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px;font-size:11px">${rows}</div>
     <div style="font-size:10px;color:#6b6456;margin-top:8px;line-height:1.35">
-      NYS Disadvantaged Communities combined score, as a percentile among NYC census tracts,
-      averaged over each sub-zone's area. Numbers are sub-zones.
+      NYS Disadvantaged Communities combined score, as a percentile among NYC census tracts
+      (100 = most burdened), averaged over each sub-zone's area. Steps fit CB3's range, ${Math.floor(Math.min(...scores))}–${Math.ceil(Math.max(...scores))}.
+      Numbers are sub-zones.
       <a href="${escHtml(src.url)}" target="_blank" rel="noopener" style="color:#6b6456">${escHtml(src.dataset)}</a></div>`;
 }
 
