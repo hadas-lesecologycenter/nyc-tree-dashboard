@@ -606,7 +606,10 @@ Each sub-zone is filled by its environmental justice score: New York State's
 score, as a percentile among NYC census tracts (`Percentile_Rank_Combined_NYC`,
 0 = least burdened in the city, 100 = most), averaged over the tracts the
 sub-zone covers by how much of its area each one covers. The map shows it in
-five steps of 20 on a violet ramp, darkest = most burdened; the popup gives the
+five steps on a violet ramp, darkest = most burdened, cut at 50, 60, 75 and 90
+(`SUBZONE_EJ_BREAKS` in `index.html`). The cuts are fitted to CB3, where every
+sub-zone scores between about 33 and 97, so all five shades are used; even
+steps of 20 left the lightest one empty. The popup gives the
 score, the share of the sub-zone's area in tracts the State designates as DAC,
 and each tract with its own percentile.
 
