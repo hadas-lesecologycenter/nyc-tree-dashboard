@@ -1,0 +1,450 @@
+[
+ {
+  "id": "2e6c-s6fp",
+  "name": "Final Disadvantaged Communities (DAC) 2023",
+  "description": "The Climate Leadership and Community Protection Act (CLCPA) directs the Climate Justice Working Group (CJWG) to establish criteria for defining disadvantaged communities. This dataset identifies areas throughout the State that meet the final disadvantaged community definition as voted on by the Climate Justice Working Group. \n\nThe New York State Energy Research and Development Authority (NYSERDA) offers objective information and analysis, innovative programs, technical expertise, and support to help New Yorkers increase energy efficiency, save money, use renewable energy, accelerate economic growth, and reduce reliance on fossil fuels. To learn more about NYSERDA\u2019s programs, visit nyserda.ny.gov or follow us on X, Facebook, YouTube, or Instagram.",
+  "updatedAt": "2026-09-29T21:53:39.000Z",
+  "columns": [
+   {
+    "field": "health_insurance_rate",
+    "name": "Health_Insurance_Rate"
+   },
+   {
+    "field": "age_over_65",
+    "name": "Age_Over_65"
+   },
+   {
+    "field": "premature_deaths",
+    "name": "Premature_Deaths"
+   },
+   {
+    "field": "internet_access",
+    "name": "Internet_Access"
+   },
+   {
+    "field": "home_energy_affordability",
+    "name": "Home_Energy_Affordability"
+   },
+   {
+    "field": "homes_built_before_1960",
+    "name": "Homes_Built_Before_1960"
+   },
+   {
+    "field": "mobile_homes",
+    "name": "Mobile_Homes"
+   },
+   {
+    "field": "rent_percent_income",
+    "name": "Rent_Percent_Income"
+   },
+   {
+    "field": "household_low_count_flag",
+    "name": "Household_Low_Count_Flag"
+   },
+   {
+    "field": "tribal_designation",
+    "name": "Tribal_Designation"
+   },
+   {
+    "field": "the_geom",
+    "name": "the_geom"
+   },
+   {
+    "field": "landfills",
+    "name": "Landfills"
+   },
+   {
+    "field": "asthma_ed_rate",
+    "name": "Asthma_ED_Rate"
+   },
+   {
+    "field": "geoid",
+    "name": "GEOID"
+   },
+   {
+    "field": "renter_percent",
+    "name": "Renter_Percent"
+   },
+   {
+    "field": "drive_time_healthcare",
+    "name": "Drive_Time_Healthcare"
+   },
+   {
+    "field": "dac_designation",
+    "name": "DAC_Designation"
+   },
+   {
+    "field": "redc",
+    "name": "REDC"
+   },
+   {
+    "field": "county",
+    "name": "County"
+   },
+   {
+    "field": "city_town",
+    "name": "City_Town"
+   },
+   {
+    "field": "nyc_region",
+    "name": "NYC_Region"
+   },
+   {
+    "field": "urban_rural",
+    "name": "Urban_Rural"
+   },
+   {
+    "field": "population_count",
+    "name": "Population_Count"
+   },
+   {
+    "field": "household_count",
+    "name": "Household_Count"
+   },
+   {
+    "field": "percentile_rank_combined",
+    "name": "Percentile_Rank_Combined_Statewide"
+   },
+   {
+    "field": "percentile_rank_combined_1",
+    "name": "Percentile_Rank_Combined_NYC"
+   },
+   {
+    "field": "percentile_rank_combined_2",
+    "name": "Percentile_Rank_Combined_ROS"
+   },
+   {
+    "field": "combined_score",
+    "name": "Combined_Score"
+   },
+   {
+    "field": "burden_score_percentile",
+    "name": "Burden_Score_Percentile"
+   },
+   {
+    "field": "vulnerability_score_percentile",
+    "name": "Vulnerability_Score_Percentile"
+   },
+   {
+    "field": "burden_score",
+    "name": "Burden_Score"
+   },
+   {
+    "field": "vulnerability_score",
+    "name": "Vulnerability_Score"
+   },
+   {
+    "field": "benzene_concentration",
+    "name": "Benzene_Concentration"
+   },
+   {
+    "field": "particulate_matter_25",
+    "name": "Particulate_Matter_25"
+   },
+   {
+    "field": "traffic_truck_highways",
+    "name": "Traffic_Truck_Highways"
+   },
+   {
+    "field": "traffic_number_vehicles",
+    "name": "Traffic_Number_Vehicles"
+   },
+   {
+    "field": "wastewater_discharge",
+    "name": "Wastewater_Discharge"
+   },
+   {
+    "field": "housing_vacancy_rate",
+    "name": "Housing_Vacancy_Rate"
+   },
+   {
+    "field": "industrial_land_use",
+    "name": "Industrial_Land_Use"
+   },
+   {
+    "field": "oil_storage",
+    "name": "Oil_Storage"
+   },
+   {
+    "field": "municipal_waste_combustors",
+    "name": "Municipal_Waste_Combustors"
+   },
+   {
+    "field": "power_generation_facilities",
+    "name": "Power_Generation_Facilities"
+   },
+   {
+    "field": "rmp_sites",
+    "name": "RMP_Sites"
+   },
+   {
+    "field": "remediation_sites",
+    "name": "Remediation_Sites"
+   },
+   {
+    "field": "scrap_metal_processing",
+    "name": "Scrap_Metal_Processing"
+   },
+   {
+    "field": "agricultural_land_use",
+    "name": "Agricultural_Land_Use"
+   },
+   {
+    "field": "coastal_flooding_storm_risk",
+    "name": "Coastal_Flooding_Storm_Risk"
+   },
+   {
+    "field": "days_above_90_degrees_2050",
+    "name": "Days_Above_90_Degrees_2050"
+   },
+   {
+    "field": "inland_flooding_risk",
+    "name": "Inland_Flooding_Risk"
+   },
+   {
+    "field": "low_vegetative_cover",
+    "name": "Low_Vegetative_Cover"
+   },
+   {
+    "field": "asian_percent",
+    "name": "Asian_Percent"
+   },
+   {
+    "field": "black_african_american_percent",
+    "name": "Black_African_American_Percent"
+   },
+   {
+    "field": "redlining_updated",
+    "name": "Redlining_Updated"
+   },
+   {
+    "field": "latino_percent",
+    "name": "Latino_Percent"
+   },
+   {
+    "field": "english_proficiency",
+    "name": "English_Proficiency"
+   },
+   {
+    "field": "native_indigenous",
+    "name": "Native_Indigenous"
+   },
+   {
+    "field": "lmi_80_ami",
+    "name": "LMI_80_AMI"
+   },
+   {
+    "field": "lmi_poverty_federal",
+    "name": "LMI_Poverty_Federal"
+   },
+   {
+    "field": "population_no_college",
+    "name": "Population_No_College"
+   },
+   {
+    "field": "household_single_parent",
+    "name": "Household_Single_Parent"
+   },
+   {
+    "field": "unemployment_rate",
+    "name": "Unemployment_Rate"
+   },
+   {
+    "field": "copd_ed_rate",
+    "name": "COPD_ED_Rate"
+   },
+   {
+    "field": "households_disabled",
+    "name": "Households_Disabled"
+   },
+   {
+    "field": "low_birth_weight",
+    "name": "Low_Birth_Weight"
+   },
+   {
+    "field": "mi_hospitalization_rate",
+    "name": "MI_Hospitalization_Rate"
+   }
+  ]
+ },
+ {
+  "id": "t6wd-tdrv",
+  "name": "Interim Disadvantaged Communities (DAC): 2020",
+  "description": "This dataset identifies areas throughout the State that meet the interim criteria identified for a disadvantaged community as defined by New York State. It contains the 4,145 Census block groups that make up the current interim Disadvantaged Communities (DAC) approach. NYSERDA currently hosts a map on its website showing the interim DAC areas with an address look-up function that allows users to enter an address to determine if the address falls inside or outside an interim DAC: https://www.nyserda.ny.gov/ny/disadvantaged-communities\n\nThe New York State Energy Research and Development Authority (NYSERDA) offers objective information and analysis, innovative programs, technical expertise, and support to help New Yorkers increase energy efficiency, save money, use renewable energy, and reduce reliance on fossil fuels. To learn more about NYSERDA\u2019s programs, visit https://nyserda.ny.gov or follow us on X, Facebook, YouTube, or Instagram.",
+  "updatedAt": "2026-10-01T19:59:31.000Z",
+  "columns": [
+   {
+    "field": "acres",
+    "name": "Acres"
+   },
+   {
+    "field": "pop_2018",
+    "name": "Pop_2018"
+   },
+   {
+    "field": "geoid",
+    "name": "GEOID"
+   },
+   {
+    "field": "the_geom",
+    "name": "the_geom"
+   }
+  ]
+ },
+ {
+  "id": "8bma-the7",
+  "name": "Parks - Interpretative for Disadvantaged Communities",
+  "description": "",
+  "updatedAt": "2026-07-15T23:32:25.000Z",
+  "columns": [
+   {
+    "field": "fiscal_year",
+    "name": "FISCAL YEAR"
+   },
+   {
+    "field": "target",
+    "name": "TARGET"
+   },
+   {
+    "field": "measure_id",
+    "name": "MEASURE ID"
+   },
+   {
+    "field": "measure_value",
+    "name": "MEASURE VALUE"
+   },
+   {
+    "field": "benchmark",
+    "name": "BENCHMARK"
+   },
+   {
+    "field": "target_met",
+    "name": "TARGET MET"
+   },
+   {
+    "field": "measure_value_type",
+    "name": "MEASURE VALUE TYPE"
+   },
+   {
+    "field": "benchmark_met",
+    "name": "BENCHMARK MET"
+   },
+   {
+    "field": "measure_name",
+    "name": "MEASURE NAME"
+   },
+   {
+    "field": "notes",
+    "name": "NOTES"
+   }
+  ]
+ },
+ {
+  "id": "h46z-7d5x",
+  "name": "Parks - Interpretive Programs Offered to Disadvantaged Communities Within San Mateo County",
+  "description": "",
+  "updatedAt": "2021-08-09T19:19:45.000Z",
+  "columns": [
+   {
+    "field": "measure_id",
+    "name": "MEASURE ID"
+   },
+   {
+    "field": "measure_value",
+    "name": "MEASURE VALUE "
+   },
+   {
+    "field": "fiscal_year",
+    "name": "FISCAL YEAR "
+   },
+   {
+    "field": "notes",
+    "name": "NOTES"
+   },
+   {
+    "field": "measure_value_type",
+    "name": "MEASURE VALUE TYPE"
+   },
+   {
+    "field": "target_met",
+    "name": "TARGET MET"
+   },
+   {
+    "field": "target",
+    "name": "TARGET"
+   },
+   {
+    "field": "benchmark",
+    "name": "BENCHMARK"
+   },
+   {
+    "field": "benchmark_met",
+    "name": "BENCHMARK MET"
+   },
+   {
+    "field": "measure_name",
+    "name": "MEASURE NAME"
+   }
+  ]
+ },
+ {
+  "id": "74fp-zihd",
+  "name": "CalEnviroScreen 4.0 SB 535 Disadvantaged Communities",
+  "description": "This feature layer contains features for the San Francisco Bay Region that were designated as Disadvantaged Communities in CalEnviroScreen 4.0. These features were extracted from two statewide data sets (SB 535 Tracts (2022) and SB 535 Tribal Lands (2022)) by the Metropolitan Transportation Commission (MTC) and only contains features designated as Disadvantaged Communities. Because of the different attribute table structures in the two data sets, MTC created new, basic attribute table that designates each feature as a Disadvantaged Community and provides its category.\n\nSource data and more information available about the Office of Environmental Health Hazard Assessment (OEHHA) Disadvantaged Communities work can be found on their SB 535 Disadvantaged Communities page.\n\nA feature layer of the full, census tract based CalEnviroScreen 4.0 feature set is available for use at https://mtc.maps.arcgis.com/home/item.html?id=389516b375924b8c84bf1f04715bdfd6.",
+  "updatedAt": "2025-07-31T22:07:44.000Z",
+  "columns": [
+   {
+    "field": "dac_status",
+    "name": "dac_status"
+   },
+   {
+    "field": "dac_cat",
+    "name": "dac_cat"
+   },
+   {
+    "field": "the_geom",
+    "name": "the_geom"
+   }
+  ]
+ },
+ {
+  "id": "pbsr-9an9",
+  "name": "Funds Spent Serving Students From Disadvantaged Communities",
+  "description": "",
+  "updatedAt": "2026-09-08T21:45:37.000Z",
+  "columns": [
+   {
+    "field": "benchmark_met",
+    "name": "BENCHMARK MET"
+   },
+   {
+    "field": "benchmark",
+    "name": "BENCHMARK"
+   },
+   {
+    "field": "target_met",
+    "name": "TARGET MET"
+   },
+   {
+    "field": "measure_name",
+    "name": "MEASURE NAME"
+   },
+   {
+    "field": "fiscal_year",
+    "name": "FISCAL YEAR"
+   },
+   {
+    "field": "measure_value",
+    "name": "MEASURE VALUE"
+   },
+   {
+    "field": "target",
+    "name": "TARGET"
+   },
+   {
+    "field": "notes",
+    "name": "NOTES"
+   }
+  ]
+ }
+]
