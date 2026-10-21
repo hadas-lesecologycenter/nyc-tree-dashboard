@@ -574,6 +574,8 @@ street names and as a starting guess for each fit.
 | `data/cb3-street-grid.json` | The older whole-family fit, used for names and seeds |
 | `data/segment-ids.json` | Every segment ID ever issued; commit it with the data |
 | `data/pinned-street-lines.json` | Where each seeded street is drawn; commit it with the data |
+| `data/subzone-ej.json` | Each sub-zone's environmental justice score, which sets its fill colour — see below |
+| `data/ej/` | The State DAC data and 2019 census tracts that score comes from |
 
 ## Rebuilding
 
@@ -596,6 +598,28 @@ and the two are guaranteed to meet.
 Where a right-of-way width is not certain the offset is measured instead, as
 the street's own sidewalk row plus a sidewalk. Only the streets in `ROW_HALF_M`
 are stated outright; that list is the place to add one if a width is known.
+
+## Environmental justice colours
+
+Each sub-zone is filled by its environmental justice score: New York State's
+[Disadvantaged Communities](https://data.ny.gov/d/2e6c-s6fp) (DAC) combined
+score, as a percentile among NYC census tracts (`Percentile_Rank_Combined_NYC`,
+0 = least burdened in the city, 100 = most), averaged over the tracts the
+sub-zone covers by how much of its area each one covers. The map shows it in
+five steps of 20 on a violet ramp, darkest = most burdened; the popup gives the
+score, the share of the sub-zone's area in tracts the State designates as DAC,
+and each tract with its own percentile.
+
+The data.ny.gov and Census Bureau servers can't be reached from the cloud
+sessions this dashboard is built in, so the raw data is fetched on GitHub:
+
+```
+Actions → Fetch DAC Data → Run workflow     # runs scripts/fetch_dac.py, commits data/ej/
+python3 scripts/build_subzone_ej.py         # writes data/subzone-ej.json
+```
+
+Re-run the build after the sub-zones change, too: it reads
+`data/subzones.geojson`.
 
 ## Fitting a grid the frame is not aligned to
 

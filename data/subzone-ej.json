@@ -1,0 +1,981 @@
+{
+ "source": {
+  "dataset": "Final Disadvantaged Communities (DAC) 2023",
+  "url": "https://data.ny.gov/d/2e6c-s6fp",
+  "updated": "2026-09-29",
+  "field": "Percentile_Rank_Combined_NYC",
+  "tracts": "US Census Bureau TIGER/Line 2019 census tracts",
+  "method": "area-weighted average over the tracts each sub-zone covers, 5 m point grid"
+ },
+ "subzones": {
+  "1A": {
+   "nyc_percentile": 33.1,
+   "dac_share": 0.0,
+   "tracts": [
+    {
+     "geoid": "36061004000",
+     "name": "Census Tract 40",
+     "share": 0.684,
+     "nyc_percentile": 35.0,
+     "dac": false
+    },
+    {
+     "geoid": "36061004200",
+     "name": "Census Tract 42",
+     "share": 0.289,
+     "nyc_percentile": 27.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061003400",
+     "name": "Census Tract 34",
+     "share": 0.024,
+     "nyc_percentile": 53.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061004800",
+     "name": "Census Tract 48",
+     "share": 0.001,
+     "nyc_percentile": 10.4,
+     "dac": false
+    },
+    {
+     "geoid": "36061005000",
+     "name": "Census Tract 50",
+     "share": 0.001,
+     "nyc_percentile": 3.6,
+     "dac": false
+    },
+    {
+     "geoid": "36061006100",
+     "name": "Census Tract 61",
+     "share": 0.001,
+     "nyc_percentile": 2.4,
+     "dac": false
+    }
+   ]
+  },
+  "1B": {
+   "nyc_percentile": 54.7,
+   "dac_share": 0.022,
+   "tracts": [
+    {
+     "geoid": "36061003400",
+     "name": "Census Tract 34",
+     "share": 0.976,
+     "nyc_percentile": 53.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061002800",
+     "name": "Census Tract 28",
+     "share": 0.022,
+     "nyc_percentile": 94.2,
+     "dac": true
+    },
+    {
+     "geoid": "36061004400",
+     "name": "Census Tract 44",
+     "share": 0.002,
+     "nyc_percentile": 40.4,
+     "dac": false
+    }
+   ]
+  },
+  "1C": {
+   "nyc_percentile": 95.9,
+   "dac_share": 0.999,
+   "tracts": [
+    {
+     "geoid": "36061002800",
+     "name": "Census Tract 28",
+     "share": 0.677,
+     "nyc_percentile": 94.2,
+     "dac": true
+    },
+    {
+     "geoid": "36061002400",
+     "name": "Census Tract 24",
+     "share": 0.322,
+     "nyc_percentile": 99.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061004400",
+     "name": "Census Tract 44",
+     "share": 0.001,
+     "nyc_percentile": 40.4,
+     "dac": false
+    }
+   ]
+  },
+  "1D": {
+   "nyc_percentile": 45.3,
+   "dac_share": 0.513,
+   "tracts": [
+    {
+     "geoid": "36061003800",
+     "name": "Census Tract 38",
+     "share": 0.513,
+     "nyc_percentile": 57.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061004000",
+     "name": "Census Tract 40",
+     "share": 0.29,
+     "nyc_percentile": 35.0,
+     "dac": false
+    },
+    {
+     "geoid": "36061004200",
+     "name": "Census Tract 42",
+     "share": 0.166,
+     "nyc_percentile": 27.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.018,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061003400",
+     "name": "Census Tract 34",
+     "share": 0.01,
+     "nyc_percentile": 53.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061005700",
+     "name": "Census Tract 57",
+     "share": 0.002,
+     "nyc_percentile": 0.9,
+     "dac": false
+    }
+   ]
+  },
+  "1E": {
+   "nyc_percentile": 48.6,
+   "dac_share": 0.024,
+   "tracts": [
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.79,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061003400",
+     "name": "Census Tract 34",
+     "share": 0.186,
+     "nyc_percentile": 53.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061002602",
+     "name": "Census Tract 26.02",
+     "share": 0.015,
+     "nyc_percentile": 82.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061002800",
+     "name": "Census Tract 28",
+     "share": 0.009,
+     "nyc_percentile": 94.2,
+     "dac": true
+    }
+   ]
+  },
+  "1F": {
+   "nyc_percentile": 92.2,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061002400",
+     "name": "Census Tract 24",
+     "share": 0.418,
+     "nyc_percentile": 99.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061002602",
+     "name": "Census Tract 26.02",
+     "share": 0.369,
+     "nyc_percentile": 82.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061002800",
+     "name": "Census Tract 28",
+     "share": 0.214,
+     "nyc_percentile": 94.2,
+     "dac": true
+    }
+   ]
+  },
+  "1G": {
+   "nyc_percentile": 55.0,
+   "dac_share": 0.918,
+   "tracts": [
+    {
+     "geoid": "36061003800",
+     "name": "Census Tract 38",
+     "share": 0.918,
+     "nyc_percentile": 57.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061004200",
+     "name": "Census Tract 42",
+     "share": 0.043,
+     "nyc_percentile": 27.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.032,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061005700",
+     "name": "Census Tract 57",
+     "share": 0.007,
+     "nyc_percentile": 0.9,
+     "dac": false
+    }
+   ]
+  },
+  "1H": {
+   "nyc_percentile": 47.1,
+   "dac_share": 0.024,
+   "tracts": [
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.976,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061002601",
+     "name": "Census Tract 26.01",
+     "share": 0.015,
+     "nyc_percentile": 85.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061002602",
+     "name": "Census Tract 26.02",
+     "share": 0.008,
+     "nyc_percentile": 82.7,
+     "dac": true
+    }
+   ]
+  },
+  "1I": {
+   "nyc_percentile": 91.4,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061002601",
+     "name": "Census Tract 26.01",
+     "share": 0.339,
+     "nyc_percentile": 85.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061002000",
+     "name": "Census Tract 20",
+     "share": 0.302,
+     "nyc_percentile": 98.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061002602",
+     "name": "Census Tract 26.02",
+     "share": 0.195,
+     "nyc_percentile": 82.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061002400",
+     "name": "Census Tract 24",
+     "share": 0.165,
+     "nyc_percentile": 99.6,
+     "dac": true
+    }
+   ]
+  },
+  "1J": {
+   "nyc_percentile": 53.6,
+   "dac_share": 0.318,
+   "tracts": [
+    {
+     "geoid": "36061003602",
+     "name": "Census Tract 36.02",
+     "share": 0.67,
+     "nyc_percentile": 51.9,
+     "dac": false
+    },
+    {
+     "geoid": "36061003800",
+     "name": "Census Tract 38",
+     "share": 0.295,
+     "nyc_percentile": 57.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061003002",
+     "name": "Census Tract 30.02",
+     "share": 0.023,
+     "nyc_percentile": 64.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.011,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061005502",
+     "name": "Census Tract 55.02",
+     "share": 0.001,
+     "nyc_percentile": 14.4,
+     "dac": false
+    }
+   ]
+  },
+  "1K": {
+   "nyc_percentile": 58.0,
+   "dac_share": 0.659,
+   "tracts": [
+    {
+     "geoid": "36061003002",
+     "name": "Census Tract 30.02",
+     "share": 0.638,
+     "nyc_percentile": 64.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061003200",
+     "name": "Census Tract 32",
+     "share": 0.341,
+     "nyc_percentile": 46.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061002202",
+     "name": "Census Tract 22.02",
+     "share": 0.013,
+     "nyc_percentile": 57.3,
+     "dac": true
+    },
+    {
+     "geoid": "36061002601",
+     "name": "Census Tract 26.01",
+     "share": 0.008,
+     "nyc_percentile": 85.8,
+     "dac": true
+    }
+   ]
+  },
+  "1L": {
+   "nyc_percentile": 82.1,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061002000",
+     "name": "Census Tract 20",
+     "share": 0.41,
+     "nyc_percentile": 98.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061002202",
+     "name": "Census Tract 22.02",
+     "share": 0.316,
+     "nyc_percentile": 57.3,
+     "dac": true
+    },
+    {
+     "geoid": "36061002601",
+     "name": "Census Tract 26.01",
+     "share": 0.274,
+     "nyc_percentile": 85.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001002",
+     "name": "Census Tract 10.02",
+     "share": 0.001,
+     "nyc_percentile": 98.4,
+     "dac": true
+    }
+   ]
+  },
+  "2A": {
+   "nyc_percentile": 71.9,
+   "dac_share": 0.951,
+   "tracts": [
+    {
+     "geoid": "36061003601",
+     "name": "Census Tract 36.01",
+     "share": 0.691,
+     "nyc_percentile": 73.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.26,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061003602",
+     "name": "Census Tract 36.02",
+     "share": 0.047,
+     "nyc_percentile": 51.9,
+     "dac": false
+    },
+    {
+     "geoid": "36061004300",
+     "name": "Census Tract 43",
+     "share": 0.002,
+     "nyc_percentile": 32.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061004100",
+     "name": "Census Tract 41",
+     "share": 0.0,
+     "nyc_percentile": 38.8,
+     "dac": false
+    }
+   ]
+  },
+  "2B": {
+   "nyc_percentile": 61.5,
+   "dac_share": 0.463,
+   "tracts": [
+    {
+     "geoid": "36061003001",
+     "name": "Census Tract 30.01",
+     "share": 0.528,
+     "nyc_percentile": 52.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.276,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061003601",
+     "name": "Census Tract 36.01",
+     "share": 0.152,
+     "nyc_percentile": 73.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061003002",
+     "name": "Census Tract 30.02",
+     "share": 0.034,
+     "nyc_percentile": 64.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061003602",
+     "name": "Census Tract 36.02",
+     "share": 0.009,
+     "nyc_percentile": 51.9,
+     "dac": false
+    }
+   ]
+  },
+  "2C": {
+   "nyc_percentile": 62.5,
+   "dac_share": 0.345,
+   "tracts": [
+    {
+     "geoid": "36061003001",
+     "name": "Census Tract 30.01",
+     "share": 0.655,
+     "nyc_percentile": 52.8,
+     "dac": false
+    },
+    {
+     "geoid": "36061001402",
+     "name": "Census Tract 14.02",
+     "share": 0.2,
+     "nyc_percentile": 87.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.074,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061003002",
+     "name": "Census Tract 30.02",
+     "share": 0.043,
+     "nyc_percentile": 64.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061002201",
+     "name": "Census Tract 22.01",
+     "share": 0.027,
+     "nyc_percentile": 85.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061002202",
+     "name": "Census Tract 22.02",
+     "share": 0.001,
+     "nyc_percentile": 57.3,
+     "dac": true
+    }
+   ]
+  },
+  "2D": {
+   "nyc_percentile": 91.3,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061001002",
+     "name": "Census Tract 10.02",
+     "share": 0.493,
+     "nyc_percentile": 98.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061002201",
+     "name": "Census Tract 22.01",
+     "share": 0.396,
+     "nyc_percentile": 85.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061001402",
+     "name": "Census Tract 14.02",
+     "share": 0.042,
+     "nyc_percentile": 87.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061002000",
+     "name": "Census Tract 20",
+     "share": 0.024,
+     "nyc_percentile": 98.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001200",
+     "name": "Census Tract 12",
+     "share": 0.024,
+     "nyc_percentile": 77.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061002202",
+     "name": "Census Tract 22.02",
+     "share": 0.022,
+     "nyc_percentile": 57.3,
+     "dac": true
+    }
+   ]
+  },
+  "2E": {
+   "nyc_percentile": 71.4,
+   "dac_share": 0.999,
+   "tracts": [
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.999,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061004100",
+     "name": "Census Tract 41",
+     "share": 0.001,
+     "nyc_percentile": 38.8,
+     "dac": false
+    }
+   ]
+  },
+  "2F": {
+   "nyc_percentile": 76.1,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061001200",
+     "name": "Census Tract 12",
+     "share": 0.367,
+     "nyc_percentile": 77.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001001",
+     "name": "Census Tract 10.01",
+     "share": 0.272,
+     "nyc_percentile": 59.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001402",
+     "name": "Census Tract 14.02",
+     "share": 0.258,
+     "nyc_percentile": 87.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.051,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061001002",
+     "name": "Census Tract 10.02",
+     "share": 0.039,
+     "nyc_percentile": 98.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061002201",
+     "name": "Census Tract 22.01",
+     "share": 0.013,
+     "nyc_percentile": 85.0,
+     "dac": true
+    },
+    {
+     "geoid": "36061000202",
+     "name": "Census Tract 2.02",
+     "share": 0.0,
+     "nyc_percentile": 95.8,
+     "dac": true
+    }
+   ]
+  },
+  "3A": {
+   "nyc_percentile": 70.9,
+   "dac_share": 0.989,
+   "tracts": [
+    {
+     "geoid": "36061001600",
+     "name": "Census Tract 16",
+     "share": 0.47,
+     "nyc_percentile": 61.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061002900",
+     "name": "Census Tract 29",
+     "share": 0.45,
+     "nyc_percentile": 78.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.057,
+     "nyc_percentile": 91.1,
+     "dac": true
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.013,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061002700",
+     "name": "Census Tract 27",
+     "share": 0.009,
+     "nyc_percentile": 54.5,
+     "dac": false
+    },
+    {
+     "geoid": "36061004100",
+     "name": "Census Tract 41",
+     "share": 0.001,
+     "nyc_percentile": 38.8,
+     "dac": false
+    }
+   ]
+  },
+  "3B": {
+   "nyc_percentile": 48.7,
+   "dac_share": 0.58,
+   "tracts": [
+    {
+     "geoid": "36061001600",
+     "name": "Census Tract 16",
+     "share": 0.439,
+     "nyc_percentile": 61.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061001401",
+     "name": "Census Tract 14.01",
+     "share": 0.42,
+     "nyc_percentile": 22.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061000600",
+     "name": "Census Tract 6",
+     "share": 0.044,
+     "nyc_percentile": 98.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.028,
+     "nyc_percentile": 91.1,
+     "dac": true
+    },
+    {
+     "geoid": "36061001402",
+     "name": "Census Tract 14.02",
+     "share": 0.027,
+     "nyc_percentile": 87.7,
+     "dac": true
+    },
+    {
+     "geoid": "36061001800",
+     "name": "Census Tract 18",
+     "share": 0.025,
+     "nyc_percentile": 71.4,
+     "dac": true
+    },
+    {
+     "geoid": "36061001200",
+     "name": "Census Tract 12",
+     "share": 0.019,
+     "nyc_percentile": 77.8,
+     "dac": true
+    }
+   ]
+  },
+  "3C": {
+   "nyc_percentile": 79.3,
+   "dac_share": 0.667,
+   "tracts": [
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.557,
+     "nyc_percentile": 91.1,
+     "dac": true
+    },
+    {
+     "geoid": "36061002700",
+     "name": "Census Tract 27",
+     "share": 0.333,
+     "nyc_percentile": 54.5,
+     "dac": false
+    },
+    {
+     "geoid": "36061002500",
+     "name": "Census Tract 25",
+     "share": 0.092,
+     "nyc_percentile": 97.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061002900",
+     "name": "Census Tract 29",
+     "share": 0.017,
+     "nyc_percentile": 78.6,
+     "dac": true
+    }
+   ]
+  },
+  "3D": {
+   "nyc_percentile": 95.4,
+   "dac_share": 0.967,
+   "tracts": [
+    {
+     "geoid": "36061000600",
+     "name": "Census Tract 6",
+     "share": 0.699,
+     "nyc_percentile": 98.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061000201",
+     "name": "Census Tract 2.01",
+     "share": 0.237,
+     "nyc_percentile": 96.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061001401",
+     "name": "Census Tract 14.01",
+     "share": 0.033,
+     "nyc_percentile": 22.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061000202",
+     "name": "Census Tract 2.02",
+     "share": 0.028,
+     "nyc_percentile": 95.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.004,
+     "nyc_percentile": 91.1,
+     "dac": true
+    }
+   ]
+  },
+  "3E": {
+   "nyc_percentile": 92.0,
+   "dac_share": 0.97,
+   "tracts": [
+    {
+     "geoid": "36061000202",
+     "name": "Census Tract 2.02",
+     "share": 0.911,
+     "nyc_percentile": 95.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001001",
+     "name": "Census Tract 10.01",
+     "share": 0.03,
+     "nyc_percentile": 59.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061001401",
+     "name": "Census Tract 14.01",
+     "share": 0.03,
+     "nyc_percentile": 22.3,
+     "dac": false
+    },
+    {
+     "geoid": "36061001200",
+     "name": "Census Tract 12",
+     "share": 0.029,
+     "nyc_percentile": 77.8,
+     "dac": true
+    }
+   ]
+  },
+  "3F": {
+   "nyc_percentile": 93.9,
+   "dac_share": 0.988,
+   "tracts": [
+    {
+     "geoid": "36061002500",
+     "name": "Census Tract 25",
+     "share": 0.515,
+     "nyc_percentile": 97.6,
+     "dac": true
+    },
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.469,
+     "nyc_percentile": 91.1,
+     "dac": true
+    },
+    {
+     "geoid": "36061001501",
+     "name": "Census Tract 15.01",
+     "share": 0.008,
+     "nyc_percentile": 36.2,
+     "dac": false
+    },
+    {
+     "geoid": "36061002700",
+     "name": "Census Tract 27",
+     "share": 0.005,
+     "nyc_percentile": 54.5,
+     "dac": false
+    },
+    {
+     "geoid": "36061000600",
+     "name": "Census Tract 6",
+     "share": 0.003,
+     "nyc_percentile": 98.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061002900",
+     "name": "Census Tract 29",
+     "share": 0.0,
+     "nyc_percentile": 78.6,
+     "dac": true
+    }
+   ]
+  },
+  "3G": {
+   "nyc_percentile": 96.8,
+   "dac_share": 1.0,
+   "tracts": [
+    {
+     "geoid": "36061000202",
+     "name": "Census Tract 2.02",
+     "share": 0.532,
+     "nyc_percentile": 95.8,
+     "dac": true
+    },
+    {
+     "geoid": "36061000600",
+     "name": "Census Tract 6",
+     "share": 0.325,
+     "nyc_percentile": 98.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061000201",
+     "name": "Census Tract 2.01",
+     "share": 0.141,
+     "nyc_percentile": 96.5,
+     "dac": true
+    },
+    {
+     "geoid": "36061000800",
+     "name": "Census Tract 8",
+     "share": 0.002,
+     "nyc_percentile": 91.1,
+     "dac": true
+    },
+    {
+     "geoid": "36061001001",
+     "name": "Census Tract 10.01",
+     "share": 0.001,
+     "nyc_percentile": 59.8,
+     "dac": true
+    }
+   ]
+  }
+ }
+}

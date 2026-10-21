@@ -1,0 +1,39 @@
+name: Fetch DAC Data
+
+# New York State's Disadvantaged Communities (environmental justice) scores and
+# the census tracts they are drawn on, for the sub-zone colours. The data
+# changes rarely, so this only runs by hand. See scripts/fetch_dac.py.
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyshp
+
+      - name: Fetch DAC data
+        run: python scripts/fetch_dac.py
+
+      - name: Commit and push
+        run: |
+          git add data/ej
+          if git diff --cached --quiet; then
+            echo "No changes to DAC data"
+            exit 0
+          fi
+          git config user.name "Tree Census Bot"
+          git config user.email "bot@lesecologycenter.org"
+          git commit -m "Fetch DAC data from data.ny.gov and Census tracts"
+          git push origin HEAD:${{ github.ref_name }}
