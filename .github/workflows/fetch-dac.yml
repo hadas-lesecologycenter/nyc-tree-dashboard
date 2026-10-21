@@ -5,9 +5,6 @@ name: Fetch DAC Data
 # changes rarely, so this only runs by hand. See scripts/fetch_dac.py.
 on:
   workflow_dispatch:
-  push:
-    branches: [ccr-fac702bd-7clfyy]
-    paths: [scripts/fetch_dac.py, .github/workflows/fetch-dac.yml]
 
 jobs:
   fetch:

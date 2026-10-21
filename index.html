@@ -1297,19 +1297,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
   }
 
-  /* DEC Grant Tree Guards legend — the title collapses it to a small pill.
-     Starts collapsed on phones, where the full tally covers most of the map. */
-  #tg-legend-toggle {
+  /* Map legends whose title collapses them to a small pill (toggleMapLegend).
+     They start collapsed on phones, where a full legend covers most of the map. */
+  .legend-toggle {
     display: flex; align-items: center; gap: 6px; width: 100%;
     margin: 0 0 8px; padding: 0; border: none; background: none;
     font-family: inherit; font-size: 12px; font-weight: 700; color: #333;
     text-align: left; cursor: pointer; -webkit-appearance: none; appearance: none;
   }
-  #tg-legend-toggle .tg-chev { margin-left: auto; font-size: 11px; color: #6b6456; transition: transform 0.15s; }
-  #tree-guards-legend.tg-collapsed { min-width: 0 !important; }
-  #tree-guards-legend.tg-collapsed #tg-legend-toggle { margin-bottom: 0; min-height: 28px; }
-  #tree-guards-legend.tg-collapsed #tg-legend-body { display: none; }
-  #tree-guards-legend.tg-collapsed .tg-chev { transform: rotate(-90deg); }
+  .legend-toggle .legend-chev { margin-left: auto; font-size: 11px; color: #6b6456; transition: transform 0.15s; }
+  .legend-collapsed { min-width: 0 !important; }
+  .legend-collapsed .legend-toggle { margin-bottom: 0; min-height: 28px; }
+  .legend-collapsed .legend-body { display: none; }
+  .legend-collapsed .legend-chev { transform: rotate(-90deg); }
   @media (max-width: 768px) {
     #tree-guards-legend { max-height: calc(100% - 136px); overflow-y: auto; }
   }
@@ -1546,8 +1546,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <button id="controls-toggle" onclick="toggleControlsPanel()" title="Map Controls">🔍</button>
           <button id="geoLocation-btn" title="Get my current location" onclick="requestUserLocation()">⊕</button>
         </div>
+        <!-- Top-right legends, stacked so two that are on at once don't overlap -->
+        <div style="position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none">
         <!-- Planting season legend — shown while the Planted filter is on -->
-        <div id="planting-season-legend" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:140px;color:#333"></div>
+        <div id="planting-season-legend" style="background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;pointer-events:auto;min-width:140px;color:#333"></div>
+        <!-- Sub-zones legend — environmental justice score, shown with the Sub-Zones layer -->
+        <div id="subzone-ej-legend" style="background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;pointer-events:auto;min-width:170px;max-width:210px;box-sizing:border-box;color:#333">
+          <button type="button" class="legend-toggle" onclick="toggleMapLegend('subzone-ej-legend')" aria-expanded="true" aria-controls="subzone-ej-legend-body">🧭 Sub-zones: EJ score <span class="legend-chev" aria-hidden="true">▾</span></button>
+          <div id="subzone-ej-legend-body" class="legend-body"></div>
+        </div>
+        </div>
         <!-- Coolest Blocks Legend -->
         <div id="coolest-blocks-legend" style="position:absolute;bottom:16px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:160px">
           <div style="font-weight:700;margin-bottom:8px;font-size:12px;color:#333">🏆 Coolest Blocks</div>
@@ -1564,8 +1572,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         </div>
         <!-- DEC Grant Tree Guards Legend -->
         <div id="tree-guards-legend" style="position:absolute;bottom:120px;right:16px;background:rgba(255,255,255,0.95);border-radius:8px;padding:10px 14px;font-family:'Nunito',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.15);display:none;z-index:500;pointer-events:auto;min-width:190px;max-width:230px;box-sizing:border-box">
-          <button type="button" id="tg-legend-toggle" onclick="toggleTreeGuardsLegend()" aria-expanded="true" aria-controls="tg-legend-body">🛡 DEC Grant Tree Guards <span class="tg-chev" aria-hidden="true">▾</span></button>
-          <div id="tg-legend-body">
+          <button type="button" class="legend-toggle" onclick="toggleMapLegend('tree-guards-legend')" aria-expanded="true" aria-controls="tg-legend-body">🛡 DEC Grant Tree Guards <span class="legend-chev" aria-hidden="true">▾</span></button>
+          <div id="tg-legend-body" class="legend-body">
           <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;color:#333">
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1f6fb0;border:1px solid #164f80"></div><span style="flex:1">Round 1</span><b id="tg-n1" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#cc6f14;border:1px solid #9a520d"></div><span style="flex:1">Round 2</span><b id="tg-n2" style="font-variant-numeric:tabular-nums">0</b></div>
@@ -2946,6 +2954,8 @@ const CENSUS_DATA_URL = 'data/census.json';
 const CB3_BOUNDARY_URL = 'data/cb3-boundary.json';
 const SUBZONES_URL = 'data/subzones.geojson';
 const SEGMENTS_URL = 'data/subzone-segments.geojson';
+// Each sub-zone's environmental justice score - see scripts/build_subzone_ej.py.
+const SUBZONE_EJ_URL = 'data/subzone-ej.json';
 
 // CARTO stamps an "API key required" watermark across its raster basemap tiles
 // unless the request carries a key. This is a public, client-side key by
@@ -3029,6 +3039,7 @@ let subzonesLayer = null;
 let subzonesVisible = false;
 let subzonesLoading = false;
 let subzonesData = null;
+let subzoneEj = null;
 let subzoneLabels = null;
 let subzonePopup = null;
 let segmentsLayer = null;
@@ -5424,7 +5435,7 @@ function setTreeGuardsVisible(show) {
   if (legend) legend.style.display = show ? 'block' : 'none';
   if (show && !treeGuardsLegendSized) {
     treeGuardsLegendSized = true;
-    toggleTreeGuardsLegend(window.innerWidth <= 768);
+    toggleMapLegend('tree-guards-legend', window.innerWidth <= 768);
   }
   if (show) {
     updateTreeGuardsLegend();
@@ -5440,13 +5451,14 @@ function setTreeGuardsVisible(show) {
   }
 }
 
-// Collapse or expand the legend; no argument flips it.
-function toggleTreeGuardsLegend(collapse) {
-  const legend = document.getElementById('tree-guards-legend');
+// Collapse or expand a map legend that has a .legend-toggle title; no second
+// argument flips it.
+function toggleMapLegend(id, collapse) {
+  const legend = document.getElementById(id);
   if (!legend) return;
-  const collapsed = typeof collapse === 'boolean' ? collapse : !legend.classList.contains('tg-collapsed');
-  legend.classList.toggle('tg-collapsed', collapsed);
-  const btn = document.getElementById('tg-legend-toggle');
+  const collapsed = typeof collapse === 'boolean' ? collapse : !legend.classList.contains('legend-collapsed');
+  legend.classList.toggle('legend-collapsed', collapsed);
+  const btn = legend.querySelector('.legend-toggle');
   if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
 
@@ -5577,19 +5589,24 @@ function toggleFireHydrantsFromPanel() {
 // the edge of the district the edge IS CB3's official boundary, which is why
 // the western side of the work area follows 4th Ave and the Bowery exactly.
 
-// Each sub-zone is filled with one of four pale colours, picked in the build
-// (properties.color_index) so that no two sub-zones sharing a street get the
-// same one. Colour says only "this is not the sub-zone next door"; which zone
-// a sub-zone belongs to is said by its ID and by the heavier line drawn along
-// the zone boundaries. So the fills keep clear of every colour that already
+// Each sub-zone is filled by its environmental justice score: New York
+// State's Disadvantaged Communities combined score, as a percentile among NYC
+// census tracts, averaged over the tracts the sub-zone covers by area
+// (data/subzone-ej.json, scripts/build_subzone_ej.py). Five steps of 20
+// points, light to dark in one hue, darkest = most burdened. Which zone a
+// sub-zone belongs to is said by its ID and by the heavier line drawn along
+// the zone boundaries. The hue is violet because every other colour already
 // means something here - the reds, oranges and greens of the tree tiers, the
-// cyan of a cared-for tree, the blues of the block bands - and are yellow,
-// violet, pink and aqua instead. At SUBZONE_FILL_OPACITY over the light
-// basemap any two of them are at least dE2000 10 apart and each is at least
-// 11 from the bare basemap. Shading one hue per zone, as this once did, left
-// most neighbours within dE2000 2 of each other: the same colour to the eye.
-const SUBZONE_FILLS = ['#f5d464', '#8a7cc2', '#f17fab', '#62cec4'];
-const SUBZONE_FILL_OPACITY = 0.3;
+// cyan of a cared-for tree, the blues of the block bands. The steps are spaced
+// for how they look at SUBZONE_FILL_OPACITY over the light basemap: OKLab
+// lightness 92, 84, 78, 71, 64, at least 6 apart.
+const SUBZONE_EJ_FILLS = ['#dfd0f3', '#b698da', '#9165bf', '#6b359b', '#43096b'];
+const SUBZONE_EJ_STEP = 20;
+const SUBZONE_FILL_OPACITY = 0.5;
+
+function subzoneEjStep(pct) {
+  return Math.min(SUBZONE_EJ_FILLS.length - 1, Math.floor(pct / SUBZONE_EJ_STEP));
+}
 // Every outline is the same warm near-black, which no tree marker and no band
 // uses. A red outline running along a row of red tier-3 dots, or a green one
 // along tier-1 dots, read as more trees.
@@ -5604,10 +5621,6 @@ const SUBZONE_LABEL_ZOOM = 14;
 // the same street line. The build cuts neighbours from the same street lines,
 // so in practice they coincide; this only absorbs rounding.
 const SUBZONE_EDGE_TOL_M = 1.5;
-// Two sub-zones that meet for less than this - a corner, or the sliver where
-// two street lines cross just short of each other - are not neighbours when
-// colours are worked out here.
-const SUBZONE_NEIGHBOUR_MIN_M = 5;
 
 async function loadSubzonesData() {
   if (subzonesData) return subzonesData;
@@ -5693,32 +5706,6 @@ function subzoneSharedEdges(features) {
   return shared;
 }
 
-// Each feature's colour, 0-3. The build's color_index when every sub-zone has
-// one; otherwise - a data file from before the build wrote it - worked out
-// here, greedily: the sub-zones with the most neighbours first, each taking
-// the lowest colour none of its neighbours has. Four colours are always
-// enough on this grid, but should a fifth be called for it wraps round onto
-// the first rather than leaving a sub-zone unfilled.
-function subzoneColorIndexes(features, shared) {
-  const given = features.map(f => f.properties.color_index);
-  if (given.every(c => Number.isInteger(c) && c >= 0)) return given;
-  const nb = features.map(() => new Set());
-  shared.forEach(s => {
-    if (s.length < SUBZONE_NEIGHBOUR_MIN_M) return;
-    nb[s.i].add(s.j); nb[s.j].add(s.i);
-  });
-  const out = features.map(() => -1);
-  features.map((_, k) => k)
-    .sort((a, b) => nb[b].size - nb[a].size || a - b)
-    .forEach(k => {
-      const taken = new Set([...nb[k]].map(n => out[n]));
-      let c = 0;
-      while (taken.has(c)) c++;
-      out[k] = c;
-    });
-  return out;
-}
-
 // Where a sub-zone's ID goes: the centre of its area, or - when the shape is
 // bent enough for that to fall outside it, an L, say - the middle of the
 // widest stretch of the sub-zone on the centre's latitude.
@@ -5766,21 +5753,24 @@ function subzoneLabelPoint(f) {
 // sub-zones of different zones.
 async function initSubzonesLayer() {
   await loadSubzonesData();
+  await loadSubzoneEj().catch(err => console.error('Sub-zone EJ scores load failed:', err));
+  renderSubzoneEjLegend();
   ensureSubzonePane();
   const features = subzonesData.features;
   const shared = subzoneSharedEdges(features);
-  const colorIndex = subzoneColorIndexes(features, shared);
 
   subzonesLayer = L.layerGroup();
   subzoneLabels = L.layerGroup();
-  features.forEach((f, k) => {
+  features.forEach(f => {
     const p = f.properties;
+    const ej = subzoneEj && subzoneEj.subzones[p.subzone_id];
     const latlngs = subzonePolygons(f).map(rings => rings.map(ring => ring.map(c => [c[1], c[0]])));
+    // Without a score the sub-zone is outlined only, not given a made-up colour.
     L.polygon(latlngs, {
       pane: 'subzoneAreas', interactive: false,
       color: SUBZONE_LINE, weight: SUBZONE_LINE_WEIGHT, opacity: 1,
-      fillColor: SUBZONE_FILLS[colorIndex[k] % SUBZONE_FILLS.length],
-      fillOpacity: SUBZONE_FILL_OPACITY,
+      fillColor: ej ? SUBZONE_EJ_FILLS[subzoneEjStep(ej.nyc_percentile)] : SUBZONE_LINE,
+      fillOpacity: ej ? SUBZONE_FILL_OPACITY : 0,
     }).addTo(subzonesLayer);
     const at = subzoneLabelPoint(f);
     if (at) L.marker(at, {
@@ -5903,8 +5893,57 @@ function subzonePopupHtml(p) {
     ${p.off_segment ? `<div style="font-size:11px;color:#6b6456;margin-top:4px">
       ${p.off_segment} stand away from any block face — courtyards, housing-estate
       paths, superblock interiors — and are on no block.</div>` : ''}
+    ${subzoneEjHtml(p.subzone_id)}
     ${blocks}
   </div>`;
+}
+
+async function loadSubzoneEj() {
+  if (subzoneEj) return subzoneEj;
+  const resp = await fetchData(SUBZONE_EJ_URL);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  subzoneEj = await resp.json();
+  return subzoneEj;
+}
+
+// The sub-zones legend: the five steps, darkest (most burdened) first, how
+// many sub-zones are in each, and what the score is.
+function renderSubzoneEjLegend() {
+  const body = document.getElementById('subzone-ej-legend-body');
+  if (!body) return;
+  if (!subzoneEj) {
+    body.innerHTML = '<div style="font-size:11px;color:#6b6456">Scores not available. Sub-zones are outlined only.</div>';
+    return;
+  }
+  const counts = SUBZONE_EJ_FILLS.map(() => 0);
+  Object.values(subzoneEj.subzones).forEach(v => counts[subzoneEjStep(v.nyc_percentile)]++);
+  const rows = SUBZONE_EJ_FILLS.map((fill, i) => {
+    const lo = i * SUBZONE_EJ_STEP, hi = lo + SUBZONE_EJ_STEP;
+    const note = i === SUBZONE_EJ_FILLS.length - 1 ? ' most burdened' : i === 0 ? ' least burdened' : '';
+    return `<div style="display:flex;align-items:center;gap:6px">
+      <span style="width:14px;height:12px;border-radius:2px;background:${fill};opacity:${SUBZONE_FILL_OPACITY};outline:1px solid ${SUBZONE_LINE};outline-offset:-1px;flex-shrink:0"></span>
+      <span style="flex:1">${lo}–${hi}<span style="color:#6b6456">${note}</span></span>
+      <b style="font-variant-numeric:tabular-nums">${counts[i]}</b></div>`;
+  }).reverse().join('');
+  const src = subzoneEj.source;
+  body.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px;font-size:11px">${rows}</div>
+    <div style="font-size:10px;color:#6b6456;margin-top:8px;line-height:1.35">
+      NYS Disadvantaged Communities combined score, as a percentile among NYC census tracts,
+      averaged over each sub-zone's area. Numbers are sub-zones.
+      <a href="${escHtml(src.url)}" target="_blank" rel="noopener" style="color:#6b6456">${escHtml(src.dataset)}</a></div>`;
+}
+
+// The environmental justice part of a sub-zone's popup.
+function subzoneEjHtml(id) {
+  const v = subzoneEj && subzoneEj.subzones[id];
+  if (!v) return '';
+  const tracts = v.tracts.filter(t => t.share >= 0.05).map(t =>
+    `${escHtml(t.name.replace('Census Tract', 'Tract'))}: ${Math.round(t.nyc_percentile)}${t.dac ? ' (DAC)' : ''}`).join(', ');
+  return `<div style="font-size:11px;color:#6b6456;margin-top:6px;padding-top:6px;border-top:1px solid #e4dfd3">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;background:${SUBZONE_EJ_FILLS[subzoneEjStep(v.nyc_percentile)]};opacity:${SUBZONE_FILL_OPACITY};outline:1px solid ${SUBZONE_LINE};outline-offset:-1px"></span>
+    <b style="color:#2c2a24">EJ score ${Math.round(v.nyc_percentile)}</b> of 100 (NYC percentile)
+    · ${Math.round(100 * v.dac_share)}% of its area in a State Disadvantaged Community<br>
+    ${tracts}</div>`;
 }
 
 async function loadSegmentsData() {
@@ -5927,6 +5966,19 @@ function zoomToSegment(id) {
   mapInstance.fitBounds(L.latLngBounds(pts).pad(0.6), { maxZoom: 18 });
 }
 
+let subzoneEjLegendSized = false;
+
+// The sub-zones legend goes with the layer. It starts collapsed on a phone.
+function showSubzoneEjLegend(show) {
+  const legend = document.getElementById('subzone-ej-legend');
+  if (!legend) return;
+  legend.style.display = show ? 'block' : 'none';
+  if (show && !subzoneEjLegendSized) {
+    subzoneEjLegendSized = true;
+    toggleMapLegend('subzone-ej-legend', window.innerWidth <= 768);
+  }
+}
+
 function toggleSubzonesFromPanel() {
   const cb = document.getElementById('layer-subzones');
   const shouldShow = !!(cb && cb.checked);
@@ -5936,11 +5988,12 @@ function toggleSubzonesFromPanel() {
     if (subzonesLayer) subzonesLayer.remove();
     if (subzoneLabels) subzoneLabels.remove();
     if (subzonePopup) { mapInstance.closePopup(subzonePopup); subzonePopup = null; }
+    showSubzoneEjLegend(false);
     return;
   }
   if (subzonesLayer) {
     ensureSubzonePane();
-    subzonesLayer.addTo(mapInstance); syncSubzoneLabels(); return;
+    subzonesLayer.addTo(mapInstance); syncSubzoneLabels(); showSubzoneEjLegend(true); return;
   }
   if (subzonesLoading) return;
   subzonesLoading = true;
@@ -5954,6 +6007,7 @@ function toggleSubzonesFromPanel() {
       if (!subzonesVisible) return;
       subzonesLayer.addTo(mapInstance);
       syncSubzoneLabels();
+      showSubzoneEjLegend(true);
     })
     .catch(err => {
       console.error('Sub-zones load failed:', err);
