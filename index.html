@@ -1586,6 +1586,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div id="tg-t-missing" style="font-size:10px;color:#6b6456;margin-top:4px;line-height:1.35"></div>
           </div>
           <div id="tg-total" style="margin-top:6px;font-size:10px;color:#6b6456;line-height:1.35"></div>
+          <button type="button" onclick="exportTreeGuardsCSV()" title="Download the round and nominated trees as a CSV" style="margin-top:8px;width:100%;min-height:32px;padding:6px 8px;background:#fff;color:#333;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">⬇ Export CSV</button>
           </div>
         </div>
         <div id="map-tree-panel" style="display:none;position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--bg2);border-left:1px solid var(--border);z-index:1001;overflow-y:auto;box-shadow:-4px 0 20px rgba(0,0,0,0.15);font-family:'Nunito',sans-serif;pointer-events:auto">
@@ -5447,6 +5448,42 @@ function toggleTreeGuardsLegend(collapse) {
   legend.classList.toggle('tg-collapsed', collapsed);
   const btn = document.getElementById('tg-legend-toggle');
   if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+
+// CSV of the trees in the rounds plus the nominations. A nominated tree that is
+// already in a round stays on its round row, with the nomination filled in.
+async function exportTreeGuardsCSV() {
+  try { await loadSubzonesData(); } catch (e) { console.error('Sub-zones load failed:', e); }
+  const zoneOf = (lat, lng) => {
+    const f = subzonesData ? subzoneAt(parseFloat(lat), parseFloat(lng)) : null;
+    return f ? f.properties.subzone_id : '';
+  };
+  const day = iso => { const d = iso ? new Date(iso) : null; return d && !isNaN(d) ? d.toLocaleDateString('en-CA') : ''; };
+  const noms = new Map(nominationsReadLocal().map(n => [String(n.treeId), n]));
+  const nomCols = n => n ? [n.nominatedBy, n.reason, n.note, day(n.nominatedAt)] : ['', '', '', ''];
+  const rows = [['Status', 'Tree ID', 'Address', 'Species', 'Latitude', 'Longitude', 'Sub-zone',
+    'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on']];
+  [...SUBMISSION_ROUNDS_TREES].sort((a, b) => a.r - b.r).forEach(t => {
+    const installed = LESEC_TREE_GUARDS.features.some(f =>
+      guardMetersApart(f.geometry.coordinates[1], f.geometry.coordinates[0], t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
+    rows.push([SUBMISSION_ROUND_STYLE[t.r].label, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
+      installed ? 'Yes' : 'No', t.note, ...nomCols(noms.get(t.id))]);
+    noms.delete(t.id);
+  });
+  noms.forEach(n => rows.push(['Nominated', n.treeId, n.address, n.species, n.lat, n.lng, zoneOf(n.lat, n.lng),
+    '', '', ...nomCols(n)]));
+  // Quote what needs it, and keep typed-in text from running as a spreadsheet formula.
+  const cell = v => {
+    let s = String(v ?? '').replace(/\s+/g, ' ').trim();
+    if (/^[=+\-@]/.test(s) && isNaN(s)) s = "'" + s;
+    return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'dec-tree-guards-' + new Date().toLocaleDateString('en-CA') + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function toggleTreeGuards() { setTreeGuardsVisible(!treeGuardsVisible); }
