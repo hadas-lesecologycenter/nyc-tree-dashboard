@@ -1,6 +1,7 @@
 /**
  * NYC Tree Map → GitHub Sync Bookmarklet
- * Fetches group activities + tree coordinates and pushes to GitHub.
+ * Fetches group activities + tree coordinates and pushes to GitHub, then
+ * looks up street addresses for the tree guard trees.
  */
 (function () {
   'use strict';
@@ -8,6 +9,8 @@
   var REPO       = 'hadas-lesecologycenter/nyc-tree-dashboard';
   var ACT_PATH   = 'data/activities.csv';
   var TREES_PATH = 'data/trees.csv';
+  var ADDR_PATH  = 'data/tree-addresses.csv';
+  var SHEET_URL  = 'https://script.google.com/macros/s/AKfycbzrR9ca29kqYcW-GivanP2P2fztBJhPaeG1A6E54IxN8Oy6l8xgQLHA0K0v7soXGk4/exec';
   var CENSUS_URL = 'https://raw.githubusercontent.com/hadas-lesecologycenter/nyc-tree-dashboard/main/data/census-coords.json';
   var GROUP_ID   = 14;
   var BATCH_SIZE = 25;
@@ -163,6 +166,76 @@
       console.log('[sync] fetchTreeCoords done. Found ' + Object.keys(results).length + ' of ' + ids.length + ' trees.');
       return results;
     });
+  }
+
+  // ── Street addresses for the tree guard trees ────────────────
+  // NYC Open Data's tree points have no street address, but the Tree Map gives
+  // each tree a closestAddress. Look it up for every tree nominated for a guard
+  // or marked as having one (both kept in the tree care Google Sheet) that is
+  // not in tree-addresses.csv yet. One query per tree, as in fetchTreeCoords.
+  function sheetTreeIds(sheet) {
+    return fetch(SHEET_URL + '?sheet=' + sheet).then(function (r) { return r.json(); }).then(function (json) {
+      if (!json || json.error || !Array.isArray(json.data)) throw new Error('could not read the ' + sheet + ' sheet');
+      var col = json.data.length ? json.data[0].indexOf('treeId') : -1;
+      if (col < 0) return [];
+      return json.data.slice(1).map(function (row) { return String(row[col] == null ? '' : row[col]).trim(); });
+    });
+  }
+
+  // The Tree Map sometimes sends HTML character codes ("East&#x20; 10 Street").
+  function cleanAddress(s) {
+    var box = document.createElement('textarea');
+    box.innerHTML = String(s || '');
+    return box.value.replace(/\s+/g, ' ').trim();
+  }
+
+  function fetchTreeAddresses(ids) {
+    var results = {};
+    var done = 0;
+    return Promise.all(ids.map(function (id) {
+      return gql('{tree(id:' + id + '){id closestAddress}}').then(function (resp) {
+        done++;
+        status('⏳ Looking up guard tree addresses (' + done + '/' + ids.length + ')…', '#1565c0', true);
+        var t = resp && resp.data && resp.data.tree;
+        var addr = t ? cleanAddress(t.closestAddress) : '';
+        if (addr) results[id] = addr;
+        else console.log('[sync] No address for tree ' + id + ':', JSON.stringify((resp && resp.errors) || null).slice(0, 300));
+      }).catch(function (e) { console.log('[sync] Address for tree ' + id + ' threw:', e); });
+    })).then(function () { return results; });
+  }
+
+  function syncGuardAddresses() {
+    return Promise.all([ghRead(ADDR_PATH), sheetTreeIds('GuardNominations'), sheetTreeIds('TreeGuards')])
+      .then(function (res) {
+        var file = res[0];
+        var csv = 'treeId,address\n';
+        var sha = null;
+        if (file && file.content) {
+          csv = decodeURIComponent(escape(atob(file.content.replace(/\s/g, ''))));
+          sha = file.sha;
+        }
+        var known = {};
+        csv.split('\n').slice(1).forEach(function (l) {
+          var id = l.split(',')[0].trim(); if (id) known[id] = true;
+        });
+        var wanted = {};
+        res[1].concat(res[2]).forEach(function (id) {
+          if (/^\d+$/.test(id) && !known[id]) wanted[id] = true;
+        });
+        var ids = Object.keys(wanted);
+        if (!ids.length) return 'guard tree addresses up to date';
+        return fetchTreeAddresses(ids).then(function (found) {
+          var lines = Object.keys(found).map(function (id) {
+            var a = found[id];
+            return id + ',' + (/[,"]/.test(a) ? '"' + a.replace(/"/g, '""') + '"' : a);
+          });
+          var msg = lines.length + ' of ' + ids.length + ' guard tree addresses found';
+          if (!lines.length) return msg;
+          var upd = csv.trimEnd() + '\n' + lines.join('\n') + '\n';
+          return ghWrite(ADDR_PATH, upd, sha, 'Tree addresses ' + TODAY + ' (+' + lines.length + ')')
+            .then(function () { return msg; });
+        });
+      });
   }
 
   // ── Format activity as CSV row ────────────────────────────────
@@ -324,10 +397,17 @@
             'Tree coords ' + TODAY + ' (+' + newTreeLines.length + ')');
         });
 
+        // The address lookup comes last and cannot undo the sync above.
         return writeP.then(function () {
+          return syncGuardAddresses().catch(function (e) {
+            console.log('[sync] Guard tree addresses failed:', e);
+            return 'guard tree addresses not updated (' + e.message + ')';
+          });
+        }).then(function (addrMsg) {
           var parts = [];
           if (newActLines.length)  parts.push(newActLines.length + ' new activities');
           parts.push(newTreeLines.length + ' of ' + missingIds.length + ' tree locations found');
+          parts.push(addrMsg);
           status('✅ ' + parts.join(' · '), '#2e7d32');
         });
       });
