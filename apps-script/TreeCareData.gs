@@ -92,7 +92,7 @@ function setupSheets() {
   var ss = SpreadsheetApp.openById(TREE_CARE_SHEET_ID);
   var headers = {
     'Reservations': ['id','treeId','name','date','lat','lng','species','address','health','dbh','planted','priority','nta','note','createdAt'],
-    'TreeGuards': ['treeId','markedBy','guardType','markedAt','note'],
+    'TreeGuards': ['treeId','markedBy','guardType','markedAt','note','address'],
     'CareNeeded': ['treeId','careNeeds','markedAt','markedBy'],
     'CommunityStewardship': ['treeId','caretaker','activities','markedAt'],
     'MissingTrees': ['treeId','type','note','markedAt'],

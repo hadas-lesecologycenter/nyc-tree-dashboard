@@ -2499,7 +2499,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">Sync NYC Tree Map Activities</h2>
-        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:16px">Drag the button below to your browser's bookmarks bar. Then whenever you're on the NYC Tree Map site, click it to sync all your group's activities to this dashboard.</p>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:16px">Drag the button below to your browser's bookmarks bar. Then whenever you're on the NYC Tree Map site, click it to sync all your group's activities to this dashboard. It also looks up the street address of each tree nominated for a guard or marked as having one, for the DEC Grant Tree Guards CSV.</p>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <a id="sync-bookmarklet-link"
              href="#"
@@ -5464,8 +5464,10 @@ function toggleMapLegend(id, collapse) {
 
 // CSV of the trees in the rounds plus the nominations. A nominated tree that is
 // already in a round stays on its round row, with the nomination filled in.
+// A nomination saved without an address takes the Tree Map's.
 async function exportTreeGuardsCSV() {
   try { await loadSubzonesData(); } catch (e) { console.error('Sub-zones load failed:', e); }
+  await loadTreeMapAddresses();
   const zoneOf = (lat, lng) => {
     const f = subzonesData ? subzoneAt(parseFloat(lat), parseFloat(lng)) : null;
     return f ? f.properties.subzone_id : '';
@@ -5482,7 +5484,7 @@ async function exportTreeGuardsCSV() {
       installed ? 'Yes' : 'No', t.note, ...nomCols(noms.get(t.id))]);
     noms.delete(t.id);
   });
-  noms.forEach(n => rows.push(['Nominated', n.treeId, n.address, n.species, n.lat, n.lng, zoneOf(n.lat, n.lng),
+  noms.forEach(n => rows.push(['Nominated', n.treeId, n.address || treeMapAddress(n.treeId), n.species, n.lat, n.lng, zoneOf(n.lat, n.lng),
     '', '', ...nomCols(n)]));
   // Quote what needs it, and keep typed-in text from running as a spreadsheet formula.
   const cell = v => {
@@ -7416,6 +7418,41 @@ function getCareNeededTreeIds() {
     .map(c => String(c.treeId)));
 }
 
+// ========== TREE MAP ADDRESSES ==========
+// NYC Open Data's tree points have no street address. The sync bookmarklet
+// looks up the Tree Map's closestAddress for every nominated or guard-marked
+// tree and saves it to data/tree-addresses.csv; trees.csv has more, read off
+// the Tree Map page by the same bookmarklet.
+const TREE_ADDRESSES_PATH = 'data/tree-addresses.csv';
+let treeMapAddresses = {};
+let treeMapAddressesLoad = null;
+
+function loadTreeMapAddresses() {
+  if (!treeMapAddressesLoad) {
+    treeMapAddressesLoad = fetchData(TREE_ADDRESSES_PATH)
+      .then(res => res.text())
+      .then(text => {
+        text.trim().split('\n').slice(1).forEach(line => {
+          const [id, addr] = tcParseCSVLine(line);
+          if (id && addr) treeMapAddresses[id] = addr;
+        });
+      })
+      .catch(e => console.warn('Tree addresses load failed:', e));
+  }
+  return treeMapAddressesLoad;
+}
+
+// The Tree Map address for a tree ID, or '' when it has not been looked up.
+// trees.csv keeps the HTML character codes the Tree Map sent ("East&#x20; 10").
+function treeMapAddress(id) {
+  const sid = String(id);
+  const raw = treeMapAddresses[sid] || (_tcTreeCoords[sid] && _tcTreeCoords[sid].address) || '';
+  if (!raw) return '';
+  const box = document.createElement('textarea');
+  box.innerHTML = raw;
+  return box.value.replace(/\s+/g, ' ').trim();
+}
+
 // ========== TREE GUARDS (user-marked) ==========
 const TREE_GUARDS_PATH = 'data/tree-guards.csv';
 
@@ -7461,10 +7498,11 @@ function treeGuardsSave(guards) {
 }
 
 async function treeGuardsSyncToGitHub(guards) {
+  await loadTreeMapAddresses();
   await sheetsWrite('TreeGuards',
-    ['treeId','markedBy','guardType','markedAt','note'],
+    ['treeId','markedBy','guardType','markedAt','note','address'],
     guards,
-    g => [g.treeId, g.markedBy||'', g.guardType||'standard', g.markedAt, g.note||'']
+    g => [g.treeId, g.markedBy||'', g.guardType||'standard', g.markedAt, g.note||'', g.address || treeMapAddress(g.treeId)]
   );
 }
 
@@ -7530,7 +7568,8 @@ function confirmTreeGuard() {
     markedBy: 'user',
     guardType: guardType,
     markedAt: new Date().toISOString(),
-    note: note
+    note: note,
+    address: tree.address || treeMapAddress(treeId)
   });
   treeGuardsSave(guards);
 
