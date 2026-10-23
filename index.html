@@ -1630,6 +1630,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;min-height:44px;padding:11px;background:#fff;background-color:#fff;color:#3d6b9e;border:2px solid #3d6b9e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
           🛡 Nominate for Tree Guard
         </button>
+        <button type="button" id="mtp-round-remove-btn" onclick="handleMapRoundRemoveBtn()"
+          style="display:none;margin-top:8px;width:100%;min-height:44px;padding:10px;background:#fff;background-color:#fff;color:#a8327a;border:1px solid #a8327a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
+          ✕ Remove from Round 3
+        </button>
         <button type="button" id="mtp-dismiss-btn" onclick="handleMapDismissBtn()"
           style="display:none;margin-top:8px;width:100%;min-height:44px;padding:10px;background:#fff;background-color:#fff;color:#2e7d32;border:1px solid #2e7d32;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
           ✕ Remove from suggestions
@@ -2289,6 +2293,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div style="display:flex;gap:8px">
         <button type="button" onclick="closeDismissModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
         <button type="button" id="dismiss-confirm" onclick="confirmDismiss()" style="flex:2;min-height:44px;padding:10px;background:#2e7d32;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOVE FROM ROUND MODAL -->
+  <div id="round-remove-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeRoundRemoveModal()">
+    <div style="background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,0.25);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 id="round-remove-title" style="font-family:'Lora',serif;font-size:17px;font-weight:700;margin:0">Remove from Round 3</h2>
+        <button type="button" onclick="closeRoundRemoveModal()" aria-label="Close" style="background:none;border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+      </div>
+      <div id="round-remove-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)"></div>
+      <div id="round-remove-form">
+        <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px">The tree comes off the Round 3 count, the map and the CSV for everyone. If it is nominated, it shows as a nomination again. You can put it back later.</div>
+        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Why remove it? <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
+        <div id="round-remove-reasons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+      </div>
+      <div id="round-remove-existing" style="display:none;font-size:13px;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
+      <div id="round-remove-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onclick="closeRoundRemoveModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" id="round-remove-confirm" onclick="confirmRoundRemove()" style="flex:2;min-height:44px;padding:10px;background:#a8327a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove</button>
       </div>
     </div>
   </div>
@@ -5005,6 +5031,8 @@ function openMapTreeDetail(tree) {
     updateCareButton(tree);
     updateMapAssessBtn(tree);
   }
+  // A round tree can sit just outside CB3, so this one shows either way.
+  updateRoundRemoveButton(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -5240,16 +5268,25 @@ const GUARD_INSTALL_MATCH_M = 6;
 // Trees on the submission lists that cannot be placed: no tree ID, or an ID
 // that is not in the dashboard data.
 const GUARD_UNPLACED = { 1: 1, 2: 2, 3: 0 };
+// Round 3 trees can be taken out from the detail panel (see ROUND REMOVALS);
+// everything that counts or draws the rounds reads this list, not the one above.
+const REMOVABLE_ROUNDS = [3];
+function activeRoundTrees() {
+  const removed = getRoundRemovedIds();
+  return SUBMISSION_ROUNDS_TREES.filter(t => !(REMOVABLE_ROUNDS.includes(t.r) && removed.has(t.id)));
+}
 let guardInstalledCount = 0;
 let guardInstallOnlyCount = 0;
 let guardNominationCount = 0;
 let guardNominationLayer = null;
 let guardCandidateLayer = null;
 let guardCandidateCount = 0;
+let guardRoundLayer = null;
 
 function updateTreeGuardsLegend() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  [1, 2, 3].forEach(r => set('tg-n' + r, SUBMISSION_ROUNDS_TREES.filter(t => t.r === r).length));
+  const rounds = activeRoundTrees();
+  [1, 2, 3].forEach(r => set('tg-n' + r, rounds.filter(t => t.r === r).length));
   set('tg-ninst', guardInstalledCount);
   set('tg-norphan', guardInstallOnlyCount);
   set('tg-nnom', guardNominationCount);
@@ -5258,12 +5295,12 @@ function updateTreeGuardsLegend() {
   set('tg-total', unplaced ? unplaced + ' more trees in the rounds are not on the map (no tree ID or not in dashboard data).' : '');
 
   // Overall tally: rounds plus nominations, and the sub-zones they reach.
-  const inRounds = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
+  const inRounds = new Set(rounds.map(t => t.id));
   const noms = (typeof nominationsReadLocal === 'function' ? nominationsReadLocal() : [])
     .filter(n => !inRounds.has(String(n.treeId)));
-  set('tg-t-rounds', SUBMISSION_ROUNDS_TREES.length);
+  set('tg-t-rounds', rounds.length);
   set('tg-t-nom', noms.length);
-  set('tg-t-all', SUBMISSION_ROUNDS_TREES.length + noms.length);
+  set('tg-t-all', rounds.length + noms.length);
   const bar = document.getElementById('tg-t-bar');
   const missingEl = document.getElementById('tg-t-missing');
   if (!subzonesData) { set('tg-t-zones', '…'); return; }
@@ -5272,7 +5309,7 @@ function updateTreeGuardsLegend() {
     const f = subzoneAt(parseFloat(lat), parseFloat(lng));
     if (f) covered.add(f.properties.subzone_id);
   };
-  SUBMISSION_ROUNDS_TREES.forEach(t => mark(t.lat, t.lng));
+  rounds.forEach(t => mark(t.lat, t.lng));
   noms.forEach(n => mark(n.lat, n.lng));
   const all = subzonesData.features.map(f => f.properties.subzone_id).sort();
   set('tg-t-zones', covered.size + ' of ' + all.length);
@@ -5326,7 +5363,7 @@ const GUARD_CANDIDATES = [{"z":"1D","rank":1,"id":"15384788","lat":40.72708,"lng
 function renderGuardCandidates() {
   if (!guardCandidateLayer) return;
   guardCandidateLayer.clearLayers();
-  const taken = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
+  const taken = new Set(activeRoundTrees().map(t => t.id));
   nominationsReadLocal().forEach(n => taken.add(String(n.treeId)));
   treeGuardsLoadSync().forEach(g => taken.add(String(g.treeId)));
   getDismissedIds().forEach(id => taken.add(id));
@@ -5357,7 +5394,7 @@ function renderGuardCandidates() {
 function renderGuardNominations() {
   if (!guardNominationLayer) return;
   guardNominationLayer.clearLayers();
-  const inRounds = new Set(SUBMISSION_ROUNDS_TREES.map(t => t.id));
+  const inRounds = new Set(activeRoundTrees().map(t => t.id));
   let n = 0;
   nominationsReadLocal().forEach(nom => {
     const lat = parseFloat(nom.lat), lng = parseFloat(nom.lng);
@@ -5383,11 +5420,20 @@ function initTreeGuardsLayer() {
   treeGuardsLayer = L.layerGroup();
   guardCandidateLayer = L.layerGroup().addTo(treeGuardsLayer);
   guardNominationLayer = L.layerGroup().addTo(treeGuardsLayer);
+  guardRoundLayer = L.layerGroup().addTo(treeGuardsLayer);
   renderGuardNominations();
+  renderGuardRounds();
+}
+
+// The round trees and the install points. Redrawn when a Round 3 tree is taken
+// out or put back.
+function renderGuardRounds() {
+  if (!guardRoundLayer) return;
+  guardRoundLayer.clearLayers();
   const installs = LESEC_TREE_GUARDS.features.map(f => ({
     lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], used: false
   }));
-  SUBMISSION_ROUNDS_TREES.forEach(t => {
+  activeRoundTrees().forEach(t => {
     const st = SUBMISSION_ROUND_STYLE[t.r];
     const inst = installs.find(p => guardMetersApart(p.lat, p.lng, t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
     if (inst) inst.used = true;
@@ -5408,7 +5454,7 @@ function initTreeGuardsLayer() {
         <div style="font-size:11px;color:#6b6456;margin-top:4px">Tree details load with the main tree data.</div>
       </div>`).openPopup();
     });
-    m.addTo(treeGuardsLayer);
+    m.addTo(guardRoundLayer);
   });
   guardInstalledCount = installs.filter(p => p.used).length;
   guardInstallOnlyCount = installs.length - guardInstalledCount;
@@ -5419,8 +5465,9 @@ function initTreeGuardsLayer() {
       <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">🛡 DEC Grant Tree Guard</div>
       <div style="font-size:11px;color:#6b6456;margin-top:2px">Spring 2026 install</div>
       <div style="font-size:11px;color:#6b6456;margin-top:2px">No tree ID on file for this point.</div>
-    </div>`).addTo(treeGuardsLayer);
+    </div>`).addTo(guardRoundLayer);
   });
+  if (typeof updateTreeGuardsLegend === 'function') updateTreeGuardsLegend();
 }
 
 function setTreeGuardsVisible(show) {
@@ -5477,7 +5524,7 @@ async function exportTreeGuardsCSV() {
   const nomCols = n => n ? [n.nominatedBy, n.reason, n.note, day(n.nominatedAt)] : ['', '', '', ''];
   const rows = [['Status', 'Tree ID', 'Address', 'Species', 'Latitude', 'Longitude', 'Sub-zone',
     'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on']];
-  [...SUBMISSION_ROUNDS_TREES].sort((a, b) => a.r - b.r).forEach(t => {
+  [...activeRoundTrees()].sort((a, b) => a.r - b.r).forEach(t => {
     const installed = LESEC_TREE_GUARDS.features.some(f =>
       guardMetersApart(f.geometry.coordinates[1], f.geometry.coordinates[0], t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
     rows.push([SUBMISSION_ROUND_STYLE[t.r].label, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
@@ -7701,10 +7748,11 @@ function updateNominateButton(tree) {
   const btn = document.getElementById('mtp-nominate-btn');
   if (!btn || !tree) return;
   updateDismissButton(tree);
+  updateRoundRemoveButton(tree);
   const id = nominationTreeId(tree);
   if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) { btn.style.display = 'none'; return; }
   btn.style.display = '';
-  const submitted = SUBMISSION_ROUNDS_TREES.find(t => t.id === id);
+  const submitted = activeRoundTrees().find(t => t.id === id);
   const nom = nominationsReadLocal().find(n => String(n.treeId) === id);
   const set = (text, bg, fg, border, disabled) => {
     btn.textContent = text;
@@ -7911,7 +7959,7 @@ window.addEventListener('online', dismissalsFlush);
 function activeCandidate(id) {
   const c = GUARD_CANDIDATES.find(x => x.id === id);
   if (!c) return null;
-  if (SUBMISSION_ROUNDS_TREES.some(t => t.id === id)) return null;
+  if (activeRoundTrees().some(t => t.id === id)) return null;
   if (nominationsReadLocal().some(n => String(n.treeId) === id)) return null;
   if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) return null;
   return c;
@@ -8019,6 +8067,190 @@ async function confirmDismiss() {
     renderGuardNominations();
     updateNominateButton(tree);
     tcShowSyncStatus('Suggestion put back');
+  } catch (e) {
+    err.textContent = e.message || 'Could not put it back. Try again.'; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Put back';
+  }
+}
+
+// ========== ROUND REMOVALS ==========
+// A Round 3 tree someone has taken out of the round. Shared through the
+// "RoundRemovals" tab of the tree care Google Sheet (created on first save), so
+// it comes off the map, the counts and the CSV for the whole team. Saved on the
+// phone first and pushed when there is signal, the way removed suggestions
+// are. Putting one back needs a connection.
+const ROUND_REMOVAL_SHEET = 'RoundRemovals';
+const ROUND_REMOVAL_HEADERS = ['treeId','round','reason','removedBy','removedAt'];
+const ROUND_REMOVAL_REASONS = ['Not accepted', 'Tree dead or removed', 'Already has a guard', 'Moved to another round', 'Other'];
+let _roundRemovalFlushing = false;
+let _pendingRoundRemoveTree = null;
+let _roundRemoveReason = '';
+
+function roundRemovalsReadLocal() {
+  try { return JSON.parse(localStorage.getItem('tc_round_removals') || '[]'); }
+  catch (e) { return []; }
+}
+function roundRemovalsWriteLocal(list) {
+  try { localStorage.setItem('tc_round_removals', JSON.stringify(list)); } catch (e) {}
+}
+function getRoundRemovedIds() {
+  return new Set(roundRemovalsReadLocal().map(d => String(d.treeId)));
+}
+
+// Redraw everything that reads the active round list.
+function refreshAfterRoundChange(tree) {
+  renderGuardRounds();
+  renderGuardNominations();
+  if (tree) updateNominateButton(tree);
+  if (tree) updateRoundRemoveButton(tree);
+}
+
+async function roundRemovalsLoad() {
+  const server = await sheetsRead(ROUND_REMOVAL_SHEET);
+  const local = roundRemovalsReadLocal();
+  if (server === null) return local;
+  const onServer = new Set(server.map(r => String(r.treeId)));
+  const merged = server.filter(r => r.treeId).map(r => Object.assign({}, r, { _synced: true }))
+    .concat(local.filter(d => !d._synced && !onServer.has(String(d.treeId))));
+  roundRemovalsWriteLocal(merged);
+  refreshAfterRoundChange(window._currentMapDetailTree);
+  if (merged.some(d => !d._synced)) roundRemovalsFlush();
+  return merged;
+}
+
+async function roundRemovalsFlush() {
+  if (_roundRemovalFlushing) return true;
+  const mine = roundRemovalsReadLocal().filter(d => !d._synced);
+  if (!mine.length) return true;
+  _roundRemovalFlushing = true;
+  try {
+    const server = await sheetsRead(ROUND_REMOVAL_SHEET);
+    if (server === null) throw new Error('could not read the Sheet before saving');
+    const byId = new Map(server.filter(r => r.treeId).map(r => [String(r.treeId), r]));
+    mine.forEach(d => { if (!byId.has(String(d.treeId))) byId.set(String(d.treeId), d); });
+    const merged = Array.from(byId.values());
+    await sheetsWriteOrThrow(ROUND_REMOVAL_SHEET, ROUND_REMOVAL_HEADERS, merged, r => ROUND_REMOVAL_HEADERS.map(h => r[h] || ''));
+    const check = await sheetsRead(ROUND_REMOVAL_SHEET);
+    if (!check) throw new Error('could not read the Sheet back to confirm the save');
+    const confirmed = new Set(check.map(r => String(r.treeId)));
+    roundRemovalsWriteLocal(merged.map(r => Object.assign({}, r, { _synced: confirmed.has(String(r.treeId)) })));
+    tcShowSyncStatus('✓ Removed from Round 3 for everyone');
+    return true;
+  } catch (e) {
+    console.error('Round removal sync failed:', e);
+    tcShowSyncStatus('⚠ Removed on this phone, will sync when you have signal', true);
+    return false;
+  } finally {
+    _roundRemovalFlushing = false;
+  }
+}
+window.addEventListener('online', roundRemovalsFlush);
+
+// The round tree this one is, removed or not, if its round allows removal.
+function removableRoundTree(id) {
+  return SUBMISSION_ROUNDS_TREES.find(t => t.id === id && REMOVABLE_ROUNDS.includes(t.r)) || null;
+}
+
+function updateRoundRemoveButton(tree) {
+  const btn = document.getElementById('mtp-round-remove-btn');
+  if (!btn || !tree) return;
+  const t = removableRoundTree(nominationTreeId(tree));
+  if (!t) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  btn.textContent = getRoundRemovedIds().has(t.id) ? '↺ Put back in Round ' + t.r : '✕ Remove from Round ' + t.r;
+}
+
+function handleMapRoundRemoveBtn() {
+  const tree = window._currentMapDetailTree;
+  if (tree) openRoundRemoveModal(tree);
+}
+
+function openRoundRemoveModal(tree) {
+  const modal = document.getElementById('round-remove-modal');
+  const t = removableRoundTree(nominationTreeId(tree));
+  if (!modal || !t) return;
+  _pendingRoundRemoveTree = tree;
+  _roundRemoveReason = '';
+  const species = tree.spc_common || tree.spc_latin || t.sp || 'Unknown species';
+  document.getElementById('round-remove-info').innerHTML =
+    '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' + escHtml(species) + '</div>' +
+    '<div style="font-size:11px;color:var(--text2)">' + escHtml(t.a) + ' · Round ' + t.r + ' · Tree ID ' + escHtml(t.id) + '</div>';
+  const done = roundRemovalsReadLocal().find(d => String(d.treeId) === t.id);
+  const form = document.getElementById('round-remove-form');
+  const existing = document.getElementById('round-remove-existing');
+  const btn = document.getElementById('round-remove-confirm');
+  document.getElementById('round-remove-error').style.display = 'none';
+  btn.disabled = false;
+  if (done) {
+    const when = done.removedAt ? new Date(done.removedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    document.getElementById('round-remove-title').textContent = 'Put back in Round ' + t.r;
+    existing.innerHTML = '<div><b>Removed</b>' + (when ? ' on ' + escHtml(when) : '') + (done.removedBy ? ' by ' + escHtml(done.removedBy) : '') + '</div>' +
+      (done.reason ? '<div>Reason: ' + escHtml(done.reason) + '</div>' : '');
+    form.style.display = 'none'; existing.style.display = 'block';
+    btn.textContent = 'Put back';
+  } else {
+    document.getElementById('round-remove-title').textContent = 'Remove from Round ' + t.r;
+    document.getElementById('round-remove-reasons').innerHTML = ROUND_REMOVAL_REASONS.map((r, i) =>
+      '<button type="button" data-i="' + i + '" aria-pressed="false" onclick="pickRoundRemoveReason(this)" ' +
+      'style="min-height:40px;padding:8px 12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">' + escHtml(r) + '</button>').join('');
+    form.style.display = 'block'; existing.style.display = 'none';
+    btn.textContent = 'Remove';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeRoundRemoveModal() {
+  const modal = document.getElementById('round-remove-modal');
+  if (modal) modal.style.display = 'none';
+  _pendingRoundRemoveTree = null;
+}
+
+function pickRoundRemoveReason(btn) {
+  const r = ROUND_REMOVAL_REASONS[+btn.dataset.i];
+  _roundRemoveReason = _roundRemoveReason === r ? '' : r;
+  document.querySelectorAll('#round-remove-reasons button').forEach(b => {
+    const on = ROUND_REMOVAL_REASONS[+b.dataset.i] === _roundRemoveReason;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.style.background = on ? '#a8327a' : 'var(--bg2)';
+    b.style.color = on ? '#fff' : 'var(--text)';
+    b.style.borderColor = on ? '#a8327a' : 'var(--border)';
+  });
+}
+
+async function confirmRoundRemove() {
+  const tree = _pendingRoundRemoveTree;
+  if (!tree) return;
+  const t = removableRoundTree(nominationTreeId(tree));
+  if (!t) return;
+  const btn = document.getElementById('round-remove-confirm');
+  const err = document.getElementById('round-remove-error');
+  const local = roundRemovalsReadLocal();
+  const done = local.find(d => String(d.treeId) === t.id);
+  btn.disabled = true;
+  if (!done) {
+    let name = '';
+    try { name = localStorage.getItem('tc_nominator_name') || ''; } catch (e) {}
+    local.push({ treeId: t.id, round: String(t.r), reason: _roundRemoveReason, removedBy: name, removedAt: new Date().toISOString(), _synced: false });
+    roundRemovalsWriteLocal(local);
+    closeRoundRemoveModal();
+    refreshAfterRoundChange(tree);
+    tcShowSyncStatus('⟳ Removing from Round ' + t.r + '…');
+    await roundRemovalsFlush();
+    return;
+  }
+  // Putting it back: take the row off the Sheet if it ever got there.
+  btn.textContent = 'Putting back…'; err.style.display = 'none';
+  try {
+    if (done._synced !== false) {
+      const server = await sheetsRead(ROUND_REMOVAL_SHEET);
+      if (server === null) throw new Error('Could not reach the Sheet. Check your signal and try again.');
+      const kept = server.filter(r => r.treeId && String(r.treeId) !== t.id);
+      await sheetsWriteOrThrow(ROUND_REMOVAL_SHEET, ROUND_REMOVAL_HEADERS, kept, r => ROUND_REMOVAL_HEADERS.map(h => r[h] || ''));
+    }
+    roundRemovalsWriteLocal(local.filter(d => String(d.treeId) !== t.id));
+    closeRoundRemoveModal();
+    refreshAfterRoundChange(tree);
+    tcShowSyncStatus('Put back in Round ' + t.r);
   } catch (e) {
     err.textContent = e.message || 'Could not put it back. Try again.'; err.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Put back';
@@ -9970,7 +10202,7 @@ function switchViewById(view) {
 window.addEventListener('load', async () => {
   // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
   console.log('Loading data from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), dismissalsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
+  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), dismissalsLoad(), roundRemovalsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
