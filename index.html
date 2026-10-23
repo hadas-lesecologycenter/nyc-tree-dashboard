@@ -1578,6 +1578,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1f6fb0;border:1px solid #164f80"></div><span style="flex:1">Round 1</span><b id="tg-n1" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#cc6f14;border:1px solid #9a520d"></div><span style="flex:1">Round 2</span><b id="tg-n2" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#a8327a;border:1px solid #7c2459"></div><span style="flex:1">Round 3</span><b id="tg-n3" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#9e9e9e;border:2px solid #b3261e;box-sizing:border-box"></div><span style="flex:1">Rejected / issue with tree</span><b id="tg-nrej" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="border-top:1px solid #ddd;margin:2px 0"></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #1a1a1a;box-sizing:border-box"></div><span style="flex:1">Spring 2026 install</span><b id="tg-ninst" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1a1a1a;border:1px solid #fff"></div><span style="flex:1">Install, no tree ID</span><b id="tg-norphan" style="font-variant-numeric:tabular-nums">0</b></div>
@@ -1630,7 +1631,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
           style="margin-top:8px;width:100%;min-height:44px;padding:11px;background:#fff;background-color:#fff;color:#3d6b9e;border:2px solid #3d6b9e;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
           🛡 Nominate for Tree Guard
         </button>
-        <button type="button" id="mtp-round-remove-btn" onclick="handleMapRoundRemoveBtn()"
+        <button type="button" id="mtp-round-reject-btn" onclick="openRoundMarkModal('reject')"
+          style="display:none;margin-top:8px;width:100%;min-height:44px;padding:10px;background:#fff;background-color:#fff;color:#b3261e;border:1px solid #b3261e;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
+          ⚠ Mark rejected / issue with tree
+        </button>
+        <button type="button" id="mtp-round-remove-btn" onclick="openRoundMarkModal('remove')"
           style="display:none;margin-top:8px;width:100%;min-height:44px;padding:10px;background:#fff;background-color:#fff;color:#a8327a;border:1px solid #a8327a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;-webkit-appearance:none;appearance:none">
           ✕ Remove from Round 3
         </button>
@@ -2297,24 +2302,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
 
-  <!-- REMOVE FROM ROUND MODAL -->
-  <div id="round-remove-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeRoundRemoveModal()">
+  <!-- REMOVE FROM / REJECT IN ROUND MODAL -->
+  <div id="round-mark-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeRoundMarkModal()">
     <div style="background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,0.25);padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));box-sizing:border-box">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2 id="round-remove-title" style="font-family:'Lora',serif;font-size:17px;font-weight:700;margin:0">Remove from Round 3</h2>
-        <button type="button" onclick="closeRoundRemoveModal()" aria-label="Close" style="background:none;border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
+        <h2 id="round-mark-title" style="font-family:'Lora',serif;font-size:17px;font-weight:700;margin:0">Remove from Round 3</h2>
+        <button type="button" onclick="closeRoundMarkModal()" aria-label="Close" style="background:none;border:1px solid var(--border);color:var(--text2);width:36px;height:36px;border-radius:6px;cursor:pointer;font-size:14px;-webkit-appearance:none;appearance:none">✕</button>
       </div>
-      <div id="round-remove-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)"></div>
-      <div id="round-remove-form">
-        <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px">The tree comes off the Round 3 count, the map and the CSV for everyone. If it is nominated, it shows as a nomination again. You can put it back later.</div>
+      <div id="round-mark-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)"></div>
+      <div id="round-mark-form">
+        <div id="round-mark-intro" style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px"></div>
         <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">Why remove it? <span style="font-weight:400;color:var(--text3)">(optional)</span></div>
-        <div id="round-remove-reasons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+        <div id="round-mark-reasons" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
       </div>
-      <div id="round-remove-existing" style="display:none;font-size:13px;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
-      <div id="round-remove-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
+      <div id="round-mark-existing" style="display:none;font-size:13px;color:var(--text);line-height:1.5;margin-bottom:14px"></div>
+      <div id="round-mark-error" role="alert" style="display:none;color:#b3261e;font-size:12px;margin-bottom:10px"></div>
       <div style="display:flex;gap:8px">
-        <button type="button" onclick="closeRoundRemoveModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
-        <button type="button" id="round-remove-confirm" onclick="confirmRoundRemove()" style="flex:2;min-height:44px;padding:10px;background:#a8327a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove</button>
+        <button type="button" onclick="closeRoundMarkModal()" style="flex:1;min-height:44px;padding:10px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">Cancel</button>
+        <button type="button" id="round-mark-confirm" onclick="confirmRoundMark()" style="flex:2;min-height:44px;padding:10px;background:#a8327a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none">Remove</button>
       </div>
     </div>
   </div>
@@ -5032,7 +5037,7 @@ function openMapTreeDetail(tree) {
     updateMapAssessBtn(tree);
   }
   // A round tree can sit just outside CB3, so this one shows either way.
-  updateRoundRemoveButton(tree);
+  updateRoundMarkButtons(tree);
   const pm = getPriorityMeta(tree._priority || 0);
   const bd = calcPriorityBreakdown(tree);
   const species = tree.spc_common || tree.spc_latin || 'Unknown species';
@@ -5257,8 +5262,9 @@ function toggleCoolestBlocksFromPanel() {
 // 2026 install points. An install point within a few metres of a submitted
 // tree is that tree's install and shows as a black ring; an install point with
 // no submitted tree near it is drawn on its own. Clicking a tree opens the same
-// detail panel as the main map.
-const SUBMISSION_ROUNDS_TREES = [{"r":1,"id":"12158994","a":"265 Henry Street","lat":40.713893,"lng":-73.984703,"sp":"bur oak","note":"Dashboard lists this tree at 263 Henry Street. Check which address is correct."},{"r":1,"id":"4604009","a":"347 East 10th Street","lat":40.726847,"lng":-73.979725,"sp":"London planetree"},{"r":1,"id":"12400955","a":"391 East 10th Street","lat":40.726102,"lng":-73.977979,"sp":"'Espresso' Kentucky coffee tree"},{"r":1,"id":"10163629","a":"331 East 10th Street","lat":40.727163,"lng":-73.980496,"sp":"'Millstone' Japanese pagodatree"},{"r":1,"id":"10164543","a":"329 East 10th Street","lat":40.727215,"lng":-73.980606,"sp":"'Streetkeeper' Thornless honeylocust"},{"r":1,"id":"2121964","a":"383 East 10th Street","lat":40.726219,"lng":-73.978258,"sp":"Callery pear"},{"r":1,"id":"10408117","a":"168 Orchard Street","lat":40.721389,"lng":-73.988419,"sp":"maple"},{"r":1,"id":"2114670","a":"425 East 9th Street","lat":40.727754,"lng":-73.983702,"sp":"Japanese pagoda tree"},{"r":1,"id":"2123392","a":"192 2nd Avenue","lat":40.730966,"lng":-73.98567,"sp":"London planetree"},{"r":1,"id":"1182508","a":"529 East 13th Street","lat":40.729206,"lng":-73.979504,"sp":"Green ash"},{"r":2,"id":"10162567","a":"184 Avenue C","lat":40.726709,"lng":-73.976779,"sp":"'Chicagoland' Hackberry"},{"r":2,"id":"2121983","a":"411 East 10th","lat":40.725665,"lng":-73.976034,"sp":"Thornless honeylocust"},{"r":2,"id":"12158996","a":"35 Montgomery Street","lat":40.713012,"lng":-73.984806,"sp":"chinkapin oak"},{"r":2,"id":"10183650","a":"35 Montgomery Street","lat":40.712791,"lng":-73.984894,"sp":"dawn redwood"},{"r":2,"id":"14095819","a":"35 Montgomery Street","lat":40.712713,"lng":-73.984875,"sp":"maidenhair tree"},{"r":2,"id":"2114681","a":"192 Avenue B","lat":40.728162,"lng":-73.97928,"sp":"Thornless honeylocust"},{"r":2,"id":"15763356","a":"435 E 12 Street","lat":40.729365,"lng":-73.981874,"sp":"bur oak"},{"r":2,"id":"14177845","a":"149 Avenue C","lat":40.725471,"lng":-73.977736,"sp":"'Espresso' Kentucky coffee tree"},{"r":2,"id":"2114748","a":"129 St Marks Place","lat":40.726779,"lng":-73.983246,"sp":"Thornless honeylocust"},{"r":2,"id":"11139377","a":"10 Montgomery Street","lat":40.713914,"lng":-73.985312,"sp":"Amur maackia"},{"r":2,"id":"2121638","a":"737 East 6th Street","lat":40.723011,"lng":-73.977921,"sp":"London planetree"},{"r":3,"id":"10576007","a":"146 Stanton Street","lat":40.720625,"lng":-73.985642,"sp":"London planetree"},{"r":3,"id":"2111001","a":"76 Essex St","lat":40.717976,"lng":-73.988381,"sp":"Thornless honeylocust"},{"r":3,"id":"2116320","a":"25 Montgomery Street","lat":40.713489,"lng":-73.984968,"sp":"maidenhair tree"},{"r":3,"id":"2116319","a":"25 Montgomery Street","lat":40.713382,"lng":-73.984968,"sp":"American basswood"},{"r":3,"id":"2116318","a":"25 Montgomery Street","lat":40.713258,"lng":-73.984955,"sp":"American basswood"},{"r":3,"id":"10202012","a":"25 Montgomery Street","lat":40.713736,"lng":-73.984834,"sp":"common hackberry"},{"r":3,"id":"13622972","a":"244 Broome Street","lat":40.717792,"lng":-73.988988,"sp":"Japanese zelkova"},{"r":3,"id":"10183640","a":"179 Henry Street","lat":40.713604,"lng":-73.988126,"sp":"Kentucky coffeetree"},{"r":3,"id":"11139378","a":"179 Henry Street","lat":40.713737,"lng":-73.988554,"sp":"Amur maackia"},{"r":3,"id":"15197124","a":"500 Grand Street","lat":40.71493,"lng":-73.982997,"sp":"Freeman maple"},{"r":3,"id":"11139376","a":"64 Rutgers Street","lat":40.711372,"lng":-73.989889,"sp":"'Morris Debonair' Bald cypress"},{"r":3,"id":"12158981","a":"85 Pike Slip","lat":40.710675,"lng":-73.991839,"sp":"swamp white oak"},{"r":3,"id":"2110960","a":"99 Hester Street","lat":40.716465,"lng":-73.992658,"sp":"sawtooth oak"},{"r":3,"id":"15331647","a":"195 Canal Street","lat":40.717083,"lng":-73.998194,"sp":"'Northern Acclaim' Thornless honeylocust"},{"r":1,"id":"2110991","a":"64 Hester Street","lat":40.715905,"lng":-73.991087,"sp":"littleleaf linden"}];
+// detail panel as the main map. Round 3 also takes in the 19 guard nominations
+// that were in the Sheet on Oct 23, 2026.
+const SUBMISSION_ROUNDS_TREES = [{"r":1,"id":"12158994","a":"265 Henry Street","lat":40.713893,"lng":-73.984703,"sp":"bur oak","note":"Dashboard lists this tree at 263 Henry Street. Check which address is correct."},{"r":1,"id":"4604009","a":"347 East 10th Street","lat":40.726847,"lng":-73.979725,"sp":"London planetree"},{"r":1,"id":"12400955","a":"391 East 10th Street","lat":40.726102,"lng":-73.977979,"sp":"'Espresso' Kentucky coffee tree"},{"r":1,"id":"10163629","a":"331 East 10th Street","lat":40.727163,"lng":-73.980496,"sp":"'Millstone' Japanese pagodatree"},{"r":1,"id":"10164543","a":"329 East 10th Street","lat":40.727215,"lng":-73.980606,"sp":"'Streetkeeper' Thornless honeylocust"},{"r":1,"id":"2121964","a":"383 East 10th Street","lat":40.726219,"lng":-73.978258,"sp":"Callery pear"},{"r":1,"id":"10408117","a":"168 Orchard Street","lat":40.721389,"lng":-73.988419,"sp":"maple"},{"r":1,"id":"2114670","a":"425 East 9th Street","lat":40.727754,"lng":-73.983702,"sp":"Japanese pagoda tree"},{"r":1,"id":"2123392","a":"192 2nd Avenue","lat":40.730966,"lng":-73.98567,"sp":"London planetree"},{"r":1,"id":"1182508","a":"529 East 13th Street","lat":40.729206,"lng":-73.979504,"sp":"Green ash"},{"r":2,"id":"10162567","a":"184 Avenue C","lat":40.726709,"lng":-73.976779,"sp":"'Chicagoland' Hackberry"},{"r":2,"id":"2121983","a":"411 East 10th","lat":40.725665,"lng":-73.976034,"sp":"Thornless honeylocust"},{"r":2,"id":"12158996","a":"35 Montgomery Street","lat":40.713012,"lng":-73.984806,"sp":"chinkapin oak"},{"r":2,"id":"10183650","a":"35 Montgomery Street","lat":40.712791,"lng":-73.984894,"sp":"dawn redwood"},{"r":2,"id":"14095819","a":"35 Montgomery Street","lat":40.712713,"lng":-73.984875,"sp":"maidenhair tree"},{"r":2,"id":"2114681","a":"192 Avenue B","lat":40.728162,"lng":-73.97928,"sp":"Thornless honeylocust"},{"r":2,"id":"15763356","a":"435 E 12 Street","lat":40.729365,"lng":-73.981874,"sp":"bur oak"},{"r":2,"id":"14177845","a":"149 Avenue C","lat":40.725471,"lng":-73.977736,"sp":"'Espresso' Kentucky coffee tree"},{"r":2,"id":"2114748","a":"129 St Marks Place","lat":40.726779,"lng":-73.983246,"sp":"Thornless honeylocust"},{"r":2,"id":"11139377","a":"10 Montgomery Street","lat":40.713914,"lng":-73.985312,"sp":"Amur maackia"},{"r":2,"id":"2121638","a":"737 East 6th Street","lat":40.723011,"lng":-73.977921,"sp":"London planetree"},{"r":3,"id":"10576007","a":"146 Stanton Street","lat":40.720625,"lng":-73.985642,"sp":"London planetree"},{"r":3,"id":"2111001","a":"76 Essex St","lat":40.717976,"lng":-73.988381,"sp":"Thornless honeylocust"},{"r":3,"id":"2116320","a":"25 Montgomery Street","lat":40.713489,"lng":-73.984968,"sp":"maidenhair tree"},{"r":3,"id":"2116319","a":"25 Montgomery Street","lat":40.713382,"lng":-73.984968,"sp":"American basswood"},{"r":3,"id":"2116318","a":"25 Montgomery Street","lat":40.713258,"lng":-73.984955,"sp":"American basswood"},{"r":3,"id":"10202012","a":"25 Montgomery Street","lat":40.713736,"lng":-73.984834,"sp":"common hackberry"},{"r":3,"id":"13622972","a":"244 Broome Street","lat":40.717792,"lng":-73.988988,"sp":"Japanese zelkova"},{"r":3,"id":"10183640","a":"179 Henry Street","lat":40.713604,"lng":-73.988126,"sp":"Kentucky coffeetree"},{"r":3,"id":"11139378","a":"179 Henry Street","lat":40.713737,"lng":-73.988554,"sp":"Amur maackia"},{"r":3,"id":"15197124","a":"500 Grand Street","lat":40.71493,"lng":-73.982997,"sp":"Freeman maple"},{"r":3,"id":"11139376","a":"64 Rutgers Street","lat":40.711372,"lng":-73.989889,"sp":"'Morris Debonair' Bald cypress"},{"r":3,"id":"12158981","a":"85 Pike Slip","lat":40.710675,"lng":-73.991839,"sp":"swamp white oak"},{"r":3,"id":"2110960","a":"99 Hester Street","lat":40.716465,"lng":-73.992658,"sp":"sawtooth oak"},{"r":3,"id":"15331647","a":"195 Canal Street","lat":40.717083,"lng":-73.998194,"sp":"'Northern Acclaim' Thornless honeylocust"},{"r":1,"id":"2110991","a":"64 Hester Street","lat":40.715905,"lng":-73.991087,"sp":"littleleaf linden"},{"r":3,"id":"10230555","a":"149 Rivington St","lat":40.719328,"lng":-73.985738,"sp":"Japanese zelkova"},{"r":3,"id":"12382238","a":"120 Essex Street","lat":40.719148,"lng":-73.987774,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"2122345","a":"558 E 5 St","lat":40.724231,"lng":-73.983069,"sp":"Kentucky yellowwood"},{"r":3,"id":"16873076","a":"270 E 2 St","lat":40.720843,"lng":-73.980507,"sp":"American elm"},{"r":3,"id":"16029022","a":"165 East 2 Street","lat":40.722562,"lng":-73.984893,"sp":"Kentucky coffeetree"},{"r":3,"id":"2131000","a":"101 2 Avenue","lat":40.727319,"lng":-73.988725,"sp":"Japanese zelkova"},{"r":3,"id":"10666780","a":"45 St Marks Place","lat":40.728347,"lng":-73.986969,"sp":"'Skyline' Thornless honeylocust"},{"r":3,"id":"12216775","a":"23 East 3 Street","lat":40.725807,"lng":-73.990578,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"13765176","a":"29 East 2nd Street","lat":40.724785,"lng":-73.990572,"sp":"Japanese zelkova"},{"r":3,"id":"11142873","a":"90 East 3 Street","lat":40.724725,"lng":-73.987983,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"11139389","a":"504 Grand Street","lat":40.71538,"lng":-73.98135,"sp":"'Fort Mcnair' Ruby red horsechestnut"},{"r":3,"id":"2118870","a":"189 Stanton Street","lat":40.719865,"lng":-73.983436,"sp":"pin oak"},{"r":3,"id":"11139400","a":"38 Monroe Street","lat":40.711085,"lng":-73.99413,"sp":"'Moraine' Sweetgum"},{"r":3,"id":"11138957","a":"75 Pike Street","lat":40.711281,"lng":-73.99246,"sp":"'Skyline' Thornless honeylocust"},{"r":3,"id":"10203059","a":"40 Market Street","lat":40.712416,"lng":-73.994311,"sp":"'Worplesdon' Sweetgum"},{"r":3,"id":"12231919","a":"60 Madison Street","lat":40.711926,"lng":-73.997403,"sp":"'Sterling' Silver linden"},{"r":3,"id":"10666768","a":"81 Chrystie Street","lat":40.717374,"lng":-73.994352,"sp":"'Millstone' Japanese pagodatree"},{"r":3,"id":"2118577","a":"255 Bowery","lat":40.723045,"lng":-73.992843,"sp":"Caucasian linden"},{"r":3,"id":"2125471","a":"135 East Houston Street","lat":40.723115,"lng":-73.990331,"sp":"maidenhair tree"}];
 const SUBMISSION_ROUND_STYLE = {
   1: { fill: '#1f6fb0', stroke: '#164f80', label: 'Round 1', note: '' },
   2: { fill: '#cc6f14', stroke: '#9a520d', label: 'Round 2', note: '' },
@@ -5268,12 +5274,19 @@ const GUARD_INSTALL_MATCH_M = 6;
 // Trees on the submission lists that cannot be placed: no tree ID, or an ID
 // that is not in the dashboard data.
 const GUARD_UNPLACED = { 1: 1, 2: 2, 3: 0 };
-// Round 3 trees can be taken out from the detail panel (see ROUND REMOVALS);
-// everything that counts or draws the rounds reads this list, not the one above.
+// From the detail panel a Round 3 tree can be removed, and a tree in any round
+// can be marked rejected (see ROUND REMOVALS AND REJECTIONS). A removed tree is
+// gone from the layer; a rejected one stays on it, marked, but does not count
+// toward its round or the sub-zones covered. What draws the rounds reads
+// activeRoundTrees; what counts them reads countedRoundTrees.
 const REMOVABLE_ROUNDS = [3];
 function activeRoundTrees() {
-  const removed = getRoundRemovedIds();
+  const removed = roundMarkIds('remove');
   return SUBMISSION_ROUNDS_TREES.filter(t => !(REMOVABLE_ROUNDS.includes(t.r) && removed.has(t.id)));
+}
+function countedRoundTrees() {
+  const rejected = roundMarkIds('reject');
+  return activeRoundTrees().filter(t => !rejected.has(t.id));
 }
 let guardInstalledCount = 0;
 let guardInstallOnlyCount = 0;
@@ -5285,17 +5298,18 @@ let guardRoundLayer = null;
 
 function updateTreeGuardsLegend() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  const rounds = activeRoundTrees();
+  const rounds = countedRoundTrees();
   [1, 2, 3].forEach(r => set('tg-n' + r, rounds.filter(t => t.r === r).length));
   set('tg-ninst', guardInstalledCount);
   set('tg-norphan', guardInstallOnlyCount);
   set('tg-nnom', guardNominationCount);
+  set('tg-nrej', activeRoundTrees().length - rounds.length);
   set('tg-ncand', guardCandidateCount);
   const unplaced = GUARD_UNPLACED[1] + GUARD_UNPLACED[2] + GUARD_UNPLACED[3];
   set('tg-total', unplaced ? unplaced + ' more trees in the rounds are not on the map (no tree ID or not in dashboard data).' : '');
 
   // Overall tally: rounds plus nominations, and the sub-zones they reach.
-  const inRounds = new Set(rounds.map(t => t.id));
+  const inRounds = new Set(activeRoundTrees().map(t => t.id));
   const noms = (typeof nominationsReadLocal === 'function' ? nominationsReadLocal() : [])
     .filter(n => !inRounds.has(String(n.treeId)));
   set('tg-t-rounds', rounds.length);
@@ -5337,7 +5351,9 @@ function openGuardTreeDetail(t, installed) {
   if (!tree) return false;
   openMapTreeDetail(tree);
   const st = SUBMISSION_ROUND_STYLE[t.r];
-  const status = st.label + (st.note ? ' · ' + st.note : '') + (installed ? ' · Spring 2026 install' : '');
+  const rej = roundMarksReadLocal('reject').find(d => String(d.treeId) === t.id);
+  const status = (rej ? 'Rejected · ' : '') + st.label + (st.note ? ' · ' + st.note : '') +
+    (installed ? ' · Spring 2026 install' : '') + (rej && rej.reason ? ' · ' + rej.reason : '');
   const box = document.getElementById('mtp-fields');
   if (box) {
     box.insertAdjacentHTML('afterbegin',
@@ -5433,16 +5449,18 @@ function renderGuardRounds() {
   const installs = LESEC_TREE_GUARDS.features.map(f => ({
     lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], used: false
   }));
+  const rejected = roundMarkIds('reject');
   activeRoundTrees().forEach(t => {
     const st = SUBMISSION_ROUND_STYLE[t.r];
+    const rej = rejected.has(t.id);
     const inst = installs.find(p => guardMetersApart(p.lat, p.lng, t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
     if (inst) inst.used = true;
     const m = L.circleMarker([t.lat, t.lng], {
-      radius: 7, fillColor: st.fill, color: inst ? '#1a1a1a' : '#fff',
-      weight: inst ? 3 : 1.5, fillOpacity: 0.95
+      radius: 7, fillColor: rej ? '#9e9e9e' : st.fill, color: inst ? '#1a1a1a' : rej ? '#b3261e' : '#fff',
+      weight: inst ? 3 : rej ? 2 : 1.5, fillOpacity: 0.95
     });
-    m.bindTooltip('<b>' + escHtml(t.a) + '</b><br>' + escHtml(st.label) + (inst ? ' · installed' : '') +
-      '<br>' + escHtml(t.sp || ''));
+    m.bindTooltip('<b>' + escHtml(t.a) + '</b><br>' + (rej ? 'Rejected · was ' : '') + escHtml(st.label) +
+      (inst ? ' · installed' : '') + '<br>' + escHtml(t.sp || ''));
     m.on('click', e => {
       L.DomEvent.stopPropagation(e);
       if (openGuardTreeDetail(t, !!inst)) return;
@@ -5523,16 +5541,18 @@ async function exportTreeGuardsCSV() {
   const noms = new Map(nominationsReadLocal().map(n => [String(n.treeId), n]));
   const nomCols = n => n ? [n.nominatedBy, n.reason, n.note, day(n.nominatedAt)] : ['', '', '', ''];
   const rows = [['Status', 'Tree ID', 'Address', 'Species', 'Latitude', 'Longitude', 'Sub-zone',
-    'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on']];
+    'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on', 'Rejected reason']];
+  const rejected = new Map(roundMarksReadLocal('reject').map(d => [String(d.treeId), d]));
   [...activeRoundTrees()].sort((a, b) => a.r - b.r).forEach(t => {
     const installed = LESEC_TREE_GUARDS.features.some(f =>
       guardMetersApart(f.geometry.coordinates[1], f.geometry.coordinates[0], t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
-    rows.push([SUBMISSION_ROUND_STYLE[t.r].label, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
-      installed ? 'Yes' : 'No', t.note, ...nomCols(noms.get(t.id))]);
+    const rej = rejected.get(t.id);
+    rows.push([(rej ? 'Rejected · ' : '') + SUBMISSION_ROUND_STYLE[t.r].label, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
+      installed ? 'Yes' : 'No', t.note, ...nomCols(noms.get(t.id)), rej ? (rej.reason || 'No reason given') : '']);
     noms.delete(t.id);
   });
   noms.forEach(n => rows.push(['Nominated', n.treeId, n.address || treeMapAddress(n.treeId), n.species, n.lat, n.lng, zoneOf(n.lat, n.lng),
-    '', '', ...nomCols(n)]));
+    '', '', ...nomCols(n), '']));
   // Quote what needs it, and keep typed-in text from running as a spreadsheet formula.
   const cell = v => {
     let s = String(v ?? '').replace(/\s+/g, ' ').trim();
@@ -7748,7 +7768,7 @@ function updateNominateButton(tree) {
   const btn = document.getElementById('mtp-nominate-btn');
   if (!btn || !tree) return;
   updateDismissButton(tree);
-  updateRoundRemoveButton(tree);
+  updateRoundMarkButtons(tree);
   const id = nominationTreeId(tree);
   if (treeGuardsLoadSync().some(g => String(g.treeId) === id)) { btn.style.display = 'none'; return; }
   btn.style.display = '';
@@ -7761,7 +7781,8 @@ function updateNominateButton(tree) {
     btn.disabled = !!disabled;
     btn.style.cursor = disabled ? 'default' : 'pointer';
   };
-  if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
+  if (submitted && roundMarkIds('reject').has(id)) set('🛡 Rejected · Round ' + submitted.r, '#eceff1', '#b3261e', '#b0bec5', true);
+  else if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
   else if (nom) set('🛡 Nominated ✓ · tap to view or remove', '#3d6b9e', '#fff', '#3d6b9e', false);
   else if (cityGuardPresent(tree)) set('🛡 City lists a guard here', '#fff8e1', '#8a5a00', '#e0b23b', false);
   else set('🛡 Nominate for Tree Guard', '#fff', '#3d6b9e', '#3d6b9e', false);
@@ -8073,187 +8094,226 @@ async function confirmDismiss() {
   }
 }
 
-// ========== ROUND REMOVALS ==========
-// A Round 3 tree someone has taken out of the round. Shared through the
-// "RoundRemovals" tab of the tree care Google Sheet (created on first save), so
-// it comes off the map, the counts and the CSV for the whole team. Saved on the
-// phone first and pushed when there is signal, the way removed suggestions
-// are. Putting one back needs a connection.
-const ROUND_REMOVAL_SHEET = 'RoundRemovals';
-const ROUND_REMOVAL_HEADERS = ['treeId','round','reason','removedBy','removedAt'];
-const ROUND_REMOVAL_REASONS = ['Not accepted', 'Tree dead or removed', 'Already has a guard', 'Moved to another round', 'Other'];
-let _roundRemovalFlushing = false;
-let _pendingRoundRemoveTree = null;
-let _roundRemoveReason = '';
+// ========== ROUND REMOVALS AND REJECTIONS ==========
+// Two marks a round tree can get from its detail panel, each shared through its
+// own tab of the tree care Google Sheet (created on first save):
+//   remove: a Round 3 tree taken out of the round. It comes off the map, the
+//           counts and the CSV; if it was nominated it shows as a nomination.
+//   reject: a tree in any round that was rejected or has an issue. It stays on
+//           the map and in the CSV, marked rejected, but no longer counts
+//           toward its round or the sub-zones covered.
+// Saved on the phone first and pushed when there is signal, the way removed
+// suggestions are. Undoing either needs a connection.
+const ROUND_MARKS = {
+  remove: {
+    sheet: 'RoundRemovals', storage: 'tc_round_removals', byKey: 'removedBy', atKey: 'removedAt',
+    headers: ['treeId','round','reason','removedBy','removedAt'],
+    reasons: ['Not accepted', 'Tree dead or removed', 'Already has a guard', 'Moved to another round', 'Other'],
+    rounds: REMOVABLE_ROUNDS, color: '#a8327a', btn: 'mtp-round-remove-btn',
+    label: r => '✕ Remove from Round ' + r, undoLabel: r => '↺ Put back in Round ' + r,
+    title: r => 'Remove from Round ' + r, undoTitle: r => 'Put back in Round ' + r,
+    intro: r => 'The tree comes off the Round ' + r + ' count, the map and the CSV for everyone. If it is nominated, it shows as a nomination again. You can put it back later.',
+    confirm: 'Remove', undo: 'Put back', done: 'Removed',
+    saving: r => '⟳ Removing from Round ' + r + '…', saved: '✓ Removed from the round for everyone', undone: r => 'Put back in Round ' + r
+  },
+  reject: {
+    sheet: 'RoundRejections', storage: 'tc_round_rejections', byKey: 'rejectedBy', atKey: 'rejectedAt',
+    headers: ['treeId','round','reason','rejectedBy','rejectedAt'],
+    reasons: ['Not accepted', 'Tree dead or dying', 'Tree in poor shape', 'Already has a guard', 'Not a good spot', 'Other'],
+    rounds: [1, 2, 3], color: '#b3261e', btn: 'mtp-round-reject-btn',
+    label: () => '⚠ Mark rejected / issue with tree', undoLabel: r => '↺ Undo rejected · back in Round ' + r,
+    title: () => 'Rejected / issue with tree', undoTitle: r => 'Undo rejected · back in Round ' + r,
+    intro: r => 'The tree stays on the map and in the CSV, marked rejected, for everyone. It no longer counts toward Round ' + r + ' or the sub-zones covered. You can undo this later.',
+    confirm: 'Mark rejected', undo: 'Undo rejected', done: 'Rejected',
+    saving: () => '⟳ Marking rejected…', saved: '✓ Marked rejected for everyone', undone: r => 'Back in Round ' + r
+  }
+};
+const _roundMarkFlushing = {};
+let _pendingRoundMark = null;   // { kind, tree }
+let _roundMarkReason = '';
 
-function roundRemovalsReadLocal() {
-  try { return JSON.parse(localStorage.getItem('tc_round_removals') || '[]'); }
+function roundMarksReadLocal(kind) {
+  try { return JSON.parse(localStorage.getItem(ROUND_MARKS[kind].storage) || '[]'); }
   catch (e) { return []; }
 }
-function roundRemovalsWriteLocal(list) {
-  try { localStorage.setItem('tc_round_removals', JSON.stringify(list)); } catch (e) {}
+function roundMarksWriteLocal(kind, list) {
+  try { localStorage.setItem(ROUND_MARKS[kind].storage, JSON.stringify(list)); } catch (e) {}
 }
-function getRoundRemovedIds() {
-  return new Set(roundRemovalsReadLocal().map(d => String(d.treeId)));
+function roundMarkIds(kind) {
+  return new Set(roundMarksReadLocal(kind).map(d => String(d.treeId)));
 }
 
-// Redraw everything that reads the active round list.
+// Redraw everything that reads the round lists.
 function refreshAfterRoundChange(tree) {
   renderGuardRounds();
   renderGuardNominations();
   if (tree) updateNominateButton(tree);
-  if (tree) updateRoundRemoveButton(tree);
+  if (tree) updateRoundMarkButtons(tree);
 }
 
-async function roundRemovalsLoad() {
-  const server = await sheetsRead(ROUND_REMOVAL_SHEET);
-  const local = roundRemovalsReadLocal();
+async function roundMarksLoad(kind) {
+  const cfg = ROUND_MARKS[kind];
+  const server = await sheetsRead(cfg.sheet);
+  const local = roundMarksReadLocal(kind);
   if (server === null) return local;
   const onServer = new Set(server.map(r => String(r.treeId)));
   const merged = server.filter(r => r.treeId).map(r => Object.assign({}, r, { _synced: true }))
     .concat(local.filter(d => !d._synced && !onServer.has(String(d.treeId))));
-  roundRemovalsWriteLocal(merged);
+  roundMarksWriteLocal(kind, merged);
   refreshAfterRoundChange(window._currentMapDetailTree);
-  if (merged.some(d => !d._synced)) roundRemovalsFlush();
+  if (merged.some(d => !d._synced)) roundMarksFlush(kind);
   return merged;
 }
 
-async function roundRemovalsFlush() {
-  if (_roundRemovalFlushing) return true;
-  const mine = roundRemovalsReadLocal().filter(d => !d._synced);
+async function roundMarksFlush(kind) {
+  const cfg = ROUND_MARKS[kind];
+  if (_roundMarkFlushing[kind]) return true;
+  const mine = roundMarksReadLocal(kind).filter(d => !d._synced);
   if (!mine.length) return true;
-  _roundRemovalFlushing = true;
+  _roundMarkFlushing[kind] = true;
   try {
-    const server = await sheetsRead(ROUND_REMOVAL_SHEET);
+    const server = await sheetsRead(cfg.sheet);
     if (server === null) throw new Error('could not read the Sheet before saving');
     const byId = new Map(server.filter(r => r.treeId).map(r => [String(r.treeId), r]));
     mine.forEach(d => { if (!byId.has(String(d.treeId))) byId.set(String(d.treeId), d); });
     const merged = Array.from(byId.values());
-    await sheetsWriteOrThrow(ROUND_REMOVAL_SHEET, ROUND_REMOVAL_HEADERS, merged, r => ROUND_REMOVAL_HEADERS.map(h => r[h] || ''));
-    const check = await sheetsRead(ROUND_REMOVAL_SHEET);
+    await sheetsWriteOrThrow(cfg.sheet, cfg.headers, merged, r => cfg.headers.map(h => r[h] || ''));
+    const check = await sheetsRead(cfg.sheet);
     if (!check) throw new Error('could not read the Sheet back to confirm the save');
     const confirmed = new Set(check.map(r => String(r.treeId)));
-    roundRemovalsWriteLocal(merged.map(r => Object.assign({}, r, { _synced: confirmed.has(String(r.treeId)) })));
-    tcShowSyncStatus('✓ Removed from Round 3 for everyone');
+    roundMarksWriteLocal(kind, merged.map(r => Object.assign({}, r, { _synced: confirmed.has(String(r.treeId)) })));
+    tcShowSyncStatus(cfg.saved);
     return true;
   } catch (e) {
-    console.error('Round removal sync failed:', e);
-    tcShowSyncStatus('⚠ Removed on this phone, will sync when you have signal', true);
+    console.error('Round ' + kind + ' sync failed:', e);
+    tcShowSyncStatus('⚠ Saved on this phone, will sync when you have signal', true);
     return false;
   } finally {
-    _roundRemovalFlushing = false;
+    _roundMarkFlushing[kind] = false;
   }
 }
-window.addEventListener('online', roundRemovalsFlush);
+window.addEventListener('online', () => { roundMarksFlush('remove'); roundMarksFlush('reject'); });
 
-// The round tree this one is, removed or not, if its round allows removal.
-function removableRoundTree(id) {
-  return SUBMISSION_ROUNDS_TREES.find(t => t.id === id && REMOVABLE_ROUNDS.includes(t.r)) || null;
+// The round tree this one is, if the mark applies to its round. A removed tree
+// can only be put back, not rejected.
+function markableRoundTree(kind, id) {
+  const t = SUBMISSION_ROUNDS_TREES.find(x => x.id === id && ROUND_MARKS[kind].rounds.includes(x.r));
+  if (!t) return null;
+  if (kind === 'reject' && !activeRoundTrees().some(x => x.id === id)) return null;
+  return t;
 }
 
-function updateRoundRemoveButton(tree) {
-  const btn = document.getElementById('mtp-round-remove-btn');
-  if (!btn || !tree) return;
-  const t = removableRoundTree(nominationTreeId(tree));
-  if (!t) { btn.style.display = 'none'; return; }
-  btn.style.display = '';
-  btn.textContent = getRoundRemovedIds().has(t.id) ? '↺ Put back in Round ' + t.r : '✕ Remove from Round ' + t.r;
+function updateRoundMarkButtons(tree) {
+  if (!tree) return;
+  const id = nominationTreeId(tree);
+  Object.keys(ROUND_MARKS).forEach(kind => {
+    const cfg = ROUND_MARKS[kind];
+    const btn = document.getElementById(cfg.btn);
+    if (!btn) return;
+    const t = markableRoundTree(kind, id);
+    if (!t) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = roundMarkIds(kind).has(id) ? cfg.undoLabel(t.r) : cfg.label(t.r);
+  });
 }
 
-function handleMapRoundRemoveBtn() {
+function openRoundMarkModal(kind) {
   const tree = window._currentMapDetailTree;
-  if (tree) openRoundRemoveModal(tree);
-}
-
-function openRoundRemoveModal(tree) {
-  const modal = document.getElementById('round-remove-modal');
-  const t = removableRoundTree(nominationTreeId(tree));
+  const modal = document.getElementById('round-mark-modal');
+  const cfg = ROUND_MARKS[kind];
+  const t = tree && markableRoundTree(kind, nominationTreeId(tree));
   if (!modal || !t) return;
-  _pendingRoundRemoveTree = tree;
-  _roundRemoveReason = '';
+  _pendingRoundMark = { kind, tree };
+  _roundMarkReason = '';
   const species = tree.spc_common || tree.spc_latin || t.sp || 'Unknown species';
-  document.getElementById('round-remove-info').innerHTML =
+  document.getElementById('round-mark-info').innerHTML =
     '<div style="font-family:\'Lora\',serif;font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)">' + escHtml(species) + '</div>' +
     '<div style="font-size:11px;color:var(--text2)">' + escHtml(t.a) + ' · Round ' + t.r + ' · Tree ID ' + escHtml(t.id) + '</div>';
-  const done = roundRemovalsReadLocal().find(d => String(d.treeId) === t.id);
-  const form = document.getElementById('round-remove-form');
-  const existing = document.getElementById('round-remove-existing');
-  const btn = document.getElementById('round-remove-confirm');
-  document.getElementById('round-remove-error').style.display = 'none';
+  const done = roundMarksReadLocal(kind).find(d => String(d.treeId) === t.id);
+  const form = document.getElementById('round-mark-form');
+  const existing = document.getElementById('round-mark-existing');
+  const btn = document.getElementById('round-mark-confirm');
+  document.getElementById('round-mark-error').style.display = 'none';
   btn.disabled = false;
+  btn.style.background = cfg.color;
   if (done) {
-    const when = done.removedAt ? new Date(done.removedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-    document.getElementById('round-remove-title').textContent = 'Put back in Round ' + t.r;
-    existing.innerHTML = '<div><b>Removed</b>' + (when ? ' on ' + escHtml(when) : '') + (done.removedBy ? ' by ' + escHtml(done.removedBy) : '') + '</div>' +
+    const at = done[cfg.atKey], by = done[cfg.byKey];
+    const when = at ? new Date(at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    document.getElementById('round-mark-title').textContent = cfg.undoTitle(t.r);
+    existing.innerHTML = '<div><b>' + cfg.done + '</b>' + (when ? ' on ' + escHtml(when) : '') + (by ? ' by ' + escHtml(by) : '') + '</div>' +
       (done.reason ? '<div>Reason: ' + escHtml(done.reason) + '</div>' : '');
     form.style.display = 'none'; existing.style.display = 'block';
-    btn.textContent = 'Put back';
+    btn.textContent = cfg.undo;
   } else {
-    document.getElementById('round-remove-title').textContent = 'Remove from Round ' + t.r;
-    document.getElementById('round-remove-reasons').innerHTML = ROUND_REMOVAL_REASONS.map((r, i) =>
-      '<button type="button" data-i="' + i + '" aria-pressed="false" onclick="pickRoundRemoveReason(this)" ' +
+    document.getElementById('round-mark-title').textContent = cfg.title(t.r);
+    document.getElementById('round-mark-intro').textContent = cfg.intro(t.r);
+    document.getElementById('round-mark-reasons').innerHTML = cfg.reasons.map((r, i) =>
+      '<button type="button" data-i="' + i + '" aria-pressed="false" onclick="pickRoundMarkReason(this)" ' +
       'style="min-height:40px;padding:8px 12px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;-webkit-appearance:none;appearance:none">' + escHtml(r) + '</button>').join('');
     form.style.display = 'block'; existing.style.display = 'none';
-    btn.textContent = 'Remove';
+    btn.textContent = cfg.confirm;
   }
   modal.style.display = 'flex';
 }
 
-function closeRoundRemoveModal() {
-  const modal = document.getElementById('round-remove-modal');
+function closeRoundMarkModal() {
+  const modal = document.getElementById('round-mark-modal');
   if (modal) modal.style.display = 'none';
-  _pendingRoundRemoveTree = null;
+  _pendingRoundMark = null;
 }
 
-function pickRoundRemoveReason(btn) {
-  const r = ROUND_REMOVAL_REASONS[+btn.dataset.i];
-  _roundRemoveReason = _roundRemoveReason === r ? '' : r;
-  document.querySelectorAll('#round-remove-reasons button').forEach(b => {
-    const on = ROUND_REMOVAL_REASONS[+b.dataset.i] === _roundRemoveReason;
+function pickRoundMarkReason(btn) {
+  if (!_pendingRoundMark) return;
+  const cfg = ROUND_MARKS[_pendingRoundMark.kind];
+  const r = cfg.reasons[+btn.dataset.i];
+  _roundMarkReason = _roundMarkReason === r ? '' : r;
+  document.querySelectorAll('#round-mark-reasons button').forEach(b => {
+    const on = cfg.reasons[+b.dataset.i] === _roundMarkReason;
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    b.style.background = on ? '#a8327a' : 'var(--bg2)';
+    b.style.background = on ? cfg.color : 'var(--bg2)';
     b.style.color = on ? '#fff' : 'var(--text)';
-    b.style.borderColor = on ? '#a8327a' : 'var(--border)';
+    b.style.borderColor = on ? cfg.color : 'var(--border)';
   });
 }
 
-async function confirmRoundRemove() {
-  const tree = _pendingRoundRemoveTree;
-  if (!tree) return;
-  const t = removableRoundTree(nominationTreeId(tree));
+async function confirmRoundMark() {
+  if (!_pendingRoundMark) return;
+  const { kind, tree } = _pendingRoundMark;
+  const cfg = ROUND_MARKS[kind];
+  const t = markableRoundTree(kind, nominationTreeId(tree));
   if (!t) return;
-  const btn = document.getElementById('round-remove-confirm');
-  const err = document.getElementById('round-remove-error');
-  const local = roundRemovalsReadLocal();
+  const btn = document.getElementById('round-mark-confirm');
+  const err = document.getElementById('round-mark-error');
+  const local = roundMarksReadLocal(kind);
   const done = local.find(d => String(d.treeId) === t.id);
   btn.disabled = true;
   if (!done) {
     let name = '';
     try { name = localStorage.getItem('tc_nominator_name') || ''; } catch (e) {}
-    local.push({ treeId: t.id, round: String(t.r), reason: _roundRemoveReason, removedBy: name, removedAt: new Date().toISOString(), _synced: false });
-    roundRemovalsWriteLocal(local);
-    closeRoundRemoveModal();
+    local.push({ treeId: t.id, round: String(t.r), reason: _roundMarkReason, [cfg.byKey]: name, [cfg.atKey]: new Date().toISOString(), _synced: false });
+    roundMarksWriteLocal(kind, local);
+    closeRoundMarkModal();
     refreshAfterRoundChange(tree);
-    tcShowSyncStatus('⟳ Removing from Round ' + t.r + '…');
-    await roundRemovalsFlush();
+    tcShowSyncStatus(cfg.saving(t.r));
+    await roundMarksFlush(kind);
     return;
   }
-  // Putting it back: take the row off the Sheet if it ever got there.
-  btn.textContent = 'Putting back…'; err.style.display = 'none';
+  // Undoing: take the row off the Sheet if it ever got there.
+  btn.textContent = 'Saving…'; err.style.display = 'none';
   try {
     if (done._synced !== false) {
-      const server = await sheetsRead(ROUND_REMOVAL_SHEET);
+      const server = await sheetsRead(cfg.sheet);
       if (server === null) throw new Error('Could not reach the Sheet. Check your signal and try again.');
       const kept = server.filter(r => r.treeId && String(r.treeId) !== t.id);
-      await sheetsWriteOrThrow(ROUND_REMOVAL_SHEET, ROUND_REMOVAL_HEADERS, kept, r => ROUND_REMOVAL_HEADERS.map(h => r[h] || ''));
+      await sheetsWriteOrThrow(cfg.sheet, cfg.headers, kept, r => cfg.headers.map(h => r[h] || ''));
     }
-    roundRemovalsWriteLocal(local.filter(d => String(d.treeId) !== t.id));
-    closeRoundRemoveModal();
+    roundMarksWriteLocal(kind, local.filter(d => String(d.treeId) !== t.id));
+    closeRoundMarkModal();
     refreshAfterRoundChange(tree);
-    tcShowSyncStatus('Put back in Round ' + t.r);
+    tcShowSyncStatus(cfg.undone(t.r));
   } catch (e) {
-    err.textContent = e.message || 'Could not put it back. Try again.'; err.style.display = 'block';
-    btn.disabled = false; btn.textContent = 'Put back';
+    err.textContent = e.message || 'Could not save. Try again.'; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = cfg.undo;
   }
 }
 
@@ -10202,7 +10262,7 @@ function switchViewById(view) {
 window.addEventListener('load', async () => {
   // Load reservations, tree guards, care-needed, and community-stewarded from GitHub
   console.log('Loading data from GitHub...');
-  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), dismissalsLoad(), roundRemovalsLoad(), careNeededLoad(), stewardedLoad(), missingLoad()]);
+  await Promise.all([reservationLoad(), treeGuardsLoad(), nominationsLoad(), dismissalsLoad(), roundMarksLoad('remove'), roundMarksLoad('reject'), careNeededLoad(), stewardedLoad(), missingLoad()]);
 
   // Show loading state while fetching census data
   const countEl = document.getElementById('tree-count');
