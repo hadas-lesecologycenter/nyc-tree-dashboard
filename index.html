@@ -1912,9 +1912,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <div id="s-goal-sub" style="font-size:11px;color:var(--text3);margin-top:6px">Claim areas and log care events in the Tree Care tab to track progress.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px" id="s-zone-breakdown"></div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:8px">
+      <span style="font-size:10px;color:var(--text3)">View by</span>
+      <div id="s-period-pills" style="display:flex;gap:6px"></div>
+    </div>
     <div class="charts-grid" style="margin-bottom:20px">
       <div class="chart-card" style="flex:1.6;min-width:260px">
-        <div class="chart-title">Trees Cared For — by Month</div>
+        <div class="chart-title" id="s-period-trees-title">Trees Cared For — by Month</div>
         <div class="chart-wrap" style="height:200px"><canvas id="monthly-trees-chart"></canvas></div>
       </div>
       <div class="chart-card" style="flex:1;min-width:220px">
@@ -1924,6 +1928,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
             style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;cursor:pointer"></select>
         </div>
         <div class="chart-wrap" style="height:200px"><canvas id="monthly-activities-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card full" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">
+        <div class="chart-title" style="margin:0">Quarterly Report</div>
+        <button onclick="exportTableCSV('s-quarter-table','quarterly-report.csv')" class="toggle-btn" title="Export table to CSV">⬇ CSV</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Each quarter adds up its three monthly totals, so a tree cared for in two months of a quarter counts twice.</div>
+      <div style="overflow-x:auto">
+        <table id="s-quarter-table" style="width:100%;border-collapse:collapse;font-family:'Nunito',sans-serif;font-size:12px">
+          <thead><tr id="s-quarter-head"></tr></thead>
+          <tbody id="s-quarter-body"></tbody>
+        </table>
       </div>
     </div>
     <div class="chart-card full" style="margin-bottom:20px;position:relative">
@@ -4107,6 +4124,7 @@ function isStreetTree(t) { return (t.tree_type || 'street') !== 'park'; }
 let activitiesChart = null;
 let monthlyTreesChart = null;
 let monthlyActivitiesChart = null;
+let _statsPeriod = 'month';  // 'month' | 'quarter' — granularity of the trees bar + activity mix
 let tierPieChart = null;
 let _tierPieYear = 'all';
 let _tierBreakdownYear = 'all';
@@ -4176,6 +4194,51 @@ function toggleActivityYear(year) {
     _actSelectedYears.push(year);
   }
   renderActivitiesChart();
+}
+
+function setStatsPeriod(p) {
+  _statsPeriod = p;
+  updateStats();
+}
+
+// Calendar quarters: 'YYYY-MM' → 'YYYY-Qn'
+const QUARTER_MONTHS = { 1: 'Jan–Mar', 2: 'Apr–Jun', 3: 'Jul–Sep', 4: 'Oct–Dec' };
+function monthToQuarter(m) {
+  return m.slice(0, 4) + '-Q' + Math.ceil(parseInt(m.slice(5, 7), 10) / 3);
+}
+
+// Short label for chart axes ('Jun 26' / "Q2 '26"), long label for selectors and the report.
+function statsPeriodLabel(key, long) {
+  const [y, p] = key.split('-');
+  if (p[0] === 'Q') {
+    return long ? `${p} ${y} (${QUARTER_MONTHS[p[1]]})` : `${p} '${y.slice(2)}`;
+  }
+  return new Date(+y, +p - 1, 1).toLocaleString('en-US', long ? { month: 'long', year: 'numeric' } : { month: 'short', year: '2-digit' });
+}
+
+function renderQuarterReport(quarterTreeTotals, byQuarter) {
+  const head = document.getElementById('s-quarter-head');
+  const body = document.getElementById('s-quarter-body');
+  if (!head || !body) return;
+  const th = (txt, align) => `<th style="text-align:${align};padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap">${txt}</th>`;
+  head.innerHTML = th('Quarter', 'left') + th('Trees Cared For', 'right') +
+    TC_ACTIVITIES.map(a => th(a.label, 'right')).join('');
+  const quarters = [...new Set([...Object.keys(quarterTreeTotals), ...Object.keys(byQuarter)])].sort().reverse();
+  if (!quarters.length) {
+    body.innerHTML = `<tr><td colspan="${TC_ACTIVITIES.length + 2}" style="padding:16px;text-align:center;color:var(--text3)">No data yet</td></tr>`;
+    return;
+  }
+  const now = new Date();
+  const currentQ = monthToQuarter(now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'));
+  const td = (txt, align, extra) => `<td style="text-align:${align};padding:7px 10px;border-bottom:1px solid var(--border3);${extra || ''}">${txt}</td>`;
+  body.innerHTML = quarters.map(q => {
+    const acts = byQuarter[q] || {};
+    const label = statsPeriodLabel(q, true) + (q === currentQ ? ' — to date' : '');
+    return '<tr>' + td(label, 'left', 'white-space:nowrap;color:var(--text)') +
+      td((quarterTreeTotals[q] || 0).toLocaleString(), 'right', 'font-weight:700;color:var(--accent)') +
+      TC_ACTIVITIES.map(a => td((acts[a.id] || 0).toLocaleString(), 'right', 'color:var(--text2)')).join('') +
+      '</tr>';
+  }).join('');
 }
 
 function setTierBreakdownYear(yr) {
@@ -4634,7 +4697,37 @@ function updateStats() {
     });
   });
 
-  const sortedMonths = Object.keys(monthlyTreeTotals).sort();
+  // ── Quarterly roll-up: each quarter is the sum of its monthly totals ──
+  const quarterTreeTotals = {}; // { 'YYYY-Qn': trees }
+  const byQuarter = {};         // { 'YYYY-Qn': { actId: trees } }
+  Object.entries(monthlyTreeTotals).forEach(([m, c]) => {
+    const q = monthToQuarter(m);
+    quarterTreeTotals[q] = (quarterTreeTotals[q] || 0) + c;
+  });
+  Object.entries(byMonth).forEach(([m, acts]) => {
+    const q = monthToQuarter(m);
+    if (!byQuarter[q]) byQuarter[q] = {};
+    Object.entries(acts).forEach(([aid, c]) => { byQuarter[q][aid] = (byQuarter[q][aid] || 0) + c; });
+  });
+  renderQuarterReport(quarterTreeTotals, byQuarter);
+
+  // The trees bar and activity mix follow the Month/Quarter toggle.
+  const isQuarter     = _statsPeriod === 'quarter';
+  const periodTotals  = isQuarter ? quarterTreeTotals : monthlyTreeTotals;
+  const periodActs    = isQuarter ? byQuarter : byMonth;
+  const sortedPeriods = Object.keys(periodTotals).sort();
+  const periodPills = document.getElementById('s-period-pills');
+  if (periodPills) {
+    periodPills.innerHTML = [['month', 'Month'], ['quarter', 'Quarter']].map(([p, lbl]) => {
+      const on = _statsPeriod === p;
+      return `<button onclick="setStatsPeriod('${p}')"
+        style="font-size:10px;padding:2px 8px;border-radius:12px;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};
+               background:${on ? 'var(--accent)' : 'transparent'};color:${on ? '#fff' : 'var(--text2)'};
+               cursor:pointer;font-family:inherit">${lbl}</button>`;
+    }).join('');
+  }
+  const periodTitle = document.getElementById('s-period-trees-title');
+  if (periodTitle) periodTitle.textContent = 'Trees Cared For — by ' + (isQuarter ? 'Quarter' : 'Month');
 
   // ── Daily trees heat map ──────────────────────────────────────
   // Same counting rule as the monthly chart, at day granularity: per area per
@@ -4663,23 +4756,19 @@ function updateStats() {
   const mtCtx = document.getElementById('monthly-trees-chart');
   if (mtCtx) {
     if (monthlyTreesChart) monthlyTreesChart.destroy();
-    if (!sortedMonths.length) {
+    if (!sortedPeriods.length) {
       const ctx = mtCtx.getContext('2d');
       ctx.clearRect(0, 0, mtCtx.width, mtCtx.height);
       ctx.fillStyle = '#9c9080'; ctx.font = '13px Nunito, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No data yet', mtCtx.offsetWidth / 2, 60);
     } else {
-      const monthLabels = sortedMonths.map(m => {
-        const [y, mo] = m.split('-');
-        return new Date(+y, +mo - 1, 1).toLocaleString('en-US', { month: 'short', year: '2-digit' });
-      });
       monthlyTreesChart = new Chart(mtCtx.getContext('2d'), {
         type: 'bar',
         data: {
-          labels: monthLabels,
+          labels: sortedPeriods.map(k => statsPeriodLabel(k)),
           datasets: [{
-            data: sortedMonths.map(m => monthlyTreeTotals[m]),
+            data: sortedPeriods.map(k => periodTotals[k]),
             backgroundColor: '#4a7c59cc',
             borderColor: '#2e8b57',
             borderWidth: 2, borderRadius: 4
@@ -4699,25 +4788,26 @@ function updateStats() {
     }
   }
 
-  // ── Monthly activity pie chart ────────────────────────────────
-  // Populate month selector dropdown
+  // ── Activity mix pie chart (month or quarter) ──────────────────
+  // Populate period selector dropdown
   const monthSel = document.getElementById('monthly-pie-month');
   if (monthSel) {
     const prevVal = monthSel.value;
     monthSel.innerHTML = '';
-    if (!sortedMonths.length) {
+    if (!sortedPeriods.length) {
       const opt = document.createElement('option'); opt.textContent = 'No data'; monthSel.appendChild(opt);
     } else {
-      sortedMonths.slice().reverse().forEach(m => {
+      sortedPeriods.slice().reverse().forEach(k => {
         const opt = document.createElement('option');
-        const [y, mo] = m.split('-');
-        opt.value = m;
-        opt.textContent = new Date(+y, +mo - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        opt.value = k;
+        opt.textContent = statsPeriodLabel(k, true);
         monthSel.appendChild(opt);
       });
-      // Keep previous selection if still valid, else default to most recent
-      if (prevVal && sortedMonths.includes(prevVal)) monthSel.value = prevVal;
-      else monthSel.value = sortedMonths[sortedMonths.length - 1];
+      // Keep previous selection if still valid; when switching period, keep the
+      // quarter containing the selected month; else default to most recent
+      if (prevVal && sortedPeriods.includes(prevVal)) monthSel.value = prevVal;
+      else if (isQuarter && /^\d{4}-\d{2}$/.test(prevVal) && sortedPeriods.includes(monthToQuarter(prevVal))) monthSel.value = monthToQuarter(prevVal);
+      else monthSel.value = sortedPeriods[sortedPeriods.length - 1];
     }
   }
 
@@ -4725,7 +4815,7 @@ function updateStats() {
   if (maCtx) {
     if (monthlyActivitiesChart) monthlyActivitiesChart.destroy();
     const selectedMonth = monthSel ? monthSel.value : '';
-    const monthData     = selectedMonth && byMonth[selectedMonth] ? byMonth[selectedMonth] : {};
+    const monthData     = selectedMonth && periodActs[selectedMonth] ? periodActs[selectedMonth] : {};
     const pieData       = TC_ACTIVITIES.map(a => monthData[a.id] || 0);
     const pieHasData    = pieData.some(v => v > 0);
     const palette       = ['#e67e22','#2e8b57','#8B4513','#4a7c59','#2980b9','#1a5c38','#c47d1a'];
@@ -4735,7 +4825,7 @@ function updateStats() {
       ctx.clearRect(0, 0, maCtx.width, maCtx.height);
       ctx.fillStyle = '#9c9080'; ctx.font = '12px Nunito, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('No activities for this month', maCtx.offsetWidth / 2, 80);
+      ctx.fillText('No activities for this ' + (isQuarter ? 'quarter' : 'month'), maCtx.offsetWidth / 2, 80);
     } else {
       monthlyActivitiesChart = new Chart(maCtx.getContext('2d'), {
         type: 'pie',
