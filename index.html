@@ -3111,7 +3111,9 @@ function getPlantYear(tree) {
 // Estimated planting year for trees Forestry has no planting date for —
 // age_est: [year, earliest, latest, source], written by
 // scripts/estimate_tree_ages.py from the 1995/2005/2015 censuses and species
-// growth rates. Display only: priority tiers read real planting dates alone.
+// growth rates. A source ending in '>' is a trunk too big to date: the year
+// means "planted before" and earliest is null. Display only: priority tiers
+// read real planting dates alone.
 const AGE_EST_SOURCES = {
   c1995:  ['medium', 'In the 1995 street tree census; dated back from its 1995 trunk size'],
   c2005:  ['high',   'First in the 2005 census, not in 1995: planted 1996–2005'],
@@ -3124,12 +3126,17 @@ const AGE_EST_SOURCES = {
 function getAgeEstimate(tree) {
   const a = tree && tree.age_est;
   if (!Array.isArray(a) || a.length < 4 || getPlantYear(tree)) return null;
-  const src = AGE_EST_SOURCES[a[3]] || ['low', 'Estimated'];
-  return { year: a[0], lo: a[1], hi: a[2], confidence: src[0], basis: src[1] };
+  const code = String(a[3]);
+  const before = code.endsWith('>');
+  const src = AGE_EST_SOURCES[before ? code.slice(0, -1) : code] || ['low', 'Estimated'];
+  const basis = before ? src[1] + '. Trunk is bigger than the growth data covers, so only an upper bound'
+                       : src[1];
+  return { year: a[0], lo: a[1], hi: a[2], before, confidence: src[0], basis };
 }
 function ageEstimateHtml(est) {
-  const range = est.lo === est.hi ? '' : ' (' + est.lo + '–' + est.hi + ')';
-  return '<span title="' + est.basis + ' · ' + est.confidence + ' confidence">~' + est.year +
+  const range = est.before || est.lo === est.hi ? '' : ' (' + est.lo + '–' + est.hi + ')';
+  return '<span title="' + est.basis + ' · ' + est.confidence + ' confidence">' +
+    (est.before ? 'before ' : '~') + est.year +
     '<span style="color:var(--text3)">' + range + ' · ' + est.confidence + '</span></span>';
 }
 
@@ -9222,7 +9229,7 @@ function openReserveModal(tree) {
     const plantedLabel = plantedRaw ? (parseInt(plantedRaw) > 1900 ? parseInt(plantedRaw) : null) : null;
     const ageEst = plantedLabel ? null : getAgeEstimate(tree);
     const ageLabel = plantedLabel ? (new Date().getFullYear() - plantedLabel) + ' yrs (planted ' + plantedLabel + ')'
-                   : ageEst ? '~' + (new Date().getFullYear() - ageEst.year) + ' yrs · est. planted ' + ageEstimateHtml(ageEst)
+                   : ageEst ? (ageEst.before ? 'over ' : '~') + (new Date().getFullYear() - ageEst.year) + ' yrs · est. planted ' + ageEstimateHtml(ageEst)
                    : null;
     const rows = [
       tree.address   ? ['Address',      tree.address]                                    : null,

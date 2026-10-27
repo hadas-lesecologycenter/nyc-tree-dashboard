@@ -6,7 +6,8 @@ no planting date, and write it back as one field:
   age_est: [best-guess year, earliest plausible, latest plausible, source]
 
 where source is one of the SOURCES codes below (its confidence is in
-CONFIDENCE). One packed field rather than five because every visitor
+CONFIDENCE). A source ending in '>' marks a trunk too big to date: the year is
+then "planted before" and the earliest-year slot is null. One packed field rather than five because every visitor
 downloads census.json in full on every page load (see fetch_census.py).
 
 The planting date fields themselves (planteddate, tree_cen_date) are never
@@ -24,9 +25,11 @@ How it works
    of the same genus whose diameter fits ten or twenty years' growth. Each
    census tree pairs with at most one Forestry tree. (Census files are in
    data/census-history/, written by fetch_historic_censuses.py.)
-2. Calibrate growth: a tree matched in two consecutive censuses shows how fast
-   its trunk grew in those ten years. The median of that, per species and per
-   size class, is the local growth rate. Species with too few matched trees
+2. Calibrate growth: a tree matched in an older census and in 2015 shows
+   how fast its trunk grew in between. Only matches with nothing to choose
+   between (one tree of that genus at the address in both censuses) count, so
+   the rates aren't shaped by how candidates were ranked. Their trimmed mean,
+   per species and per size class, is the local growth rate. Species with too few matched trees
    fall back to data/growth-rates-published.json, then to their genus, then
    to all trees.
 3. Date: the earliest census a tree appears in proves it was planted by then,
@@ -63,8 +66,12 @@ ADDRESS_MAX_M = 120.0
 # A second pass tries nearby house numbers on the same side of the same
 # street, for trees credited to the building next door in one census.
 NEAR_HOUSE_NUMBERS = 12
-# Rough growth used only to rank candidates at one address by how well their
-# diameters fit; the real rates are measured afterwards from the matches.
+# Where an address lists several trees of one genus, candidates are ranked by
+# how well their diameters fit the species' growth. This rough rate is used
+# for that on the first pass only; growth is then measured from the
+# addresses where there was nothing to choose between (one tree of that
+# genus in both censuses), and the matching re-run with those rates. Measuring
+# growth from ranked matches would just hand this number back.
 NOMINAL_RATE = 0.2
 
 # A census tree can't be much fatter than the tree there now — if it is, the
@@ -77,10 +84,19 @@ def dbh_plausible(census_dbh, current_dbh):
 
 # Growth calibration
 MIN_SPECIES_N = 20      # matched trees needed to trust a species' own rate
-MIN_CLASS_N   = 10      # …and to trust its rate within one size class
+MIN_CLASS_N   = 30      # …and to trust its rate within one size class
 DBH_CLASSES   = (0, 6, 12, 18, 24, 999)   # inches
 RATE_FLOOR, RATE_CEIL = 0.05, 1.5         # in/yr — clip noise, not biology
 PUBLISHED_SPREAD = 0.3  # ± fraction used as the range for a published rate
+SLOWEST, FASTEST = 0.67, 1.5   # range rates, as a fraction of the typical one
+
+# Growth rates come from street trees, nearly all under ~30". Reading the
+# age of a much bigger trunk off them extrapolates far past the data (and
+# park trees, with room to grow, grow faster anyway): the first run put a
+# 59" Tompkins Square sycamore at 1590. So a trunk bigger than this
+# percentile of the measured trees' diameters (per species, or overall) is
+# only dated as "planted before" the year a tree of that size would have been.
+MAX_DBH_PERCENTILE = 95
 
 # Census diameters were taped by volunteers and recorded in whole inches, so
 # a range built on one should allow for it being off by about this much.
@@ -107,6 +123,8 @@ SOURCES = {
     'c2015m': 'First in the 2015 census; too big to be new, so likely missed in 2005',
     'new':   'Street tree in no census and still small: planted after 2015',
     'dbh':   'Current diameter and species growth rate only',
+    # Any code + '>': trunk bigger than the growth data covers; the year is
+    # "planted before", and the earliest-year slot is null.
 }
 
 CONFIDENCE = {'c1995': 'medium', 'c2005': 'high', 'c2015': 'high',
@@ -171,8 +189,14 @@ ORDINAL_WORDS = {
 }
 
 
+# The 1995 file truncates some street names and drops 'STREET' from others
+# ('ALLEN', 'AVENUE OF THE AMER', 'MAC DOUGAL'), so streets are compared on a
+# compact key: no 'STREET', no spaces, cut to this many characters.
+STREET_KEY_LEN = 14
+
+
 def norm_address(raw):
-    """'110 E. 7th St' and '110 EAST 7 STREET' → (110, 'EAST 7 STREET'); None if unusable."""
+    """'110 E. 7th St' and '110 EAST 7 STREET' → (110, 'EAST7'); None if unusable."""
     s = (raw or '').upper().replace("'", '').replace('.', ' ')
     head = s.strip().split(None, 1)
     if len(head) < 2:
@@ -192,7 +216,8 @@ def norm_address(raw):
         else:
             w = STREET_WORDS.get(w, w)
         words.append(w)
-    return (int(digits), ' '.join(words)) if words else None
+    key = ''.join(w for w in words if w != 'STREET')[:STREET_KEY_LEN]
+    return (int(digits), key) if key else None
 
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
@@ -297,18 +322,24 @@ def match_census(trees, census, radius):
     return out
 
 
-def match_by_address(trees, matched_2015, census, year):
+def match_by_address(trees, matched_2015, census, year, rate_of):
     """{tree index: census row} for a census recorded by address.
 
     Only trees already matched to the 2015 census have an address to look up.
-    Returns the matches and how many each pass found.
+    rate_of(tree index) is the growth (in/yr) used to rank candidates.
+    Returns the matches, how many each pass found, and the trees whose match
+    was the only possible one (see NOMINAL_RATE).
     """
-    by_addr, by_street = {}, {}
+    by_addr, by_street, old_count, new_count = {}, {}, {}, {}
     for ci, c in enumerate(census):
         if c['addr']:
             by_addr.setdefault(c['addr'], []).append(ci)
             num_, street = c['addr']
             by_street.setdefault((street, num_ % 2), []).append(ci)
+            old_count[(c['addr'], c['genus'])] = old_count.get((c['addr'], c['genus']), 0) + 1
+    for ti, c15 in matched_2015.items():
+        key = (c15.get('addr'), trees[ti]['_genus'])
+        new_count[key] = new_count.get(key, 0) + 1
     pts = [xy(c['lat'], c['lng']) for c in census]
     years_back = 2015 - year
 
@@ -323,10 +354,10 @@ def match_by_address(trees, matched_2015, census, year):
                 continue
             if math.hypot(pts[ci][0] - t['_xy'][0], pts[ci][1] - t['_xy'][1]) > ADDRESS_MAX_M:
                 continue
-            fit = abs((c15['dbh'] - c['dbh']) - NOMINAL_RATE * years_back)
+            fit = abs((c15['dbh'] - c['dbh']) - rate_of(ti) * years_back)
             yield (house_gap(c), fit, ti, ci)
 
-    out, used_c, passes = {}, set(), []
+    out, used_c, passes, unique = {}, set(), [], set()
     for near in (False, True):
         pairs = []
         for ti, c15 in matched_2015.items():
@@ -348,8 +379,11 @@ def match_by_address(trees, matched_2015, census, year):
             out[ti] = census[ci]
             used_c.add(ci)
             found += 1
+            key = (census[ci]['addr'], trees[ti]['_genus'])
+            if not near and key[1] and old_count.get(key) == 1 and new_count.get(key) == 1:
+                unique.add(ti)
         passes.append(found)
-    return out, {'same_address': passes[0], 'nearby_house_number': passes[1]}
+    return out, {'same_address': passes[0], 'nearby_house_number': passes[1]}, unique
 
 
 def drop_replanted(seen):
@@ -381,6 +415,17 @@ def clip(rate):
     return min(RATE_CEIL, max(RATE_FLOOR, rate))
 
 
+def trimmed_mean(values, cut=0.1):
+    """Mean without the top and bottom tenth. Whole-inch diameters over ten
+    years make every increment a multiple of 0.1 in/yr, so a median can only
+    land on 0.1, 0.2, 0.3…; this keeps the resolution and still drops the
+    worst mismatches."""
+    v = sorted(values)
+    k = int(len(v) * cut)
+    v = v[k:len(v) - k] or v
+    return sum(v) / len(v)
+
+
 def quartiles(values):
     if len(values) < 4:
         m = statistics.median(values)
@@ -393,26 +438,37 @@ class GrowthModel:
     """Trunk growth in inches/year by species and size class."""
 
     def __init__(self, increments, published):
-        # increments: list of (species_key, genus, start_dbh, inches_per_year)
+        # increments: list of (species_key, genus, start_dbh, end_dbh, inches_per_year)
         self.species, self.genus, self.classes = {}, {}, {}
         by_sp, by_genus, by_class, everything = {}, {}, {}, []
-        for sp, genus, start, rate in increments:
+        ends_sp, ends_all = {}, []
+        for sp, genus, start, end, rate in increments:
             everything.append(rate)
+            ends_all.append(end)
             if sp:
                 by_sp.setdefault(sp, []).append(rate)
                 by_class.setdefault((sp, size_class(start)), []).append(rate)
+                ends_sp.setdefault(sp, []).append(end)
             if genus:
                 by_genus.setdefault(genus, []).append(rate)
 
+        # The largest trunks the growth data actually covers. Ages are not
+        # extrapolated past these — see MAX_DBH_PERCENTILE.
+        def p95(values):
+            return round(statistics.quantiles(values, n=100)[MAX_DBH_PERCENTILE - 1], 1)
+        self.overall_max_dbh = p95(ends_all) if len(ends_all) >= MIN_SPECIES_N else None
+        self.max_dbh = {sp: p95(v) for sp, v in ends_sp.items() if len(v) >= MIN_SPECIES_N}
+
         def summarise(values, source):
-            lo, mid, hi = quartiles(values)
-            mid = clip(mid)
+            lo, _, hi = quartiles(values)
+            mid = clip(trimmed_mean(values))
             # The quartiles of ten-year increments mix real tree-to-tree
-            # differences with measurement noise. Keep them as the range, but
-            # not so wide that a negative quartile reads as "no growth".
+            # differences with whole-inch measurement noise, which alone can
+            # push the lower one to zero. Keep them as the range, but within
+            # these bounds, or a big tree's "earliest" year lands centuries back.
             return {'rate': round(mid, 4),
-                    'slow': round(clip(max(lo, 0.5 * mid)), 4),
-                    'fast': round(clip(min(max(hi, mid), 2.0 * mid)), 4),
+                    'slow': round(clip(max(lo, SLOWEST * mid)), 4),
+                    'fast': round(clip(min(max(hi, mid), FASTEST * mid)), 4),
                     'n': len(values), 'source': source}
 
         self.overall = summarise(everything, 'all census-matched trees') if everything else \
@@ -434,7 +490,11 @@ class GrowthModel:
         for (sp, cls), values in by_class.items():
             if sp in self.species and len(values) >= MIN_CLASS_N \
                     and not self.species[sp]['source'].startswith('published'):
-                self.classes[(sp, cls)] = clip(statistics.median(values))
+                self.classes[(sp, cls)] = clip(trimmed_mean(values))
+
+    def dbh_limit(self, sp):
+        """Largest diameter this species' age can be read from, or None."""
+        return self.max_dbh.get(sp, self.overall_max_dbh)
 
     def lookup(self, sp, genus):
         if sp in self.species:
@@ -463,10 +523,12 @@ class GrowthModel:
         """(typical, oldest, youngest) years since planting for a measured diameter.
 
         The oldest reading assumes slow growth and a diameter read a little
-        low; the youngest, fast growth and a diameter read a little high.
+        low (but not past the datable limit); the youngest, fast growth and a
+        diameter read a little high.
         """
         typical = self.years_to_grow(sp, genus, d0, dbh)[0]
-        oldest = self.years_to_grow(sp, genus, d0, dbh + DBH_ERROR_IN)[1]
+        limit = self.dbh_limit(sp) or float('inf')
+        oldest = self.years_to_grow(sp, genus, d0, min(dbh + DBH_ERROR_IN, max(dbh, limit)))[1]
         youngest = self.years_to_grow(sp, genus, d0, max(d0, dbh - DBH_ERROR_IN))[2]
         return typical, oldest, youngest
 
@@ -476,9 +538,19 @@ class GrowthModel:
 def estimate(t, seen, growth, d0, years_available, this_year):
     """(est, lo, hi, src, conf) for one tree, or None when nothing to go on."""
     sp, genus = t['_species'], t['_genus']
+    limit = growth.dbh_limit(sp)
+
+    def planted_before(measured_year, dbh):
+        """For a trunk bigger than any the growth data covers: only that it
+        was planted before a tree of the limiting size would have been."""
+        before = round(measured_year - growth.years_to_grow(sp, genus, d0, limit)[0])
+        return before, None, before
 
     if seen:
         first = min(seen)
+        if limit and seen[first]['dbh'] > limit:
+            src = f'c{first}'
+            return (*planted_before(first, seen[first]['dbh']), src + '>', CONFIDENCE[src])
         ests = []
         for y, c in seen.items():
             ests.append(y - growth.years_to_grow(sp, genus, d0, c['dbh'])[0])
@@ -502,6 +574,9 @@ def estimate(t, seen, growth, d0, years_available, this_year):
         dbh = t['_dbh']
         if not dbh:
             return None
+        if limit and dbh > limit:
+            # The diameter could have been recorded any time up to now.
+            return (*planted_before(this_year, dbh), 'dbh>', CONFIDENCE['dbh'])
         typical, slow, fast = growth.age_range(sp, genus, d0, dbh)
         measured_mid = (DBH_MEASURED_FROM + this_year) / 2
         est = measured_mid - typical
@@ -513,9 +588,10 @@ def estimate(t, seen, growth, d0, years_available, this_year):
         else:
             src = 'dbh'
 
-    hi = min(hi, this_year)
-    est = min(max(est, lo), hi)
-    lo, hi = min(lo, est), max(hi, est)
+    # The best guess comes from every census a tree is in, the range from the
+    # earliest; widen the range to take the guess in rather than move it.
+    est = min(est, this_year)
+    lo, hi = min(lo, est), max(min(hi, this_year), est)
     return round(est), math.floor(lo), math.ceil(hi), src, CONFIDENCE[src]
 
 
@@ -547,34 +623,55 @@ def main():
     # can't claim the census record of the dead tree that stood beside it.
     # 2015 by position; the older censuses by the 2015 address where the
     # files carry addresses, by position otherwise.
-    matches, match_method = {}, {}
-    if 2015 in history:
-        matches[2015] = match_census(trees, history[2015], MATCH_RADIUS_M[2015])
-        match_method['2015'] = 'position'
-    for y in years_available:
-        if y == 2015:
-            continue
-        if 2015 in matches and any(c['addr'] for c in history[y]) \
-                and any(c['addr'] for c in history[2015]):
-            matches[y], passes = match_by_address(trees, matches[2015], history[y], y)
-            match_method[str(y)] = {'address': passes}
-        else:
-            matches[y] = match_census(trees, history[y], MATCH_RADIUS_M[y])
-            match_method[str(y)] = 'position'
-    sightings = []
-    for ti in range(len(trees)):
-        seen = {y: matches[y][ti] for y in years_available if ti in matches[y]}
-        sightings.append(drop_replanted(seen))
+    def match_all(rate_of):
+        matches, method, unique = {}, {}, {}
+        if 2015 in history:
+            matches[2015] = match_census(trees, history[2015], MATCH_RADIUS_M[2015])
+            method['2015'] = 'position'
+        for y in years_available:
+            if y == 2015:
+                continue
+            if 2015 in matches and any(c['addr'] for c in history[y]) \
+                    and any(c['addr'] for c in history[2015]):
+                matches[y], passes, unique[y] = match_by_address(
+                    trees, matches[2015], history[y], y, rate_of)
+                method[str(y)] = {'address': passes, 'unambiguous': len(unique[y])}
+            else:
+                matches[y] = match_census(trees, history[y], MATCH_RADIUS_M[y])
+                method[str(y)] = 'position'
+        sightings = []
+        for ti in range(len(trees)):
+            seen = {y: matches[y][ti] for y in years_available if ti in matches[y]}
+            sightings.append(drop_replanted(seen))
+        return matches, method, unique, sightings
 
-    # 2. Calibrate from trees seen in consecutive censuses.
+    matches, match_method, unique, sightings = match_all(lambda ti: NOMINAL_RATE)
+
+    # 2. Calibrate growth. With addresses: from the unambiguous matches, over
+    # each tree's longest span to its 2015 diameter. Without: from every pair
+    # of consecutive sightings.
     increments = []
     for ti, seen in enumerate(sightings):
+        if unique:
+            ys = [y for y in sorted(seen) if ti in unique.get(y, ())]
+            if ys and 2015 in seen:
+                y = ys[0]
+                increments.append((trees[ti]['_species'], trees[ti]['_genus'],
+                                   seen[y]['dbh'], seen[2015]['dbh'],
+                                   (seen[2015]['dbh'] - seen[y]['dbh']) / (2015 - y)))
+            continue
         ys = sorted(seen)
         for a, b in zip(ys, ys[1:]):
             if b - a == 10:
                 increments.append((trees[ti]['_species'], trees[ti]['_genus'],
-                                   seen[a]['dbh'], (seen[b]['dbh'] - seen[a]['dbh']) / (b - a)))
+                                   seen[a]['dbh'], seen[b]['dbh'],
+                                   (seen[b]['dbh'] - seen[a]['dbh']) / (b - a)))
     growth = GrowthModel(increments, published)
+
+    if unique:
+        # Re-match the ambiguous addresses using the measured rates.
+        matches, match_method, _, sightings = match_all(
+            lambda ti: growth.lookup(trees[ti]['_species'], trees[ti]['_genus'])[1]['rate'])
 
     recent = [t['_dbh'] for t in trees
               if t.get('status') == 'Full' and t['_dbh'] and (planted_year(t) or 0) >= this_year - 1]
@@ -618,6 +715,21 @@ def main():
         if prev - 2 <= dbh_only <= first:
             w[0] += 1
 
+    # Trees in two censuses can be dated from each diameter separately; how
+    # far apart those two dates land is a direct read on the method's error.
+    agreement = {}
+    for ti, seen in enumerate(sightings):
+        ys = sorted(seen)
+        for a, b in zip(ys, ys[1:]):
+            if seen[a]['dbh'] <= d0 + DBH_ERROR_IN:
+                continue   # still at planting size: its date is just "by then"
+            limit = growth.dbh_limit(trees[ti]['_species'])
+            if limit and seen[b]['dbh'] > limit:
+                continue   # too big to date (see MAX_DBH_PERCENTILE)
+            ea = a - growth.years_to_grow(trees[ti]['_species'], trees[ti]['_genus'], d0, seen[a]['dbh'])[0]
+            eb = b - growth.years_to_grow(trees[ti]['_species'], trees[ti]['_genus'], d0, seen[b]['dbh'])[0]
+            agreement.setdefault(f'{a} vs {b}', []).append(abs(ea - eb))
+
     with open(CENSUS_PATH, 'w') as f:
         json.dump([{k: v for k, v in t.items() if not k.startswith('_')} for t in trees],
                   f, separators=(',', ':'))
@@ -636,13 +748,20 @@ def main():
                 f'{false_2015} of {len(late)} — these are false matches',
             'trees_planted_2007_or_later_matched_to_2005_census':
                 f'{false_2005} of {len(dated)} dated trees — false matches',
-            'diameter_alone_lands_in_census_window': {
-                k: f'{a} of {n} ({a / n:.0%})' for k, (a, n) in window_checks.items() if n},
+            'first_seen_trees_whose_size_fits_planting_since_previous_census': {
+                k: f'{a} of {n} ({a / n:.0%}); the rest are labelled c…m'
+                for k, (a, n) in window_checks.items() if n},
+            'years_apart_when_dated_from_each_of_two_censuses': {
+                k: {'trees': len(v), 'median': round(statistics.median(v), 1),
+                    'p80': round(statistics.quantiles(v, n=5)[3], 1) if len(v) >= 5 else None}
+                for k, v in sorted(agreement.items())},
         },
         'growth_rates_in_per_yr': {
             'overall': growth.overall,
             'species': dict(sorted(growth.species.items())),
             'genus': dict(sorted(growth.genus.items())),
+            'largest_datable_dbh_in': {'overall': growth.overall_max_dbh,
+                                       **dict(sorted(growth.max_dbh.items()))},
             'species_by_size_class': {f'{sp} | {cls}"+': round(r, 4)
                                       for (sp, cls), r in sorted(growth.classes.items())},
         },
