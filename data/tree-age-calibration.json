@@ -30,22 +30,22 @@
  "growth_increments": 1316,
  "estimates": {
   "by_source": {
-   "c2015": 1870,
-   "c2015m": 709,
-   "c2005": 840,
-   "new": 1370,
-   "dbh": 3843,
+   "c2015": 1763,
+   "c2015m": 816,
+   "c2005": 800,
+   "new": 1273,
+   "dbh": 3940,
    "dbh>": 1162,
    "c1995": 1607,
-   "c2005m": 248,
+   "c2005m": 288,
    "c2015>": 46,
    "c1995>": 10,
    "c2005>": 10
   },
   "by_confidence": {
-   "high": 2766,
-   "medium": 2574,
-   "low": 6375
+   "high": 2619,
+   "medium": 2413,
+   "low": 6683
   },
   "living_without_date_or_dbh": 17
  },
@@ -83,89 +83,116 @@
    }
   }
  },
+ "ranges": {
+  "covers": "about 80% of trees, by the cross-census error",
+  "one_estimate_error_years_by_years_since_planting": {
+   "0+": 7.1,
+   "20+": 7.1,
+   "45+": 7.7,
+   "70+": 10.7
+  },
+  "plus_share_of_years_for_growth_rate_error": 0.2,
+  "shown_as_low_confidence_when_wider_than_years": 30
+ },
  "growth_rates_in_per_yr": {
   "overall": {
    "rate": 0.2369,
-   "slow": 0.1587,
-   "fast": 0.35,
+   "quartiles": [
+    0.1,
+    0.35
+   ],
    "n": 1316,
    "source": "all census-matched trees"
   },
   "species": {
    "acer rubrum": {
     "rate": 0.2222,
-    "slow": 0.1555,
-    "fast": 0.2889,
     "n": 1,
     "source": "published: Growth factor table, Allegheny County Parks, 'How to age a living tree' \u2014 https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.omnicalculator.com/biology/tree-age"
    },
    "acer saccharinum": {
     "rate": 0.3333,
-    "slow": 0.2333,
-    "fast": 0.4333,
     "n": 1,
     "source": "published: Growth factor table, Allegheny County Parks \u2014 https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.thelivingurn.com/blogs/news/79236289-how-to-determine-the-age-of-a-tree"
    },
    "fraxinus pennsylvanica": {
     "rate": 0.2471,
-    "slow": 0.1655,
-    "fast": 0.325,
+    "quartiles": [
+     0.15,
+     0.325
+    ],
     "n": 21,
     "source": "census-matched trees of this species"
    },
    "ginkgo biloba": {
     "rate": 0.1558,
-    "slow": 0.1044,
-    "fast": 0.2337,
+    "quartiles": [
+     0.1,
+     0.25
+    ],
     "n": 226,
     "source": "census-matched trees of this species"
    },
    "gleditsia triacanthos": {
     "rate": 0.2877,
-    "slow": 0.2,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 287,
     "source": "census-matched trees of this species"
    },
    "platanus x acerifolia": {
     "rate": 0.1286,
-    "slow": 0.0861,
-    "fast": 0.1929,
+    "quartiles": [
+     0.05,
+     0.2
+    ],
     "n": 165,
     "source": "census-matched trees of this species"
    },
    "pyrus calleryana": {
     "rate": 0.2857,
-    "slow": 0.2,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 217,
     "source": "census-matched trees of this species"
    },
    "quercus palustris": {
     "rate": 0.3164,
-    "slow": 0.212,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 67,
     "source": "census-matched trees of this species"
    },
    "styphnolobium japonicum": {
     "rate": 0.2889,
-    "slow": 0.2,
-    "fast": 0.3875,
+    "quartiles": [
+     0.2,
+     0.3875
+    ],
     "n": 88,
     "source": "census-matched trees of this species"
    },
    "tilia cordata": {
     "rate": 0.1806,
-    "slow": 0.121,
-    "fast": 0.25,
+    "quartiles": [
+     0.1,
+     0.25
+    ],
     "n": 88,
     "source": "census-matched trees of this species"
    },
    "zelkova serrata": {
     "rate": 0.3446,
-    "slow": 0.2309,
-    "fast": 0.5,
+    "quartiles": [
+     0.2,
+     0.5
+    ],
     "n": 34,
     "source": "census-matched trees of this species"
    }
@@ -173,71 +200,91 @@
   "genus": {
    "fraxinus": {
     "rate": 0.2553,
-    "slow": 0.171,
-    "fast": 0.35,
+    "quartiles": [
+     0.15,
+     0.35
+    ],
     "n": 23,
     "source": "census-matched fraxinus trees"
    },
    "ginkgo": {
     "rate": 0.1558,
-    "slow": 0.1044,
-    "fast": 0.2337,
+    "quartiles": [
+     0.1,
+     0.25
+    ],
     "n": 226,
     "source": "census-matched ginkgo trees"
    },
    "gleditsia": {
     "rate": 0.2877,
-    "slow": 0.2,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 287,
     "source": "census-matched gleditsia trees"
    },
    "platanus": {
     "rate": 0.1301,
-    "slow": 0.0872,
-    "fast": 0.1952,
+    "quartiles": [
+     0.0625,
+     0.2
+    ],
     "n": 168,
     "source": "census-matched platanus trees"
    },
    "pyrus": {
     "rate": 0.2857,
-    "slow": 0.2,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 217,
     "source": "census-matched pyrus trees"
    },
    "quercus": {
     "rate": 0.3203,
-    "slow": 0.2146,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 92,
     "source": "census-matched quercus trees"
    },
    "styphnolobium": {
     "rate": 0.2889,
-    "slow": 0.2,
-    "fast": 0.3875,
+    "quartiles": [
+     0.2,
+     0.3875
+    ],
     "n": 88,
     "source": "census-matched styphnolobium trees"
    },
    "tilia": {
     "rate": 0.1887,
-    "slow": 0.1264,
-    "fast": 0.283,
+    "quartiles": [
+     0.1,
+     0.3
+    ],
     "n": 119,
     "source": "census-matched tilia trees"
    },
    "ulmus": {
     "rate": 0.3278,
-    "slow": 0.2196,
-    "fast": 0.4,
+    "quartiles": [
+     0.2,
+     0.4
+    ],
     "n": 22,
     "source": "census-matched ulmus trees"
    },
    "zelkova": {
     "rate": 0.3446,
-    "slow": 0.2309,
-    "fast": 0.5,
+    "quartiles": [
+     0.2,
+     0.5
+    ],
     "n": 34,
     "source": "census-matched zelkova trees"
    }
