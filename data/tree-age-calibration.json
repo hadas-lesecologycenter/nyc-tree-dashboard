@@ -1,9 +1,19 @@
 {
  "planting_dbh_in": 3.0,
- "match_radius_m": {
-  "1995": 10.0,
-  "2005": 6.0,
-  "2015": 3.0
+ "match_method": {
+  "2015": "position",
+  "1995": {
+   "address": {
+    "same_address": 1342,
+    "nearby_house_number": 608
+   }
+  },
+  "2005": {
+   "address": {
+    "same_address": 1961,
+    "nearby_house_number": 776
+   }
+  }
  },
  "census_trees": {
   "1995": 5525,
@@ -11,25 +21,25 @@
   "2015": 8211
  },
  "matched_forestry_trees": {
-  "1995": 985,
-  "2005": 630,
+  "1995": 1950,
+  "2005": 2737,
   "2015": 6821
  },
- "growth_increments": 705,
+ "growth_increments": 4055,
  "estimates": {
   "by_source": {
-   "c2015": 2755,
-   "c2015m": 1679,
-   "new": 1390,
-   "dbh": 4841,
-   "c1995": 696,
-   "c2005": 280,
-   "c2005m": 74
+   "c2015": 1957,
+   "c2015m": 699,
+   "c2005": 892,
+   "dbh": 4974,
+   "new": 1401,
+   "c1995": 1530,
+   "c2005m": 262
   },
   "by_confidence": {
-   "high": 3035,
-   "medium": 2449,
-   "low": 6231
+   "high": 2849,
+   "medium": 2491,
+   "low": 6375
   },
   "living_without_date_or_dbh": 17
  },
@@ -44,26 +54,33 @@
  },
  "checks": {
   "trees_planted_2017_or_later_matched_to_2015_census": "17 of 2241 \u2014 these are false matches",
-  "trees_planted_2007_or_later_matched_to_2005_census": "10 of 2430 dated trees \u2014 false matches",
+  "trees_planted_2007_or_later_matched_to_2005_census": "7 of 2430 dated trees \u2014 false matches",
   "diameter_alone_lands_in_census_window": {
-   "2006-2015": "2451 of 5700 (43%)",
-   "1996-2005": "227 of 440 (52%)"
+   "2006-2015": "2028 of 3477 (58%)",
+   "1996-2005": "779 of 1419 (55%)"
   }
  },
  "growth_rates_in_per_yr": {
   "overall": {
    "rate": 0.2,
    "slow": 0.1,
-   "fast": 0.4,
-   "n": 705,
+   "fast": 0.3,
+   "n": 4055,
    "source": "all census-matched trees"
   },
   "species": {
+   "acer platanoides": {
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.2,
+    "n": 20,
+    "source": "census-matched trees of this species"
+   },
    "acer rubrum": {
     "rate": 0.2222,
     "slow": 0.1555,
     "fast": 0.2889,
-    "n": 2,
+    "n": 4,
     "source": "published: Growth factor table, Allegheny County Parks, 'How to age a living tree' \u2014 https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.omnicalculator.com/biology/tree-age"
    },
    "acer saccharinum": {
@@ -73,137 +90,225 @@
     "n": 0,
     "source": "published: Growth factor table, Allegheny County Parks \u2014 https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.thelivingurn.com/blogs/news/79236289-how-to-determine-the-age-of-a-tree"
    },
+   "fraxinus pennsylvanica": {
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 69,
+    "source": "census-matched trees of this species"
+   },
    "ginkgo biloba": {
-    "rate": 0.1,
-    "slow": 0.05,
-    "fast": 0.2,
-    "n": 117,
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 619,
     "source": "census-matched trees of this species"
    },
    "gleditsia triacanthos": {
     "rate": 0.2,
-    "slow": 0.1,
+    "slow": 0.2,
     "fast": 0.4,
-    "n": 190,
+    "n": 1296,
     "source": "census-matched trees of this species"
    },
    "platanus x acerifolia": {
-    "rate": 0.2,
-    "slow": 0.1,
-    "fast": 0.35,
-    "n": 65,
+    "rate": 0.1,
+    "slow": 0.05,
+    "fast": 0.2,
+    "n": 459,
+    "source": "census-matched trees of this species"
+   },
+   "prunus serrulata": {
+    "rate": 0.1,
+    "slow": 0.05,
+    "fast": 0.2,
+    "n": 20,
     "source": "census-matched trees of this species"
    },
    "pyrus calleryana": {
     "rate": 0.2,
     "slow": 0.1,
     "fast": 0.4,
-    "n": 140,
+    "n": 670,
     "source": "census-matched trees of this species"
    },
    "quercus palustris": {
     "rate": 0.3,
-    "slow": 0.15,
+    "slow": 0.2,
     "fast": 0.4,
-    "n": 30,
+    "n": 184,
+    "source": "census-matched trees of this species"
+   },
+   "quercus rubra": {
+    "rate": 0.3,
+    "slow": 0.2,
+    "fast": 0.5,
+    "n": 21,
     "source": "census-matched trees of this species"
    },
    "styphnolobium japonicum": {
-    "rate": 0.25,
-    "slow": 0.125,
-    "fast": 0.325,
-    "n": 22,
+    "rate": 0.3,
+    "slow": 0.2,
+    "fast": 0.4,
+    "n": 174,
+    "source": "census-matched trees of this species"
+   },
+   "tilia americana": {
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 56,
     "source": "census-matched trees of this species"
    },
    "tilia cordata": {
-    "rate": 0.1,
-    "slow": 0.05,
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 173,
+    "source": "census-matched trees of this species"
+   },
+   "tilia tomentosa": {
+    "rate": 0.2,
+    "slow": 0.1,
     "fast": 0.2,
+    "n": 33,
+    "source": "census-matched trees of this species"
+   },
+   "ulmus americana": {
+    "rate": 0.3,
+    "slow": 0.2,
+    "fast": 0.5,
     "n": 42,
     "source": "census-matched trees of this species"
    },
    "zelkova serrata": {
     "rate": 0.3,
     "slow": 0.2,
-    "fast": 0.5,
-    "n": 29,
+    "fast": 0.4,
+    "n": 85,
     "source": "census-matched trees of this species"
    }
   },
   "genus": {
-   "ginkgo": {
+   "acer": {
     "rate": 0.1,
-    "slow": 0.05,
+    "slow": 0.1,
     "fast": 0.2,
-    "n": 117,
+    "n": 28,
+    "source": "census-matched acer trees"
+   },
+   "fraxinus": {
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 72,
+    "source": "census-matched fraxinus trees"
+   },
+   "ginkgo": {
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 619,
     "source": "census-matched ginkgo trees"
    },
    "gleditsia": {
     "rate": 0.2,
-    "slow": 0.1,
+    "slow": 0.2,
     "fast": 0.4,
-    "n": 190,
+    "n": 1296,
     "source": "census-matched gleditsia trees"
    },
    "platanus": {
-    "rate": 0.2,
-    "slow": 0.1,
-    "fast": 0.35,
-    "n": 65,
+    "rate": 0.1,
+    "slow": 0.05,
+    "fast": 0.2,
+    "n": 465,
     "source": "census-matched platanus trees"
+   },
+   "prunus": {
+    "rate": 0.1,
+    "slow": 0.05,
+    "fast": 0.2,
+    "n": 26,
+    "source": "census-matched prunus trees"
    },
    "pyrus": {
     "rate": 0.2,
     "slow": 0.1,
     "fast": 0.4,
-    "n": 140,
+    "n": 670,
     "source": "census-matched pyrus trees"
    },
    "quercus": {
     "rate": 0.3,
-    "slow": 0.15,
+    "slow": 0.2,
     "fast": 0.4,
-    "n": 39,
+    "n": 260,
     "source": "census-matched quercus trees"
    },
    "styphnolobium": {
-    "rate": 0.25,
-    "slow": 0.125,
-    "fast": 0.325,
-    "n": 22,
+    "rate": 0.3,
+    "slow": 0.2,
+    "fast": 0.4,
+    "n": 174,
     "source": "census-matched styphnolobium trees"
    },
    "tilia": {
-    "rate": 0.1,
-    "slow": 0.05,
-    "fast": 0.2,
-    "n": 60,
+    "rate": 0.2,
+    "slow": 0.1,
+    "fast": 0.3,
+    "n": 271,
     "source": "census-matched tilia trees"
+   },
+   "ulmus": {
+    "rate": 0.3,
+    "slow": 0.2,
+    "fast": 0.5,
+    "n": 58,
+    "source": "census-matched ulmus trees"
    },
    "zelkova": {
     "rate": 0.3,
     "slow": 0.2,
-    "fast": 0.5,
-    "n": 29,
+    "fast": 0.4,
+    "n": 85,
     "source": "census-matched zelkova trees"
    }
   },
   "species_by_size_class": {
+   "acer platanoides | 6\"+": 0.1,
+   "fraxinus pennsylvanica | 0\"+": 0.4,
+   "fraxinus pennsylvanica | 6\"+": 0.2,
    "ginkgo biloba | 0\"+": 0.2,
-   "ginkgo biloba | 6\"+": 0.1,
+   "ginkgo biloba | 6\"+": 0.2,
+   "ginkgo biloba | 12\"+": 0.1,
    "gleditsia triacanthos | 0\"+": 0.3,
    "gleditsia triacanthos | 6\"+": 0.2,
-   "gleditsia triacanthos | 12\"+": 0.15,
+   "gleditsia triacanthos | 12\"+": 0.2,
+   "platanus x acerifolia | 0\"+": 0.3,
    "platanus x acerifolia | 6\"+": 0.2,
    "platanus x acerifolia | 12\"+": 0.1,
+   "platanus x acerifolia | 18\"+": 0.1,
+   "platanus x acerifolia | 24\"+": 0.1,
+   "prunus serrulata | 0\"+": 0.15,
    "pyrus calleryana | 0\"+": 0.3,
    "pyrus calleryana | 6\"+": 0.2,
-   "pyrus calleryana | 12\"+": 0.2,
+   "pyrus calleryana | 12\"+": 0.3,
    "quercus palustris | 0\"+": 0.3,
+   "quercus palustris | 6\"+": 0.2,
+   "quercus palustris | 12\"+": 0.2,
+   "quercus rubra | 0\"+": 0.2,
+   "styphnolobium japonicum | 0\"+": 0.5,
+   "styphnolobium japonicum | 6\"+": 0.3,
    "styphnolobium japonicum | 12\"+": 0.2,
+   "tilia americana | 0\"+": 0.3,
+   "tilia americana | 6\"+": 0.2,
    "tilia cordata | 0\"+": 0.2,
-   "tilia cordata | 6\"+": 0.1,
-   "zelkova serrata | 0\"+": 0.4,
+   "tilia cordata | 6\"+": 0.2,
+   "tilia tomentosa | 0\"+": 0.15,
+   "tilia tomentosa | 6\"+": 0.2,
+   "ulmus americana | 6\"+": 0.3,
+   "zelkova serrata | 0\"+": 0.2,
    "zelkova serrata | 6\"+": 0.3
   }
  }
