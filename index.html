@@ -3108,6 +3108,38 @@ function getPlantYear(tree) {
   return parseInt(tree.tree_cen_date || tree.planteddate || tree.census_year || 0);
 }
 
+// Estimated planting year for trees Forestry has no planting date for —
+// age_est: [year, earliest, latest, source], written by
+// scripts/estimate_tree_ages.py from the 1995/2005/2015 censuses and species
+// growth rates. A source ending in '>' is a trunk too big to date: the year
+// means "planted before" and earliest is null. Display only: priority tiers
+// read real planting dates alone.
+const AGE_EST_SOURCES = {
+  c1995:  ['medium', 'In the 1995 street tree census; dated back from its 1995 trunk size'],
+  c2005:  ['high',   'First in the 2005 census, not in 1995: planted 1996–2005'],
+  c2015:  ['high',   'First in the 2015 census, not in 2005: planted 2006–2015'],
+  c2005m: ['medium', 'First in the 2005 census; its size suggests it was missed in 1995'],
+  c2015m: ['medium', 'First in the 2015 census; its size suggests it was missed in 2005'],
+  new:    ['low',    'Street tree in no census and still small: likely planted after 2015'],
+  dbh:    ['low',    'From current trunk size and species growth rate only'],
+};
+function getAgeEstimate(tree) {
+  const a = tree && tree.age_est;
+  if (!Array.isArray(a) || a.length < 4 || getPlantYear(tree)) return null;
+  const code = String(a[3]);
+  const before = code.endsWith('>');
+  const src = AGE_EST_SOURCES[before ? code.slice(0, -1) : code] || ['low', 'Estimated'];
+  const basis = before ? src[1] + '. Trunk is bigger than the growth data covers, so only an upper bound'
+                       : src[1];
+  return { year: a[0], lo: a[1], hi: a[2], before, confidence: src[0], basis };
+}
+function ageEstimateHtml(est) {
+  const range = est.before || est.lo === est.hi ? '' : ' (' + est.lo + '–' + est.hi + ')';
+  return '<span title="' + est.basis + ' · ' + est.confidence + ' confidence">' +
+    (est.before ? 'before ' : '~') + est.year +
+    '<span style="color:var(--text3)">' + range + ' · ' + est.confidence + '</span></span>';
+}
+
 function calcPriority(tree) {
   const dbh = parseFloat(tree.tree_dbh || 0);
   const yr = getPlantYear(tree);
@@ -5153,10 +5185,12 @@ function openMapTreeDetail(tree) {
   const isForestryTree = !tree.block_id;
   const plantedRaw = tree.tree_cen_date || tree.planteddate;
   const plantedLabel = plantedRaw ? (parseInt(plantedRaw) || plantedRaw) : null;
+  const ageEst = plantedLabel ? null : getAgeEstimate(tree);
   const rows = [
     inCB3 ? null : ['District', districtName(tree._district) + ' (view only)'],
     ['Type', isForestryTree ? '🌳 Forestry Live Tree' : '📋 2015 Census Tree'],
     plantedLabel               ? ['Planted',         plantedLabel]                              : null,
+    ageEst                     ? ['Planted (est.)',  ageEstimateHtml(ageEst)]                   : null,
     tree.address               ? ['Address',         tree.address]                              : null,
     inCB3                      ? ['Sub-Zone',        '<span id="mtp-subzone">' +
                                    (subzonesData ? treeSubzoneHtml(tree) : '…') + '</span>']  : null,
@@ -9193,7 +9227,10 @@ function openReserveModal(tree) {
     const healthColor = { good: '#3a7d44', fair: '#d68910', poor: '#c0392b' }[(tree.health || '').toLowerCase()] || 'var(--text3)';
     const plantedRaw = tree.tree_cen_date || tree.planteddate;
     const plantedLabel = plantedRaw ? (parseInt(plantedRaw) > 1900 ? parseInt(plantedRaw) : null) : null;
-    const ageLabel = plantedLabel ? (new Date().getFullYear() - plantedLabel) + ' yrs (planted ' + plantedLabel + ')' : null;
+    const ageEst = plantedLabel ? null : getAgeEstimate(tree);
+    const ageLabel = plantedLabel ? (new Date().getFullYear() - plantedLabel) + ' yrs (planted ' + plantedLabel + ')'
+                   : ageEst ? (ageEst.before ? 'over ' : '~') + (new Date().getFullYear() - ageEst.year) + ' yrs · est. planted ' + ageEstimateHtml(ageEst)
+                   : null;
     const rows = [
       tree.address   ? ['Address',      tree.address]                                    : null,
       tree.health    ? ['Health',        '<span style="color:' + healthColor + ';font-weight:600">' + tree.health + '</span>'] : null,
