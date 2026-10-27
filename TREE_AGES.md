@@ -155,9 +155,9 @@ Both scripts run in GitHub Actions, because NYC Open Data must be reachable.
   saved in an older format, runs the estimate and commits the results. It runs
   on its own when either script changes, or manually from the Actions tab
   (tick *refetch* to download the censuses again). It only writes
-  `census.json` on the default branch. On any other branch it commits the
-  census history and calibration report only, so a branch never carries its
-  own copy of `census.json` and never conflicts with the weekly update.
+  `census.json` and the calibration report on the default branch. On any
+  other branch it commits the census history only, so a branch never carries
+  its own copy of either and never conflicts with the weekly update.
 - **Update Tree Census Data** (weekly) and **Sync Census Data** (monthly):
   these rewrite `census.json`, then re-run the estimate from the saved history.
 

@@ -56,23 +56,23 @@ jobs:
       - name: Estimate planting years
         run: python3 scripts/estimate_tree_ages.py
 
-      # census.json is rewritten in full by the weekly census update on the
-      # default branch, so a branch that commits its own copy can never merge
-      # cleanly. Elsewhere the estimate runs as a check and only the census
-      # history and calibration report are committed; the estimates land in
-      # census.json when this runs on the default branch (as it does on merge,
-      # since the merge changes the scripts above).
+      # census.json and the calibration report are rewritten by the weekly
+      # census update on the default branch, so a branch that commits its own
+      # copy of either can't merge cleanly. Elsewhere the estimate runs as a
+      # check and only the census history is committed; the estimates land
+      # when this runs on the default branch (as it does on merge, since the
+      # merge changes the scripts above).
       - name: Commit if data changed
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/census-history data/tree-age-calibration.json
+          git add data/census-history
           if [ "${GITHUB_REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
-            git add data/census.json
+            git add data/census.json data/tree-age-calibration.json
           else
-            git checkout -- data/census.json
+            git checkout -- data/census.json data/tree-age-calibration.json
           fi
           if git diff --staged --quiet; then
             echo "No changes."
