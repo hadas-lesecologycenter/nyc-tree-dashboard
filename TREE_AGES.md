@@ -86,15 +86,39 @@ their current size.
 The full table, with size-class rates and sources, is in
 `data/tree-age-calibration.json`.
 
+## Ranges
+
+Each range is meant to hold the true planting year for about 4 in 5 trees.
+Its width comes from two measured numbers:
+
+- **How far the estimates scatter.** A tree found in two censuses can be
+  dated from each diameter on its own, so the two dates show the error of one
+  estimate. That error barely grows with age: about ±7 years for trees
+  planted up to 70 years before the census, and ±11 for older ones.
+- **How far the growth rates could be off.** Measured rates run about 20%
+  below the published NYC ones, so the range adds ±20% of the years since
+  planting.
+
+The two are combined as independent errors and measured again on every run
+(`ranges` in `data/tree-age-calibration.json`). Typical widths:
+- a tree boxed in between two censuses: 8 years
+- a tree in the 1995 census: 16 years
+- a tree dated from current size only: 30 years
+
+Any range wider than 30 years is shown as low confidence, whatever it is
+based on.
+
 ## Source codes and confidence
+
+Confidence below is for ranges up to 30 years wide; wider ones are low.
 
 | Code | Meaning | Confidence | Trees |
 |---|---|---|---|
-| `c2005` / `c2015` | First seen in that census and not in the one before, so planted between them | high | 2,710 |
+| `c2005` / `c2015` | First seen in that census and not in the one before, so planted between them | high | 2,563 |
 | `c1995` | In the 1995 census; dated back from its 1995 diameter | medium | 1,607 |
-| `c2005m` / `c2015m` | First seen in that census, but too big to be new, so probably missed in the earlier one | medium | 957 |
-| `new` | Street tree in no census and still small, so likely planted after 2015 | low | 1,370 |
-| `dbh` | Current diameter and growth rate only (mostly park trees) | low | 3,843 |
+| `c2005m` / `c2015m` | First seen in that census, but too big to be new, so probably missed in the earlier one | medium | 1,104 |
+| `new` | Street tree in no census and still small, so likely planted after 2015 | low | 1,273 |
+| `dbh` | Current diameter and growth rate only (mostly park trees) | low | 3,940 |
 | any code + `>` | Trunk bigger than the growth data covers: "planted before" the year shown | as its code | 1,228 |
 
 ## How accurate is it?
@@ -131,9 +155,9 @@ Both scripts run in GitHub Actions, because NYC Open Data must be reachable.
   saved in an older format, runs the estimate and commits the results. It runs
   on its own when either script changes, or manually from the Actions tab
   (tick *refetch* to download the censuses again). It only writes
-  `census.json` on the default branch. On any other branch it commits the
-  census history and calibration report only, so a branch never carries its
-  own copy of `census.json` and never conflicts with the weekly update.
+  `census.json` and the calibration report on the default branch. On any
+  other branch it commits the census history only, so a branch never carries
+  its own copy of either and never conflicts with the weekly update.
 - **Update Tree Census Data** (weekly) and **Sync Census Data** (monthly):
   these rewrite `census.json`, then re-run the estimate from the saved history.
 
