@@ -87,8 +87,6 @@ MIN_SPECIES_N = 20      # matched trees needed to trust a species' own rate
 MIN_CLASS_N   = 30      # …and to trust its rate within one size class
 DBH_CLASSES   = (0, 6, 12, 18, 24, 999)   # inches
 RATE_FLOOR, RATE_CEIL = 0.05, 1.5         # in/yr — clip noise, not biology
-PUBLISHED_SPREAD = 0.3  # ± fraction used as the range for a published rate
-SLOWEST, FASTEST = 0.67, 1.5   # range rates, as a fraction of the typical one
 
 # Growth rates come from street trees, nearly all under ~30". Reading the
 # age of a much bigger trunk off them extrapolates far past the data (and
@@ -98,9 +96,25 @@ SLOWEST, FASTEST = 0.67, 1.5   # range rates, as a fraction of the typical one
 # only dated as "planted before" the year a tree of that size would have been.
 MAX_DBH_PERCENTILE = 95
 
-# Census diameters were taped by volunteers and recorded in whole inches, so
-# a range built on one should allow for it being off by about this much.
+# Census diameters were taped by volunteers and recorded in whole inches. A
+# diameter within this much of planting size dates a tree only as "planted by
+# then", so it is left out of the error measurement below.
 DBH_ERROR_IN = 1.5
+
+# Ranges. A tree found in two censuses can be dated from each diameter on its
+# own; how far apart the two dates land is a measured error, and it barely
+# grows with age (about ±7 years at 10–70 years back). Each run measures it,
+# as the ERROR_QUANTILE-th percentile of one estimate's error within each
+# band of years-since-planting, and adds RATE_UNCERTAINTY of those years for
+# the growth rates themselves being off (the local rates run about 20% below
+# the published NYC ones). The two combine as independent errors.
+ERROR_QUANTILE = 80
+ERROR_BANDS = (0, 20, 45, 70)          # years since planting, band starts
+MIN_BAND_PAIRS = 30
+RATE_UNCERTAINTY = 0.2
+# A range wider than this says little, whatever the source: shown as low
+# confidence (index.html's AGE_EST_LOW_IF_WIDER is the same number).
+LOW_IF_WIDER_THAN = 30
 
 # Planting-size fallback if census.json has too few recent plantings to
 # measure it: NYC street trees go in at about a 3" caliper.
@@ -462,18 +476,11 @@ class GrowthModel:
         def summarise(values, source):
             lo, _, hi = quartiles(values)
             mid = clip(trimmed_mean(values))
-            # The quartiles of ten-year increments mix real tree-to-tree
-            # differences with whole-inch measurement noise, which alone can
-            # push the lower one to zero. Keep them as the range, but within
-            # these bounds, or a big tree's "earliest" year lands centuries back.
-            return {'rate': round(mid, 4),
-                    'slow': round(clip(max(lo, SLOWEST * mid)), 4),
-                    'fast': round(clip(min(max(hi, mid), FASTEST * mid)), 4),
+            return {'rate': round(mid, 4), 'quartiles': [round(lo, 4), round(hi, 4)],
                     'n': len(values), 'source': source}
 
         self.overall = summarise(everything, 'all census-matched trees') if everything else \
-            {'rate': 0.25, 'slow': 0.15, 'fast': 0.4, 'n': 0,
-             'source': 'no census matches; nominal 0.25 in/yr'}
+            {'rate': 0.25, 'n': 0, 'source': 'no census matches; nominal 0.25 in/yr'}
         for g, values in by_genus.items():
             if len(values) >= MIN_SPECIES_N:
                 self.genus[g] = summarise(values, f'census-matched {g} trees')
@@ -483,9 +490,7 @@ class GrowthModel:
         for sp, entry in published.items():
             if sp not in self.species:
                 r = float(entry['in_per_yr'])
-                self.species[sp] = {'rate': r, 'slow': round(r * (1 - PUBLISHED_SPREAD), 4),
-                                    'fast': round(r * (1 + PUBLISHED_SPREAD), 4),
-                                    'n': len(by_sp.get(sp, [])),
+                self.species[sp] = {'rate': r, 'n': len(by_sp.get(sp, [])),
                                     'source': 'published: ' + entry['source']}
         for (sp, cls), values in by_class.items():
             if sp in self.species and len(values) >= MIN_CLASS_N \
@@ -504,9 +509,9 @@ class GrowthModel:
         return None, self.overall
 
     def years_to_grow(self, sp, genus, d_from, d_to):
-        """(typical, slow-growth, fast-growth) years to grow from d_from to d_to inches."""
+        """Years to grow from d_from to d_to inches at the measured rates."""
         if d_to <= d_from:
-            return 0.0, 0.0, 0.0
+            return 0.0
         sp_used, entry = self.lookup(sp, genus)
         typical = 0.0
         d = d_from
@@ -515,27 +520,31 @@ class GrowthModel:
             rate = self.classes.get((sp_used, size_class(d)), entry['rate']) if sp_used else entry['rate']
             typical += step / rate
             d += step
-        return (typical,
-                typical * entry['rate'] / entry['slow'],
-                typical * entry['rate'] / entry['fast'])
+        return typical
 
-    def age_range(self, sp, genus, d0, dbh):
-        """(typical, oldest, youngest) years since planting for a measured diameter.
 
-        The oldest reading assumes slow growth and a diameter read a little
-        low (but not past the datable limit); the youngest, fast growth and a
-        diameter read a little high.
-        """
-        typical = self.years_to_grow(sp, genus, d0, dbh)[0]
-        limit = self.dbh_limit(sp) or float('inf')
-        oldest = self.years_to_grow(sp, genus, d0, min(dbh + DBH_ERROR_IN, max(dbh, limit)))[1]
-        youngest = self.years_to_grow(sp, genus, d0, max(d0, dbh - DBH_ERROR_IN))[2]
-        return typical, oldest, youngest
+class ErrorModel:
+    """How far either side of an estimate its range reaches, by years since
+    planting. See ERROR_QUANTILE."""
+
+    def __init__(self, pairs):
+        # pairs: (one estimate's error in years, years since planting)
+        def pct(values):
+            return statistics.quantiles(values, n=100)[ERROR_QUANTILE - 1]
+        self.overall = round(pct([e for e, _ in pairs]), 1) if len(pairs) >= MIN_BAND_PAIRS else 10.0
+        self.bands = {}
+        for lo, hi in zip(ERROR_BANDS, ERROR_BANDS[1:] + (float('inf'),)):
+            values = [e for e, years in pairs if lo <= years < hi]
+            self.bands[lo] = round(pct(values), 1) if len(values) >= MIN_BAND_PAIRS else self.overall
+
+    def half_width(self, years):
+        band = max(lo for lo in ERROR_BANDS if lo <= max(0.0, years))
+        return math.hypot(self.bands[band], RATE_UNCERTAINTY * years)
 
 
 # ── 3. Date ───────────────────────────────────────────────────────────────────
 
-def estimate(t, seen, growth, d0, years_available, this_year):
+def estimate(t, seen, growth, spread, d0, years_available, this_year):
     """(est, lo, hi, src, conf) for one tree, or None when nothing to go on."""
     sp, genus = t['_species'], t['_genus']
     limit = growth.dbh_limit(sp)
@@ -543,7 +552,7 @@ def estimate(t, seen, growth, d0, years_available, this_year):
     def planted_before(measured_year, dbh):
         """For a trunk bigger than any the growth data covers: only that it
         was planted before a tree of the limiting size would have been."""
-        before = round(measured_year - growth.years_to_grow(sp, genus, d0, limit)[0])
+        before = round(measured_year - growth.years_to_grow(sp, genus, d0, limit))
         return before, None, before
 
     if seen:
@@ -551,12 +560,10 @@ def estimate(t, seen, growth, d0, years_available, this_year):
         if limit and seen[first]['dbh'] > limit:
             src = f'c{first}'
             return (*planted_before(first, seen[first]['dbh']), src + '>', CONFIDENCE[src])
-        ests = []
-        for y, c in seen.items():
-            ests.append(y - growth.years_to_grow(sp, genus, d0, c['dbh'])[0])
+        ests = [y - growth.years_to_grow(sp, genus, d0, c['dbh']) for y, c in seen.items()]
         est = min(statistics.median(ests), first)
-        typical, slow, fast = growth.age_range(sp, genus, d0, seen[first]['dbh'])
-        lo, hi = first - slow, min(first, first - fast)
+        half = spread.half_width(first - est)
+        lo, hi = est - half, min(first, est + half)
 
         earlier = [y for y in years_available if y < first]
         if not earlier:
@@ -577,12 +584,12 @@ def estimate(t, seen, growth, d0, years_available, this_year):
         if limit and dbh > limit:
             # The diameter could have been recorded any time up to now.
             return (*planted_before(this_year, dbh), 'dbh>', CONFIDENCE['dbh'])
-        typical, slow, fast = growth.age_range(sp, genus, d0, dbh)
-        measured_mid = (DBH_MEASURED_FROM + this_year) / 2
-        est = measured_mid - typical
-        lo, hi = DBH_MEASURED_FROM - slow, this_year - fast
+        years = growth.years_to_grow(sp, genus, d0, dbh)
+        half = spread.half_width(years)
+        est = (DBH_MEASURED_FROM + this_year) / 2 - years
+        lo, hi = DBH_MEASURED_FROM - years - half, this_year - years + half
         if (t.get('tree_type') == 'street' and 2015 in years_available
-                and this_year - fast >= POST_2015_START - 2):
+                and hi >= POST_2015_START - 2):
             est, lo = max(est, POST_2015_START), max(lo, POST_2015_START)
             src = 'new'
         else:
@@ -591,8 +598,9 @@ def estimate(t, seen, growth, d0, years_available, this_year):
     # The best guess comes from every census a tree is in, the range from the
     # earliest; widen the range to take the guess in rather than move it.
     est = min(est, this_year)
-    lo, hi = min(lo, est), max(min(hi, this_year), est)
-    return round(est), math.floor(lo), math.ceil(hi), src, CONFIDENCE[src]
+    lo, hi = math.floor(min(lo, est)), math.ceil(max(min(hi, this_year), est))
+    conf = CONFIDENCE[src] if hi - lo <= LOW_IF_WIDER_THAN else 'low'
+    return round(est), lo, hi, src, conf
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -678,12 +686,33 @@ def main():
     d0 = statistics.median(recent) if len(recent) >= 20 else DEFAULT_PLANTING_DBH
     print(f'Planting size: {d0}" DBH (median of {len(recent)} trees planted since {this_year - 1})')
 
+    # Trees in two censuses can be dated from each diameter separately; how
+    # far apart those two dates land is a direct read on the method's error,
+    # and sets the ranges (see ERROR_QUANTILE).
+    agreement, pairs = {}, []
+    for ti, seen in enumerate(sightings):
+        sp, genus = trees[ti]['_species'], trees[ti]['_genus']
+        ys = sorted(seen)
+        for a, b in zip(ys, ys[1:]):
+            if seen[a]['dbh'] <= d0 + DBH_ERROR_IN:
+                continue   # still at planting size: its date is just "by then"
+            limit = growth.dbh_limit(sp)
+            if limit and seen[b]['dbh'] > limit:
+                continue   # too big to date (see MAX_DBH_PERCENTILE)
+            years_a = growth.years_to_grow(sp, genus, d0, seen[a]['dbh'])
+            years_b = growth.years_to_grow(sp, genus, d0, seen[b]['dbh'])
+            apart = abs((a - years_a) - (b - years_b))
+            agreement.setdefault(f'{a} vs {b}', []).append(apart)
+            # Two independent estimates differ by about sqrt(2) times one's error.
+            pairs.append((apart / math.sqrt(2), (years_a + years_b) / 2))
+    spread = ErrorModel(pairs)
+
     # 3. Date the living trees with no planting date.
     counts, conf_counts, skipped = {}, {}, 0
     for ti, t in enumerate(trees):
         if t.get('status') != 'Full' or planted_year(t):
             continue
-        result = estimate(t, sightings[ti], growth, d0, years_available, this_year)
+        result = estimate(t, sightings[ti], growth, spread, d0, years_available, this_year)
         if not result:
             skipped += 1
             continue
@@ -709,26 +738,11 @@ def main():
             continue
         prev = max(earlier)
         dbh_only = first - growth.years_to_grow(trees[ti]['_species'], trees[ti]['_genus'],
-                                                d0, seen[first]['dbh'])[0]
+                                                d0, seen[first]['dbh'])
         w = window_checks.setdefault(f'{prev + 1}-{first}', [0, 0])
         w[1] += 1
         if prev - 2 <= dbh_only <= first:
             w[0] += 1
-
-    # Trees in two censuses can be dated from each diameter separately; how
-    # far apart those two dates land is a direct read on the method's error.
-    agreement = {}
-    for ti, seen in enumerate(sightings):
-        ys = sorted(seen)
-        for a, b in zip(ys, ys[1:]):
-            if seen[a]['dbh'] <= d0 + DBH_ERROR_IN:
-                continue   # still at planting size: its date is just "by then"
-            limit = growth.dbh_limit(trees[ti]['_species'])
-            if limit and seen[b]['dbh'] > limit:
-                continue   # too big to date (see MAX_DBH_PERCENTILE)
-            ea = a - growth.years_to_grow(trees[ti]['_species'], trees[ti]['_genus'], d0, seen[a]['dbh'])[0]
-            eb = b - growth.years_to_grow(trees[ti]['_species'], trees[ti]['_genus'], d0, seen[b]['dbh'])[0]
-            agreement.setdefault(f'{a} vs {b}', []).append(abs(ea - eb))
 
     with open(CENSUS_PATH, 'w') as f:
         json.dump([{k: v for k, v in t.items() if not k.startswith('_')} for t in trees],
@@ -755,6 +769,13 @@ def main():
                 k: {'trees': len(v), 'median': round(statistics.median(v), 1),
                     'p80': round(statistics.quantiles(v, n=5)[3], 1) if len(v) >= 5 else None}
                 for k, v in sorted(agreement.items())},
+        },
+        'ranges': {
+            'covers': f'about {ERROR_QUANTILE}% of trees, by the cross-census error',
+            'one_estimate_error_years_by_years_since_planting': {
+                f'{lo}+': v for lo, v in spread.bands.items()},
+            'plus_share_of_years_for_growth_rate_error': RATE_UNCERTAINTY,
+            'shown_as_low_confidence_when_wider_than_years': LOW_IF_WIDER_THAN,
         },
         'growth_rates_in_per_yr': {
             'overall': growth.overall,

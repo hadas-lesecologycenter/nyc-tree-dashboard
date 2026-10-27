@@ -3123,6 +3123,9 @@ const AGE_EST_SOURCES = {
   new:    ['low',    'Street tree in no census and still small: likely planted after 2015'],
   dbh:    ['low',    'From current trunk size and species growth rate only'],
 };
+// A range wider than this many years says little whatever its source, so it
+// reads as low confidence (scripts/estimate_tree_ages.py LOW_IF_WIDER_THAN).
+const AGE_EST_LOW_IF_WIDER = 30;
 function getAgeEstimate(tree) {
   const a = tree && tree.age_est;
   if (!Array.isArray(a) || a.length < 4 || getPlantYear(tree)) return null;
@@ -3131,7 +3134,8 @@ function getAgeEstimate(tree) {
   const src = AGE_EST_SOURCES[before ? code.slice(0, -1) : code] || ['low', 'Estimated'];
   const basis = before ? src[1] + '. Trunk is bigger than the growth data covers, so only an upper bound'
                        : src[1];
-  return { year: a[0], lo: a[1], hi: a[2], before, confidence: src[0], basis };
+  const confidence = !before && a[2] - a[1] > AGE_EST_LOW_IF_WIDER ? 'low' : src[0];
+  return { year: a[0], lo: a[1], hi: a[2], before, confidence, basis };
 }
 function ageEstimateHtml(est) {
   const range = est.before || est.lo === est.hi ? '' : ' (' + est.lo + '–' + est.hi + ')';
