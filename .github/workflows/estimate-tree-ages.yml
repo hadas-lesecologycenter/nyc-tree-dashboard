@@ -37,7 +37,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      # The censuses never change, so they are fetched once and committed.
+      # The censuses never change, so they are fetched once and committed
+      # (again only if the saved format changes).
       # A partial failure still saves the years that worked; the job is
       # marked failed at the end so it doesn't go unnoticed.
       - name: Fetch census history (1995, 2005, 2015)
@@ -46,13 +47,10 @@ jobs:
         env:
           SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
         run: |
-          if [ "${{ inputs.refetch }}" = "true" ] || \
-             [ ! -f data/census-history/1995.json ] || \
-             [ ! -f data/census-history/2005.json ] || \
-             [ ! -f data/census-history/2015.json ]; then
+          if [ "${{ inputs.refetch }}" = "true" ]; then
             python3 scripts/fetch_historic_censuses.py
           else
-            echo "Census history already saved — skipping download."
+            python3 scripts/fetch_historic_censuses.py --if-stale
           fi
 
       - name: Estimate planting years

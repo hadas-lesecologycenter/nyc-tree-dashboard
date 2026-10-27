@@ -15,11 +15,15 @@ unaffected by any of this.
 
 How it works
 ------------
-1. Match: each Forestry tree is paired with the census tree standing at the
-   same spot in the 1995, 2005 and 2015 Street Tree Censuses
-   (data/census-history/, written by fetch_historic_censuses.py) — nearest
-   within a few metres, same genus, and not implausibly fatter back then than
-   it is now. Each census tree pairs with at most one Forestry tree.
+1. Match: each Forestry tree is paired with the 2015 Street Tree Census tree
+   at the same spot (Forestry Tree Points was seeded from that census, so
+   they sit within a few metres). The 1995 and 2005 censuses can't be matched
+   that way: they were recorded by street address, and every tree at an
+   address was geocoded to one shared point. So a tree's 2015 address is
+   looked up in those censuses instead, and paired with a tree listed there
+   of the same genus whose diameter fits ten or twenty years' growth. Each
+   census tree pairs with at most one Forestry tree. (Census files are in
+   data/census-history/, written by fetch_historic_censuses.py.)
 2. Calibrate growth: a tree matched in two consecutive censuses shows how fast
    its trunk grew in those ten years. The median of that, per species and per
    size class, is the local growth rate. Species with too few matched trees
@@ -46,11 +50,22 @@ CALIB_PATH  = os.path.join(ROOT, 'data', 'tree-age-calibration.json')
 
 CENSUS_YEARS = (1995, 2005, 2015)
 
-# Matching radius per census, in metres. The 2015 census was mapped on aerial
-# imagery and Forestry Tree Points was seeded from it, so positions agree
-# closely; the 1995 census recorded trees by street address and its
-# coordinates were geocoded afterwards, so they sit further off.
+# Matching radius per census, in metres, for matching by position. Only the
+# 2015 census is matched that way when addresses are available: it was mapped
+# tree by tree and Forestry Tree Points was seeded from it. The 1995/2005
+# radii only apply to census files saved without addresses.
 MATCH_RADIUS_M = {1995: 10.0, 2005: 6.0, 2015: 3.0}
+
+# Matching by address (1995, 2005). A listed tree must be the same genus and
+# its address point no further than this from the tree today — a guard
+# against two different streets normalising to the same name.
+ADDRESS_MAX_M = 120.0
+# A second pass tries nearby house numbers on the same side of the same
+# street, for trees credited to the building next door in one census.
+NEAR_HOUSE_NUMBERS = 12
+# Rough growth used only to rank candidates at one address by how well their
+# diameters fit; the real rates are measured afterwards from the matches.
+NOMINAL_RATE = 0.2
 
 # A census tree can't be much fatter than the tree there now — if it is, the
 # spot has been replanted. The slack covers measurement error and the fact
@@ -117,9 +132,16 @@ def species_key(latin):
     return words[0]
 
 
+# Genera renamed since the older censuses were taken.
+GENUS_SYNONYMS = {'sophora': 'styphnolobium'}
+
+
 def genus_of(latin):
     key = species_key(latin)
-    return key.split()[0] if key else None
+    if not key:
+        return None
+    genus = key.split()[0]
+    return GENUS_SYNONYMS.get(genus, genus)
 
 
 def norm_common(name):
@@ -131,6 +153,46 @@ def same_kind(f_genus, f_common, c_genus, c_common):
         return f_genus == c_genus
     a, b = norm_common(f_common), norm_common(c_common)
     return bool(a) and a == b
+
+
+# ── Addresses ─────────────────────────────────────────────────────────────────
+
+STREET_WORDS = {
+    'E': 'EAST', 'W': 'WEST', 'N': 'NORTH', 'S': 'SOUTH',
+    'ST': 'STREET', 'STR': 'STREET', 'AVE': 'AVENUE', 'AV': 'AVENUE', 'AVN': 'AVENUE',
+    'PL': 'PLACE', 'BLVD': 'BOULEVARD', 'DR': 'DRIVE', 'RD': 'ROAD', 'LN': 'LANE',
+    'SQ': 'SQUARE', 'PKWY': 'PARKWAY', 'TER': 'TERRACE', 'CT': 'COURT', 'SL': 'SLIP',
+    'BWAY': 'BROADWAY', 'HWY': 'HIGHWAY',
+}
+ORDINAL_WORDS = {
+    'FIRST': '1', 'SECOND': '2', 'THIRD': '3', 'FOURTH': '4', 'FIFTH': '5', 'SIXTH': '6',
+    'SEVENTH': '7', 'EIGHTH': '8', 'NINTH': '9', 'TENTH': '10', 'ELEVENTH': '11',
+    'TWELFTH': '12', 'THIRTEENTH': '13', 'FOURTEENTH': '14',
+}
+
+
+def norm_address(raw):
+    """'110 E. 7th St' and '110 EAST 7 STREET' → (110, 'EAST 7 STREET'); None if unusable."""
+    s = (raw or '').upper().replace("'", '').replace('.', ' ')
+    head = s.strip().split(None, 1)
+    if len(head) < 2:
+        return None
+    number = head[0].split('-')[0]
+    digits = ''.join(ch for ch in number if ch.isdigit())
+    if not digits or not number[0].isdigit():
+        return None
+    words = []
+    for i, w in enumerate(''.join(ch if ch.isalnum() else ' ' for ch in head[1]).split()):
+        if w[:-2].isdigit() and w[-2:] in ('ST', 'ND', 'RD', 'TH'):
+            w = w[:-2]
+        elif w in ORDINAL_WORDS:
+            w = ORDINAL_WORDS[w]
+        elif w == 'ST' and i == 0:
+            w = 'SAINT'
+        else:
+            w = STREET_WORDS.get(w, w)
+        words.append(w)
+    return (int(digits), ' '.join(words)) if words else None
 
 
 # ── Geometry ──────────────────────────────────────────────────────────────────
@@ -189,11 +251,18 @@ def load_history():
         rows = []
         for r in data['trees']:
             latin, common = r[idx['latin']], r[idx['common']]
+            addr = norm_address(r[idx['address']]) if 'address' in idx else None
             rows.append({'lat': r[idx['lat']], 'lng': r[idx['lng']], 'dbh': float(r[idx['dbh']]),
-                         'genus': genus_of(latin), 'common': common})
+                         'genus': genus_of(latin), 'common': common, 'addr': addr})
         with_genus = sum(1 for r in rows if r['genus'])
+        with_addr = sum(1 for r in rows if r['addr'])
         print(f'  {year} census: {len(rows)} living trees '
-              f'({with_genus / max(1, len(rows)):.0%} with a Latin name)')
+              f'({with_genus / max(1, len(rows)):.0%} with a Latin name, '
+              f'{with_addr / max(1, len(rows)):.0%} with a usable address)')
+        if 'address' in idx:
+            unusable = [r[idx['address']] for r, row in zip(data['trees'], rows) if not row['addr']]
+            if unusable:
+                print(f'    unusable addresses, e.g. {unusable[:5]}')
         history[year] = rows
     return history
 
@@ -226,6 +295,61 @@ def match_census(trees, census, radius):
         used_c.add(ci)
         out[ti] = census[ci]
     return out
+
+
+def match_by_address(trees, matched_2015, census, year):
+    """{tree index: census row} for a census recorded by address.
+
+    Only trees already matched to the 2015 census have an address to look up.
+    Returns the matches and how many each pass found.
+    """
+    by_addr, by_street = {}, {}
+    for ci, c in enumerate(census):
+        if c['addr']:
+            by_addr.setdefault(c['addr'], []).append(ci)
+            num_, street = c['addr']
+            by_street.setdefault((street, num_ % 2), []).append(ci)
+    pts = [xy(c['lat'], c['lng']) for c in census]
+    years_back = 2015 - year
+
+    def candidates(ti, c15, cis, house_gap):
+        t = trees[ti]
+        for ci in cis:
+            c = census[ci]
+            if not same_kind(t['_genus'], t.get('spc_common'), c['genus'], c['common']):
+                continue
+            # Compared with the 2015 census diameter, measured at a known date.
+            if c['dbh'] > c15['dbh'] + max(3.0, 0.3 * c15['dbh']):
+                continue
+            if math.hypot(pts[ci][0] - t['_xy'][0], pts[ci][1] - t['_xy'][1]) > ADDRESS_MAX_M:
+                continue
+            fit = abs((c15['dbh'] - c['dbh']) - NOMINAL_RATE * years_back)
+            yield (house_gap(c), fit, ti, ci)
+
+    out, used_c, passes = {}, set(), []
+    for near in (False, True):
+        pairs = []
+        for ti, c15 in matched_2015.items():
+            if ti in out or not c15.get('addr'):
+                continue
+            num_, street = c15['addr']
+            if not near:
+                pairs.extend(candidates(ti, c15, by_addr.get(c15['addr'], ()), lambda c: 0))
+            else:
+                pairs.extend(candidates(
+                    ti, c15, by_street.get((street, num_ % 2), ()),
+                    lambda c, n=num_: abs(c['addr'][0] - n) if abs(c['addr'][0] - n) <= NEAR_HOUSE_NUMBERS else None))
+        pairs = [p for p in pairs if p[0] is not None]
+        pairs.sort()
+        found = 0
+        for gap, fit, ti, ci in pairs:
+            if ti in out or ci in used_c:
+                continue
+            out[ti] = census[ci]
+            used_c.add(ci)
+            found += 1
+        passes.append(found)
+    return out, {'same_address': passes[0], 'nearby_house_number': passes[1]}
 
 
 def drop_replanted(seen):
@@ -421,7 +545,22 @@ def main():
 
     # 1. Match every Forestry tree, retired ones included, so a living tree
     # can't claim the census record of the dead tree that stood beside it.
-    matches = {y: match_census(trees, history[y], MATCH_RADIUS_M[y]) for y in years_available}
+    # 2015 by position; the older censuses by the 2015 address where the
+    # files carry addresses, by position otherwise.
+    matches, match_method = {}, {}
+    if 2015 in history:
+        matches[2015] = match_census(trees, history[2015], MATCH_RADIUS_M[2015])
+        match_method['2015'] = 'position'
+    for y in years_available:
+        if y == 2015:
+            continue
+        if 2015 in matches and any(c['addr'] for c in history[y]) \
+                and any(c['addr'] for c in history[2015]):
+            matches[y], passes = match_by_address(trees, matches[2015], history[y], y)
+            match_method[str(y)] = {'address': passes}
+        else:
+            matches[y] = match_census(trees, history[y], MATCH_RADIUS_M[y])
+            match_method[str(y)] = 'position'
     sightings = []
     for ti in range(len(trees)):
         seen = {y: matches[y][ti] for y in years_available if ti in matches[y]}
@@ -485,7 +624,7 @@ def main():
 
     calib = {
         'planting_dbh_in': d0,
-        'match_radius_m': {str(y): MATCH_RADIUS_M[y] for y in years_available},
+        'match_method': match_method,
         'census_trees': {str(y): len(history[y]) for y in years_available},
         'matched_forestry_trees': {str(y): len(matches[y]) for y in years_available},
         'growth_increments': len(increments),
@@ -511,7 +650,7 @@ def main():
     with open(CALIB_PATH, 'w') as f:
         json.dump(calib, f, indent=1)
 
-    print('\nMatches per census:', calib['matched_forestry_trees'])
+    print('\nMatches per census:', calib['matched_forestry_trees'], match_method)
     print(f'Growth increments measured: {len(increments)}; '
           f'species with own rate: {sum(1 for v in growth.species.values() if not v["source"].startswith("published"))}')
     print('Estimates by source:', counts)

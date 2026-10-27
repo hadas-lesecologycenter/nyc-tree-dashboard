@@ -13,11 +13,23 @@ format below changes). It runs in GitHub Actions — see
 .github/workflows/estimate-tree-ages.yml — because it needs NYC Open Data.
 
 File layout — one row per living census tree, columns named once:
-  {"year":1995,"source":"kyad-zm4j","fields":["lat","lng","dbh","latin","common"],
-   "trees":[[40.71,-73.98,12,"Platanus x acerifolia","London planetree"],…]}
+  {"year":1995,"source":"kyad-zm4j","format":2,
+   "fields":["lat","lng","dbh","latin","common","address"],
+   "trees":[[40.71,-73.98,12,"PLATANUS ACERIFOLIA","LONDON PLANETREE","110 EAST 7 STREET"],…]}
+
+The address matters more than the coordinates for 1995 and 2005: those
+censuses were recorded by street address and every tree at one address was
+geocoded to the same point (up to ~25 trees share one), so only the address
+says which trees stood together. It is kept raw; estimate_tree_ages.py
+normalises it.
+
+  --if-stale   only fetch years whose file is missing or in an older format
 """
 
 import csv, io, json, os, sys, time, urllib.parse, urllib.request
+
+# Bump when the saved layout changes so --if-stale refetches old files.
+FORMAT = 2
 
 # Same CB3 box fetch_census.py uses. Trees just outside it do no harm — the
 # age estimator only matches census trees to CB3 Forestry trees a few metres
@@ -49,6 +61,9 @@ DBH_COLS    = ('tree_dbh', 'diameter', 'dbh')
 LATIN_COLS  = ('spc_latin', 'spc_latin_name', 'species_latin', 'latin_name', 'species')
 COMMON_COLS = ('spc_common', 'spc_common_name', 'common_name')
 STATUS_COLS = ('status', 'condition', 'health')
+ADDRESS_COLS = ('address',)
+HOUSE_COLS   = ('house_number', 'housenumber')
+STREET_COLS  = ('street', 'street_name')
 
 # Census records that are not a living tree. A dead tree or stump still marks
 # an occupied spot, but its diameter says nothing about the tree there now.
@@ -161,13 +176,15 @@ def row_latlng(row):
 
 
 def compact(rows):
-    """Living trees with a location and diameter → [lat, lng, dbh, latin, common]."""
+    """Living trees with a location and diameter → [lat, lng, dbh, latin, common, address]."""
     if not rows:
         return []
     cols = set().union(*(r.keys() for r in rows[:50]))
     dbh_c, latin_c = pick(cols, DBH_COLS), pick(cols, LATIN_COLS)
     common_c, status_c = pick(cols, COMMON_COLS), pick(cols, STATUS_COLS)
-    print(f'  Using dbh={dbh_c} latin={latin_c} common={common_c} status={status_c}')
+    addr_c, house_c, street_c = pick(cols, ADDRESS_COLS), pick(cols, HOUSE_COLS), pick(cols, STREET_COLS)
+    print(f'  Using dbh={dbh_c} latin={latin_c} common={common_c} status={status_c} '
+          f'address={addr_c or (house_c, street_c)}')
     if not dbh_c or not (latin_c or common_c):
         raise ValueError(f'no diameter or species column among {sorted(cols)}')
 
@@ -187,16 +204,33 @@ def compact(rows):
             continue
         if dbh <= 0:
             continue
+        address = str(r.get(addr_c) or '').strip()
+        if not any(ch.isdigit() for ch in address) and house_c and street_c:
+            address = f'{r.get(house_c) or ""} {r.get(street_c) or ""}'.strip()
         out.append([round(ll[0], 7), round(ll[1], 7), dbh,
-                    str(r.get(latin_c) or '').strip(), str(r.get(common_c) or '').strip()])
+                    str(r.get(latin_c) or '').strip(), str(r.get(common_c) or '').strip(), address])
     print(f'  Status values: {dict(sorted(statuses.items(), key=lambda kv: -kv[1]))}')
+    print(f'  Sample addresses: {[t[5] for t in out[:8]]}')
     return out
+
+
+def is_current(path):
+    try:
+        with open(path) as f:
+            return json.load(f).get('format') == FORMAT
+    except (OSError, ValueError):
+        return False
 
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
+    if_stale = '--if-stale' in sys.argv[1:]
     failed = []
     for year, dataset_id in CENSUSES:
+        path = os.path.join(OUT_DIR, f'{year}.json')
+        if if_stale and is_current(path):
+            print(f'\n{year}: {os.path.relpath(path)} is current — skipped')
+            continue
         print(f'\n{year} Street Tree Census ({dataset_id})')
         try:
             trees = compact(fetch_rows(dataset_id))
@@ -206,10 +240,9 @@ def main():
             print(f'  ✗ {e}')
             failed.append(year)
             continue
-        path = os.path.join(OUT_DIR, f'{year}.json')
         with open(path, 'w') as f:
-            json.dump({'year': year, 'source': dataset_id,
-                       'fields': ['lat', 'lng', 'dbh', 'latin', 'common'],
+            json.dump({'year': year, 'source': dataset_id, 'format': FORMAT,
+                       'fields': ['lat', 'lng', 'dbh', 'latin', 'common', 'address'],
                        'trees': trees}, f, separators=(',', ':'))
         print(f'  Saved {len(trees)} living trees to {os.path.relpath(path)}')
 
