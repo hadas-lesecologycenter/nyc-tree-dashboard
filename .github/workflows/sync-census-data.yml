@@ -27,6 +27,14 @@ jobs:
       
       - name: Sync census data
         run: python scripts/sync-census.py
+
+      # sync-census.py rewrites census.json, dropping the estimated planting
+      # years — put them back from the saved census history.
+      - name: Estimate planting years for undated trees
+        run: |
+          if ls data/census-history/*.json >/dev/null 2>&1; then
+            python scripts/estimate_tree_ages.py
+          fi
       
       - name: Check if census.json changed
         id: check_changes
@@ -43,6 +51,7 @@ jobs:
           git config user.name "Tree Census Bot"
           git config user.email "bot@lesecologycenter.org"
           git add data/census.json
+          [ -f data/tree-age-calibration.json ] && git add data/tree-age-calibration.json
           git commit -m "chore: update census data from NYC Parks API"
           git push
       

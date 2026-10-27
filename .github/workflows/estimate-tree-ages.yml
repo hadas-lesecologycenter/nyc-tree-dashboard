@@ -1,0 +1,81 @@
+name: Estimate Tree Ages
+
+# Dates the trees in census.json that have no planting year, from the 1995,
+# 2005 and 2015 street tree censuses plus species growth rates. See
+# TREE_AGES.md. The weekly census update re-runs the estimate step on its own;
+# this workflow is for (re)fetching the census history and for changes to the
+# method.
+on:
+  workflow_dispatch:
+    inputs:
+      refetch:
+        description: 'Re-download the 1995/2005/2015 censuses even if already saved'
+        type: boolean
+        default: false
+  push:
+    paths:
+      - scripts/fetch_historic_censuses.py
+      - scripts/estimate_tree_ages.py
+      - data/growth-rates-published.json
+      - .github/workflows/estimate-tree-ages.yml
+
+concurrency:
+  group: estimate-tree-ages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  estimate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The censuses never change, so they are fetched once and committed.
+      # A partial failure still saves the years that worked; the job is
+      # marked failed at the end so it doesn't go unnoticed.
+      - name: Fetch census history (1995, 2005, 2015)
+        id: history
+        continue-on-error: true
+        env:
+          SOCRATA_APP_TOKEN: ${{ secrets.SOCRATA_APP_TOKEN }}
+        run: |
+          if [ "${{ inputs.refetch }}" = "true" ] || \
+             [ ! -f data/census-history/1995.json ] || \
+             [ ! -f data/census-history/2005.json ] || \
+             [ ! -f data/census-history/2015.json ]; then
+            python3 scripts/fetch_historic_censuses.py
+          else
+            echo "Census history already saved — skipping download."
+          fi
+
+      - name: Estimate planting years
+        run: python3 scripts/estimate_tree_ages.py
+
+      - name: Commit if data changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/census-history data/census.json data/tree-age-calibration.json
+          if git diff --staged --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git commit -m "Estimate tree planting years $(date +%Y-%m-%d)"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
+
+      - name: Fail if a census download failed
+        if: steps.history.outcome == 'failure'
+        run: |
+          echo "One or more census downloads failed — see the 'Fetch census history' step."
+          exit 1

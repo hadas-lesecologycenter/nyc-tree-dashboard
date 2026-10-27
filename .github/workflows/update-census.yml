@@ -27,11 +27,22 @@ jobs:
       - name: Fetch CB3 boundary polygon
         run: python3 scripts/fetch_cb3_boundary.py
 
+      # fetch_census.py rewrites census.json from scratch, which drops the
+      # estimated planting years — put them back from the saved census history.
+      - name: Estimate planting years for undated trees
+        run: |
+          if ls data/census-history/*.json >/dev/null 2>&1; then
+            python3 scripts/estimate_tree_ages.py
+          else
+            echo "No census history yet — run the Estimate Tree Ages workflow once."
+          fi
+
       - name: Commit if data changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/census.json data/cb3-boundary.json
+          [ -f data/tree-age-calibration.json ] && git add data/tree-age-calibration.json
           if git diff --staged --quiet; then
             echo "No changes to census data."
           else

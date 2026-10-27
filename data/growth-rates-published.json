@@ -1,0 +1,28 @@
+{
+  "_about": "Published growth rates used by scripts/estimate_tree_ages.py only for species with too few census-matched trees to measure their growth locally. in_per_yr is trunk-diameter (DBH) growth in inches per year; a 'growth factor' (years per inch of DBH) is converted as 1 / factor. Only values seen quoted from the sources below are listed; the source pages were not opened directly, so check them before relying on a number. Add species here as you verify more values.",
+  "species": {
+    "acer rubrum": {
+      "in_per_yr": 0.2222,
+      "growth_factor": 4.5,
+      "source": "Growth factor table, Allegheny County Parks, 'How to age a living tree' — https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.omnicalculator.com/biology/tree-age"
+    },
+    "acer saccharinum": {
+      "in_per_yr": 0.3333,
+      "growth_factor": 3.0,
+      "source": "Growth factor table, Allegheny County Parks — https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.thelivingurn.com/blogs/news/79236289-how-to-determine-the-age-of-a-tree"
+    },
+    "tilia cordata": {
+      "in_per_yr": 0.3333,
+      "growth_factor": 3.0,
+      "source": "Growth factor table, Allegheny County Parks — https://www.alleghenycounty.us/files/assets/county/v/1/parks/north-park/latodami/how-to-age-a-living-tree.pdf; same value in https://www.omnicalculator.com/biology/tree-age"
+    },
+    "platanus x acerifolia": {
+      "in_per_yr": 0.16,
+      "source": "NYC street tree growth measured from census data — https://par.nsf.gov/biblio/10531760"
+    },
+    "gleditsia triacanthos": {
+      "in_per_yr": 0.36,
+      "source": "NYC street tree growth measured from census data — https://par.nsf.gov/biblio/10531760"
+    }
+  }
+}
