@@ -1,6 +1,5 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
-import { C } from "../theme";
 import { lerp, pop, prog } from "./anim";
 import { ModelIcon } from "./models";
 import { NODE } from "./Timeline";
@@ -51,12 +50,6 @@ export const UpdateShot: React.FC<{
         </div>
       )}
       {newName && <Label x={960} y={790} start={newStart + 6} k={newName} />}
-      {/* thin highlight ring behind the new model */}
-      {newIndex !== undefined && ns > 0.001 && (
-        <Svg>
-          <circle cx={cx} cy={cy} r={r * 1.32} fill="none" stroke={C.accent} strokeOpacity={0.25 * Math.min(1, ns)} strokeWidth={4} />
-        </Svg>
-      )}
     </>
   );
 };

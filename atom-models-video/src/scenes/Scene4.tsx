@@ -297,7 +297,7 @@ const GoldAtom: React.FC = () => {
             <Particle kind="proton" x={960} y={480} r={16} />
           </g>
         )}
-        {showE && <NuclearModel cx={960} cy={480} r={270} frame={f} electrons={5} />}
+        {showE && <NuclearModel cx={960} cy={480} r={270} frame={f} electrons={5} boundary={false} />}
         {showE && f > s19 + 14 && <Arrow x1={1250} y1={355} x2={985} y2={470} t={prog(f, s19 + 14, 10)} color={C.accent} width={7} />}
         {f > s18 + 30 && !showE && <Arrow x1={1180} y1={300} x2={985} y2={460} t={prog(f, s18 + 30, 10)} color={C.accent} width={7} />}
       </Svg>

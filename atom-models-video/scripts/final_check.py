@@ -37,7 +37,7 @@ def srt_starts(path):
 
 def speech_onsets(path):
     out = subprocess.run(["ffmpeg", "-hide_banner", "-i", path, "-vn", "-af",
-                          "silencedetect=noise=-45dB:d=0.12", "-f", "null", "-"], capture_output=True, text=True).stderr
+                          "silencedetect=noise=-40dB:d=0.12", "-f", "null", "-"], capture_output=True, text=True).stderr
     return [float(x) for x in re.findall(r"silence_end: ([0-9.]+)", out)]
 
 

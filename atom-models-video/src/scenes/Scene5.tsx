@@ -22,7 +22,7 @@ const Where: React.FC = () => {
   return (
     <>
       <Svg>
-        <NuclearModel cx={860} cy={490} r={250} frame={f + 400} electrons={4} />
+        <NuclearModel cx={860} cy={490} r={250} frame={f + 400} electrons={4} boundary={false} />
       </Svg>
       <Title x={1340} y={470} start={s + 10} text="?" size={220} color={C.accent} />
     </>

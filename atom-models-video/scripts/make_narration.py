@@ -35,6 +35,9 @@ SCENE_TAIL = 1.0       # pause at the end of each scene (the "short pause betwee
 SENTENCE_GAP = 0.3     # pause between sentences inside one caption row
 TITLE_SECONDS = 3.0    # silent title card at the start of each part
 TARGET_RMS_DB = -20.0  # per-line loudness match (voiced frames only)
+# Final level for each scene file: +5 dB, with a gentle look-ahead peak limiter
+# (latency-compensated, so timing does not move). Gives about -17 LUFS with peaks near -2 dBFS.
+SCENE_FILTER = "volume=5dB,alimiter=limit=0.79:attack=5:release=60:latency=1:level=0"
 
 
 def line_id(scene_id, idx):
@@ -190,7 +193,7 @@ def main():
             with tempfile.TemporaryDirectory() as td:
                 wav = os.path.join(td, "s.wav")
                 write_wav(wav, scene_audio, sr_out)
-                subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-c:a", "flac",
+                subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav, "-af", SCENE_FILTER, "-c:a", "flac",
                                 os.path.join(ROOT, "public", "audio", name + ".flac")], check=True)
 
             for ln in lines_out:
