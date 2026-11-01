@@ -1,0 +1,32 @@
+
+== atom-models-part1.mp4
+length 3:04.92  OK (limit 4:30)
+video h264 1920x1080 30 fps, audio aac 48000 Hz
+loudness -16.8 LUFS integrated, range 2.5 LU, true peak -4.4 dBFS  OK
+caption sync: 43 captions, median offset 34 ms, worst 52 ms  OK (target within 200 ms)
+
+== atom-models-part2.mp4
+length 4:22.34  OK (limit 4:30)
+video h264 1920x1080 30 fps, audio aac 48000 Hz
+loudness -17.0 LUFS integrated, range 3.2 LU, true peak -4.8 dBFS  OK
+caption sync: 58 captions, median offset 35 ms, worst 81 ms  OK (target within 200 ms)
+
+== names (captions | on-screen cards)
+Democritus           captions: yes   on screen: yes
+Leucippus            captions: yes   on screen: yes
+Aristotle            captions: yes   on screen: yes
+Antoine Lavoisier    captions: yes   on screen: yes
+Joseph Proust        captions: yes   on screen: yes
+John Dalton          captions: yes   on screen: yes
+J. J. Thomson        captions: yes   on screen: yes
+Ernest Rutherford    captions: yes   on screen: yes
+Hans Geiger          captions: yes   on screen: yes
+Ernest Marsden       captions: yes   on screen: yes
+James Chadwick       captions: yes   on screen: yes
+Niels Bohr           captions: yes   on screen: yes
+Louis de Broglie     captions: yes   on screen: yes
+Erwin Schrödinger    captions: yes   on screen: yes
+Werner Heisenberg    captions: yes   on screen: yes
+G. P. Thomson        captions: no (line cut)   on screen: yes
+
+ALL CHECKS PASSED
