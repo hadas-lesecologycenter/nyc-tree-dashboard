@@ -30,22 +30,22 @@
  "growth_increments": 1316,
  "estimates": {
   "by_source": {
-   "c2015": 1763,
-   "c2015m": 816,
-   "c2005": 800,
-   "new": 1273,
-   "dbh": 3940,
-   "dbh>": 1162,
-   "c1995": 1607,
-   "c2005m": 288,
+   "new": 1270,
+   "c2015m": 817,
    "c2015>": 46,
+   "dbh>": 1162,
+   "dbh": 3940,
+   "c2005": 801,
+   "c2015": 1765,
+   "c1995": 1606,
+   "c2005m": 288,
    "c1995>": 10,
    "c2005>": 10
   },
   "by_confidence": {
-   "high": 2619,
+   "low": 6680,
    "medium": 2413,
-   "low": 6683
+   "high": 2622
   },
   "living_without_date_or_dbh": 17
  },
@@ -59,8 +59,8 @@
   "dbh": "Current diameter and species growth rate only"
  },
  "checks": {
-  "trees_planted_2017_or_later_matched_to_2015_census": "17 of 2241 \u2014 these are false matches",
-  "trees_planted_2007_or_later_matched_to_2005_census": "7 of 2430 dated trees \u2014 false matches",
+  "trees_planted_2017_or_later_matched_to_2015_census": "20 of 2241 \u2014 these are false matches",
+  "trees_planted_2007_or_later_matched_to_2005_census": "6 of 2430 dated trees \u2014 false matches",
   "first_seen_trees_whose_size_fits_planting_since_previous_census": {
    "2006-2015": "2048 of 3433 (60%); the rest are labelled c\u2026m",
    "1996-2005": "788 of 1350 (58%); the rest are labelled c\u2026m"
@@ -179,12 +179,12 @@
     "source": "census-matched trees of this species"
    },
    "tilia cordata": {
-    "rate": 0.1806,
+    "rate": 0.1808,
     "quartiles": [
      0.1,
      0.25
     ],
-    "n": 88,
+    "n": 89,
     "source": "census-matched trees of this species"
    },
    "zelkova serrata": {
@@ -298,7 +298,7 @@
    "pyrus calleryana": 18.1,
    "quercus palustris": 20.6,
    "styphnolobium japonicum": 21.0,
-   "tilia cordata": 13.6,
+   "tilia cordata": 13.5,
    "zelkova serrata": 14.2
   },
   "species_by_size_class": {
@@ -312,7 +312,7 @@
    "pyrus calleryana | 6\"+": 0.2593,
    "quercus palustris | 0\"+": 0.3514,
    "styphnolobium japonicum | 6\"+": 0.2618,
-   "tilia cordata | 0\"+": 0.1807,
+   "tilia cordata | 0\"+": 0.1811,
    "tilia cordata | 6\"+": 0.187
   }
  }
