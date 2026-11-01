@@ -1,0 +1,1007 @@
+{
+ "fps": 30,
+ "voice": "Piper en-US lessac (medium)",
+ "lengthScale": 1.45,
+ "cuts": [
+  "s6-11",
+  "s6-12",
+  "s6-13"
+ ],
+ "parts": {
+  "part1": {
+   "title": "From Solid Balls to Plum Pudding",
+   "titleFrames": 90,
+   "totalFrames": 5547,
+   "scenes": [
+    {
+     "id": "s1",
+     "title": "Hook",
+     "audio": "audio/part1-s1.flac",
+     "startFrame": 90,
+     "durationFrames": 1295,
+     "lines": [
+      {
+       "id": "s1-1",
+       "text": "This pencil tip is made of carbon.",
+       "start": 0.6,
+       "end": 2.73,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 82
+      },
+      {
+       "id": "s1-2",
+       "text": "Cut it smaller and smaller, down to single carbon atoms.",
+       "start": 3.28,
+       "end": 7.17,
+       "cut": false,
+       "startFrame": 98,
+       "endFrame": 215
+      },
+      {
+       "id": "s1-3",
+       "text": "“Atom” comes from the Greek word “atomos.” It means “can't be cut.”",
+       "start": 8.52,
+       "end": 13.37,
+       "cut": false,
+       "startFrame": 256,
+       "endFrame": 401
+      },
+      {
+       "id": "s1-4",
+       "text": "About 2,400 years ago, Leucippus and his student Democritus had an idea.",
+       "start": 13.919999999999998,
+       "end": 19.279999999999998,
+       "cut": false,
+       "startFrame": 418,
+       "endFrame": 578
+      },
+      {
+       "id": "s1-5",
+       "text": "Everything is made of atoms and empty space.",
+       "start": 19.83,
+       "end": 22.939999999999998,
+       "cut": false,
+       "startFrame": 595,
+       "endFrame": 688
+      },
+      {
+       "id": "s1-6",
+       "text": "Aristotle disagreed.",
+       "start": 23.49,
+       "end": 25.159999999999997,
+       "cut": false,
+       "startFrame": 705,
+       "endFrame": 755
+      },
+      {
+       "id": "s1-7",
+       "text": "He said everything is fire, air, earth, and water.",
+       "start": 25.709999999999997,
+       "end": 29.83,
+       "cut": true,
+       "startFrame": 771,
+       "endFrame": 895
+      },
+      {
+       "id": "s1-8",
+       "text": "Most people believed him for almost 2,000 years.",
+       "start": 30.379999999999995,
+       "end": 33.989999999999995,
+       "cut": false,
+       "startFrame": 911,
+       "endFrame": 1020
+      },
+      {
+       "id": "s1-9",
+       "text": "How can we learn what's inside something too small to see?",
+       "start": 34.53999999999999,
+       "end": 38.22999999999999,
+       "cut": false,
+       "startFrame": 1036,
+       "endFrame": 1147
+      },
+      {
+       "id": "s1-10",
+       "text": "We do experiments: tests that check an idea.",
+       "start": 38.779999999999994,
+       "end": 42.16,
+       "cut": false,
+       "startFrame": 1163,
+       "endFrame": 1265
+      }
+     ]
+    },
+    {
+     "id": "s2",
+     "title": "Dalton's Solid Sphere (1803)",
+     "audio": "audio/part1-s2.flac",
+     "startFrame": 1385,
+     "durationFrames": 1487,
+     "lines": [
+      {
+       "id": "s2-1",
+       "text": "By 1800, chemists knew two laws: rules nature always follows.",
+       "start": 0.6,
+       "end": 5.97,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 179
+      },
+      {
+       "id": "s2-2",
+       "text": "First, Antoine Lavoisier. When chemicals react in a sealed jar, mass stays the same.",
+       "start": 6.52,
+       "end": 13.17,
+       "cut": false,
+       "startFrame": 196,
+       "endFrame": 395
+      },
+      {
+       "id": "s2-3",
+       "text": "Mass is how much stuff there is.",
+       "start": 14.120000000000001,
+       "end": 16.05,
+       "cut": false,
+       "startFrame": 424,
+       "endFrame": 482
+      },
+      {
+       "id": "s2-4",
+       "text": "Second, Joseph Proust. Water always has 8 grams of oxygen per gram of hydrogen.",
+       "start": 16.6,
+       "end": 22.51,
+       "cut": false,
+       "startFrame": 498,
+       "endFrame": 675
+      },
+      {
+       "id": "s2-5",
+       "text": "In 1803, John Dalton explained both laws.",
+       "start": 23.060000000000002,
+       "end": 26.880000000000003,
+       "cut": false,
+       "startFrame": 692,
+       "endFrame": 806
+      },
+      {
+       "id": "s2-6",
+       "text": "Atoms are tiny solid balls that can't be split.",
+       "start": 27.430000000000003,
+       "end": 30.870000000000005,
+       "cut": false,
+       "startFrame": 823,
+       "endFrame": 926
+      },
+      {
+       "id": "s2-7",
+       "text": "All atoms of one element, or pure substance, are alike.",
+       "start": 31.42,
+       "end": 35.45,
+       "cut": false,
+       "startFrame": 943,
+       "endFrame": 1064
+      },
+      {
+       "id": "s2-8",
+       "text": "Atoms join in whole numbers, never half an atom.",
+       "start": 36.0,
+       "end": 39.4,
+       "cut": false,
+       "startFrame": 1080,
+       "endFrame": 1182
+      },
+      {
+       "id": "s2-9",
+       "text": "This is the Solid Sphere model: a picture that explains the clues.",
+       "start": 40.45,
+       "end": 44.93000000000001,
+       "cut": false,
+       "startFrame": 1214,
+       "endFrame": 1348
+      },
+      {
+       "id": "s2-10",
+       "text": "It predicts that there's nothing inside an atom.",
+       "start": 45.480000000000004,
+       "end": 48.550000000000004,
+       "cut": false,
+       "startFrame": 1364,
+       "endFrame": 1457
+      }
+     ]
+    },
+    {
+     "id": "s3",
+     "title": "Cathode Ray Tube → Plum Pudding (1897–1904)",
+     "audio": "audio/part1-s3.flac",
+     "startFrame": 2872,
+     "durationFrames": 2675,
+     "lines": [
+      {
+       "id": "s3-1",
+       "text": "In 1897, J. J. Thomson tested a cathode ray tube.",
+       "start": 0.6,
+       "end": 4.56,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 137
+      },
+      {
+       "id": "s3-2",
+       "text": "It's a glass tube with most of the air pumped out.",
+       "start": 5.109999999999999,
+       "end": 8.129999999999999,
+       "cut": false,
+       "startFrame": 153,
+       "endFrame": 244
+      },
+      {
+       "id": "s3-3",
+       "text": "A glowing beam shoots from the negative end, called the cathode,",
+       "start": 9.08,
+       "end": 12.9,
+       "cut": false,
+       "startFrame": 272,
+       "endFrame": 387
+      },
+      {
+       "id": "s3-4",
+       "text": "to the positive end, called the anode.",
+       "start": 13.05,
+       "end": 15.49,
+       "cut": false,
+       "startFrame": 392,
+       "endFrame": 465
+      },
+      {
+       "id": "s3-5",
+       "text": "An object in the beam casts a sharp shadow.",
+       "start": 16.04,
+       "end": 19.07,
+       "cut": true,
+       "startFrame": 481,
+       "endFrame": 572
+      },
+      {
+       "id": "s3-6",
+       "text": "So the beam travels in straight lines.",
+       "start": 19.619999999999997,
+       "end": 21.919999999999998,
+       "cut": true,
+       "startFrame": 589,
+       "endFrame": 658
+      },
+      {
+       "id": "s3-7",
+       "text": "The beam bends toward a positive plate.",
+       "start": 22.47,
+       "end": 24.84,
+       "cut": false,
+       "startFrame": 674,
+       "endFrame": 745
+      },
+      {
+       "id": "s3-8",
+       "text": "Charge comes in plus and minus. Opposites pull together.",
+       "start": 25.89,
+       "end": 29.76,
+       "cut": false,
+       "startFrame": 777,
+       "endFrame": 893
+      },
+      {
+       "id": "s3-9",
+       "text": "So the beam is made of tiny negative bits, called particles.",
+       "start": 30.310000000000002,
+       "end": 34.0,
+       "cut": false,
+       "startFrame": 909,
+       "endFrame": 1020
+      },
+      {
+       "id": "s3-10",
+       "text": "A magnet bends the beam too.",
+       "start": 34.550000000000004,
+       "end": 37.11000000000001,
+       "cut": true,
+       "startFrame": 1037,
+       "endFrame": 1113
+      },
+      {
+       "id": "s3-11",
+       "text": "Thomson changed the metal, and the beam stayed the same.",
+       "start": 37.660000000000004,
+       "end": 41.050000000000004,
+       "cut": false,
+       "startFrame": 1130,
+       "endFrame": 1232
+      },
+      {
+       "id": "s3-12",
+       "text": "So these particles are in every kind of atom.",
+       "start": 42.0,
+       "end": 44.65,
+       "cut": false,
+       "startFrame": 1260,
+       "endFrame": 1340
+      },
+      {
+       "id": "s3-13",
+       "text": "And they're over 1,000 times lighter than a hydrogen atom.",
+       "start": 45.2,
+       "end": 48.93,
+       "cut": false,
+       "startFrame": 1356,
+       "endFrame": 1468
+      },
+      {
+       "id": "s3-14",
+       "text": "He had discovered the electron.",
+       "start": 49.480000000000004,
+       "end": 51.53,
+       "cut": false,
+       "startFrame": 1484,
+       "endFrame": 1546
+      },
+      {
+       "id": "s3-15",
+       "text": "Prediction: nothing inside. Result: smaller parts inside!",
+       "start": 52.080000000000005,
+       "end": 57.300000000000004,
+       "cut": false,
+       "startFrame": 1562,
+       "endFrame": 1719
+      },
+      {
+       "id": "s3-16",
+       "text": "So the Solid Sphere model gets updated.",
+       "start": 58.25000000000001,
+       "end": 60.53000000000001,
+       "cut": false,
+       "startFrame": 1748,
+       "endFrame": 1816
+      },
+      {
+       "id": "s3-17",
+       "text": "Whole atoms have no overall charge.",
+       "start": 62.080000000000005,
+       "end": 64.58000000000001,
+       "cut": false,
+       "startFrame": 1862,
+       "endFrame": 1937
+      },
+      {
+       "id": "s3-18",
+       "text": "So something positive must balance the electrons.",
+       "start": 65.13000000000001,
+       "end": 68.4,
+       "cut": false,
+       "startFrame": 1954,
+       "endFrame": 2052
+      },
+      {
+       "id": "s3-19",
+       "text": "In 1904, Thomson made the Plum Pudding model.",
+       "start": 68.95000000000002,
+       "end": 72.35000000000002,
+       "cut": false,
+       "startFrame": 2069,
+       "endFrame": 2171
+      },
+      {
+       "id": "s3-20",
+       "text": "Electrons sit in a ball of spread-out positive charge.",
+       "start": 72.90000000000002,
+       "end": 76.42000000000002,
+       "cut": false,
+       "startFrame": 2187,
+       "endFrame": 2293
+      },
+      {
+       "id": "s3-21",
+       "text": "Like blueberries in a muffin.",
+       "start": 76.97000000000003,
+       "end": 78.89000000000003,
+       "cut": false,
+       "startFrame": 2309,
+       "endFrame": 2367
+      },
+      {
+       "id": "s3-22",
+       "text": "Plum pudding is an old British dessert.",
+       "start": 79.44000000000003,
+       "end": 81.51000000000002,
+       "cut": true,
+       "startFrame": 2383,
+       "endFrame": 2445
+      },
+      {
+       "id": "s3-23",
+       "text": "Next time, a gold foil experiment puts this model to the test.",
+       "start": 82.06000000000003,
+       "end": 86.65000000000003,
+       "cut": false,
+       "startFrame": 2462,
+       "endFrame": 2600
+      }
+     ]
+    }
+   ]
+  },
+  "part2": {
+   "title": "From Gold Foil to the Quantum Model",
+   "titleFrames": 90,
+   "totalFrames": 7870,
+   "scenes": [
+    {
+     "id": "s4",
+     "title": "Gold Foil → Nuclear Model (1909–1911)",
+     "audio": "audio/part2-s4.flac",
+     "startFrame": 90,
+     "durationFrames": 3199,
+     "lines": [
+      {
+       "id": "s4-0",
+       "text": "Last time, the atom went from a solid ball to plum pudding.",
+       "start": 0.6,
+       "end": 4.64,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 139
+      },
+      {
+       "id": "s4-1",
+       "text": "Next, Ernest Rutherford's team tested the Plum Pudding model.",
+       "start": 5.1899999999999995,
+       "end": 9.5,
+       "cut": false,
+       "startFrame": 156,
+       "endFrame": 285
+      },
+      {
+       "id": "s4-2",
+       "text": "Hans Geiger and Ernest Marsden fired alpha particles at gold foil.",
+       "start": 10.049999999999999,
+       "end": 14.739999999999998,
+       "cut": false,
+       "startFrame": 301,
+       "endFrame": 442
+      },
+      {
+       "id": "s4-3",
+       "text": "Alpha particles are fast, heavy, and positive.",
+       "start": 15.29,
+       "end": 18.759999999999998,
+       "cut": false,
+       "startFrame": 459,
+       "endFrame": 563
+      },
+      {
+       "id": "s4-4",
+       "text": "They shoot out of radioactive material on their own.",
+       "start": 19.31,
+       "end": 22.64,
+       "cut": false,
+       "startFrame": 579,
+       "endFrame": 679
+      },
+      {
+       "id": "s4-5",
+       "text": "The gold foil was much thinner than paper.",
+       "start": 23.189999999999998,
+       "end": 25.72,
+       "cut": false,
+       "startFrame": 696,
+       "endFrame": 772
+      },
+      {
+       "id": "s4-6",
+       "text": "A screen around it flashed wherever a particle hit.",
+       "start": 26.269999999999996,
+       "end": 29.329999999999995,
+       "cut": false,
+       "startFrame": 788,
+       "endFrame": 880
+      },
+      {
+       "id": "s4-7",
+       "text": "They counted the flashes in a dark room, using a microscope.",
+       "start": 29.879999999999995,
+       "end": 33.699999999999996,
+       "cut": true,
+       "startFrame": 896,
+       "endFrame": 1011
+      },
+      {
+       "id": "s4-8",
+       "text": "Prediction: the positive charge is spread thin.",
+       "start": 34.24999999999999,
+       "end": 37.38999999999999,
+       "cut": false,
+       "startFrame": 1027,
+       "endFrame": 1122
+      },
+      {
+       "id": "s4-9",
+       "text": "So every particle should zip straight through.",
+       "start": 37.93999999999999,
+       "end": 40.54999999999999,
+       "cut": false,
+       "startFrame": 1138,
+       "endFrame": 1216
+      },
+      {
+       "id": "s4-10",
+       "text": "Here's what really happened.",
+       "start": 41.89999999999999,
+       "end": 43.709999999999994,
+       "cut": false,
+       "startFrame": 1257,
+       "endFrame": 1311
+      },
+      {
+       "id": "s4-11",
+       "text": "Most particles went straight through.",
+       "start": 44.25999999999999,
+       "end": 46.63999999999999,
+       "cut": false,
+       "startFrame": 1328,
+       "endFrame": 1399
+      },
+      {
+       "id": "s4-12",
+       "text": "A few bent at big angles.",
+       "start": 47.48999999999999,
+       "end": 49.389999999999986,
+       "cut": false,
+       "startFrame": 1425,
+       "endFrame": 1482
+      },
+      {
+       "id": "s4-13",
+       "text": "And about 1 in 8,000 bounced almost straight back!",
+       "start": 50.23999999999999,
+       "end": 53.929999999999986,
+       "cut": false,
+       "startFrame": 1507,
+       "endFrame": 1618
+      },
+      {
+       "id": "s4-14",
+       "text": "",
+       "silent": true,
+       "start": 54.77999999999999,
+       "end": 57.77999999999999,
+       "startFrame": 1643,
+       "endFrame": 1733
+      },
+      {
+       "id": "s4-15",
+       "text": "Rutherford said it was like firing a giant shell at tissue paper,",
+       "start": 57.77999999999999,
+       "end": 61.58999999999999,
+       "cut": true,
+       "startFrame": 1733,
+       "endFrame": 1848
+      },
+      {
+       "id": "s4-16",
+       "text": "and having it bounce back and hit you!",
+       "start": 61.73999999999999,
+       "end": 63.80999999999999,
+       "cut": true,
+       "startFrame": 1852,
+       "endFrame": 1914
+      },
+      {
+       "id": "s4-17",
+       "text": "So the atom is mostly empty space.",
+       "start": 64.35999999999999,
+       "end": 67.10999999999999,
+       "cut": false,
+       "startFrame": 1931,
+       "endFrame": 2013
+      },
+      {
+       "id": "s4-18",
+       "text": "In the middle is a tiny, positive center called the nucleus.",
+       "start": 67.65999999999998,
+       "end": 71.67999999999998,
+       "cut": false,
+       "startFrame": 2030,
+       "endFrame": 2150
+      },
+      {
+       "id": "s4-19",
+       "text": "It holds almost all the mass. Electrons are outside it.",
+       "start": 72.22999999999998,
+       "end": 76.43999999999997,
+       "cut": false,
+       "startFrame": 2167,
+       "endFrame": 2293
+      },
+      {
+       "id": "s4-20",
+       "text": "Make the nucleus a baseball, and the atom is 5 miles wide.",
+       "start": 76.98999999999998,
+       "end": 81.84999999999998,
+       "cut": true,
+       "startFrame": 2310,
+       "endFrame": 2455
+      },
+      {
+       "id": "s4-21",
+       "text": "Plum Pudding is updated. This is the Nuclear Model.",
+       "start": 82.39999999999998,
+       "end": 86.10999999999997,
+       "cut": false,
+       "startFrame": 2472,
+       "endFrame": 2583
+      },
+      {
+       "id": "s4-22",
+       "text": "Later, in 1932, came one more piece.",
+       "start": 87.65999999999998,
+       "end": 91.42999999999998,
+       "cut": true,
+       "startFrame": 2630,
+       "endFrame": 2743
+      },
+      {
+       "id": "s4-23",
+       "text": "Hydrogen has 1 proton, a positive particle in the nucleus.",
+       "start": 91.97999999999999,
+       "end": 96.47999999999999,
+       "cut": true,
+       "startFrame": 2759,
+       "endFrame": 2894
+      },
+      {
+       "id": "s4-24",
+       "text": "Helium has 2 protons, but 4 times the mass.",
+       "start": 97.02999999999999,
+       "end": 100.51999999999998,
+       "cut": true,
+       "startFrame": 2911,
+       "endFrame": 3016
+      },
+      {
+       "id": "s4-25",
+       "text": "James Chadwick found the missing mass: neutrons, with no charge.",
+       "start": 101.07,
+       "end": 105.61999999999999,
+       "cut": true,
+       "startFrame": 3032,
+       "endFrame": 3169
+      }
+     ]
+    },
+    {
+     "id": "s5",
+     "title": "Emission Spectra → Planetary Model (1913)",
+     "audio": "audio/part2-s5.flac",
+     "startFrame": 3289,
+     "durationFrames": 2202,
+     "lines": [
+      {
+       "id": "s5-1",
+       "text": "But where exactly are the electrons?",
+       "start": 0.6,
+       "end": 3.11,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 93
+      },
+      {
+       "id": "s5-2",
+       "text": "Physics said circling electrons should spiral into the nucleus.",
+       "start": 3.6599999999999997,
+       "end": 7.85,
+       "cut": true,
+       "startFrame": 110,
+       "endFrame": 236
+      },
+      {
+       "id": "s5-3",
+       "text": "The clue came from light.",
+       "start": 8.4,
+       "end": 9.82,
+       "cut": false,
+       "startFrame": 252,
+       "endFrame": 295
+      },
+      {
+       "id": "s5-4",
+       "text": "Hydrogen gas glows when electricity runs through it.",
+       "start": 10.370000000000001,
+       "end": 13.950000000000001,
+       "cut": false,
+       "startFrame": 311,
+       "endFrame": 419
+      },
+      {
+       "id": "s5-5",
+       "text": "A prism, a wedge of glass, splits that light into colors.",
+       "start": 14.5,
+       "end": 18.759999999999998,
+       "cut": false,
+       "startFrame": 435,
+       "endFrame": 563
+      },
+      {
+       "id": "s5-6",
+       "text": "White light makes a full rainbow.",
+       "start": 19.31,
+       "end": 21.24,
+       "cut": false,
+       "startFrame": 579,
+       "endFrame": 637
+      },
+      {
+       "id": "s5-7",
+       "text": "But hydrogen makes only four thin lines.",
+       "start": 21.79,
+       "end": 24.369999999999997,
+       "cut": false,
+       "startFrame": 654,
+       "endFrame": 731
+      },
+      {
+       "id": "s5-8",
+       "text": "Every element has its own lines, like a fingerprint.",
+       "start": 24.919999999999998,
+       "end": 28.339999999999996,
+       "cut": false,
+       "startFrame": 748,
+       "endFrame": 850
+      },
+      {
+       "id": "s5-9",
+       "text": "That's why metals make different colored flames.",
+       "start": 28.889999999999997,
+       "end": 32.04,
+       "cut": true,
+       "startFrame": 867,
+       "endFrame": 961
+      },
+      {
+       "id": "s5-10",
+       "text": "In 1913, Niels Bohr explained the lines.",
+       "start": 32.589999999999996,
+       "end": 36.08,
+       "cut": false,
+       "startFrame": 978,
+       "endFrame": 1082
+      },
+      {
+       "id": "s5-11",
+       "text": "Electrons can only be on certain levels, each with a fixed energy.",
+       "start": 36.629999999999995,
+       "end": 41.13999999999999,
+       "cut": false,
+       "startFrame": 1099,
+       "endFrame": 1234
+      },
+      {
+       "id": "s5-12",
+       "text": "It's like stairs. You stand on a step, never between.",
+       "start": 41.69,
+       "end": 45.66,
+       "cut": false,
+       "startFrame": 1251,
+       "endFrame": 1370
+      },
+      {
+       "id": "s5-13",
+       "text": "Add energy, and an electron jumps up a level.",
+       "start": 46.21,
+       "end": 49.160000000000004,
+       "cut": false,
+       "startFrame": 1386,
+       "endFrame": 1475
+      },
+      {
+       "id": "s5-14",
+       "text": "When it falls back, it gives off one exact color.",
+       "start": 49.71,
+       "end": 53.52,
+       "cut": false,
+       "startFrame": 1491,
+       "endFrame": 1606
+      },
+      {
+       "id": "s5-15",
+       "text": "A small drop, from level 3 to 2, gives red.",
+       "start": 54.07,
+       "end": 58.03,
+       "cut": false,
+       "startFrame": 1622,
+       "endFrame": 1741
+      },
+      {
+       "id": "s5-16",
+       "text": "A bigger drop, from 5 to 2, gives violet: more energy.",
+       "start": 59.18,
+       "end": 64.49,
+       "cut": false,
+       "startFrame": 1775,
+       "endFrame": 1935
+      },
+      {
+       "id": "s5-17",
+       "text": "Nuclear is updated. This is the Planetary Model: electrons on rings.",
+       "start": 65.64,
+       "end": 71.38,
+       "cut": false,
+       "startFrame": 1969,
+       "endFrame": 2141
+      }
+     ]
+    },
+    {
+     "id": "s6",
+     "title": "The Quantum Model (1924–1927)",
+     "audio": "audio/part2-s6.flac",
+     "startFrame": 5491,
+     "durationFrames": 1478,
+     "lines": [
+      {
+       "id": "s6-1",
+       "text": "Bohr's model matched hydrogen perfectly.",
+       "start": 0.6,
+       "end": 3.11,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 93
+      },
+      {
+       "id": "s6-2",
+       "text": "But it failed for atoms with more electrons, even helium.",
+       "start": 3.6599999999999997,
+       "end": 7.789999999999999,
+       "cut": false,
+       "startFrame": 110,
+       "endFrame": 234
+      },
+      {
+       "id": "s6-3",
+       "text": "In 1924, Louis de Broglie said electrons also act like waves.",
+       "start": 8.34,
+       "end": 13.27,
+       "cut": true,
+       "startFrame": 250,
+       "endFrame": 398
+      },
+      {
+       "id": "s6-4",
+       "text": "In 1926, Erwin Schrödinger wrote an equation treating electrons as waves.",
+       "start": 13.82,
+       "end": 19.2,
+       "cut": false,
+       "startFrame": 415,
+       "endFrame": 576
+      },
+      {
+       "id": "s6-5",
+       "text": "Its answers are orbitals: places an electron is likely to be.",
+       "start": 19.75,
+       "end": 24.03,
+       "cut": false,
+       "startFrame": 592,
+       "endFrame": 721
+      },
+      {
+       "id": "s6-6",
+       "text": "In 1927, Werner Heisenberg showed we can't know an electron's exact path.",
+       "start": 24.58,
+       "end": 30.45,
+       "cut": true,
+       "startFrame": 737,
+       "endFrame": 914
+      },
+      {
+       "id": "s6-7",
+       "text": "Imagine 1,000 snapshots of where the electron is.",
+       "start": 31.0,
+       "end": 34.8,
+       "cut": false,
+       "startFrame": 930,
+       "endFrame": 1044
+      },
+      {
+       "id": "s6-8",
+       "text": "Stack them up, and you get a fuzzy cloud.",
+       "start": 36.55,
+       "end": 39.14,
+       "cut": false,
+       "startFrame": 1096,
+       "endFrame": 1174
+      },
+      {
+       "id": "s6-9",
+       "text": "It's thickest where the electron is most likely to be.",
+       "start": 40.089999999999996,
+       "end": 43.419999999999995,
+       "cut": false,
+       "startFrame": 1203,
+       "endFrame": 1303
+      },
+      {
+       "id": "s6-10",
+       "text": "Planetary is updated. This is the Quantum Model.",
+       "start": 43.97,
+       "end": 47.26,
+       "cut": false,
+       "startFrame": 1319,
+       "endFrame": 1418
+      }
+     ]
+    },
+    {
+     "id": "s7",
+     "title": "Recap",
+     "audio": "audio/part2-s7.flac",
+     "startFrame": 6969,
+     "durationFrames": 901,
+     "lines": [
+      {
+       "id": "s7-1",
+       "text": "Five models. Each one changed because of evidence.",
+       "start": 0.6,
+       "end": 4.1499999999999995,
+       "cut": false,
+       "startFrame": 18,
+       "endFrame": 124
+      },
+      {
+       "id": "s7-2",
+       "text": "Two laws. Cathode rays. Gold foil. Light lines. Electron waves.",
+       "start": 4.699999999999999,
+       "end": 11.23,
+       "cut": false,
+       "startFrame": 141,
+       "endFrame": 337
+      },
+      {
+       "id": "s7-3",
+       "text": "Each model made a prediction. An experiment tested it.",
+       "start": 12.379999999999999,
+       "end": 15.919999999999998,
+       "cut": false,
+       "startFrame": 371,
+       "endFrame": 478
+      },
+      {
+       "id": "s7-4",
+       "text": "When the result didn't fit, scientists updated the model.",
+       "start": 16.47,
+       "end": 20.0,
+       "cut": false,
+       "startFrame": 494,
+       "endFrame": 600
+      },
+      {
+       "id": "s7-5",
+       "text": "Each experiment didn't throw science away.",
+       "start": 20.549999999999997,
+       "end": 23.139999999999997,
+       "cut": false,
+       "startFrame": 616,
+       "endFrame": 694
+      },
+      {
+       "id": "s7-6",
+       "text": "It made our picture of the atom better.",
+       "start": 23.689999999999998,
+       "end": 26.029999999999998,
+       "cut": false,
+       "startFrame": 711,
+       "endFrame": 781
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

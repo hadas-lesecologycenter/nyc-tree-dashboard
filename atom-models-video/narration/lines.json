@@ -1,0 +1,171 @@
+{
+  "_notes": [
+    "Source of truth for narration and captions. 'text' is the caption (exact script.md wording).",
+    "'tts' (optional) is what the voice reads: phonetic spellings for names and years in words.",
+    "Text inside [[ ]] is raw IPA phonemes for the Piper voice.",
+    "'hold' = extra seconds of silence after the line so an animation can finish.",
+    "'cut' = line is marked with the scissors symbol in script.md (cut first if a part runs long).",
+    "'silent' = no narration for 'hold' seconds (no caption)."
+  ],
+  "parts": [
+    {
+      "id": "part1",
+      "title": "From Solid Balls to Plum Pudding",
+      "scenes": [
+        {
+          "id": "s1",
+          "title": "Hook",
+          "lines": [
+            { "text": "This pencil tip is made of carbon." },
+            { "text": "Cut it smaller and smaller, down to single carbon atoms.", "hold": 0.8 },
+            { "text": "“Atom” comes from the Greek word “atomos.” It means “can't be cut.”", "tts": "Atom comes from the Greek word, [[ˈætəmɑːs.]] It means, can't be cut." },
+            { "text": "About 2,400 years ago, Leucippus and his student Democritus had an idea.", "tts": "About twenty-four hundred years ago, [[luːsˈɪpəs]] and his student [[dɪmˈɑːkɹɪɾəs]] had an idea." },
+            { "text": "Everything is made of atoms and empty space." },
+            { "text": "Aristotle disagreed." },
+            { "text": "He said everything is fire, air, earth, and water.", "cut": true },
+            { "text": "Most people believed him for almost 2,000 years.", "tts": "Most people believed him for almost two thousand years." },
+            { "text": "How can we learn what's inside something too small to see?" },
+            { "text": "We do experiments: tests that check an idea." }
+          ]
+        },
+        {
+          "id": "s2",
+          "title": "Dalton's Solid Sphere (1803)",
+          "lines": [
+            { "text": "By 1800, chemists knew two laws: rules nature always follows.", "tts": "By eighteen hundred, chemists knew two laws: rules nature always follows." },
+            { "text": "First, Antoine Lavoisier. When chemicals react in a sealed jar, mass stays the same.", "tts": "First, [[ɑːntwˈɑːn lɑːvwɑːzɪˈeɪ.]] When chemicals react in a sealed jar, mass stays the same.", "hold": 0.4 },
+            { "text": "Mass is how much stuff there is." },
+            { "text": "Second, Joseph Proust. Water always has 8 grams of oxygen per gram of hydrogen.", "tts": "Second, Joseph Proost. Water always has eight grams of oxygen per gram of hydrogen." },
+            { "text": "In 1803, John Dalton explained both laws.", "tts": "In eighteen oh three, John Dalton explained both laws." },
+            { "text": "Atoms are tiny solid balls that can't be split." },
+            { "text": "All atoms of one element, or pure substance, are alike." },
+            { "text": "Atoms join in whole numbers, never half an atom.", "hold": 0.5 },
+            { "text": "This is the Solid Sphere model: a picture that explains the clues." },
+            { "text": "It predicts that there's nothing inside an atom." }
+          ]
+        },
+        {
+          "id": "s3",
+          "title": "Cathode Ray Tube → Plum Pudding (1897–1904)",
+          "lines": [
+            { "text": "In 1897, J. J. Thomson tested a cathode ray tube.", "tts": "In eighteen ninety-seven, Jay Jay Thomson tested a cathode ray tube." },
+            { "text": "It's a glass tube with most of the air pumped out.", "hold": 0.4 },
+            { "text": "A glowing beam shoots from the negative end, called the cathode,", "gapAfter": 0.15 },
+            { "text": "to the positive end, called the anode." },
+            { "text": "An object in the beam casts a sharp shadow.", "cut": true },
+            { "text": "So the beam travels in straight lines.", "cut": true },
+            { "text": "The beam bends toward a positive plate.", "hold": 0.5 },
+            { "text": "Charge comes in plus and minus. Opposites pull together." },
+            { "text": "So the beam is made of tiny negative bits, called particles." },
+            { "text": "A magnet bends the beam too.", "cut": true },
+            { "text": "Thomson changed the metal, and the beam stayed the same.", "hold": 0.4 },
+            { "text": "So these particles are in every kind of atom." },
+            { "text": "And they're over 1,000 times lighter than a hydrogen atom.", "tts": "And they're over one thousand times lighter than a hydrogen atom." },
+            { "text": "He had discovered the electron." },
+            { "text": "Prediction: nothing inside. Result: smaller parts inside!", "hold": 0.4 },
+            { "text": "So the Solid Sphere model gets updated.", "hold": 1.0 },
+            { "text": "Whole atoms have no overall charge." },
+            { "text": "So something positive must balance the electrons." },
+            { "text": "In 1904, Thomson made the Plum Pudding model.", "tts": "In nineteen oh four, Thomson made the Plum Pudding model." },
+            { "text": "Electrons sit in a ball of spread-out positive charge." },
+            { "text": "Like blueberries in a muffin." },
+            { "text": "Plum pudding is an old British dessert.", "cut": true },
+            { "text": "Next time, a gold foil experiment puts this model to the test.", "hold": 1.5 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "part2",
+      "title": "From Gold Foil to the Quantum Model",
+      "scenes": [
+        {
+          "id": "s4",
+          "title": "Gold Foil → Nuclear Model (1909–1911)",
+          "lines": [
+            { "text": "Last time, the atom went from a solid ball to plum pudding." },
+            { "text": "Next, Ernest Rutherford's team tested the Plum Pudding model." },
+            { "text": "Hans Geiger and Ernest Marsden fired alpha particles at gold foil.", "tts": "Hans [[ɡˈaɪɡɚ]] and Ernest Marsden fired alpha particles at gold foil." },
+            { "text": "Alpha particles are fast, heavy, and positive." },
+            { "text": "They shoot out of radioactive material on their own." },
+            { "text": "The gold foil was much thinner than paper." },
+            { "text": "A screen around it flashed wherever a particle hit." },
+            { "text": "They counted the flashes in a dark room, using a microscope.", "cut": true },
+            { "text": "Prediction: the positive charge is spread thin." },
+            { "text": "So every particle should zip straight through.", "hold": 0.8 },
+            { "text": "Here's what really happened." },
+            { "text": "Most particles went straight through.", "hold": 0.3 },
+            { "text": "A few bent at big angles.", "hold": 0.3 },
+            { "text": "And about 1 in 8,000 bounced almost straight back!", "tts": "And about one in eight thousand bounced almost straight back!", "hold": 0.3 },
+            { "text": "", "silent": true, "hold": 3.0 },
+            { "text": "Rutherford said it was like firing a giant shell at tissue paper,", "cut": true, "gapAfter": 0.15 },
+            { "text": "and having it bounce back and hit you!", "cut": true },
+            { "text": "So the atom is mostly empty space." },
+            { "text": "In the middle is a tiny, positive center called the nucleus." },
+            { "text": "It holds almost all the mass. Electrons are outside it." },
+            { "text": "Make the nucleus a baseball, and the atom is 5 miles wide.", "cut": true, "tts": "Make the nucleus a baseball, and the atom is five miles wide." },
+            { "text": "Plum Pudding is updated. This is the Nuclear Model.", "hold": 1.0 },
+            { "text": "Later, in 1932, came one more piece.", "cut": true, "tts": "Later, in nineteen thirty-two, came one more piece." },
+            { "text": "Hydrogen has 1 proton, a positive particle in the nucleus.", "cut": true, "tts": "Hydrogen has one proton, a positive particle in the nucleus." },
+            { "text": "Helium has 2 protons, but 4 times the mass.", "cut": true, "tts": "Helium has two protons, but four times the mass." },
+            { "text": "James Chadwick found the missing mass: neutrons, with no charge.", "cut": true }
+          ]
+        },
+        {
+          "id": "s5",
+          "title": "Emission Spectra → Planetary Model (1913)",
+          "lines": [
+            { "text": "But where exactly are the electrons?" },
+            { "text": "Physics said circling electrons should spiral into the nucleus.", "cut": true },
+            { "text": "The clue came from light." },
+            { "text": "Hydrogen gas glows when electricity runs through it." },
+            { "text": "A prism, a wedge of glass, splits that light into colors." },
+            { "text": "White light makes a full rainbow." },
+            { "text": "But hydrogen makes only four thin lines." },
+            { "text": "Every element has its own lines, like a fingerprint." },
+            { "text": "That's why metals make different colored flames.", "cut": true },
+            { "text": "In 1913, Niels Bohr explained the lines.", "tts": "In nineteen thirteen, Niels Bohr explained the lines." },
+            { "text": "Electrons can only be on certain levels, each with a fixed energy." },
+            { "text": "It's like stairs. You stand on a step, never between." },
+            { "text": "Add energy, and an electron jumps up a level." },
+            { "text": "When it falls back, it gives off one exact color." },
+            { "text": "A small drop, from level 3 to 2, gives red.", "tts": "A small drop, from level three to two, gives red.", "hold": 0.6 },
+            { "text": "A bigger drop, from 5 to 2, gives violet: more energy.", "tts": "A bigger drop, from five to two, gives violet: more energy.", "hold": 0.6 },
+            { "text": "Nuclear is updated. This is the Planetary Model: electrons on rings.", "hold": 1.0 }
+          ]
+        },
+        {
+          "id": "s6",
+          "title": "The Quantum Model (1924–1927)",
+          "lines": [
+            { "text": "Bohr's model matched hydrogen perfectly." },
+            { "text": "But it failed for atoms with more electrons, even helium." },
+            { "text": "In 1924, Louis de Broglie said electrons also act like waves.", "cut": true, "tts": "In nineteen twenty-four, Louis [[də bɹˈɔɪ]] said electrons also act like waves." },
+            { "text": "In 1926, Erwin Schrödinger wrote an equation treating electrons as waves.", "tts": "In nineteen twenty-six, Erwin Shrohdinger wrote an equation treating electrons as waves." },
+            { "text": "Its answers are orbitals: places an electron is likely to be." },
+            { "text": "In 1927, Werner Heisenberg showed we can't know an electron's exact path.", "cut": true, "tts": "In nineteen twenty-seven, Werner Heisenberg showed we can't know an electron's exact path." },
+            { "text": "Imagine 1,000 snapshots of where the electron is.", "tts": "Imagine one thousand snapshots of where the electron is.", "hold": 1.2 },
+            { "text": "Stack them up, and you get a fuzzy cloud.", "hold": 0.4 },
+            { "text": "It's thickest where the electron is most likely to be." },
+            { "text": "Planetary is updated. This is the Quantum Model.", "hold": 1.0 },
+            { "text": "Fun fact: J. J. Thomson won a Nobel Prize for the electron particle.", "cut": true, "tts": "Fun fact: Jay Jay Thomson won a Nobel Prize for the electron particle." },
+            { "text": "In 1927, his son, G. P. Thomson, showed electrons act like waves.", "cut": true, "tts": "In nineteen twenty-seven, his son, Gee Pee Thomson, showed electrons act like waves." },
+            { "text": "The son shared a Nobel Prize for it!", "cut": true }
+          ]
+        },
+        {
+          "id": "s7",
+          "title": "Recap",
+          "lines": [
+            { "text": "Five models. Each one changed because of evidence." },
+            { "text": "Two laws. Cathode rays. Gold foil. Light lines. Electron waves.", "hold": 0.6 },
+            { "text": "Each model made a prediction. An experiment tested it." },
+            { "text": "When the result didn't fit, scientists updated the model." },
+            { "text": "Each experiment didn't throw science away." },
+            { "text": "It made our picture of the atom better.", "hold": 3.0 }
+          ]
+        }
+      ]
+    }
+  ]
+}

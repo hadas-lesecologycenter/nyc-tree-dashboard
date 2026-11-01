@@ -1,0 +1,202 @@
+1
+00:00:03,600 --> 00:00:05,930
+This pencil tip is made of carbon.
+
+2
+00:00:06,280 --> 00:00:10,370
+Cut it smaller and smaller,
+down to single carbon atoms.
+
+3
+00:00:11,520 --> 00:00:16,570
+“Atom” comes from the Greek word
+“atomos.” It means “can't be cut.”
+
+4
+00:00:16,920 --> 00:00:22,480
+About 2,400 years ago, Leucippus and
+his student Democritus had an idea.
+
+5
+00:00:22,830 --> 00:00:26,140
+Everything is made of
+atoms and empty space.
+
+6
+00:00:26,490 --> 00:00:28,360
+Aristotle disagreed.
+
+7
+00:00:28,710 --> 00:00:33,030
+He said everything is fire,
+air, earth, and water.
+
+8
+00:00:33,380 --> 00:00:37,190
+Most people believed him
+for almost 2,000 years.
+
+9
+00:00:37,540 --> 00:00:41,430
+How can we learn what's inside
+something too small to see?
+
+10
+00:00:41,780 --> 00:00:45,360
+We do experiments: tests
+that check an idea.
+
+11
+00:00:46,767 --> 00:00:52,337
+By 1800, chemists knew two laws:
+rules nature always follows.
+
+12
+00:00:52,687 --> 00:00:59,537
+First, Antoine Lavoisier. When chemicals
+react in a sealed jar, mass stays the same.
+
+13
+00:01:00,287 --> 00:01:02,417
+Mass is how much stuff there is.
+
+14
+00:01:02,767 --> 00:01:08,877
+Second, Joseph Proust. Water always has
+8 grams of oxygen per gram of hydrogen.
+
+15
+00:01:09,227 --> 00:01:13,247
+In 1803, John Dalton explained both laws.
+
+16
+00:01:13,597 --> 00:01:17,237
+Atoms are tiny solid
+balls that can't be split.
+
+17
+00:01:17,587 --> 00:01:21,817
+All atoms of one element, or
+pure substance, are alike.
+
+18
+00:01:22,167 --> 00:01:25,767
+Atoms join in whole
+numbers, never half an atom.
+
+19
+00:01:26,617 --> 00:01:31,297
+This is the Solid Sphere model: a
+picture that explains the clues.
+
+20
+00:01:31,647 --> 00:01:34,917
+It predicts that there's
+nothing inside an atom.
+
+21
+00:01:36,333 --> 00:01:40,493
+In 1897, J. J. Thomson
+tested a cathode ray tube.
+
+22
+00:01:40,843 --> 00:01:44,063
+It's a glass tube with
+most of the air pumped out.
+
+23
+00:01:44,813 --> 00:01:48,743
+A glowing beam shoots from the
+negative end, called the cathode,
+
+24
+00:01:48,783 --> 00:01:51,423
+to the positive end, called the anode.
+
+25
+00:01:51,773 --> 00:01:55,003
+An object in the beam
+casts a sharp shadow.
+
+26
+00:01:55,353 --> 00:01:57,853
+So the beam travels in straight lines.
+
+27
+00:01:58,203 --> 00:02:00,773
+The beam bends toward a positive plate.
+
+28
+00:02:01,623 --> 00:02:05,693
+Charge comes in plus and
+minus. Opposites pull together.
+
+29
+00:02:06,043 --> 00:02:09,933
+So the beam is made of tiny
+negative bits, called particles.
+
+30
+00:02:10,283 --> 00:02:13,043
+A magnet bends the beam too.
+
+31
+00:02:13,393 --> 00:02:16,983
+Thomson changed the metal,
+and the beam stayed the same.
+
+32
+00:02:17,733 --> 00:02:20,583
+So these particles are
+in every kind of atom.
+
+33
+00:02:20,933 --> 00:02:24,863
+And they're over 1,000 times
+lighter than a hydrogen atom.
+
+34
+00:02:25,213 --> 00:02:27,463
+He had discovered the electron.
+
+35
+00:02:27,813 --> 00:02:33,233
+Prediction: nothing inside.
+Result: smaller parts inside!
+
+36
+00:02:33,983 --> 00:02:36,463
+So the Solid Sphere model gets updated.
+
+37
+00:02:37,813 --> 00:02:40,513
+Whole atoms have no overall charge.
+
+38
+00:02:40,863 --> 00:02:44,333
+So something positive must
+balance the electrons.
+
+39
+00:02:44,683 --> 00:02:48,283
+In 1904, Thomson made
+the Plum Pudding model.
+
+40
+00:02:48,633 --> 00:02:52,353
+Electrons sit in a ball of
+spread-out positive charge.
+
+41
+00:02:52,703 --> 00:02:54,823
+Like blueberries in a muffin.
+
+42
+00:02:55,173 --> 00:02:57,443
+Plum pudding is an old British dessert.
+
+43
+00:02:57,793 --> 00:03:02,583
+Next time, a gold foil experiment
+puts this model to the test.
+

@@ -1,0 +1,26 @@
+{
+  "name": "atom-models-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Animated explainer videos about the models of the atom (Remotion)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:part1": "remotion render Part1 out/atom-models-part1.mp4 --codec=h264 --audio-codec=aac",
+    "render:part2": "remotion render Part2 out/atom-models-part2.mp4 --codec=h264 --audio-codec=aac",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/fonts": "4.0.539",
+    "@remotion/shapes": "4.0.539",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@remotion/bundler": "4.0.539",
+    "@remotion/renderer": "4.0.539",
+    "@types/react": "18.3.12",
+    "typescript": "5.6.3"
+  }
+}
