@@ -6938,7 +6938,23 @@ function tcYearColor(year) {
 }
 
 let tcCareMap        = null;
-let tcCareYearLayers = {}; // year → L.LayerGroup
+let tcCareYearLayers = {}; // year → L.LayerGroup (or quarter key in quarter mode)
+
+// 'year' groups trees into 2026 / 2025 / earlier; 'quarter' splits the latest
+// care year into Q1–Q4. Q1–Q3 use three hues that stay distinct for colorblind
+// viewers; Q4 is a hollow ring so a 4th quarter is told apart by shape, not hue.
+let tcCareMapMode = 'year';
+const TC_QUARTER_STYLES = {
+  Q1: { color: '#2a78d6', hollow: false },
+  Q2: { color: '#eb6834', hollow: false },
+  Q3: { color: '#1baf7a', hollow: false },
+  Q4: { color: '#3d3c39', hollow: true  },
+};
+function tcSetCareMapMode(mode) {
+  if (mode === tcCareMapMode) return;
+  tcCareMapMode = mode;
+  tcRenderCareMap();
+}
 
 function tcToggleCareYear(year, visible) {
   if (!tcCareMap || !tcCareYearLayers[year]) return;
@@ -7016,9 +7032,37 @@ function tcRenderCareMap() {
   }
   if (emptyEl) emptyEl.style.display = 'none';
 
+  // Quarter buckets for the most recent year with care data. A tree cared for
+  // in several quarters appears in each of them (counts are unique trees per quarter).
+  const quarterYear = _tcScrapedAreas.reduce((max, area) =>
+    (area.careEvents || []).reduce((m, ev) => {
+      const y = (ev.date || '').slice(0, 4);
+      return /^\d{4}$/.test(y) && y > m ? y : m;
+    }, max), '');
+  const byQuarter = { Q1: {}, Q2: {}, Q3: {}, Q4: {} };
+  let quarterLastDate = '';
+  _tcScrapedAreas.forEach(area => {
+    if (!area._fromScraper || !area._treeId) return;
+    const tid = String(area._treeId);
+    (area.careEvents || []).forEach(ev => {
+      const d = ev.date || '';
+      if (d.slice(0, 4) !== quarterYear) return;
+      const month = parseInt(d.slice(5, 7), 10);
+      if (!month) return;
+      const q = 'Q' + Math.ceil(month / 3);
+      if (!byQuarter[q][tid]) byQuarter[q][tid] = { events: [], area, latestYear: quarterYear };
+      byQuarter[q][tid].events.push(ev);
+      if (d > quarterLastDate) quarterLastDate = d;
+    });
+  });
+  // Every quarter a tree was cared for in, for its tooltip ("Q2, Q3").
+  const tidQuarters = {};
+  Object.entries(byQuarter).forEach(([q, bucket]) =>
+    Object.keys(bucket).forEach(tid => { (tidQuarters[tid] = tidQuarters[tid] || []).push(q); }));
+
   const allLatLngs = [];
 
-  function addBucketLayer(key, bucket, color, label) {
+  function addBucketLayer(key, bucket, color, label, hollow) {
     if (!Object.keys(bucket).length) return;
     const layer = L.layerGroup();
     tcCareYearLayers[key] = layer;
@@ -7040,8 +7084,13 @@ function tcRenderCareMap() {
       const icon = L.divIcon({
         className: '',
         iconSize: [14, 14], iconAnchor: [7, 7],
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1.5px ${color},0 1px 4px rgba(0,0,0,0.25);cursor:pointer"></div>`
+        html: hollow
+          ? `<div style="width:14px;height:14px;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,0.85);border:3px solid ${color};box-shadow:0 0 0 1.5px #fff,0 1px 4px rgba(0,0,0,0.25);cursor:pointer"></div>`
+          : `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 0 1.5px ${color},0 1px 4px rgba(0,0,0,0.25);cursor:pointer"></div>`
       });
+      const otherQuarters = tcCareMapMode === 'quarter' && (tidQuarters[tid] || []).length > 1
+        ? `<br><span style="font-size:10px;color:#666">Cared for in ${tidQuarters[tid].join(', ')} ${quarterYear}</span>`
+        : '';
 
       const evList = events.slice().sort((a, b) => b.date > a.date ? 1 : -1);
       const popupRows = evList.slice(0, 8).map(ev => {
@@ -7058,28 +7107,54 @@ function tcRenderCareMap() {
       </div>`;
 
       L.marker([lat, lng], { icon })
-        .bindTooltip(`<strong>${address || 'Tree #' + tid}</strong><br><span style="font-size:10px;color:${color}">${label} · ${events.length} event${events.length !== 1 ? 's' : ''}</span>`, { sticky: true })
+        .bindTooltip(`<strong>${address || 'Tree #' + tid}</strong><br><span style="font-size:10px;color:${color}">${label} · ${events.length} event${events.length !== 1 ? 's' : ''}</span>${otherQuarters}`, { sticky: true })
         .on('click', () => tcSelectArea(area.id))
         .addTo(layer);
     });
   }
 
-  addBucketLayer('2026',    by2026,    '#c62828', '2026');
-  addBucketLayer('2025',    by2025,    '#e65100', '2025');
-  addBucketLayer('earlier', byEarlier, '#78909c', 'Earlier');
+  const isQuarterMode = tcCareMapMode === 'quarter' && !!quarterYear;
+  let legendSpecs;
+  if (isQuarterMode) {
+    // Current quarter is still in progress — label it "to date".
+    const now = new Date();
+    const currentQ = String(now.getFullYear()) === quarterYear ? 'Q' + Math.ceil((now.getMonth() + 1) / 3) : '';
+    const fmtShort = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    legendSpecs = ['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
+      const months = (typeof QUARTER_MONTHS !== 'undefined' && QUARTER_MONTHS[q[1]]) || '';
+      const partial = q === currentQ && quarterLastDate ? ` · to ${fmtShort(quarterLastDate)}` : '';
+      return {
+        key: q, bucket: byQuarter[q], color: TC_QUARTER_STYLES[q].color, hollow: TC_QUARTER_STYLES[q].hollow,
+        label: `${q} ${quarterYear}`, sub: months + partial,
+      };
+    });
+  } else {
+    legendSpecs = [
+      { key: '2026',    bucket: by2026,    color: '#c62828', label: '2026' },
+      { key: '2025',    bucket: by2025,    color: '#e65100', label: '2025' },
+      { key: 'earlier', bucket: byEarlier, color: '#78909c', label: 'Earlier' },
+    ];
+  }
+  legendSpecs.forEach(s => addBucketLayer(s.key, s.bucket, s.color, s.label, s.hollow));
 
-  // Build legend — 3 rows only
-  const legendRows = [
-    { key: '2026',    color: '#c62828', label: '2026',   count: Object.keys(by2026).length },
-    { key: '2025',    color: '#e65100', label: '2025',   count: Object.keys(by2025).length },
-    { key: 'earlier', color: '#78909c', label: 'Earlier', count: Object.keys(byEarlier).length },
-  ].filter(r => r.count > 0).map(({ key, color, label, count }) =>
+  // Build legend rows (one per bucket that has trees)
+  const legendRows = legendSpecs.map(s => ({ ...s, count: Object.keys(s.bucket).length }))
+    .filter(r => r.count > 0).map(({ key, color, hollow, label, sub, count }) =>
     `<label style="display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:3px;font-size:11px">
       <input type="checkbox" checked onchange="tcToggleCareYear('${key}',this.checked)" style="margin:0;cursor:pointer">
-      <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${color};flex-shrink:0"></span>
-      <span>${label} <span style="color:#999">(${count})</span></span>
+      <span style="display:inline-block;width:11px;height:11px;box-sizing:border-box;border-radius:50%;${hollow ? `border:3px solid ${color};background:#fff` : `background:${color}`};flex-shrink:0"></span>
+      <span>${label} <span style="color:#999">(${count.toLocaleString()})</span>${sub ? `<br><span style="font-size:10px;color:#888">${sub}</span>` : ''}</span>
     </label>`
   ).join('');
+  const modeBtn = (mode, text) =>
+    `<button type="button" onclick="tcSetCareMapMode('${mode}')" style="flex:1;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;cursor:pointer;font-family:inherit;border:1px solid ${tcCareMapMode === mode ? 'var(--accent)' : '#d6d0c6'};background:${tcCareMapMode === mode ? 'var(--accent)' : '#fff'};color:${tcCareMapMode === mode ? '#fff' : '#555'}">${text}</button>`;
+  const modeToggle = quarterYear
+    ? `<div style="display:flex;gap:4px;margin-bottom:8px">${modeBtn('year', 'By year')}${modeBtn('quarter', 'By quarter')}</div>`
+    : '';
+  const legendTitle = isQuarterMode ? `Care by Quarter, ${quarterYear}` : 'Care by Year';
+  const legendNote = isQuarterMode
+    ? `<div style="font-size:9.5px;color:#999;margin-top:4px;max-width:170px;line-height:1.4">Unique trees per quarter. A tree cared for in two quarters appears in both.</div>`
+    : '';
 
   const resCount = reservationLoadSync().length;
   const resLegendRow = resCount > 0
@@ -7089,7 +7164,7 @@ function tcRenderCareMap() {
       </div>`
     : '';
   if (legendEl) {
-    legendEl.innerHTML = `<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">Care by Year</div>${legendRows}${resLegendRow}`;
+    legendEl.innerHTML = `${modeToggle}<div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--text)">${legendTitle}</div>${legendRows}${legendNote}${resLegendRow}`;
     legendEl.style.display = 'block';
   }
   tcRenderReservationsOnCareMap();
