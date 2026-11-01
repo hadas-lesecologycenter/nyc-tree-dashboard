@@ -1,4 +1,8 @@
-# Models of the Atom: Narration Script (draft for approval)
+# Models of the Atom: Narration Script (approved)
+
+> **Production status (2026-11-01):** Script approved as-is. The narration uses the Piper voice (en-US lessac), because ElevenLabs wasn't available in the build session.
+> Once the real voice was timed, Part 2 ran over 4½ minutes, so the first cut in the "Length" order was applied: Scene 6 #11–13 (the fun fact).
+> No other lines were cut. The real lengths are in the "Length" table below.
 
 **Audience:** 10th grader who finds reading hard. The voice does the teaching. On-screen text is short labels only (6 words max).
 **Pace:** about 130 words per minute. Short pause between scenes.
@@ -175,6 +179,20 @@ How to read this:
 | 6. The Quantum Model (1924–1927) | 128 | 1:01 |
 | 7. Recap | 50 | 0:26 |
 | **Part 2 total** | | **4:25** |
+
+**Measured with the real narration** (Piper voice, about 146 words per minute while speaking, slowed down for this student; about 120 words per minute overall, counting pauses):
+
+| Scene | Real time |
+|---|---|
+| Hook | 0:43.2 |
+| Dalton's Solid Sphere (1803) | 0:49.6 |
+| Cathode Ray Tube → Plum Pudding (1897–1904) | 1:29.2 |
+| **Part 1 total (with the 3-second title card)** | **3:04.9** |
+| Gold Foil → Nuclear Model (1909–1911) | 1:46.6 |
+| Emission Spectra → Planetary Model (1913) | 1:13.4 |
+| The Quantum Model (1924–1927) | 0:49.3 |
+| Recap | 0:30.0 |
+| **Part 2 total (with the 3-second title card)** | **4:22.3** |
 
 Times use 130 words per minute plus pauses, the slow-motion replay and end holds. Part 2 is close to the 4½-minute limit. After the real voice is timed, if Part 2 runs over, ✂ lines get cut in this order: Scene 6 #11–13 (fun fact), Scene 5 #9 (flames), Scene 4 #7 (microscope).
 
