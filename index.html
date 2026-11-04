@@ -7,6 +7,86 @@
   <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>NYC Tree Dashboard</title>
+<script>
+// ========== PUBLIC VIEW MODE ==========
+// A read-only version of this dashboard for sharing outside the team. It is on
+// when the page sets window.PUBLIC_VIEW = true before this script (the Apps
+// Script build in public-view/ does that) or when the URL has ?view=public.
+// Public view:
+//  - never loads the internal Sheet tabs (reservations, nominations, community
+//    stewardship, care-needed, dismissed suggestions) and strips staff and
+//    volunteer names and free-text notes from the tabs it does load;
+//  - refuses every write to the Google Sheet and to GitHub;
+//  - hides edit buttons, edit forms, CSV exports and staff-only map layers;
+//  - keeps browser storage in memory, so nothing a staff member cached in this
+//    browser shows up and nothing is left behind.
+// It is a presentation layer, not access control: the full dashboard and its
+// Apps Script endpoint stay reachable by anyone who has their URLs.
+(function () {
+  var fromUrl = /[?&]view=public(&|$)/.test(location.search);
+  window.PUBLIC_VIEW = window.PUBLIC_VIEW === true || fromUrl;
+  if (!window.PUBLIC_VIEW) return;
+  document.documentElement.classList.add('public-view');
+
+  var mem = {};
+  var store = {
+    getItem: function (k) { return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+    setItem: function (k, v) { mem[k] = String(v); },
+    removeItem: function (k) { delete mem[k]; },
+    clear: function () { mem = {}; },
+    key: function (i) { return Object.keys(mem)[i] || null; },
+    get length() { return Object.keys(mem).length; }
+  };
+  try { Object.defineProperty(window, 'localStorage', { value: store, configurable: true }); }
+  catch (e) { console.warn('Public view: could not swap localStorage', e); }
+
+  // Inside an embed (Apps Script, Google Sites) a plain link would try to load
+  // inside the frame and be refused, so outside links open in a new tab.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href^="http"]');
+    if (a) { a.target = '_blank'; a.rel = 'noopener'; }
+  }, true);
+})();
+</script>
+<style>
+.pv-only { display: none !important; }
+.public-view .pv-only { display: block !important; }
+.public-view span.pv-only { display: inline-block !important; }
+.public-view .pv-badge { margin-left: 10px; padding: 2px 8px; border-radius: 10px; background: #e8f3ec; color: #1b5e3b;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em; vertical-align: middle; white-space: nowrap; }
+.public-view .pv-hide,
+/* tree detail panel: every action button */
+.public-view #mtp-assess-btn, .public-view #mtp-care-btn, .public-view #mtp-reserve-btn,
+.public-view #mtp-needs-care-btn, .public-view #mtp-stewarded-btn, .public-view #mtp-nominate-btn,
+.public-view #mtp-round-reject-btn, .public-view #mtp-round-remove-btn, .public-view #mtp-dismiss-btn,
+.public-view #mtp-guard-btn, .public-view #mtp-missing-btn,
+/* edit forms */
+.public-view #token-setup-modal, .public-view #needs-care-modal, .public-view #stewarded-modal,
+.public-view #tree-guard-modal, .public-view #nominate-modal, .public-view #dismiss-modal,
+.public-view #round-mark-modal, .public-view #missing-modal, .public-view #manual-care-modal,
+.public-view #add-goal-modal, .public-view #reserve-tree-modal, .public-view #ra-assess-modal,
+.public-view #ra-confirm-modal, .public-view #ra-assess-btn,
+/* map controls for internal data */
+.public-view label:has(> #view-mode-category),
+.public-view label:has(> #f-care-needed),
+.public-view div:has(> label > #f-cared-for),
+.public-view div:has(> label > #f-reserved),
+.public-view label:has(> #f-stewarded),
+.public-view label:has(> #f-guard-nominated),
+.public-view label:has(> #layer-workplan), .public-view #workplan-panel,
+/* DEC tree guard legend: nominations and suggestions */
+.public-view div:has(> #tg-nnom), .public-view div:has(> #tg-ncand), .public-view div:has(> #tg-t-nom),
+/* Tree Care tab: reservations and the bookmarklet note */
+.public-view #res-counter-widget, .public-view #myblock-sidebar > div:has(> p.pv-hide),
+/* About tab: the sync bookmarklet */
+.public-view div:has(> div > #sync-bookmarklet-link),
+/* CSV exports and buttons drawn by script that change data */
+.public-view [onclick*="exportTableCSV"], .public-view [onclick*="exportTreeGuardsCSV"],
+.public-view [onclick*="reservationRemove"], .public-view [onclick*="tcDeleteCareEvent"],
+.public-view [onclick*="raEditAssessment"] {
+  display: none !important;
+}
+</style>
 <style>
 /* required styles */
 
@@ -1507,7 +1587,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="brand">
     <span class="brand-icon">🌳</span>
     <div style="min-width:0">
-      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short">LESEC Tree Care Map</span></div>
+      <div class="brand-name"><span class="brand-long">LES Ecology Center Tree Care Map</span><span class="brand-short">LESEC Tree Care Map</span><span class="pv-only pv-badge">View only</span></div>
     </div>
   </div>
   <nav>
@@ -1875,8 +1955,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="cp-label">Legend</div>
           <div class="cp-legend">
             <span class="legend-item"><span class="dot" style="background:#06b6d4"></span>Cared For</span>
-            <span class="legend-item"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
-            <span class="legend-item"><span class="dot" style="background:#5c3d1e;border-radius:2px;border:1px solid #fff;box-sizing:border-box"></span>Tool Storage</span>
+            <span class="legend-item pv-hide"><span class="dot" style="background:#7b3fa0"></span>Reserved</span>
+            <span class="legend-item pv-hide"><span class="dot" style="background:#5c3d1e;border-radius:2px;border:1px solid #fff;box-sizing:border-box"></span>Tool Storage</span>
           </div>
         </div>
 
@@ -2009,7 +2089,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="myblock-inner" style="display:flex;flex:1;min-height:0;overflow:hidden">
       <div id="myblock-sidebar" style="width:320px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden">
         <div style="padding:12px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
-          <p style="font-size:11px;color:var(--text2);line-height:1.5;margin:0">Care activities sync automatically from NYC Tree Map via the bookmarklet.</p>
+          <p class="pv-hide" style="font-size:11px;color:var(--text2);line-height:1.5;margin:0">Care activities sync automatically from NYC Tree Map via the bookmarklet.</p>
         </div>
         <div style="margin:10px 16px;background:var(--bg3);border-radius:8px;padding:10px 12px;flex-shrink:0">
           <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">🎯 Goal: 1,000 Trees</div>
@@ -2503,6 +2583,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       <h1 style="font-family:'Lora',serif;font-size:24px;font-weight:700;margin-bottom:6px;color:var(--text)">LES Ecology Center Street Tree Care Map</h1>
 
       <div style="background:var(--bg2);border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid var(--border)">
+        <p class="pv-only" style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px;padding:10px 12px;background:#e8f3ec;border-radius:8px">This is a <strong>view-only</strong> public version of the map. It shows the same live tree, care and 311 data as the team's dashboard, without the editing tools or internal planning layers, and without volunteer or staff names.</p>
         <h2 style="font-family:'Lora',serif;font-size:16px;font-weight:700;margin-bottom:10px">What is this?</h2>
         <p style="font-size:13px;color:var(--text2);line-height:1.8">A planning tool for the LES Ecology Center's street tree stewardship program. It maps and ranks based on urgency of care all ~11,000 active street trees in Community Board 3 — the area where LES Ecology Center works — and brings together tree care tracking, 311 call monitoring, and field health assessments in one place.</p>
       </div>
@@ -2514,7 +2595,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🗺</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Map</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">All CB3 street trees colored by priority tier (red = newest/highest need, green = established). Click any tree to see details, reserve it for care, log care needs, mark a tree guard, flag it as community stewarded, or report it missing.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">All CB3 street trees colored by priority tier (red = newest/highest need, green = established). <span class="pv-hide">Click any tree to see details, reserve it for care, log care needs, mark a tree guard, flag it as community stewarded, or report it missing.</span><span class="pv-only">Click any tree to see its species, size, planting year and care history.</span></div>
             </div>
           </div>
           <div style="display:flex;gap:14px">
@@ -2528,7 +2609,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🌿</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Tree Care</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Track care activities (watering, weeding, mulching, pruning, etc.) logged by the team. View a map of activity, a full table, and stats. Sync care activities from the NYC Tree Map website using the bookmarklet below.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Track care activities (watering, weeding, mulching, pruning, etc.) logged by the team. View a map of activity, a full table, and stats. <span class="pv-hide">Sync care activities from the NYC Tree Map website using the bookmarklet below.</span></div>
             </div>
           </div>
           <div style="display:flex;gap:14px">
@@ -2542,7 +2623,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="font-size:20px;flex-shrink:0">🔍</div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Health Assessment</div>
-              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2023, 2024, 2025, and 2026 plantings. The 2023 cohort is street trees only and is off by default — tick it in the sidebar when that survey starts. Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.7">Field assessment tool for 2023, 2024, 2025, and 2026 plantings. The 2023 cohort is street trees only and is off by default — tick it in the sidebar when that survey starts. <span class="pv-hide">Tap a tree on the map (or click the 📋 button in the main map panel) to log structural, pest &amp; disease, soil, and growth ratings, plus signs of stewardship observed.</span><span class="pv-only">Tap a tree on the map to see its structural, pest &amp; disease, soil, and growth ratings.</span></div>
             </div>
           </div>
         </div>
@@ -3026,7 +3107,9 @@ const CARTO_BASEMAP_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{
 // come back 304 and cost nothing.
 async function fetchData(path, init) {
   init = Object.assign({ cache: 'no-cache' }, init);
-  const candidates = [path, DATA_FALLBACK_BASE + path];
+  // The Apps Script build (window.DATA_REMOTE_FIRST) has no data/ folder next
+  // to it, so it goes straight to the published copy.
+  const candidates = window.DATA_REMOTE_FIRST ? [DATA_FALLBACK_BASE + path] : [path, DATA_FALLBACK_BASE + path];
   let lastErr;
   for (const url of candidates) {
     try {
@@ -5318,6 +5401,7 @@ function openReservationDetail(res) {
 
 function initToolStorageLayer() {
   toolStorageLayer = L.layerGroup().addTo(mapInstance);
+  if (window.PUBLIC_VIEW) return;
   LESEC_TOOL_STORAGE.features.forEach(f => {
     const [lng, lat] = f.geometry.coordinates;
     const notes = f.properties['Notes'] || '';
@@ -5489,7 +5573,7 @@ function openGuardTreeDetail(t, installed) {
           '<span style="font-size:11px;color:var(--text3);flex-shrink:0">🛡 DEC guard</span>' +
           '<span style="font-size:11px;color:var(--text);text-align:right">' + escHtml(status) + '</span>' +
         '</div>' +
-        (t.note ? '<div style="font-size:10px;color:#8a5a00;margin-top:3px">' + escHtml(t.note) + '</div>' : '') +
+        (t.note && !window.PUBLIC_VIEW ? '<div style="font-size:10px;color:#8a5a00;margin-top:3px">' + escHtml(t.note) + '</div>' : '') +
       '</div>');
   }
   return true;
@@ -5506,6 +5590,11 @@ const GUARD_CANDIDATES = [{"z":"1D","rank":1,"id":"15384788","lat":40.72708,"lng
 function renderGuardCandidates() {
   if (!guardCandidateLayer) return;
   guardCandidateLayer.clearLayers();
+  if (window.PUBLIC_VIEW) {
+    guardCandidateCount = 0;
+    if (typeof updateTreeGuardsLegend === 'function') updateTreeGuardsLegend();
+    return;
+  }
   const taken = new Set(activeRoundTrees().map(t => t.id));
   nominationsReadLocal().forEach(n => taken.add(String(n.treeId)));
   treeGuardsLoadSync().forEach(g => taken.add(String(g.treeId)));
@@ -7486,7 +7575,26 @@ function tcSimplify(pts) {
 // and paste the deployment URL here.
 const TREE_CARE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrR9ca29kqYcW-GivanP2P2fztBJhPaeG1A6E54IxN8Oy6l8xgQLHA0K0v7soXGk4/exec';
 
+// Public view never reads these tabs: who reserved what, who nominated or
+// stewards a tree, the staff care to-do list, and planning decisions.
+const PUBLIC_VIEW_BLOCKED_SHEETS = new Set(['Reservations', 'GuardNominations', 'DismissedSuggestions',
+  'CommunityStewardship', 'CareNeeded']);
+// Columns emptied from the tabs it does read: names and free-text notes.
+const PUBLIC_VIEW_STRIPPED_FIELDS = ['markedBy', 'assessorName', 'removedBy', 'rejectedBy', 'nominatedBy',
+  'caretaker', 'note', 'notes', 'careOther'];
+
 async function sheetsRead(sheetName) {
+  if (window.PUBLIC_VIEW && PUBLIC_VIEW_BLOCKED_SHEETS.has(sheetName)) return [];
+  const rows = await sheetsReadRaw(sheetName);
+  if (!window.PUBLIC_VIEW || !rows) return rows;
+  return rows.map(r => {
+    const o = Object.assign({}, r);
+    PUBLIC_VIEW_STRIPPED_FIELDS.forEach(f => { if (f in o) o[f] = ''; });
+    return o;
+  });
+}
+
+async function sheetsReadRaw(sheetName) {
   if (!TREE_CARE_SCRIPT_URL) return null;
   try {
     const res = await fetch(TREE_CARE_SCRIPT_URL + '?sheet=' + sheetName);
@@ -7513,6 +7621,7 @@ async function sheetsRead(sheetName) {
 // to be told when it did not happen — a silent failure in the field means the
 // assessment is simply lost.
 async function sheetsWriteOrThrow(sheetName, headers, items, rowFn) {
+  if (window.PUBLIC_VIEW) throw new Error('This is a view-only copy of the dashboard, so nothing can be saved here.');
   if (!TREE_CARE_SCRIPT_URL) throw new Error('No Google Sheet is connected, so there is nowhere to save this.');
   const rows = [headers, ...items.map(rowFn)];
   // fetch has no timeout of its own. On a weak signal in the field this request
@@ -7539,6 +7648,7 @@ async function sheetsWriteOrThrow(sheetName, headers, items, rowFn) {
 
 // Fire-and-forget variant for background syncs nobody is waiting on.
 async function sheetsWrite(sheetName, headers, items, rowFn) {
+  if (window.PUBLIC_VIEW) return;
   if (!TREE_CARE_SCRIPT_URL) return;
   try {
     await sheetsWriteOrThrow(sheetName, headers, items, rowFn);
@@ -7557,6 +7667,7 @@ function getWriteToken() {
 }
 
 function showTokenSetupModal(onSaved) {
+  if (window.PUBLIC_VIEW) return;
   if (COMMUNITY_WRITE_TOKEN || localStorage.getItem('_ts_tok')) {
     if (onSaved) onSaved();
     return;
@@ -8938,6 +9049,7 @@ async function confirmManualCare() {
 }
 
 async function saveManualCareToGitHub(treeId, date, activities, duration, address, species) {
+  if (window.PUBLIC_VIEW) return;
   const REPO = 'hadas-lesecologycenter/nyc-tree-dashboard';
   const ACT_PATH = 'data/activities.csv';
 
@@ -12307,7 +12419,7 @@ function raRenderPanelHistory(tid) {
             '<button onclick="raEditAssessment(\'' + ts + '\')" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;font-size:10px;color:var(--text2)">✏️</button>' +
           '</div>' +
         '</div>' +
-        '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>' +
+        (window.PUBLIC_VIEW ? '' : '<div style="font-size:10px;color:var(--text2);margin-bottom:5px">by ' + (a.assessorName || 'Unknown') + '</div>') +
         indRows +
         stewardRow +
         careRow +
