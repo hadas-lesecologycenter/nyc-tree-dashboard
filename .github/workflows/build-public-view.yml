@@ -1,0 +1,42 @@
+name: Build public view
+
+# Rebuilds the view-only copies of the dashboard (index.html, the site's front
+# page, and public-view/Index.html for Apps Script) from team.html, so the
+# public map always matches the team dashboard.
+on:
+  push:
+    branches: [main]
+    paths:
+      - team.html
+      - index.html
+      - scripts/build_public_view.py
+  workflow_dispatch:
+
+concurrency:
+  group: build-public-view
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build
+        run: python3 scripts/build_public_view.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "Public View Bot"
+          git config user.email "bot@lesecologycenter.org"
+          git add index.html public-view/Index.html
+          git diff --staged --quiet && { echo "Public view already up to date"; exit 0; }
+          git commit -m "Rebuild public view from team.html"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

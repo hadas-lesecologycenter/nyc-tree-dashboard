@@ -1,9 +1,25 @@
 # Public view-only dashboard
 
 A read-only copy of the Tree Care Map to share with people outside the team.
-It runs as a Google Apps Script web app, which you can also embed in a Google Site.
-Your Google account hosts the page. The data stays live: it loads the same
-published data files and Google Sheet the team dashboard uses, every time someone opens it.
+The data stays live: it loads the same data files and Google Sheet the team
+dashboard uses, every time someone opens it.
+
+## Addresses
+
+The site's front page is the public map. The team dashboard lives at `/team/`.
+
+| Page | Address on GitHub Pages |
+|---|---|
+| **Public map** (share this) | `https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/` |
+| Team dashboard | `https://hadas-lesecologycenter.github.io/nyc-tree-dashboard/team/` (forwards to `team.html`) |
+
+**`team.html` is the only file to edit.** `index.html` and `public-view/Index.html` are generated
+from it by `scripts/build_public_view.py`. The **Build public view** workflow rebuilds and commits
+them on every push to `main` that changes `team.html`, so the public map follows the team
+dashboard on its own.
+
+You can also host the public map on Google instead of GitHub, as a Google Apps Script web app
+that can be embedded in a Google Site. The steps follow. Skip them if the GitHub address is enough.
 
 ## What outside viewers see
 
@@ -22,10 +38,10 @@ Public view never requests the internal Sheet tabs (Reservations, GuardNominatio
 DismissedSuggestions, CommunityStewardship, CareNeeded). It refuses every save, and it
 keeps browser storage in memory, so data cached by a staff member's browser can't appear.
 
-**Preview it before sharing:** add `?view=public` to the end of the team dashboard's
-address, e.g. `.../index.html?view=public`.
+Adding `?view=public` to the team dashboard's address (`team.html?view=public`) shows the
+same public view.
 
-## One-time setup (about 10 minutes)
+## Optional: host it on Google (about 10 minutes)
 
 ### 1. Create the Apps Script project
 
@@ -64,13 +80,15 @@ address, e.g. `.../index.html?view=public`.
 ## Keeping it up to date
 
 - **Data** (trees, care activities, 311 calls, assessments) updates on its own. You don't need to redeploy.
-- **Dashboard changes** (new features or fixes in `index.html`) need a rebuild and a redeploy:
-  1. Run `python3 scripts/build_public_view.py` from the repo root, or ask Claude to rebuild it.
+- **Dashboard changes** (new features or fixes in `team.html`) reach the GitHub front page on
+  their own. The Google copy needs a manual redeploy:
+  1. Wait for the **Build public view** workflow to update `public-view/Index.html`, or run
+     `python3 scripts/build_public_view.py` yourself.
   2. Paste the new `public-view/Index.html` over the `Index` file in the Apps Script project and save.
   3. Click **Deploy → Manage deployments**, click the pencil ✏, set **Version: New version**,
      and click **Deploy**. The URL stays the same.
 
-Don't edit `public-view/Index.html` by hand. It's generated from `index.html`.
+Don't edit `index.html` or `public-view/Index.html` by hand. They're generated from `team.html`.
 
 ## Things to know
 
@@ -78,8 +96,8 @@ Don't edit `public-view/Index.html` by hand. It's generated from `index.html`.
   Apps Script URL are both written in this repository. Anyone who finds them can still open the full
   dashboard, or ask that web app for any Sheet tab, including Reservations.
   If that matters, the TreeCareData web app needs its own protection, such as a shared key for reads and writes.
-- **Hosting is on Google. Data still comes from this repo.** The page itself lives in your Google account.
-  The tree files under `data/` still load from this repository's published copy
+- **On Google, data still comes from this repo.** The Google copy lives in your Google account, but
+  the tree files under `data/` still load from this repository's published copy
   (`raw.githubusercontent.com`) and are kept current by the GitHub Actions workflows.
 - **"Find my location" (⊕)** may not work inside the embed, since browsers can block location access in
   embedded frames.

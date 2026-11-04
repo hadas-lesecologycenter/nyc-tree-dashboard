@@ -24,4 +24,7 @@ Start here → **[START_HERE.md](START_HERE.md)**
 - **[PHASE2_GOOGLE_SHEETS_INTEGRATION.md](PHASE2_GOOGLE_SHEETS_INTEGRATION.md)** - What's coming May 2026
 
 ### 🎯 Tree Dashboard
-Original NYC tree care dashboard functionality
+- **Public map (view-only, share this):** the site's front page, `index.html`
+- **Team dashboard:** `/team/` (`team.html`)
+
+Edit only `team.html`. The public pages are generated from it; see [PUBLIC_VIEW_SETUP.md](PUBLIC_VIEW_SETUP.md).
