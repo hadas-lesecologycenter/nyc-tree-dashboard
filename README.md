@@ -15,6 +15,7 @@ Start here → **[START_HERE.md](START_HERE.md)**
 **Get started in 5 minutes**: Open `event-dashboard.html` in your browser!
 
 ### 📖 Documentation
+- **[PUBLIC_VIEW_SETUP.md](PUBLIC_VIEW_SETUP.md)** - Share a view-only Tree Care Map outside the team (Google Apps Script / Google Sites)
 - **[START_HERE.md](START_HERE.md)** - Entry point (read this first!)
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - 2-minute overview
 - **[EVENT_DASHBOARD_GUIDE.md](EVENT_DASHBOARD_GUIDE.md)** - Full documentation
