@@ -30,21 +30,21 @@
  "growth_increments": 1316,
  "estimates": {
   "by_source": {
-   "c2005>": 10,
-   "c2015>": 46,
    "c2015m": 818,
-   "dbh": 3940,
-   "c2015": 1767,
-   "dbh>": 1161,
-   "c2005m": 289,
+   "c2005m": 288,
+   "c2015": 1764,
+   "new": 1270,
+   "c2005": 801,
+   "dbh": 3941,
    "c1995": 1605,
+   "dbh>": 1161,
+   "c2015>": 47,
    "c1995>": 10,
-   "c2005": 799,
-   "new": 1270
+   "c2005>": 10
   },
   "by_confidence": {
-   "high": 2622,
    "medium": 2413,
+   "high": 2622,
    "low": 6680
   },
   "living_without_date_or_dbh": 17
@@ -59,11 +59,11 @@
   "dbh": "Current diameter and species growth rate only"
  },
  "checks": {
-  "trees_planted_2017_or_later_matched_to_2015_census": "15 of 2241 \u2014 these are false matches",
+  "trees_planted_2017_or_later_matched_to_2015_census": "16 of 2241 \u2014 these are false matches",
   "trees_planted_2007_or_later_matched_to_2005_census": "5 of 2430 dated trees \u2014 false matches",
   "first_seen_trees_whose_size_fits_planting_since_previous_census": {
-   "1996-2005": "788 of 1350 (58%); the rest are labelled c\u2026m",
-   "2006-2015": "2048 of 3433 (60%); the rest are labelled c\u2026m"
+   "2006-2015": "2048 of 3433 (60%); the rest are labelled c\u2026m",
+   "1996-2005": "788 of 1350 (58%); the rest are labelled c\u2026m"
   },
   "years_apart_when_dated_from_each_of_two_censuses": {
    "1995 vs 2005": {
