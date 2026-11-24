@@ -1,7 +1,7 @@
 name: Backfill Historical Tree Activities
 
 # Run this ONCE manually to pull the full activity history from NYC Tree Map.
-# After the initial backfill the daily scrape.yml takes over for new activities.
+# After the initial backfill the Sync bookmarklet adds new activities.
 on:
   workflow_dispatch:
 
