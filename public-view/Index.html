@@ -1663,6 +1663,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#1f6fb0;border:1px solid #164f80"></div><span style="flex:1">Round 1</span><b id="tg-n1" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#cc6f14;border:1px solid #9a520d"></div><span style="flex:1">Round 2</span><b id="tg-n2" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#a8327a;border:1px solid #7c2459"></div><span style="flex:1">Round 3</span><b id="tg-n3" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#f3d3e6;border:2px dashed #a8327a;box-sizing:border-box"></div><span style="flex:1">Round 3B · pending</span><b id="tg-n3b" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;margin:0 1px;border-radius:50%;background:#d4d4d4;border:1px solid #8a8a8a"></div><span style="flex:1">Cut / not in a round</span><b id="tg-ncut" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#9e9e9e;border:2px solid #b3261e;box-sizing:border-box"></div><span style="flex:1">Rejected / issue with tree</span><b id="tg-nrej" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="border-top:1px solid #ddd;margin:2px 0"></div>
             <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#fff;border:3px solid #1a1a1a;box-sizing:border-box"></div><span style="flex:1">Spring 2026 install</span><b id="tg-ninst" style="font-variant-numeric:tabular-nums">0</b></div>
@@ -1672,7 +1674,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </div>
           <div style="margin-top:8px;padding-top:6px;border-top:1px solid #ddd;font-size:11px;color:#333">
             <div style="font-weight:700;margin-bottom:4px">Overall</div>
-            <div style="display:flex;gap:6px"><span style="flex:1">In rounds</span><b id="tg-t-rounds" style="font-variant-numeric:tabular-nums">0</b></div>
+            <div style="display:flex;gap:6px"><span style="flex:1">Paid, Rounds 1–3</span><b id="tg-t-paid" style="font-variant-numeric:tabular-nums">0</b><span id="tg-t-paid-c" class="pv-hide" style="min-width:66px;text-align:right;font-variant-numeric:tabular-nums">…</span></div>
+            <div style="display:flex;gap:6px"><span style="flex:1">Round 3B, pending</span><b id="tg-t-pend" style="font-variant-numeric:tabular-nums">0</b><span id="tg-t-pend-c" class="pv-hide" style="min-width:66px;text-align:right;font-variant-numeric:tabular-nums">…</span></div>
+            <div style="display:flex;gap:6px;border-top:1px solid #eee;margin-top:2px;padding-top:2px;font-weight:700"><span style="flex:1">With Round 3B</span><b id="tg-t-rounds" style="font-variant-numeric:tabular-nums">0</b><span id="tg-t-rounds-c" class="pv-hide" style="min-width:66px;text-align:right;font-variant-numeric:tabular-nums">…</span></div>
+            <div class="pv-hide" style="margin-top:2px">
+              <div style="display:flex;gap:6px"><span style="flex:1">DEC budget</span><span id="tg-t-budget" style="font-variant-numeric:tabular-nums">…</span></div>
+              <div id="tg-t-over-row" style="display:flex;gap:6px;font-weight:700"><span id="tg-t-over-label" style="flex:1">Over budget</span><span id="tg-t-over" style="font-variant-numeric:tabular-nums">…</span></div>
+            </div>
+            <div style="font-size:10px;color:#6b6456;margin:3px 0 4px;line-height:1.35">Round 1 counts the guard across from 25 Bialystoker Pl, which has no tree ID, so it isn't on the map.</div>
             <div style="display:flex;gap:6px"><span style="flex:1">Nominated</span><b id="tg-t-nom" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;gap:6px;border-top:1px solid #eee;margin-top:2px;padding-top:2px"><span style="flex:1;font-weight:700">Total trees</span><b id="tg-t-all" style="font-variant-numeric:tabular-nums">0</b></div>
             <div style="display:flex;gap:6px;margin-top:6px"><span style="flex:1">Sub-zones covered</span><b id="tg-t-zones" style="font-variant-numeric:tabular-nums">…</b></div>
@@ -5474,19 +5483,35 @@ function toggleCoolestBlocksFromPanel() {
 
 // ========== DEC GRANT TREE GUARDS LAYER ==========
 // One layer for the DEC grant tree guards. It holds every tree submitted for a
-// guard in Rounds 1-3 (positions from data/census-coords.json) and the Spring
-// 2026 install points. An install point within a few metres of a submitted
-// tree is that tree's install and shows as a black ring; an install point with
-// no submitted tree near it is drawn on its own. Clicking a tree opens the same
-// detail panel as the main map. Round 3 also takes in the 20 guard nominations
-// that were in the Sheet on Oct 23, 2026, and 167 Orchard Street from the
-// submission list.
-const SUBMISSION_ROUNDS_TREES = [{"r":1,"id":"12158994","a":"265 Henry Street","lat":40.713893,"lng":-73.984703,"sp":"bur oak","note":"Dashboard lists this tree at 263 Henry Street. Check which address is correct."},{"r":1,"id":"4604009","a":"347 East 10th Street","lat":40.726847,"lng":-73.979725,"sp":"London planetree"},{"r":1,"id":"12400955","a":"391 East 10th Street","lat":40.726102,"lng":-73.977979,"sp":"'Espresso' Kentucky coffee tree"},{"r":1,"id":"10163629","a":"331 East 10th Street","lat":40.727163,"lng":-73.980496,"sp":"'Millstone' Japanese pagodatree"},{"r":1,"id":"10164543","a":"329 East 10th Street","lat":40.727215,"lng":-73.980606,"sp":"'Streetkeeper' Thornless honeylocust"},{"r":1,"id":"2121964","a":"383 East 10th Street","lat":40.726219,"lng":-73.978258,"sp":"Callery pear"},{"r":1,"id":"10408117","a":"168 Orchard Street","lat":40.721389,"lng":-73.988419,"sp":"maple"},{"r":1,"id":"2114670","a":"425 East 9th Street","lat":40.727754,"lng":-73.983702,"sp":"Japanese pagoda tree"},{"r":1,"id":"2123392","a":"192 2nd Avenue","lat":40.730966,"lng":-73.98567,"sp":"London planetree"},{"r":1,"id":"1182508","a":"529 East 13th Street","lat":40.729206,"lng":-73.979504,"sp":"Green ash"},{"r":2,"id":"10162567","a":"184 Avenue C","lat":40.726709,"lng":-73.976779,"sp":"'Chicagoland' Hackberry"},{"r":2,"id":"2121983","a":"411 East 10th","lat":40.725665,"lng":-73.976034,"sp":"Thornless honeylocust"},{"r":2,"id":"12158996","a":"35 Montgomery Street","lat":40.713012,"lng":-73.984806,"sp":"chinkapin oak"},{"r":2,"id":"10183650","a":"35 Montgomery Street","lat":40.712791,"lng":-73.984894,"sp":"dawn redwood"},{"r":2,"id":"14095819","a":"35 Montgomery Street","lat":40.712713,"lng":-73.984875,"sp":"maidenhair tree"},{"r":2,"id":"2114681","a":"192 Avenue B","lat":40.728162,"lng":-73.97928,"sp":"Thornless honeylocust"},{"r":2,"id":"15763356","a":"435 E 12 Street","lat":40.729365,"lng":-73.981874,"sp":"bur oak"},{"r":2,"id":"14177845","a":"149 Avenue C","lat":40.725471,"lng":-73.977736,"sp":"'Espresso' Kentucky coffee tree"},{"r":2,"id":"2114748","a":"129 St Marks Place","lat":40.726779,"lng":-73.983246,"sp":"Thornless honeylocust"},{"r":2,"id":"11139377","a":"10 Montgomery Street","lat":40.713914,"lng":-73.985312,"sp":"Amur maackia"},{"r":2,"id":"2121638","a":"737 East 6th Street","lat":40.723011,"lng":-73.977921,"sp":"London planetree"},{"r":2,"id":"14095816","a":"35 Montgomery Street","lat":40.712918,"lng":-73.984906,"sp":"littleleaf linden","note":"Listed as 14095815 on the submission list; that ID is not in the tree data."},{"r":3,"id":"10576007","a":"146 Stanton Street","lat":40.720625,"lng":-73.985642,"sp":"London planetree"},{"r":3,"id":"2111001","a":"76 Essex St","lat":40.717976,"lng":-73.988381,"sp":"Thornless honeylocust"},{"r":3,"id":"2116320","a":"25 Montgomery Street","lat":40.713489,"lng":-73.984968,"sp":"maidenhair tree"},{"r":3,"id":"2116319","a":"25 Montgomery Street","lat":40.713382,"lng":-73.984968,"sp":"American basswood"},{"r":3,"id":"2116318","a":"25 Montgomery Street","lat":40.713258,"lng":-73.984955,"sp":"American basswood"},{"r":3,"id":"10202012","a":"25 Montgomery Street","lat":40.713736,"lng":-73.984834,"sp":"common hackberry"},{"r":3,"id":"13622972","a":"244 Broome Street","lat":40.717792,"lng":-73.988988,"sp":"Japanese zelkova"},{"r":3,"id":"10183640","a":"179 Henry Street","lat":40.713604,"lng":-73.988126,"sp":"Kentucky coffeetree"},{"r":3,"id":"11139378","a":"179 Henry Street","lat":40.713737,"lng":-73.988554,"sp":"Amur maackia"},{"r":3,"id":"15197124","a":"500 Grand Street","lat":40.71493,"lng":-73.982997,"sp":"Freeman maple"},{"r":3,"id":"11139376","a":"64 Rutgers Street","lat":40.711372,"lng":-73.989889,"sp":"'Morris Debonair' Bald cypress"},{"r":3,"id":"12158981","a":"85 Pike Slip","lat":40.710675,"lng":-73.991839,"sp":"swamp white oak"},{"r":3,"id":"2110960","a":"99 Hester Street","lat":40.716465,"lng":-73.992658,"sp":"sawtooth oak"},{"r":3,"id":"15331647","a":"195 Canal Street","lat":40.717083,"lng":-73.998194,"sp":"'Northern Acclaim' Thornless honeylocust"},{"r":1,"id":"2110991","a":"64 Hester Street","lat":40.715905,"lng":-73.991087,"sp":"littleleaf linden"},{"r":3,"id":"10230555","a":"149 Rivington St","lat":40.719328,"lng":-73.985738,"sp":"Japanese zelkova"},{"r":3,"id":"12382238","a":"120 Essex Street","lat":40.719148,"lng":-73.987774,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"2122345","a":"558 E 5 St","lat":40.724231,"lng":-73.983069,"sp":"Kentucky yellowwood"},{"r":3,"id":"16873076","a":"270 E 2 St","lat":40.720843,"lng":-73.980507,"sp":"American elm"},{"r":3,"id":"16029022","a":"165 East 2 Street","lat":40.722562,"lng":-73.984893,"sp":"Kentucky coffeetree"},{"r":3,"id":"2131000","a":"101 2 Avenue","lat":40.727319,"lng":-73.988725,"sp":"Japanese zelkova"},{"r":3,"id":"10666780","a":"45 St Marks Place","lat":40.728347,"lng":-73.986969,"sp":"'Skyline' Thornless honeylocust"},{"r":3,"id":"12216775","a":"23 East 3 Street","lat":40.725807,"lng":-73.990578,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"13765176","a":"29 East 2nd Street","lat":40.724785,"lng":-73.990572,"sp":"Japanese zelkova"},{"r":3,"id":"11142873","a":"90 East 3 Street","lat":40.724725,"lng":-73.987983,"sp":"'Espresso' Kentucky coffee tree"},{"r":3,"id":"11139389","a":"504 Grand Street","lat":40.71538,"lng":-73.98135,"sp":"'Fort Mcnair' Ruby red horsechestnut"},{"r":3,"id":"2118870","a":"189 Stanton Street","lat":40.719865,"lng":-73.983436,"sp":"pin oak"},{"r":3,"id":"11139400","a":"38 Monroe Street","lat":40.711085,"lng":-73.99413,"sp":"'Moraine' Sweetgum"},{"r":3,"id":"11138957","a":"75 Pike Street","lat":40.711281,"lng":-73.99246,"sp":"'Skyline' Thornless honeylocust"},{"r":3,"id":"10203059","a":"40 Market Street","lat":40.712416,"lng":-73.994311,"sp":"'Worplesdon' Sweetgum"},{"r":3,"id":"12231919","a":"60 Madison Street","lat":40.711926,"lng":-73.997403,"sp":"'Sterling' Silver linden"},{"r":3,"id":"10666768","a":"81 Chrystie Street","lat":40.717374,"lng":-73.994352,"sp":"'Millstone' Japanese pagodatree"},{"r":3,"id":"2118577","a":"255 Bowery","lat":40.723045,"lng":-73.992843,"sp":"Caucasian linden"},{"r":3,"id":"2125471","a":"135 East Houston Street","lat":40.723115,"lng":-73.990331,"sp":"maidenhair tree"},{"r":3,"id":"10097970","a":"217 East 7 Street","lat":40.724453,"lng":-73.97963,"sp":"Callery pear"},{"r":3,"id":"10183265","a":"167 Orchard Street","lat":40.721256,"lng":-73.98868,"sp":"Hardy Rubber Tree"}];
+// guard (positions from data/census-coords.json) and the Spring 2026 install
+// points. An install point within a few metres of a submitted tree is that
+// tree's install and shows as a black ring; an install point with no submitted
+// tree near it is drawn on its own. Clicking a tree opens the same detail panel
+// as the main map.
+// Final rounds as of Nov 25, 2026: Round 1 from the submission sheet; Rounds 2
+// and 3 from NYC Parks' Tree Time acknowledgements of Nov 24, 2026 (Round 2
+// Updated, Round 3 Updated v2). c is the price per tree. s marks a tree that is
+// not a paid guard: 'pending' (Round 3B, three trees added back on Nov 25, not
+// yet quoted or paid; prices from Parks' pre-cut Round 3 acknowledgement) or
+// 'cut' (taken out of a round; why says how). Cut trees stay on the map in grey
+// and count toward nothing.
+const SUBMISSION_ROUNDS_TREES = [{"r":1,"id":"12158994","a":"265 Henry Street","lat":40.713893,"lng":-73.984703,"sp":"bur oak","note":"Dashboard lists this tree at 263 Henry Street. Check which address is correct.","c":1273.27},{"r":1,"id":"4604009","a":"347 East 10th Street","lat":40.726847,"lng":-73.979725,"sp":"London planetree","c":999.2},{"r":1,"id":"12400955","a":"391 East 10th Street","lat":40.726102,"lng":-73.977979,"sp":"'Espresso' Kentucky coffee tree","c":1156.02},{"r":1,"id":"10163629","a":"331 East 10th Street","lat":40.727163,"lng":-73.980496,"sp":"'Millstone' Japanese pagodatree","c":1002.31},{"r":1,"id":"10164543","a":"329 East 10th Street","lat":40.727215,"lng":-73.980606,"sp":"'Streetkeeper' Thornless honeylocust","c":1156.8},{"r":1,"id":"2121964","a":"383 East 10th Street","lat":40.726219,"lng":-73.978258,"sp":"Callery pear","c":1156.02},{"r":1,"id":"10408117","a":"168 Orchard Street","lat":40.721389,"lng":-73.988419,"sp":"maple","c":1005.52},{"r":1,"id":"2114670","a":"425 East 9th Street","lat":40.727754,"lng":-73.983702,"sp":"Japanese pagoda tree","c":998.65},{"r":1,"id":"2123392","a":"192 2nd Avenue","lat":40.730966,"lng":-73.98567,"sp":"London planetree","c":993.65},{"r":1,"id":"1182508","a":"529 East 13th Street","lat":40.729206,"lng":-73.979504,"sp":"Green ash","c":1000.43},{"r":2,"id":"10162567","a":"184 Avenue C","lat":40.726709,"lng":-73.976779,"sp":"'Chicagoland' Hackberry","c":1273.24},{"r":2,"id":"2121983","a":"411 East 10th","lat":40.725665,"lng":-73.976034,"sp":"Thornless honeylocust","c":1273.98},{"r":2,"id":"12158996","a":"35 Montgomery Street","lat":40.713012,"lng":-73.984806,"sp":"chinkapin oak","c":1276.39},{"r":2,"id":"10183650","a":"35 Montgomery Street","lat":40.712791,"lng":-73.984894,"sp":"dawn redwood","c":1261.77},{"r":2,"id":"14095819","a":"35 Montgomery Street","lat":40.712713,"lng":-73.984875,"sp":"maidenhair tree","c":1260.11},{"r":2,"id":"2114681","a":"192 Avenue B","lat":40.728162,"lng":-73.97928,"sp":"Thornless honeylocust","c":1272.5,"note":"Parks bills this tree in Round 2 (Nov 24 acknowledgement) and lists it on the E 12 St side. The submission sheet marks it not approved."},{"r":2,"id":"2114549","a":"435 E 12 Street","lat":40.729529,"lng":-73.982265,"sp":"pin oak","c":1264.36,"note":"Parks billed this tree (in front of the bakery) in Round 2. The submission sheet lists tree 15763356 at this address."},{"r":2,"id":"14177845","a":"149 Avenue C","lat":40.725471,"lng":-73.977736,"sp":"'Espresso' Kentucky coffee tree","c":993.68},{"r":2,"id":"2114748","a":"129 St Marks Place","lat":40.726779,"lng":-73.983246,"sp":"Thornless honeylocust","c":1266.4},{"r":2,"id":"11139377","a":"10 Montgomery Street","lat":40.713914,"lng":-73.985312,"sp":"Amur maackia","c":999.2},{"r":2,"id":"2121638","a":"737 East 6th Street","lat":40.723011,"lng":-73.977921,"sp":"London planetree","s":"cut","why":"Not in Round 2: already has a guard"},{"r":2,"id":"14095816","a":"35 Montgomery Street","lat":40.712918,"lng":-73.984906,"sp":"littleleaf linden","note":"Listed as 14095815 on the submission list; that ID is not in the tree data.","c":1261.03},{"r":3,"id":"10576007","a":"146 Stanton Street","lat":40.720625,"lng":-73.985642,"sp":"London planetree","c":967.44},{"r":3,"id":"2111001","a":"76 Essex St","lat":40.717976,"lng":-73.988381,"sp":"Thornless honeylocust","c":1218.7},{"r":3,"id":"2116320","a":"25 Montgomery Street","lat":40.713489,"lng":-73.984968,"sp":"maidenhair tree","s":"cut","why":"Taken out of Round 3: not accepted"},{"r":3,"id":"2116319","a":"25 Montgomery Street","lat":40.713382,"lng":-73.984968,"sp":"American basswood","s":"cut","why":"Taken out of Round 3: not accepted"},{"r":3,"id":"2116318","a":"25 Montgomery Street","lat":40.713258,"lng":-73.984955,"sp":"American basswood","s":"cut","why":"Taken out of Round 3: not accepted"},{"r":3,"id":"10202012","a":"25 Montgomery Street","lat":40.713736,"lng":-73.984834,"sp":"common hackberry","c":971.3},{"r":3,"id":"13622972","a":"244 Broome Street","lat":40.717792,"lng":-73.988988,"sp":"Japanese zelkova","c":1113.61},{"r":3,"id":"10183640","a":"179 Henry Street","lat":40.713604,"lng":-73.988126,"sp":"Kentucky coffeetree","s":"cut","why":"Cut from Round 3 on Nov 24 to stay in budget"},{"r":3,"id":"11139378","a":"179 Henry Street","lat":40.713737,"lng":-73.988554,"sp":"Amur maackia","c":971.3},{"r":3,"id":"15197124","a":"500 Grand Street","lat":40.71493,"lng":-73.982997,"sp":"Freeman maple","s":"cut","why":"Dropped from Round 3 by Parks: already has a guard"},{"r":3,"id":"11139376","a":"64 Rutgers Street","lat":40.711372,"lng":-73.989889,"sp":"'Morris Debonair' Bald cypress","c":1217.62},{"r":3,"id":"12158981","a":"85 Pike Slip","lat":40.710675,"lng":-73.991839,"sp":"swamp white oak","c":1217.0},{"r":3,"id":"2110960","a":"99 Hester Street","lat":40.716465,"lng":-73.992658,"sp":"sawtooth oak","c":1217.0},{"r":3,"id":"15331647","a":"195 Canal Street","lat":40.717083,"lng":-73.998194,"sp":"'Northern Acclaim' Thornless honeylocust","c":1216.38},{"r":1,"id":"2110991","a":"64 Hester Street","lat":40.715905,"lng":-73.991087,"sp":"littleleaf linden","c":993.51},{"r":3,"id":"10230555","a":"149 Rivington St","lat":40.719328,"lng":-73.985738,"sp":"Japanese zelkova","c":1217.0},{"r":3,"id":"12382238","a":"120 Essex Street","lat":40.719148,"lng":-73.987774,"sp":"'Espresso' Kentucky coffee tree","c":1113.92},{"r":3,"id":"2122345","a":"558 E 5 St","lat":40.724231,"lng":-73.983069,"sp":"Kentucky yellowwood","c":968.52},{"r":3,"id":"16873076","a":"270 E 2 St","lat":40.720843,"lng":-73.980507,"sp":"American elm","c":1217.0},{"r":3,"id":"16029022","a":"165 East 2 Street","lat":40.722562,"lng":-73.984893,"sp":"Kentucky coffeetree","c":1217.0},{"r":3,"id":"2131000","a":"101 2 Avenue","lat":40.727319,"lng":-73.988725,"sp":"Japanese zelkova","c":1113.76},{"r":3,"id":"12216775","a":"23 East 3 Street","lat":40.725807,"lng":-73.990578,"sp":"'Espresso' Kentucky coffee tree","c":1217.31},{"r":3,"id":"13765176","a":"29 East 2nd Street","lat":40.724785,"lng":-73.990572,"sp":"Japanese zelkova","s":"cut","why":"Cut from Round 3 on Nov 24 to stay in budget"},{"r":3,"id":"11142873","a":"90 East 3 Street","lat":40.724725,"lng":-73.987983,"sp":"'Espresso' Kentucky coffee tree","c":1217.31},{"r":3,"id":"11139389","a":"504 Grand Street","lat":40.71538,"lng":-73.98135,"sp":"'Fort Mcnair' Ruby red horsechestnut","c":1217.31},{"r":3,"id":"2118870","a":"189 Stanton Street","lat":40.719865,"lng":-73.983436,"sp":"pin oak","c":1217.15},{"r":3,"id":"11139400","a":"38 Monroe Street","lat":40.711085,"lng":-73.99413,"sp":"'Moraine' Sweetgum","s":"cut","why":"Cut from Round 3 on Nov 24 to stay in budget"},{"r":3,"id":"11138957","a":"75 Pike Street","lat":40.711281,"lng":-73.99246,"sp":"'Skyline' Thornless honeylocust","c":1217.93},{"r":3,"id":"10203059","a":"40 Market Street","lat":40.712416,"lng":-73.994311,"sp":"'Worplesdon' Sweetgum","c":1114.38},{"r":3,"id":"12231919","a":"60 Madison Street","lat":40.711926,"lng":-73.997403,"sp":"'Sterling' Silver linden","c":1112.68},{"r":3,"id":"10666768","a":"81 Chrystie Street","lat":40.717374,"lng":-73.994352,"sp":"'Millstone' Japanese pagodatree","c":930.17},{"r":3,"id":"2118577","a":"255 Bowery","lat":40.723045,"lng":-73.992843,"sp":"Caucasian linden","c":969.6},{"r":3,"id":"10183265","a":"167 Orchard Street","lat":40.721256,"lng":-73.98868,"sp":"Hardy Rubber Tree","s":"cut","why":"Cut from Round 3 on Nov 24 to stay in budget"},{"r":"3B","id":"2125471","a":"135 East Houston Street","lat":40.723115,"lng":-73.990331,"sp":"maidenhair tree","s":"pending","c":930.32},{"r":"3B","id":"10666780","a":"45 St Marks Place","lat":40.728347,"lng":-73.986969,"sp":"'Skyline' Thornless honeylocust","s":"pending","c":1112.53},{"r":"3B","id":"10097970","a":"217 East 7 Street","lat":40.724453,"lng":-73.97963,"sp":"Callery pear","s":"pending","c":970.22}];
 const SUBMISSION_ROUND_STYLE = {
   1: { fill: '#1f6fb0', stroke: '#164f80', label: 'Round 1', note: '' },
   2: { fill: '#cc6f14', stroke: '#9a520d', label: 'Round 2', note: '' },
-  3: { fill: '#a8327a', stroke: '#7c2459', label: 'Round 3', note: '' }
+  3: { fill: '#a8327a', stroke: '#7c2459', label: 'Round 3', note: '' },
+  '3B': { fill: '#f3d3e6', stroke: '#a8327a', label: 'Round 3B', note: 'pending, not yet quoted or paid' }
 };
+const GUARD_CUT_STYLE = { fill: '#d4d4d4', stroke: '#8a8a8a' };
+// Paid guards with no tree on the map. The Round 1 guard across from 25
+// Bialystoker Place went on a different tree than the one requested and has no
+// tree ID, so it counts toward Round 1 and the totals but is not drawn.
+const GUARD_UNMAPPED = [{ r: 1, a: 'Across from 25 Bialystoker Place', c: 1937.06 }];
+// What each paid round costs, as billed: Round 1 from the submission sheet,
+// Rounds 2 and 3 from Parks' Nov 24, 2026 acknowledgements. (Parks' Round 3 line
+// items add up to 2 cents more than its subtotal; the subtotal is what is owed.)
+const GUARD_ROUND_BILLED = { 1: 13672.44, 2: 13402.66, 3: 27171.37 };
+const GUARD_BUDGET = 52000;   // DEC grant budget for tree guards
 const GUARD_INSTALL_MATCH_M = 6;
 // From the detail panel a Round 3 tree can be removed, and a tree in any round
 // can be marked rejected (see ROUND REMOVALS AND REJECTIONS). A removed tree is
@@ -5498,9 +5523,26 @@ function activeRoundTrees() {
   const removed = roundMarkIds('remove');
   return SUBMISSION_ROUNDS_TREES.filter(t => !(REMOVABLE_ROUNDS.includes(t.r) && removed.has(t.id)));
 }
+// A rejected mark from the Sheet applies only to a paid round tree; a cut or
+// pending tree's status comes from the list above.
+function isRejectedRoundTree(t, rejected) {
+  return !t.s && (rejected || roundMarkIds('reject')).has(t.id);
+}
+// Trees that have or will get a guard: paid rounds and Round 3B, not cut or
+// rejected ones.
 function countedRoundTrees() {
   const rejected = roundMarkIds('reject');
-  return activeRoundTrees().filter(t => !rejected.has(t.id));
+  return activeRoundTrees().filter(t => t.s !== 'cut' && !isRejectedRoundTree(t, rejected));
+}
+function guardMoney(v) {
+  return '$' + Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+// One line saying where a round tree stands.
+function guardRoundStatus(t, rej, installed) {
+  const st = SUBMISSION_ROUND_STYLE[t.r];
+  if (t.s === 'cut') return t.why || ('Cut from ' + st.label);
+  if (t.s === 'pending') return st.label + ' · ' + st.note;
+  return (rej ? 'Rejected · was ' : '') + st.label + (installed ? ' · installed' : '');
 }
 let guardInstalledCount = 0;
 let guardInstallOnlyCount = 0;
@@ -5513,20 +5555,41 @@ let guardRoundLayer = null;
 function updateTreeGuardsLegend() {
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   const rounds = countedRoundTrees();
-  [1, 2, 3].forEach(r => set('tg-n' + r, rounds.filter(t => t.r === r).length));
+  const rejected = roundMarkIds('reject');
+  const unmapped = r => GUARD_UNMAPPED.filter(g => g.r === r).length;
+  [1, 2, 3].forEach(r => set('tg-n' + r, rounds.filter(t => t.r === r).length + unmapped(r)));
+  set('tg-n3b', rounds.filter(t => t.r === '3B').length);
+  set('tg-ncut', activeRoundTrees().filter(t => t.s === 'cut').length);
   set('tg-ninst', guardInstalledCount);
   set('tg-norphan', guardInstallOnlyCount);
   set('tg-nnom', guardNominationCount);
-  set('tg-nrej', activeRoundTrees().length - rounds.length);
+  set('tg-nrej', activeRoundTrees().filter(t => isRejectedRoundTree(t, rejected)).length);
   set('tg-ncand', guardCandidateCount);
 
-  // Overall tally: rounds plus nominations, and the sub-zones they reach.
+  // Overall tally: paid guards, Round 3B, cost against the DEC budget, then
+  // nominations and the sub-zones they all reach.
   const inRounds = new Set(activeRoundTrees().map(t => t.id));
   const noms = (typeof nominationsReadLocal === 'function' ? nominationsReadLocal() : [])
     .filter(n => !inRounds.has(String(n.treeId)));
-  set('tg-t-rounds', rounds.length);
+  const paidN = rounds.filter(t => !t.s).length + GUARD_UNMAPPED.length;
+  const pending = rounds.filter(t => t.s === 'pending');
+  const paidCost = Object.values(GUARD_ROUND_BILLED).reduce((s, v) => s + v, 0);
+  const pendCost = pending.reduce((s, t) => s + (t.c || 0), 0);
+  const allCost = paidCost + pendCost;
+  set('tg-t-paid', paidN);
+  set('tg-t-paid-c', guardMoney(paidCost));
+  set('tg-t-pend', pending.length);
+  set('tg-t-pend-c', guardMoney(pendCost));
+  set('tg-t-rounds', paidN + pending.length);
+  set('tg-t-rounds-c', guardMoney(allCost));
+  set('tg-t-budget', guardMoney(GUARD_BUDGET));
+  const over = Math.round((allCost - GUARD_BUDGET) * 100) / 100;
+  set('tg-t-over-label', over > 0 ? 'Over budget' : 'Left in budget');
+  set('tg-t-over', guardMoney(Math.abs(over)));
+  const overEl = document.getElementById('tg-t-over-row');
+  if (overEl) overEl.style.color = over > 0 ? '#b3261e' : '#2e7d32';
   set('tg-t-nom', noms.length);
-  set('tg-t-all', rounds.length + noms.length);
+  set('tg-t-all', paidN + pending.length + noms.length);
   const bar = document.getElementById('tg-t-bar');
   const missingEl = document.getElementById('tg-t-missing');
   if (!subzonesData) { set('tg-t-zones', '…'); return; }
@@ -5563,9 +5626,10 @@ function openGuardTreeDetail(t, installed) {
   if (!tree) return false;
   openMapTreeDetail(tree);
   const st = SUBMISSION_ROUND_STYLE[t.r];
-  const rej = roundMarksReadLocal('reject').find(d => String(d.treeId) === t.id);
-  const status = (rej ? 'Rejected · ' : '') + st.label + (st.note ? ' · ' + st.note : '') +
-    (installed ? ' · Spring 2026 install' : '') + (rej && rej.reason ? ' · ' + rej.reason : '');
+  const rej = !t.s && roundMarksReadLocal('reject').find(d => String(d.treeId) === t.id);
+  const status = (t.s ? guardRoundStatus(t) : (rej ? 'Rejected · ' : '') + st.label + (st.note ? ' · ' + st.note : '') +
+    (installed ? ' · Spring 2026 install' : '') + (rej && rej.reason ? ' · ' + rej.reason : '')) +
+    (t.c && t.s !== 'cut' && !window.PUBLIC_VIEW ? ' · ' + guardMoney(t.c) : '');
   const box = document.getElementById('mtp-fields');
   if (box) {
     box.insertAdjacentHTML('afterbegin',
@@ -5669,22 +5733,26 @@ function renderGuardRounds() {
   const rejected = roundMarkIds('reject');
   activeRoundTrees().forEach(t => {
     const st = SUBMISSION_ROUND_STYLE[t.r];
-    const rej = rejected.has(t.id);
-    const inst = installs.find(p => guardMetersApart(p.lat, p.lng, t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
+    const cut = t.s === 'cut', pend = t.s === 'pending';
+    const rej = isRejectedRoundTree(t, rejected);
+    const inst = t.s ? null : installs.find(p => guardMetersApart(p.lat, p.lng, t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
     if (inst) inst.used = true;
-    const m = L.circleMarker([t.lat, t.lng], {
-      radius: 7, fillColor: rej ? '#9e9e9e' : st.fill, color: inst ? '#1a1a1a' : rej ? '#b3261e' : '#fff',
-      weight: inst ? 3 : rej ? 2 : 1.5, fillOpacity: 0.95
-    });
-    m.bindTooltip('<b>' + escHtml(t.a) + '</b><br>' + (rej ? 'Rejected · was ' : '') + escHtml(st.label) +
-      (inst ? ' · installed' : '') + '<br>' + escHtml(t.sp || ''));
+    const m = L.circleMarker([t.lat, t.lng], cut
+      ? { radius: 5, fillColor: GUARD_CUT_STYLE.fill, color: GUARD_CUT_STYLE.stroke, weight: 1.5, fillOpacity: 0.9 }
+      : Object.assign({
+          radius: 7, fillColor: rej ? '#9e9e9e' : st.fill, color: inst ? '#1a1a1a' : rej ? '#b3261e' : pend ? st.stroke : '#fff',
+          weight: inst ? 3 : (rej || pend) ? 2 : 1.5, fillOpacity: 0.95
+        }, pend ? { dashArray: '3 3' } : {}));
+    const price = t.c && !cut && !window.PUBLIC_VIEW ? '<br>' + guardMoney(t.c) : '';
+    m.bindTooltip('<b>' + escHtml(t.a) + '</b><br>' + escHtml(guardRoundStatus(t, rej, !!inst)) + price +
+      '<br>' + escHtml(t.sp || ''));
     m.on('click', e => {
       L.DomEvent.stopPropagation(e);
       if (openGuardTreeDetail(t, !!inst)) return;
       m.unbindTooltip();
       m.bindPopup(`<div style="font-family:'Nunito',sans-serif;min-width:170px">
         <div style="font-family:'Lora',serif;font-size:13px;font-weight:700;color:#2c2a24">${escHtml(t.a)}</div>
-        <div style="font-size:11px;color:${st.fill};font-weight:700;margin:3px 0">${escHtml(st.label)}</div>
+        <div style="font-size:11px;color:${cut ? GUARD_CUT_STYLE.stroke : st.stroke};font-weight:700;margin:3px 0">${escHtml(guardRoundStatus(t, rej, !!inst))}</div>
         <div style="font-size:11px;color:#6b6456">Tree ID ${escHtml(t.id)} · ${escHtml(t.sp || 'Unknown species')}</div>
         <div style="font-size:11px;color:#6b6456;margin-top:4px">Tree details load with the main tree data.</div>
       </div>`).openPopup();
@@ -5758,18 +5826,24 @@ async function exportTreeGuardsCSV() {
   const noms = new Map(nominationsReadLocal().map(n => [String(n.treeId), n]));
   const nomCols = n => n ? [n.nominatedBy, n.reason, n.note, day(n.nominatedAt)] : ['', '', '', ''];
   const rows = [['Status', 'Tree ID', 'Address', 'Species', 'Latitude', 'Longitude', 'Sub-zone',
-    'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on', 'Rejected reason']];
+    'Spring 2026 install', 'Round note', 'Nominated by', 'Reason', 'Nomination notes', 'Nominated on', 'Rejected reason', 'Price']];
   const rejected = new Map(roundMarksReadLocal('reject').map(d => [String(d.treeId), d]));
-  [...activeRoundTrees()].sort((a, b) => a.r - b.r).forEach(t => {
-    const installed = LESEC_TREE_GUARDS.features.some(f =>
+  const order = t => (t.s === 'cut' ? 10 : 0) + ({ 1: 1, 2: 2, 3: 3, '3B': 4 }[t.r] || 5);
+  [...activeRoundTrees()].sort((a, b) => order(a) - order(b)).forEach(t => {
+    const installed = !t.s && LESEC_TREE_GUARDS.features.some(f =>
       guardMetersApart(f.geometry.coordinates[1], f.geometry.coordinates[0], t.lat, t.lng) <= GUARD_INSTALL_MATCH_M);
-    const rej = rejected.get(t.id);
-    rows.push([(rej ? 'Rejected · ' : '') + SUBMISSION_ROUND_STYLE[t.r].label, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
-      installed ? 'Yes' : 'No', t.note, ...nomCols(noms.get(t.id)), rej ? (rej.reason || 'No reason given') : '']);
+    const rej = !t.s && rejected.get(t.id);
+    const label = SUBMISSION_ROUND_STYLE[t.r].label;
+    const status = t.s === 'cut' ? 'Cut · ' + label : t.s === 'pending' ? label + ' (pending)' : (rej ? 'Rejected · ' : '') + label;
+    rows.push([status, t.id, t.a, t.sp, t.lat, t.lng, zoneOf(t.lat, t.lng),
+      installed ? 'Yes' : 'No', t.s === 'cut' ? t.why : t.note, ...nomCols(noms.get(t.id)), rej ? (rej.reason || 'No reason given') : '',
+      t.c && t.s !== 'cut' ? t.c.toFixed(2) : '']);
     noms.delete(t.id);
   });
+  GUARD_UNMAPPED.forEach(g => rows.push([SUBMISSION_ROUND_STYLE[g.r].label, '', g.a, '', '', '', '',
+    '', 'No tree ID, so not on the map', '', '', '', '', '', g.c.toFixed(2)]));
   noms.forEach(n => rows.push(['Nominated', n.treeId, n.address || treeMapAddress(n.treeId), n.species, n.lat, n.lng, zoneOf(n.lat, n.lng),
-    '', '', ...nomCols(n), '']));
+    '', '', ...nomCols(n), '', '']));
   // Quote what needs it, and keep typed-in text from running as a spreadsheet formula.
   const cell = v => {
     let s = String(v ?? '').replace(/\s+/g, ' ').trim();
@@ -8020,7 +8094,9 @@ function updateNominateButton(tree) {
     btn.disabled = !!disabled;
     btn.style.cursor = disabled ? 'default' : 'pointer';
   };
-  if (submitted && roundMarkIds('reject').has(id)) set('🛡 Rejected · Round ' + submitted.r, '#eceff1', '#b3261e', '#b0bec5', true);
+  if (submitted && submitted.s === 'cut') set('🛡 Cut · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
+  else if (submitted && submitted.s === 'pending') set('🛡 Round ' + submitted.r + ' · pending', '#fbeef5', '#7c2459', '#e3b4cf', true);
+  else if (submitted && roundMarkIds('reject').has(id)) set('🛡 Rejected · Round ' + submitted.r, '#eceff1', '#b3261e', '#b0bec5', true);
   else if (submitted) set('🛡 Already submitted · Round ' + submitted.r, '#eceff1', '#546e7a', '#b0bec5', true);
   else if (nom) set('🛡 Nominated ✓ · tap to view or remove', '#3d6b9e', '#fff', '#3d6b9e', false);
   else if (cityGuardPresent(tree)) set('🛡 City lists a guard here', '#fff8e1', '#8a5a00', '#e0b23b', false);
@@ -8436,7 +8512,7 @@ window.addEventListener('online', () => { roundMarksFlush('remove'); roundMarksF
 // The round tree this one is, if the mark applies to its round. A removed tree
 // can only be put back, not rejected.
 function markableRoundTree(kind, id) {
-  const t = SUBMISSION_ROUNDS_TREES.find(x => x.id === id && ROUND_MARKS[kind].rounds.includes(x.r));
+  const t = SUBMISSION_ROUNDS_TREES.find(x => x.id === id && !x.s && ROUND_MARKS[kind].rounds.includes(x.r));
   if (!t) return null;
   if (kind === 'reject' && !activeRoundTrees().some(x => x.id === id)) return null;
   return t;

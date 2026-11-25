@@ -10,7 +10,7 @@ published data files and Google Sheet the team dashboard uses, every time someon
 | Shown | Hidden |
 |---|---|
 | Map: priority tiers, species colors, species and age filters, empty beds, planted beds, tree guards, missing/removed, fire hydrants | Every button in the tree panel (reserve, report care, advanced care, stewarded, nominate, guard, missing, assess) |
-| Program layers: DEC grant tree guards (Rounds 1–3, rejected, Spring 2026 installs), Coolest Block 2025, sub-zones, block segments, other districts | Reservations (filter, view mode, counter, map dots) |
+| Program layers: DEC grant tree guards (Rounds 1–3, pending Round 3B, cut and rejected trees, Spring 2026 installs; prices and budget stay hidden), Coolest Block 2025, sub-zones, block segments, other districts | Reservations (filter, view mode, counter, map dots) |
 | Stats tab (charts, goal progress, quarterly report, query box) | Guard nominations and suggested trees |
 | Tree Care tab, read-only (care map, table, stats) | Community stewarded trees and caretaker names |
 | 311 Calls tab | Care Needed (to-do) list and "Cared For by Me" |
